@@ -13,18 +13,18 @@ const facts = [
 const trust = [
   {
     number: "01",
-    title: "Farm source",
-    copy: "Dairy stays connected to the farm, with clear origin and careful handling.",
+    title: "20 years operating",
+    copy: "A long-running farm operation built around daily dairy care and consistency.",
   },
   {
     number: "02",
-    title: "Family routine",
-    copy: "Built for parents and households that want dependable milk every day.",
+    title: "500+ families served",
+    copy: "Milk delivery for households that trust the farm as part of their morning routine.",
   },
   {
     number: "03",
-    title: "Simple order",
-    copy: "Message on WhatsApp, confirm your quantity, and start with one bottle.",
+    title: "1,000+ L every day",
+    copy: "Daily production capacity for fresh milk delivery across Jamshedpur homes.",
   },
 ];
 
@@ -43,6 +43,33 @@ const features = [
     number: "03",
     title: "Easy first order",
     copy: "No account needed on the landing page. Start through WhatsApp or call.",
+  },
+];
+
+const productAttributes = [
+  {
+    title: "Low fat",
+    copy: "A lighter everyday milk profile for families that want a cleaner routine.",
+  },
+  {
+    title: "Rich texture",
+    copy: "A satisfying bottle feel that works well for tea, coffee, cereals and daily use.",
+  },
+  {
+    title: "Fresh from farm",
+    copy: "Dairy stays close to its source instead of feeling anonymous or mass-market.",
+  },
+  {
+    title: "Glass bottle",
+    copy: "A more premium delivery experience with a bottle customers can trust and recognize.",
+  },
+  {
+    title: "Handled with care",
+    copy: "Farm-led handling and delivery designed around freshness and consistency.",
+  },
+  {
+    title: "Directly home",
+    copy: "A simple order path through WhatsApp or call, made for Jamshedpur households.",
   },
 ];
 
@@ -196,29 +223,56 @@ export default function Home() {
           <div className="glass-story">
             <p className="eyebrow">Why M&apos;ma</p>
             <h2>
-              Closer to the farm.
+              20 years of farm dairy.
               <br />
-              Closer to what matters.
+              Trusted every morning.
             </h2>
             <p>
               M&apos;ma Organic Farm is for families who do not want milk to feel
-              anonymous. The promise is simple: fresh farm dairy, handled with
-              care, priced clearly, and delivered to homes in Jamshedpur.
+              anonymous. For two decades, the farm has focused on health-minded
+              dairy, careful handling and fresh milk delivery for Jamshedpur
+              homes.
+            </p>
+            <p>
+              The farm serves more than 500 families and produces over 1,000 L
+              of milk each day. Its licensed and certification-led approach is
+              built around trust, consistency and a better daily bottle for the
+              people who depend on it.
             </p>
             <div className="story-metrics">
               <div>
-                <strong>1 L</strong>
-                <span>glass bottle</span>
+                <strong>20 yrs</strong>
+                <span>farm operation</span>
               </div>
               <div>
-                <strong>₹62</strong>
-                <span>simple pricing</span>
+                <strong>500+</strong>
+                <span>families served</span>
               </div>
               <div>
-                <strong>WhatsApp</strong>
-                <span>quick ordering</span>
+                <strong>1,000 L+</strong>
+                <span>daily milk production</span>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="attributes-section section" aria-label="Milk product attributes">
+          <div className="section-heading attributes-heading">
+            <p className="eyebrow">Product attributes</p>
+            <h2>
+              What makes the
+              <br />
+              bottle worth choosing.
+            </h2>
+          </div>
+
+          <div className="attributes-grid">
+            {productAttributes.map((item) => (
+              <article key={item.title}>
+                <h3>{item.title}</h3>
+                <p>{item.copy}</p>
+              </article>
+            ))}
           </div>
         </section>
 

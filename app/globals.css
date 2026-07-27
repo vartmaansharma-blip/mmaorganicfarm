@@ -160,10 +160,10 @@ main {
 .hero {
   position: relative;
   min-height: 760px;
-  height: 100svh;
-  max-height: 980px;
+  height: auto;
   display: grid;
   grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.1fr);
+  grid-template-rows: auto auto;
   align-items: center;
   background: var(--yellow);
   overflow: hidden;
@@ -182,9 +182,11 @@ main {
 }
 
 .hero-copy {
+  grid-column: 1;
+  grid-row: 1;
   z-index: 2;
   max-width: 700px;
-  padding: 80px 3vw 90px 5vw;
+  padding: 104px 2vw 34px 5vw;
 }
 
 .eyebrow {
@@ -260,6 +262,8 @@ h1 {
 
 .bottle-stage {
   position: relative;
+  grid-column: 2;
+  grid-row: 1 / span 2;
   z-index: 1;
   width: min(44vw, 620px);
   aspect-ratio: 1 / 1.08;
@@ -344,14 +348,14 @@ h1 {
 }
 
 .hero-facts {
-  position: absolute;
-  right: 32px;
-  bottom: 24px;
-  left: 5vw;
+  position: relative;
+  grid-column: 1;
+  grid-row: 2;
   z-index: 3;
   display: grid;
   grid-template-columns: repeat(3, minmax(110px, 180px));
   gap: 10px;
+  margin: 0 2vw 30px 5vw;
 }
 
 .hero-facts div {
@@ -589,6 +593,43 @@ h1 {
   font-size: 12px;
 }
 
+.attributes-section {
+  background: #efece3;
+}
+
+.attributes-heading {
+  align-items: start;
+}
+
+.attributes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.attributes-grid article {
+  min-height: 230px;
+  padding: clamp(24px, 3vw, 42px);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.attributes-grid h3 {
+  margin: 0;
+  font-size: clamp(24px, 2.5vw, 40px);
+  line-height: 1;
+}
+
+.attributes-grid p {
+  max-width: 34ch;
+  margin: 24px 0 0;
+  color: #5d5a52;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
 .farm-section {
   background: var(--white);
 }
@@ -748,10 +789,11 @@ footer {
   }
 
   .hero {
-    min-height: 900px;
+    min-height: 0;
     height: auto;
     grid-template-columns: 1fr;
-    padding-top: 130px;
+    grid-template-rows: auto auto auto;
+    padding: 130px 0 42px;
   }
 
   .hero-copy {
@@ -760,16 +802,20 @@ footer {
 
   .bottle-stage {
     width: min(86vw, 600px);
-    margin-bottom: 110px;
+    margin-bottom: 0;
   }
 
   .hero-facts {
-    left: 7vw;
+    position: static;
+    grid-column: 1;
+    grid-row: auto;
+    margin: 26px 7vw 0;
   }
 
   .section-heading,
   .farm-heading,
-  .confidence-strip {
+  .confidence-strip,
+  .attributes-grid {
     grid-template-columns: 1fr;
   }
 
