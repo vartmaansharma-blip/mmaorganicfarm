@@ -284,7 +284,7 @@ export default function Home() {
         href={whatsappOrder}
         aria-label="Chat with M'ma Organic Farm on WhatsApp"
       >
-        <span>WA</span>
+        <img src="/whatsapp.svg" alt="" aria-hidden="true" />
         <small>Order milk</small>
       </a>
     </>
