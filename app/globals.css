@@ -78,7 +78,7 @@ a {
   height: 40px;
   border: 1px solid rgba(20, 20, 20, 0.12);
   border-radius: 4px;
-  background: white url("/bottle-front-back.jpeg") 71% 45% / 160px auto no-repeat;
+  background: white url("/mma-logo.png") center / contain no-repeat;
   box-shadow: 0 3px 10px rgba(20, 20, 20, 0.08);
 }
 
@@ -676,13 +676,14 @@ footer {
   right: 18px;
   bottom: 18px;
   z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 12px 8px 8px;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  padding: 0;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 6px;
+  border-radius: 50%;
   background: #176b46;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   font-weight: 800;
@@ -690,17 +691,17 @@ footer {
 
 .whatsapp-float span {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   place-items: center;
   border-radius: 50%;
   background: white;
   color: #176b46;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .whatsapp-float small {
-  font-size: 12px;
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -846,12 +847,12 @@ footer {
   }
 
   .hero {
-    min-height: 760px;
-    height: calc(100svh - 12px);
-    max-height: 860px;
-    grid-template-rows: auto minmax(270px, 1fr);
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    grid-template-rows: auto auto auto;
     align-content: start;
-    padding-top: 54px;
+    padding: 54px 0 22px;
   }
 
   .hero-copy {
@@ -895,15 +896,15 @@ footer {
 
   .bottle-stage {
     width: 100%;
-    height: 100%;
+    height: auto;
     min-height: 290px;
-    margin: 0 0 84px;
+    margin: 6px 0 0;
     align-self: stretch;
   }
 
   .bottle-stage img {
     width: min(68%, 320px);
-    height: 96%;
+    height: 330px;
   }
 
   .bottle-note {
@@ -911,11 +912,11 @@ footer {
   }
 
   .hero-facts {
-    right: 18px;
-    bottom: 14px;
-    left: 18px;
+    position: static;
+    grid-column: 1;
     grid-template-columns: repeat(3, 1fr);
     gap: 7px;
+    margin: 16px 18px 0;
   }
 
   .hero-facts strong {
@@ -981,14 +982,15 @@ footer {
     align-items: flex-start;
   }
 
-  .whatsapp-float small {
-    display: none;
-  }
-
   .whatsapp-float {
     right: 14px;
     bottom: calc(84px + env(safe-area-inset-bottom));
-    padding: 7px;
-    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+  }
+
+  .whatsapp-float span {
+    width: 36px;
+    height: 36px;
   }
 }
