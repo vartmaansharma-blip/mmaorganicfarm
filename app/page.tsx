@@ -73,36 +73,49 @@ const productAttributes = [
   },
 ];
 
-const comparisonMetrics = [
+const proofBars = [
   {
-    metric: "Source clarity",
-    mma: "Fresh farm milk delivered to Jamshedpur homes",
-    compare: "Ask whether the milk source is visible and easy to understand.",
+    value: "20 yrs",
+    title: "Farm operating history",
+    copy: "A daily dairy routine built over two decades.",
+    fill: "92%",
   },
   {
-    metric: "Farm experience",
-    mma: "20 years operating with daily dairy care",
-    compare: "Compare how long the supplier has handled fresh milk regularly.",
+    value: "500+",
+    title: "Families served",
+    copy: "Households already trusting the morning bottle.",
+    fill: "78%",
   },
   {
-    metric: "Family trust",
-    mma: "500+ families served through a local delivery routine",
-    compare: "Look for real household adoption, not only broad advertising.",
+    value: "1,000 L+",
+    title: "Milk produced daily",
+    copy: "Capacity for consistent fresh delivery.",
+    fill: "86%",
   },
   {
-    metric: "Daily capacity",
-    mma: "1,000 L+ milk produced every day",
-    compare: "Check whether the supply can stay consistent as demand grows.",
+    value: "₹62/L",
+    title: "Clear milk pricing",
+    copy: "Simple price before you call or message.",
+    fill: "66%",
+  },
+];
+
+const visualBenefits = [
+  {
+    title: "Bone-supporting calcium",
+    copy: "A daily milk habit for family nutrition.",
   },
   {
-    metric: "Price clarity",
-    mma: "₹62 per litre shown upfront",
-    compare: "Prefer clear pricing before you message, call, or subscribe.",
+    title: "Protein for daily strength",
+    copy: "Useful in tea, coffee, breakfast and routine meals.",
   },
   {
-    metric: "Bottle experience",
-    mma: "Glass bottle delivery with a premium daily feel",
-    compare: "Compare the bottle or packet experience your family receives.",
+    title: "Rich texture",
+    copy: "The creamy bottle feel customers notice first.",
+  },
+  {
+    title: "Fresh from farm",
+    copy: "Less anonymous, more visible, easier to trust.",
   },
 ];
 
@@ -268,42 +281,124 @@ export default function Home() {
           </div>
         </div>
 
-        <section className="comparison-section section" aria-label="Milk comparison metrics">
-          <div className="section-heading comparison-heading">
-            <p className="eyebrow">Comparison metrics</p>
+        <section className="proof-section section" aria-label="M'ma milk confidence proof">
+          <div className="section-heading proof-heading">
+            <p className="eyebrow">Why people believe it</p>
             <h2>
-              Compare milk
+              See the proof.
               <br />
-              before you switch.
+              Then taste the milk.
             </h2>
             <p>
-              These are the buying signals families should check before choosing
-              daily milk: source, consistency, price, trust and bottle quality.
+              Families do not read long tables. They trust what looks
+              fresh, feels honest and has simple numbers behind it.
             </p>
           </div>
 
-          <div className="comparison-table">
-            <div className="comparison-row comparison-head" aria-hidden="true">
-              <span>Metric</span>
-              <span>M&apos;ma Organic Farm</span>
-              <span>What to compare</span>
+          <div className="proof-layout">
+            <div className="proof-image">
+              <img src="/farm-bottle.png" alt="M'ma Farms glass milk bottle at the farm" />
+              <div className="proof-badge">
+                <strong>Fresh</strong>
+                <span>from farm</span>
+              </div>
             </div>
-            {comparisonMetrics.map((item) => (
-              <article className="comparison-row" key={item.metric}>
-                <div>
-                  <span className="comparison-label">Metric</span>
-                  <strong>{item.metric}</strong>
-                </div>
-                <div>
-                  <span className="comparison-label">M&apos;ma Organic Farm</span>
-                  <p>{item.mma}</p>
-                </div>
-                <div>
-                  <span className="comparison-label">What to compare</span>
-                  <p>{item.compare}</p>
-                </div>
-              </article>
-            ))}
+
+            <div className="proof-panel">
+              <div className="benefit-grid" aria-label="Milk benefits">
+                {visualBenefits.map((item) => (
+                  <article key={item.title}>
+                    <h3>{item.title}</h3>
+                    <p>{item.copy}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="proof-bars" aria-label="M'ma Organic Farm proof bars">
+                {proofBars.map((item) => (
+                  <article key={item.title}>
+                    <div className="proof-bar-top">
+                      <strong>{item.value}</strong>
+                      <span>{item.title}</span>
+                    </div>
+                    <div className="proof-track" aria-hidden="true">
+                      <span style={{ width: item.fill }} />
+                    </div>
+                    <p>{item.copy}</p>
+                  </article>
+                ))}
+              </div>
+
+              <a className="button button-dark proof-cta" href={whatsappOrder}>
+                Shop now <span>↗</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="image-belief-section" aria-label="Fresh milk visual proof">
+          <div>
+            <span>Glass bottle</span>
+            <strong>Premium daily milk, not packet thinking.</strong>
+          </div>
+          <div>
+            <span>Farm visible</span>
+            <strong>Real cowshed and milking process in view.</strong>
+          </div>
+          <div>
+            <span>Home routine</span>
+            <strong>Fresh milk made simple for Jamshedpur homes.</strong>
+          </div>
+        </section>
+
+        <section className="story-photo-section" aria-label="Farm image proof">
+          <figure>
+            <img src="/cowshed.jpeg" alt="Cows resting in the M'ma Organic Farm cowshed" />
+            <figcaption>
+              <span>Daily care</span>
+              <strong>Healthy cows, cleaner routine, visible source.</strong>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="/milking-station.jpeg" alt="M'ma Organic Farm milking station" />
+            <figcaption>
+              <span>Farm process</span>
+              <strong>The bottle starts here, not in a mystery supply chain.</strong>
+            </figcaption>
+          </figure>
+        </section>
+
+        <section className="quick-health-section section" aria-label="Fresh milk attributes">
+          <div className="section-heading quick-health-heading">
+            <p className="eyebrow">Good daily milk should feel obvious</p>
+            <h2>
+              Strong routine.
+              <br />
+              Cleaner bottle.
+            </h2>
+          </div>
+
+          <div className="quick-health-grid">
+            <article>
+              <span>01</span>
+              <h3>Calcium for bones</h3>
+              <p>Milk is a natural part of bone-supporting nutrition for growing children, parents and active homes.</p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Protein for strength</h3>
+              <p>A simple daily protein source for breakfast, tea, coffee, smoothies and household cooking.</p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Rich texture</h3>
+              <p>The thicker, more satisfying feel that makes the bottle memorable after the first pour.</p>
+            </article>
+            <article>
+              <span>04</span>
+              <h3>Freshness first</h3>
+              <p>Farm-led handling, clear pricing and direct home ordering keep the decision easy.</p>
+            </article>
           </div>
         </section>
 

@@ -27,21 +27,25 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /20 years operating/);
   assert.match(page, /500\+ families/);
   assert.match(page, /1,000 L\+/);
-  assert.match(page, /Comparison metrics/);
-  assert.match(page, /Source clarity/);
-  assert.match(page, /Bottle experience/);
+  assert.match(page, /Why people believe it/);
+  assert.match(page, /Bone-supporting calcium/);
+  assert.match(page, /Protein for daily strength/);
+  assert.match(page, /Glass bottle/);
+  assert.doesNotMatch(page, /Comparison metrics/);
   assert.match(page, /application\/ld\+json/);
   assert.match(page, /LocalBusiness/);
   assert.match(page, /Product/);
   assert.doesNotMatch(page, /login|password|database|checkout|cart/i);
 });
 
-test("styles comparison metrics responsively", async () => {
+test("styles visual proof sections responsively", async () => {
   const styles = await readFile(stylesUrl, "utf8");
 
-  assert.match(styles, /\.comparison-section/);
-  assert.match(styles, /\.comparison-table/);
-  assert.match(styles, /\.comparison-row/);
+  assert.match(styles, /\.proof-section/);
+  assert.match(styles, /\.proof-bars/);
+  assert.match(styles, /\.image-belief-section/);
+  assert.match(styles, /\.story-photo-section/);
+  assert.match(styles, /\.quick-health-grid/);
   assert.match(styles, /@media \(max-width: 980px\)/);
   assert.match(styles, /@media \(max-width: 640px\)/);
   assert.match(styles, /grid-template-columns:\s*1fr/);
