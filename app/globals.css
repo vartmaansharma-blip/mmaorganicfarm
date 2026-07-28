@@ -139,8 +139,9 @@ main {
   position: absolute;
   inset: 0 0 auto;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 22px 34px;
+  padding: 18px 28px 18px 34px;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -150,8 +151,68 @@ main {
   margin: 0;
 }
 
-.topbar a {
-  border-bottom: 1px solid var(--ink);
+.order-orbit {
+  position: relative;
+  --order-radius: -36px;
+  display: grid;
+  width: 92px;
+  height: 92px;
+  place-items: center;
+  border: 1px solid rgba(20, 20, 20, 0.38);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.44);
+  box-shadow: 0 16px 40px rgba(30, 24, 10, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.order-orbit:hover,
+.order-orbit:focus-visible {
+  transform: scale(1.04);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.order-orbit-text {
+  position: absolute;
+  inset: 0;
+  animation: order-orbit-spin 12s linear infinite;
+}
+
+.order-orbit:hover .order-orbit-text,
+.order-orbit:focus-visible .order-orbit-text {
+  animation-play-state: paused;
+}
+
+.order-orbit-text span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  transform-origin: center;
+}
+
+.order-orbit-core {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: white;
+  border-radius: 50%;
+  background: var(--ink);
+  font-size: 16px;
+}
+
+@keyframes order-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .hero {
@@ -917,12 +978,25 @@ footer {
 
   .topbar {
     top: 0;
-    padding: 16px 18px;
+    align-items: center;
+    padding: 12px 14px 0 18px;
     font-size: 10px;
   }
 
-  .topbar a {
-    display: none;
+  .order-orbit {
+    --order-radius: -26px;
+    width: 66px;
+    height: 66px;
+  }
+
+  .order-orbit-text span {
+    font-size: 6px;
+  }
+
+  .order-orbit-core {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
   }
 
   .hero {

@@ -23,6 +23,8 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
 
   assert.match(page, /Fresh farm milk, delivered daily in Jamshedpur/);
   assert.match(page, /hero-brand-lockup/);
+  assert.match(page, /order-orbit/);
+  assert.match(page, /ORDER NOW/);
   assert.match(page, /₹62 per litre/);
   assert.match(page, /919818804419/);
   assert.match(page, /20 years operating/);

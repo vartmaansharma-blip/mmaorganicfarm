@@ -4,6 +4,9 @@ const whatsappOrder =
 const whatsappStart =
   "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20to%20start%20fresh%20milk%20delivery%20to%20my%20home%20in%20Jamshedpur.";
 
+const orderLoopText = "ORDER NOW • FRESH MILK • ";
+const orderLoopLetters = Array.from(orderLoopText);
+
 const facts = [
   ["₹62", "per litre"],
   ["Glass", "bottle delivery"],
@@ -167,7 +170,25 @@ export default function Home() {
         <section className="hero" id="home">
           <header className="topbar">
             <p>Jamshedpur · Fresh from farm</p>
-            <a href="tel:+919818804419">Call +91 98188 04419</a>
+            <a
+              className="order-orbit"
+              href={whatsappOrder}
+              aria-label="Order fresh M'ma milk on WhatsApp"
+            >
+              <span className="order-orbit-text" aria-hidden="true">
+                {orderLoopLetters.map((letter, index) => (
+                  <span
+                    key={`${letter}-${index}`}
+                    style={{
+                      transform: `rotate(${index * (360 / orderLoopLetters.length)}deg) translateY(var(--order-radius, -36px))`,
+                    }}
+                  >
+                    {letter}
+                  </span>
+                ))}
+              </span>
+              <span className="order-orbit-core" aria-hidden="true">↗</span>
+            </a>
           </header>
 
           <div className="hero-copy">
