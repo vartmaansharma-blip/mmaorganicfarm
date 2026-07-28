@@ -46,76 +46,30 @@ const features = [
   },
 ];
 
-const productAttributes = [
+const benefitBars = [
   {
-    title: "Low fat",
-    copy: "A lighter everyday milk profile for families that want a cleaner routine.",
+    label: "Calcium",
+    title: "Bone-supporting nutrition",
+    copy: "A daily milk habit for growing children, parents and active homes.",
+    fill: "88%",
   },
   {
-    title: "Rich texture",
-    copy: "A satisfying bottle feel that works well for tea, coffee, cereals and daily use.",
+    label: "Protein",
+    title: "Everyday strength",
+    copy: "Useful in breakfast, tea, coffee, smoothies and home cooking.",
+    fill: "82%",
   },
   {
-    title: "Fresh from farm",
-    copy: "Dairy stays close to its source instead of feeling anonymous or mass-market.",
-  },
-  {
-    title: "Glass bottle",
-    copy: "A more premium delivery experience with a bottle customers can trust and recognize.",
-  },
-  {
-    title: "Handled with care",
-    copy: "Farm-led handling and delivery designed around freshness and consistency.",
-  },
-  {
-    title: "Directly home",
-    copy: "A simple order path through WhatsApp or call, made for Jamshedpur households.",
-  },
-];
-
-const proofBars = [
-  {
-    value: "20 yrs",
-    title: "Farm operating history",
-    copy: "A daily dairy routine built over two decades.",
+    label: "Texture",
+    title: "Rich bottle feel",
+    copy: "The satisfying pour that makes the milk memorable.",
     fill: "92%",
   },
   {
-    value: "500+",
-    title: "Families served",
-    copy: "Households already trusting the morning bottle.",
-    fill: "78%",
-  },
-  {
-    value: "1,000 L+",
-    title: "Milk produced daily",
-    copy: "Capacity for consistent fresh delivery.",
-    fill: "86%",
-  },
-  {
-    value: "₹62/L",
-    title: "Clear milk pricing",
-    copy: "Simple price before you call or message.",
-    fill: "66%",
-  },
-];
-
-const visualBenefits = [
-  {
-    title: "Bone-supporting calcium",
-    copy: "A daily milk habit for family nutrition.",
-  },
-  {
-    title: "Protein for daily strength",
-    copy: "Useful in tea, coffee, breakfast and routine meals.",
-  },
-  {
-    title: "Rich texture",
-    copy: "The creamy bottle feel customers notice first.",
-  },
-  {
-    title: "Fresh from farm",
-    copy: "Less anonymous, more visible, easier to trust.",
+    label: "Fresh",
+    title: "Farm-led delivery",
+    copy: "Milk that feels close to its source and easy to trust.",
+    fill: "96%",
   },
 ];
 
@@ -281,124 +235,33 @@ export default function Home() {
           </div>
         </div>
 
-        <section className="proof-section section" aria-label="M'ma milk confidence proof">
-          <div className="section-heading proof-heading">
-            <p className="eyebrow">Why people believe it</p>
+        <section className="benefit-bar-section section" aria-label="Fresh milk benefits">
+          <div className="section-heading benefit-bar-heading">
+            <p className="eyebrow">Good daily milk should feel obvious</p>
             <h2>
-              See the proof.
+              The daily
               <br />
-              Then taste the milk.
+              milk signal.
             </h2>
             <p>
-              Families do not read long tables. They trust what looks
-              fresh, feels honest and has simple numbers behind it.
+              A fast visual check for what families care about: nutrition,
+              texture, freshness and a bottle they can trust.
             </p>
           </div>
 
-          <div className="proof-layout">
-            <div className="proof-image">
-              <img src="/farm-bottle.png" alt="M'ma Farms glass milk bottle at the farm" />
-              <div className="proof-badge">
-                <strong>Fresh</strong>
-                <span>from farm</span>
-              </div>
-            </div>
-
-            <div className="proof-panel">
-              <div className="benefit-grid" aria-label="Milk benefits">
-                {visualBenefits.map((item) => (
-                  <article key={item.title}>
-                    <h3>{item.title}</h3>
-                    <p>{item.copy}</p>
-                  </article>
-                ))}
-              </div>
-
-              <div className="proof-bars" aria-label="M'ma Organic Farm proof bars">
-                {proofBars.map((item) => (
-                  <article key={item.title}>
-                    <div className="proof-bar-top">
-                      <strong>{item.value}</strong>
-                      <span>{item.title}</span>
-                    </div>
-                    <div className="proof-track" aria-hidden="true">
-                      <span style={{ width: item.fill }} />
-                    </div>
-                    <p>{item.copy}</p>
-                  </article>
-                ))}
-              </div>
-
-              <a className="button button-dark proof-cta" href={whatsappOrder}>
-                Shop now <span>↗</span>
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section className="image-belief-section" aria-label="Fresh milk visual proof">
-          <div>
-            <span>Glass bottle</span>
-            <strong>Premium daily milk, not packet thinking.</strong>
-          </div>
-          <div>
-            <span>Farm visible</span>
-            <strong>Real cowshed and milking process in view.</strong>
-          </div>
-          <div>
-            <span>Home routine</span>
-            <strong>Fresh milk made simple for Jamshedpur homes.</strong>
-          </div>
-        </section>
-
-        <section className="story-photo-section" aria-label="Farm image proof">
-          <figure>
-            <img src="/cowshed.jpeg" alt="Cows resting in the M'ma Organic Farm cowshed" />
-            <figcaption>
-              <span>Daily care</span>
-              <strong>Healthy cows, cleaner routine, visible source.</strong>
-            </figcaption>
-          </figure>
-          <figure>
-            <img src="/milking-station.jpeg" alt="M'ma Organic Farm milking station" />
-            <figcaption>
-              <span>Farm process</span>
-              <strong>The bottle starts here, not in a mystery supply chain.</strong>
-            </figcaption>
-          </figure>
-        </section>
-
-        <section className="quick-health-section section" aria-label="Fresh milk attributes">
-          <div className="section-heading quick-health-heading">
-            <p className="eyebrow">Good daily milk should feel obvious</p>
-            <h2>
-              Strong routine.
-              <br />
-              Cleaner bottle.
-            </h2>
-          </div>
-
-          <div className="quick-health-grid">
-            <article>
-              <span>01</span>
-              <h3>Calcium for bones</h3>
-              <p>Milk is a natural part of bone-supporting nutrition for growing children, parents and active homes.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>Protein for strength</h3>
-              <p>A simple daily protein source for breakfast, tea, coffee, smoothies and household cooking.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>Rich texture</h3>
-              <p>The thicker, more satisfying feel that makes the bottle memorable after the first pour.</p>
-            </article>
-            <article>
-              <span>04</span>
-              <h3>Freshness first</h3>
-              <p>Farm-led handling, clear pricing and direct home ordering keep the decision easy.</p>
-            </article>
+          <div className="benefit-bars">
+            {benefitBars.map((item) => (
+              <article key={item.label}>
+                <div>
+                  <span>{item.label}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </div>
+                <div className="benefit-track" aria-hidden="true">
+                  <span style={{ width: item.fill }} />
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
@@ -476,26 +339,6 @@ export default function Home() {
                 <span>daily milk production</span>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="attributes-section section" aria-label="Milk product attributes">
-          <div className="section-heading attributes-heading">
-            <p className="eyebrow">Product attributes</p>
-            <h2>
-              What makes the
-              <br />
-              bottle worth choosing.
-            </h2>
-          </div>
-
-          <div className="attributes-grid">
-            {productAttributes.map((item) => (
-              <article key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.copy}</p>
-              </article>
-            ))}
           </div>
         </section>
 
