@@ -32,7 +32,7 @@ const features = [
   {
     number: "01",
     title: "Fresh from farm",
-    copy: "Made for people who care where their everyday dairy comes from.",
+    copy: "Dairy that feels close to its source, not anonymous or mass-market.",
   },
   {
     number: "02",
@@ -46,30 +46,22 @@ const features = [
   },
 ];
 
-const benefitBars = [
+const officialPoints = [
   {
-    label: "Calcium",
-    title: "Bone-supporting nutrition",
-    copy: "A daily milk habit for growing children, parents and active homes.",
-    fill: "88%",
+    label: "Official ordering",
+    copy: "WhatsApp and call links go directly to M'ma Organic Farm.",
   },
   {
-    label: "Protein",
-    title: "Everyday strength",
-    copy: "Useful in breakfast, tea, coffee, smoothies and home cooking.",
-    fill: "82%",
+    label: "Current milk price",
+    copy: "Milk is listed clearly at ₹62 per litre.",
   },
   {
-    label: "Texture",
-    title: "Rich bottle feel",
-    copy: "The satisfying pour that makes the milk memorable.",
-    fill: "92%",
+    label: "Delivery area",
+    copy: "Built for fresh milk delivery to Jamshedpur homes.",
   },
   {
-    label: "Fresh",
-    title: "Farm-led delivery",
-    copy: "Milk that feels close to its source and easy to trust.",
-    fill: "96%",
+    label: "Simple direct order",
+    copy: "Message the farm first, then confirm your milk delivery personally.",
   },
 ];
 
@@ -183,8 +175,8 @@ export default function Home() {
               <img src="/mma-logo.png" alt="" aria-hidden="true" />
               <span>M&apos;ma Organic Farm</span>
             </div>
-            <p className="eyebrow">M&apos;ma Organic Farm · ₹62 per litre</p>
-            <h1>Fresh farm milk for Jamshedpur homes.</h1>
+            <p className="eyebrow">Official farm milk page · ₹62 per litre</p>
+            <h1>Fresh farm milk, delivered daily in Jamshedpur.</h1>
             <p className="hero-intro">
               Low fat, rich texture, fresh from farm and delivered directly home
               in a glass bottle. A cleaner daily milk routine from M&apos;ma
@@ -198,6 +190,10 @@ export default function Home() {
                 Explore the milk <span>↓</span>
               </a>
             </div>
+            <p className="hero-reassurance">
+              Direct WhatsApp ordering. No long form. Just the farm and
+              the bottle.
+            </p>
           </div>
 
           <a className="bottle-stage" href="#milk" aria-label="Explore M'ma farm fresh milk">
@@ -228,46 +224,16 @@ export default function Home() {
           ))}
         </section>
 
-        <div className="ticker" aria-hidden="true">
+        <div className="ticker" aria-label="M'ma Organic Farm ordering summary">
           <div>
             <span>
-              FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ 1,000 L+ DAILY ✦ GLASS BOTTLE ✦ ₹62 PER LITRE ✦
+              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ ORDER DIRECT ON WHATSAPP ✦
             </span>
             <span>
-              FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ 1,000 L+ DAILY ✦ GLASS BOTTLE ✦ ₹62 PER LITRE ✦
+              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ ORDER DIRECT ON WHATSAPP ✦
             </span>
           </div>
         </div>
-
-        <section className="benefit-bar-section section" aria-label="Fresh milk benefits">
-          <div className="section-heading benefit-bar-heading">
-            <p className="eyebrow">Good daily milk should feel obvious</p>
-            <h2>
-              The daily
-              <br />
-              milk signal.
-            </h2>
-            <p>
-              A fast visual check for what families care about: nutrition,
-              texture, freshness and a bottle they can trust.
-            </p>
-          </div>
-
-          <div className="benefit-bars">
-            {benefitBars.map((item) => (
-              <article key={item.label}>
-                <div>
-                  <span>{item.label}</span>
-                  <h3>{item.title}</h3>
-                  <p>{item.copy}</p>
-                </div>
-                <div className="benefit-track" aria-hidden="true">
-                  <span style={{ width: item.fill }} />
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
 
         <section className="milk-section section" id="milk">
           <div className="section-heading">
@@ -290,7 +256,7 @@ export default function Home() {
 
             <div className="milk-details">
               <p className="large-copy">
-                A better everyday bottle: farm-fresh milk, rich texture, fair
+                A better everyday bottle: farm-fresh milk, rich texture, clear
                 price, and a simple WhatsApp order path for your home.
               </p>
               <div className="feature-list">
@@ -326,8 +292,7 @@ export default function Home() {
             <p>
               The farm serves more than 500 families and produces over 1,000 L
               of milk each day. Its licensed and certification-led approach is
-              built around trust, consistency and a better daily bottle for the
-              people who depend on it.
+              built around trust, consistency and a better daily bottle.
             </p>
             <div className="story-metrics">
               <div>
@@ -343,6 +308,30 @@ export default function Home() {
                 <span>daily milk production</span>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="official-section section" aria-label="Official ordering details">
+          <div className="section-heading official-heading">
+            <p className="eyebrow">Official details</p>
+            <h2>
+              Clear enough
+              <br />
+              to order.
+            </h2>
+            <p>
+              A professional landing page should answer the basic buying
+              questions without making the customer search.
+            </p>
+          </div>
+
+          <div className="official-grid">
+            {officialPoints.map((item) => (
+              <article key={item.label}>
+                <h3>{item.label}</h3>
+                <p>{item.copy}</p>
+              </article>
+            ))}
           </div>
         </section>
 

@@ -238,6 +238,15 @@ h1 {
   line-height: 1.6;
 }
 
+.hero-reassurance {
+  max-width: 46ch;
+  margin: 18px 0 0;
+  color: rgba(20, 20, 20, 0.68);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
 .hero-actions,
 .closing-actions {
   display: flex;
@@ -477,16 +486,16 @@ h1 {
   font-size: clamp(48px, 6vw, 92px);
 }
 
-.benefit-bar-section {
+.official-section {
   background: var(--white);
 }
 
-.benefit-bar-heading {
+.official-heading {
   grid-template-columns: 0.7fr 1.5fr 1fr;
   align-items: start;
 }
 
-.benefit-bar-heading > p:last-child {
+.official-heading > p:last-child {
   max-width: 360px;
   margin: 0;
   color: #5d5a52;
@@ -494,53 +503,30 @@ h1 {
   line-height: 1.65;
 }
 
-.benefit-bars {
+.official-grid {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--ink);
 }
 
-.benefit-bars article {
-  display: grid;
-  grid-template-columns: minmax(260px, 0.8fr) minmax(260px, 1.2fr);
-  gap: clamp(20px, 4vw, 64px);
-  align-items: center;
-  padding: clamp(22px, 3vw, 38px);
-  border: 1px solid var(--line);
+.official-grid article {
+  min-height: 210px;
+  padding: clamp(24px, 3vw, 38px);
   background: #f8f7f1;
 }
 
-.benefit-bars span {
-  display: inline-flex;
-  margin-bottom: 14px;
-  color: #777;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.benefit-bars h3 {
+.official-grid h3 {
+  max-width: 10ch;
   margin: 0;
-  font-size: clamp(28px, 3.6vw, 54px);
-  line-height: 0.98;
+  font-size: clamp(25px, 2.6vw, 38px);
+  line-height: 1;
 }
 
-.benefit-bars p {
-  max-width: 38ch;
-  margin: 14px 0 0;
+.official-grid p {
+  margin: 24px 0 0;
   color: #5d5a52;
-  line-height: 1.6;
-}
-
-.benefit-track {
-  height: clamp(18px, 3vw, 34px);
-  overflow: hidden;
-  background: #ebe7db;
-}
-
-.benefit-track span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--yellow), #eb6b30, var(--green));
+  line-height: 1.58;
 }
 
 .milk-section {
@@ -631,12 +617,10 @@ h1 {
 
 .about-section {
   position: relative;
-  min-height: 720px;
+  min-height: 0;
   display: grid;
   place-items: center;
-  background:
-    linear-gradient(rgba(20, 20, 20, 0.28), rgba(20, 20, 20, 0.4)),
-    url("/cowshed.jpeg") center / cover;
+  background: var(--green);
 }
 
 .glass-story {
@@ -867,16 +851,13 @@ footer {
   .section-heading,
   .farm-heading,
   .confidence-strip,
-  .benefit-bar-heading {
+  .official-heading,
+  .official-grid {
     grid-template-columns: 1fr;
   }
 
-  .benefit-bar-heading > p:last-child {
+  .official-heading > p:last-child {
     max-width: 640px;
-  }
-
-  .benefit-bars article {
-    grid-template-columns: 1fr;
   }
 
   .milk-layout {
@@ -983,6 +964,10 @@ footer {
     line-height: 1.5;
   }
 
+  .hero-reassurance {
+    font-size: 12px;
+  }
+
   .hero-copy .eyebrow {
     margin-bottom: 13px;
   }
@@ -1057,16 +1042,13 @@ footer {
     margin-bottom: 36px;
   }
 
-  .benefit-bar-heading > p:last-child {
+  .official-heading > p:last-child {
     font-size: 14px;
   }
 
-  .benefit-bars article {
-    padding: 22px;
-  }
-
-  .benefit-track {
-    height: 18px;
+  .official-grid article {
+    min-height: auto;
+    padding: 24px 20px;
   }
 
   .section-heading h2,

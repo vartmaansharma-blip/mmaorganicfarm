@@ -21,18 +21,19 @@ test("defines search and social metadata for fresh milk delivery", async () => {
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
 
-  assert.match(page, /Fresh farm milk for Jamshedpur homes/);
+  assert.match(page, /Fresh farm milk, delivered daily in Jamshedpur/);
   assert.match(page, /hero-brand-lockup/);
   assert.match(page, /₹62 per litre/);
   assert.match(page, /919818804419/);
   assert.match(page, /20 years operating/);
   assert.match(page, /500\+ families/);
   assert.match(page, /1,000 L\+/);
-  assert.match(page, /The daily/);
-  assert.match(page, /Bone-supporting nutrition/);
-  assert.match(page, /Everyday strength/);
+  assert.match(page, /Official ordering/);
+  assert.match(page, /Current milk price/);
+  assert.match(page, /Delivery area/);
   assert.match(page, /Glass bottle/);
   assert.doesNotMatch(page, /Comparison metrics/);
+  assert.doesNotMatch(page, /Bone-supporting nutrition/);
   assert.doesNotMatch(page, /Why people believe it/);
   assert.doesNotMatch(page, /not in a mystery supply chain/);
   assert.match(page, /application\/ld\+json/);
@@ -41,12 +42,14 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.doesNotMatch(page, /login|password|database|checkout|cart/i);
 });
 
-test("styles the compact benefit bar responsively", async () => {
+test("styles the official details section responsively", async () => {
   const styles = await readFile(stylesUrl, "utf8");
 
-  assert.match(styles, /\.benefit-bar-section/);
-  assert.match(styles, /\.benefit-bars/);
-  assert.match(styles, /\.benefit-track/);
+  assert.match(styles, /\.official-section/);
+  assert.match(styles, /\.official-grid/);
+  assert.match(styles, /\.hero-reassurance/);
+  assert.doesNotMatch(styles, /\.benefit-bar-section/);
+  assert.doesNotMatch(styles, /\.benefit-track/);
   assert.doesNotMatch(styles, /\.proof-section/);
   assert.doesNotMatch(styles, /\.image-belief-section/);
   assert.doesNotMatch(styles, /\.story-photo-section/);
