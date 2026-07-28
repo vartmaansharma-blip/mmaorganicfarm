@@ -179,6 +179,10 @@ export default function Home() {
           </header>
 
           <div className="hero-copy">
+            <div className="hero-brand-lockup" aria-label="M'ma Organic Farm">
+              <img src="/mma-logo.png" alt="" aria-hidden="true" />
+              <span>M&apos;ma Organic Farm</span>
+            </div>
             <p className="eyebrow">M&apos;ma Organic Farm · ₹62 per litre</p>
             <h1>Fresh farm milk for Jamshedpur homes.</h1>
             <p className="hero-intro">

@@ -22,6 +22,7 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   const page = await readFile(pageUrl, "utf8");
 
   assert.match(page, /Fresh farm milk for Jamshedpur homes/);
+  assert.match(page, /hero-brand-lockup/);
   assert.match(page, /₹62 per litre/);
   assert.match(page, /919818804419/);
   assert.match(page, /20 years operating/);
