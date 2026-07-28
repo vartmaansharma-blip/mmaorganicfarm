@@ -73,9 +73,98 @@ const productAttributes = [
   },
 ];
 
+const comparisonMetrics = [
+  {
+    metric: "Source clarity",
+    mma: "Fresh farm milk delivered to Jamshedpur homes",
+    compare: "Ask whether the milk source is visible and easy to understand.",
+  },
+  {
+    metric: "Farm experience",
+    mma: "20 years operating with daily dairy care",
+    compare: "Compare how long the supplier has handled fresh milk regularly.",
+  },
+  {
+    metric: "Family trust",
+    mma: "500+ families served through a local delivery routine",
+    compare: "Look for real household adoption, not only broad advertising.",
+  },
+  {
+    metric: "Daily capacity",
+    mma: "1,000 L+ milk produced every day",
+    compare: "Check whether the supply can stay consistent as demand grows.",
+  },
+  {
+    metric: "Price clarity",
+    mma: "₹62 per litre shown upfront",
+    compare: "Prefer clear pricing before you message, call, or subscribe.",
+  },
+  {
+    metric: "Bottle experience",
+    mma: "Glass bottle delivery with a premium daily feel",
+    compare: "Compare the bottle or packet experience your family receives.",
+  },
+];
+
+const siteUrl = "https://mmaorganicfarm-tvn8.vercel.app";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "@id": `${siteUrl}/#business`,
+      name: "M'ma Organic Farm",
+      url: siteUrl,
+      telephone: "+919818804419",
+      image: `${siteUrl}/hero-milk.png`,
+      priceRange: "₹62 per litre",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Jamshedpur",
+        addressCountry: "IN",
+      },
+      areaServed: {
+        "@type": "City",
+        name: "Jamshedpur",
+      },
+      description:
+        "M'ma Organic Farm delivers fresh farm milk to Jamshedpur homes in glass bottles.",
+    },
+    {
+      "@type": "Product",
+      "@id": `${siteUrl}/#fresh-farm-milk`,
+      name: "Fresh Farm Milk",
+      brand: {
+        "@type": "Brand",
+        name: "M'ma Organic Farm",
+      },
+      image: `${siteUrl}/hero-milk.png`,
+      description:
+        "Fresh farm milk for Jamshedpur homes, offered at ₹62 per litre with glass bottle delivery.",
+      offers: {
+        "@type": "Offer",
+        price: "62",
+        priceCurrency: "INR",
+        availability: "https://schema.org/InStock",
+        url: `${siteUrl}/#milk`,
+        eligibleRegion: {
+          "@type": "City",
+          name: "Jamshedpur",
+        },
+      },
+    },
+  ],
+};
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -123,8 +212,8 @@ export default function Home() {
           </header>
 
           <div className="hero-copy">
-            <p className="eyebrow">Fresh farm milk for Jamshedpur homes.</p>
-            <h1>Milk your family can feel good about.</h1>
+            <p className="eyebrow">M&apos;ma Organic Farm · ₹62 per litre</p>
+            <h1>Fresh farm milk for Jamshedpur homes.</h1>
             <p className="hero-intro">
               Low fat, rich texture, fresh from farm and delivered directly home
               in a glass bottle. A cleaner daily milk routine from M&apos;ma
@@ -171,13 +260,52 @@ export default function Home() {
         <div className="ticker" aria-hidden="true">
           <div>
             <span>
-              FRESH FROM FARM ✦ Jamshedpur homes ✦ RICH TEXTURE ✦ GLASS BOTTLE ✦ SHOP ON WHATSAPP ✦ ₹62 PER LITRE ✦
+              FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ 1,000 L+ DAILY ✦ GLASS BOTTLE ✦ ₹62 PER LITRE ✦
             </span>
             <span>
-              FRESH FROM FARM ✦ Jamshedpur homes ✦ RICH TEXTURE ✦ GLASS BOTTLE ✦ SHOP ON WHATSAPP ✦ ₹62 PER LITRE ✦
+              FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ 1,000 L+ DAILY ✦ GLASS BOTTLE ✦ ₹62 PER LITRE ✦
             </span>
           </div>
         </div>
+
+        <section className="comparison-section section" aria-label="Milk comparison metrics">
+          <div className="section-heading comparison-heading">
+            <p className="eyebrow">Comparison metrics</p>
+            <h2>
+              Compare milk
+              <br />
+              before you switch.
+            </h2>
+            <p>
+              These are the buying signals families should check before choosing
+              daily milk: source, consistency, price, trust and bottle quality.
+            </p>
+          </div>
+
+          <div className="comparison-table">
+            <div className="comparison-row comparison-head" aria-hidden="true">
+              <span>Metric</span>
+              <span>M&apos;ma Organic Farm</span>
+              <span>What to compare</span>
+            </div>
+            {comparisonMetrics.map((item) => (
+              <article className="comparison-row" key={item.metric}>
+                <div>
+                  <span className="comparison-label">Metric</span>
+                  <strong>{item.metric}</strong>
+                </div>
+                <div>
+                  <span className="comparison-label">M&apos;ma Organic Farm</span>
+                  <p>{item.mma}</p>
+                </div>
+                <div>
+                  <span className="comparison-label">What to compare</span>
+                  <p>{item.compare}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <section className="milk-section section" id="milk">
           <div className="section-heading">

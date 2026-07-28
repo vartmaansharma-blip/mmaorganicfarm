@@ -454,6 +454,70 @@ h1 {
   font-size: clamp(48px, 6vw, 92px);
 }
 
+.comparison-section {
+  background: var(--white);
+}
+
+.comparison-heading {
+  grid-template-columns: 0.7fr 1.5fr 1fr;
+  align-items: start;
+}
+
+.comparison-heading > p:last-child {
+  max-width: 360px;
+  margin: 0;
+  color: #5d5a52;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.comparison-table {
+  display: grid;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  background: #f8f7f1;
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1fr) minmax(220px, 1.1fr);
+}
+
+.comparison-row > * {
+  min-width: 0;
+  padding: clamp(18px, 2.5vw, 30px);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.comparison-head {
+  color: white;
+  background: var(--ink);
+}
+
+.comparison-head span {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.comparison-row strong {
+  font-size: clamp(22px, 2.3vw, 32px);
+  line-height: 1.05;
+}
+
+.comparison-row p {
+  max-width: 38ch;
+  margin: 0;
+  color: #5d5a52;
+  line-height: 1.6;
+}
+
+.comparison-label {
+  display: none;
+}
+
 .milk-section {
   background: var(--paper);
 }
@@ -815,8 +879,34 @@ footer {
   .section-heading,
   .farm-heading,
   .confidence-strip,
+  .comparison-heading,
   .attributes-grid {
     grid-template-columns: 1fr;
+  }
+
+  .comparison-heading > p:last-child {
+    max-width: 640px;
+  }
+
+  .comparison-row {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-head {
+    display: none;
+  }
+
+  .comparison-row > * {
+    padding: 18px 22px;
+  }
+
+  .comparison-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #76736c;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
   }
 
   .milk-layout {
@@ -981,6 +1071,29 @@ footer {
   .section-heading {
     gap: 10px;
     margin-bottom: 36px;
+  }
+
+  .comparison-heading > p:last-child {
+    font-size: 14px;
+  }
+
+  .comparison-table {
+    border-left: 0;
+    gap: 10px;
+    background: transparent;
+  }
+
+  .comparison-row {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .comparison-row > * {
+    border-right: 0;
+  }
+
+  .comparison-row strong {
+    font-size: 24px;
   }
 
   .section-heading h2,
