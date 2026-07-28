@@ -73,13 +73,10 @@ a {
 }
 
 .brand-mark {
-  flex: 0 0 48px;
-  width: 48px;
-  height: 40px;
-  border: 1px solid rgba(20, 20, 20, 0.12);
-  border-radius: 4px;
-  background: white url("/mma-logo.png") center / contain no-repeat;
-  box-shadow: 0 3px 10px rgba(20, 20, 20, 0.08);
+  flex: 0 0 58px;
+  width: 58px;
+  height: 48px;
+  background: transparent url("/mma-logo.png") center / contain no-repeat;
 }
 
 .brand-copy {
