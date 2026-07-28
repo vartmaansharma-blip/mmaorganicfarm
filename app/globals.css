@@ -486,6 +486,25 @@ h1 {
   }
 }
 
+@keyframes bottle-mobile-turn {
+  0%,
+  100% {
+    transform: rotateY(-20deg) rotateZ(-2deg) translateY(0) scale(0.98);
+  }
+  45% {
+    transform: rotateY(22deg) rotateZ(2deg) translateY(-14px) scale(1.03);
+  }
+  50% {
+    transform: rotateY(24deg) rotateZ(2deg) translateY(-14px) scale(1.03);
+  }
+}
+
+@keyframes bottle-orbit-mobile {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .hero-facts {
   position: relative;
   grid-column: 1;
@@ -1125,11 +1144,21 @@ footer {
     min-height: 290px;
     margin: 6px 0 0;
     align-self: stretch;
+    perspective: 900px;
   }
 
   .bottle-stage img {
     width: min(68%, 320px);
     height: 330px;
+    animation: bottle-mobile-turn 5.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  }
+
+  .orbit-one {
+    animation: bottle-orbit-mobile 9s linear infinite;
+  }
+
+  .orbit-two {
+    animation: bottle-orbit-mobile 12s linear infinite reverse;
   }
 
   .bottle-note {
