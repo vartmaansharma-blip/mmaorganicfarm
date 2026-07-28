@@ -489,13 +489,16 @@ h1 {
 @keyframes bottle-mobile-turn {
   0%,
   100% {
-    transform: rotateY(-20deg) rotateZ(-2deg) translateY(0) scale(0.98);
+    transform: rotate(-9deg) translateY(0) scale(0.96);
   }
-  45% {
-    transform: rotateY(22deg) rotateZ(2deg) translateY(-14px) scale(1.03);
+  25% {
+    transform: rotate(0deg) translateY(-10px) scale(1.01);
   }
   50% {
-    transform: rotateY(24deg) rotateZ(2deg) translateY(-14px) scale(1.03);
+    transform: rotate(9deg) translateY(-18px) scale(1.05);
+  }
+  75% {
+    transform: rotate(0deg) translateY(-10px) scale(1.01);
   }
 }
 
@@ -1150,7 +1153,8 @@ footer {
   .bottle-stage img {
     width: min(68%, 320px);
     height: 330px;
-    animation: bottle-mobile-turn 5.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    animation: bottle-mobile-turn 3.4s ease-in-out infinite;
+    transform-origin: 50% 62%;
   }
 
   .orbit-one {
