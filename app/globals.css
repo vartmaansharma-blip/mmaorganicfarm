@@ -138,6 +138,7 @@ main {
 .topbar {
   position: absolute;
   inset: 0 0 auto;
+  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -154,6 +155,7 @@ main {
 .order-orbit {
   position: relative;
   --order-radius: -36px;
+  isolation: isolate;
   display: grid;
   width: 92px;
   height: 92px;
@@ -165,6 +167,28 @@ main {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transition: transform 180ms ease, background 180ms ease;
+}
+
+.order-orbit::before,
+.order-orbit::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.order-orbit::before {
+  inset: -5px;
+  z-index: -1;
+  background: conic-gradient(from 0deg, var(--ink), transparent 28%, var(--green), transparent 62%, var(--ink));
+  animation: order-ring-spin 4.5s linear infinite;
+  opacity: 0.48;
+}
+
+.order-orbit::after {
+  inset: -10px;
+  border: 1px solid rgba(20, 20, 20, 0.2);
+  animation: order-ring-pulse 2.6s ease-in-out infinite;
 }
 
 .order-orbit:hover,
@@ -180,7 +204,11 @@ main {
 }
 
 .order-orbit:hover .order-orbit-text,
-.order-orbit:focus-visible .order-orbit-text {
+.order-orbit:focus-visible .order-orbit-text,
+.order-orbit:hover::before,
+.order-orbit:focus-visible::before,
+.order-orbit:hover::after,
+.order-orbit:focus-visible::after {
   animation-play-state: paused;
 }
 
@@ -212,6 +240,24 @@ main {
 @keyframes order-orbit-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes order-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes order-ring-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.48;
+    transform: scale(1.06);
   }
 }
 
@@ -985,8 +1031,16 @@ footer {
 
   .order-orbit {
     --order-radius: -26px;
-    width: 66px;
-    height: 66px;
+    width: 70px;
+    height: 70px;
+  }
+
+  .order-orbit::before {
+    inset: -4px;
+  }
+
+  .order-orbit::after {
+    inset: -8px;
   }
 
   .order-orbit-text span {

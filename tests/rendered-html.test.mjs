@@ -50,6 +50,8 @@ test("styles the official details section responsively", async () => {
   assert.match(styles, /\.official-section/);
   assert.match(styles, /\.official-grid/);
   assert.match(styles, /\.hero-reassurance/);
+  assert.match(styles, /order-ring-spin/);
+  assert.match(styles, /order-ring-pulse/);
   assert.doesNotMatch(styles, /\.benefit-bar-section/);
   assert.doesNotMatch(styles, /\.benefit-track/);
   assert.doesNotMatch(styles, /\.proof-section/);
