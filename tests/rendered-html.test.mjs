@@ -54,6 +54,8 @@ test("styles the official details section responsively", async () => {
   assert.match(styles, /order-ring-pulse/);
   assert.match(styles, /bottle-mobile-turn/);
   assert.match(styles, /bottle-orbit-mobile/);
+  assert.match(styles, /brand-lockup-float/);
+  assert.match(styles, /width:\s*clamp\(190px, 18vw, 270px\)/);
   assert.doesNotMatch(styles, /\.benefit-bar-section/);
   assert.doesNotMatch(styles, /\.benefit-track/);
   assert.doesNotMatch(styles, /\.proof-section/);
