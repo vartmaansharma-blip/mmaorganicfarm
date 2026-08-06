@@ -7,6 +7,7 @@
   --green: #274839;
   --line: rgba(20, 20, 20, 0.15);
   --sidebar: 224px;
+  --logo-script: "Brush Script MT", "Segoe Script", "Apple Chancery", cursive;
 }
 
 * {
@@ -67,14 +68,16 @@ a {
 }
 
 .brand {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .brand-mark {
-  width: 140px;
-  height: 112px;
+  flex: 0 0 78px;
+  width: 78px;
+  height: 62px;
   background: transparent url("/mma-logo.png") center / contain no-repeat;
   filter: drop-shadow(0 14px 18px rgba(20, 20, 20, 0.12));
   transition: transform 260ms ease, filter 260ms ease;
@@ -87,16 +90,27 @@ a {
 }
 
 .brand-copy {
+  display: grid;
+  gap: 2px;
   min-width: 0;
-  line-height: 1.05;
+  line-height: 1;
 }
 
 .brand-copy strong {
   color: var(--green);
-  font-size: 10px;
+  font-family: var(--logo-script);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 0.82;
+}
+
+.brand-copy small {
+  color: var(--ink);
+  font-size: 9px;
   font-weight: 900;
-  letter-spacing: 0.14em;
-  line-height: 1.2;
+  letter-spacing: 0.12em;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -304,28 +318,49 @@ main {
 }
 
 .hero-brand-lockup {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
   width: fit-content;
-  margin: 0 0 34px -12px;
+  max-width: 100%;
+  margin: 0 0 34px -6px;
+  padding: 10px 18px 10px 10px;
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 22px 60px rgba(30, 24, 10, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   animation: brand-lockup-float 6s ease-in-out infinite;
   transform-origin: 45% 60%;
 }
 
 .hero-brand-lockup img {
-  width: clamp(190px, 18vw, 270px);
+  width: clamp(122px, 11vw, 168px);
+  flex: 0 0 auto;
   height: auto;
-  filter: drop-shadow(0 22px 24px rgba(30, 24, 10, 0.16));
+  filter: drop-shadow(0 16px 18px rgba(30, 24, 10, 0.14));
   transition: filter 260ms ease, transform 260ms ease;
 }
 
-.hero-brand-lockup span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+.hero-brand-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hero-brand-copy strong {
+  font-family: var(--logo-script);
+  font-size: clamp(38px, 4vw, 58px);
+  font-weight: 700;
+  line-height: 0.82;
+}
+
+.hero-brand-copy small {
+  font-size: clamp(10px, 1vw, 13px);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .hero-brand-lockup:hover img {
@@ -905,14 +940,19 @@ footer {
 }
 
 .footer-brand .brand-mark {
+  flex-basis: 74px;
   width: 74px;
-  height: 62px;
+  height: 58px;
   filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.28));
 }
 
 .footer-brand .brand-copy strong {
   color: white;
-  font-size: 10px;
+  font-size: 31px;
+}
+
+.footer-brand .brand-copy small {
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .whatsapp-float {
@@ -973,19 +1013,23 @@ footer {
   }
 
   .sidebar > .brand {
-    display: flex;
-    align-items: center;
     gap: 8px;
   }
 
   .sidebar > .brand .brand-mark {
-    width: 58px;
-    height: 44px;
+    flex-basis: 52px;
+    width: 52px;
+    height: 42px;
     filter: none;
   }
 
   .sidebar > .brand .brand-copy strong {
-    font-size: 9px;
+    font-size: 24px;
+  }
+
+  .sidebar > .brand .brand-copy small {
+    font-size: 7px;
+    letter-spacing: 0.09em;
   }
 
   .nav-link {
@@ -1143,11 +1187,22 @@ footer {
   }
 
   .hero-brand-lockup {
-    margin: 0 0 24px -6px;
+    gap: 10px;
+    margin: 0 0 24px -4px;
+    padding: 8px 11px 8px 7px;
   }
 
   .hero-brand-lockup img {
-    width: 156px;
+    width: 92px;
+  }
+
+  .hero-brand-copy strong {
+    font-size: 34px;
+  }
+
+  .hero-brand-copy small {
+    font-size: 8px;
+    letter-spacing: 0.1em;
   }
 
   h1 {
