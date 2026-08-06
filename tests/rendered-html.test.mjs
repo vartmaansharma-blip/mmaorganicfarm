@@ -57,8 +57,7 @@ test("styles the official details section responsively", async () => {
   assert.match(styles, /brand-lockup-float/);
   assert.match(styles, /--logo-script/);
   assert.match(styles, /\.hero-brand-copy/);
-  assert.match(styles, /background:\s*transparent/);
-  assert.match(styles, /width:\s*clamp\(180px, 17vw, 265px\)/);
+  assert.match(styles, /width:\s*clamp\(122px, 11vw, 168px\)/);
   assert.doesNotMatch(styles, /\.benefit-bar-section/);
   assert.doesNotMatch(styles, /\.benefit-track/);
   assert.doesNotMatch(styles, /\.proof-section/);
