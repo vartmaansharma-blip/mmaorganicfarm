@@ -135,8 +135,7 @@ export default function Home() {
         <a className="brand" href="#home" aria-label="M'ma Organic Farm home">
           <span className="brand-mark" aria-hidden="true" />
           <span className="brand-copy">
-            <strong>M&apos;ma</strong>
-            <small>Organic Farm</small>
+            <strong>M&apos;ma Organic Farm</strong>
           </span>
         </a>
 
@@ -195,10 +194,7 @@ export default function Home() {
           <div className="hero-copy">
             <div className="hero-brand-lockup" aria-label="M'ma Organic Farm">
               <img src="/mma-logo.png" alt="" aria-hidden="true" />
-              <span className="hero-brand-copy">
-                <strong>M&apos;ma</strong>
-                <small>Organic Farm</small>
-              </span>
+              <span>M&apos;ma Organic Farm</span>
             </div>
             <p className="eyebrow">Official farm milk page · ₹62 per litre</p>
             <h1>Fresh farm milk, delivered daily in Jamshedpur.</h1>
@@ -409,8 +405,7 @@ export default function Home() {
           <a className="brand footer-brand" href="#home">
             <span className="brand-mark" aria-hidden="true" />
             <span className="brand-copy">
-              <strong>M&apos;ma</strong>
-              <small>Organic Farm</small>
+              <strong>M&apos;ma Organic Farm</strong>
             </span>
           </a>
           <p>Fresh from farm · Jamshedpur</p>
