@@ -571,6 +571,178 @@ h1 {
   line-height: 1.55;
 }
 
+.request-section {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.36)),
+    var(--paper);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.request-heading {
+  grid-template-columns: 0.7fr 1.45fr 1fr;
+  align-items: start;
+}
+
+.request-heading > p:last-child {
+  max-width: 390px;
+  margin: 0;
+  color: #5d5a52;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.request-card {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  box-shadow: 0 28px 70px rgba(30, 24, 10, 0.12);
+}
+
+.request-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--ink);
+}
+
+.request-steps span {
+  min-height: 74px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: #f8f7f1;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.request-empty,
+.request-auth,
+.request-form {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.52)),
+    var(--paper);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.request-empty,
+.request-auth {
+  padding: clamp(28px, 5vw, 64px);
+}
+
+.request-empty h3,
+.request-auth h3 {
+  max-width: 520px;
+  margin: 0;
+  font-size: clamp(34px, 5vw, 68px);
+  line-height: 0.96;
+}
+
+.request-empty p,
+.request-auth p {
+  max-width: 500px;
+  margin: 22px 0 30px;
+  color: #5d5a52;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.request-form {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.9fr) minmax(220px, 1fr) minmax(260px, 1.25fr);
+  gap: 18px;
+  align-items: end;
+  padding: clamp(22px, 4vw, 46px);
+}
+
+.profile-preview {
+  min-height: 100%;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.profile-preview span,
+.profile-preview small,
+.request-form label {
+  color: #5d5a52;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.profile-preview strong {
+  color: var(--ink);
+  font-size: clamp(22px, 2.8vw, 34px);
+  line-height: 1;
+  text-transform: none;
+}
+
+.profile-preview small {
+  text-transform: none;
+  word-break: break-word;
+}
+
+.request-form label {
+  display: grid;
+  gap: 10px;
+}
+
+.request-form input,
+.request-form textarea {
+  width: 100%;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  padding: 15px 16px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+
+.request-form input:focus,
+.request-form textarea:focus {
+  box-shadow: 0 0 0 3px rgba(244, 200, 74, 0.45);
+}
+
+.request-form textarea {
+  resize: vertical;
+}
+
+.request-error,
+.request-success {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.request-error {
+  color: #73240f;
+  background: #ffe3d7;
+}
+
+.request-success {
+  color: #21472e;
+  background: #e7f3df;
+}
+
+.request-form .button {
+  justify-self: start;
+}
+
 .ticker {
   width: 100%;
   padding: 18px 0;
@@ -981,12 +1153,18 @@ footer {
   .farm-heading,
   .confidence-strip,
   .official-heading,
-  .official-grid {
+  .official-grid,
+  .request-heading {
     grid-template-columns: 1fr;
   }
 
-  .official-heading > p:last-child {
+  .official-heading > p:last-child,
+  .request-heading > p:last-child {
     max-width: 640px;
+  }
+
+  .request-form {
+    grid-template-columns: 1fr;
   }
 
   .milk-layout {
@@ -1205,6 +1383,21 @@ footer {
 
   .official-heading > p:last-child {
     font-size: 14px;
+  }
+
+  .request-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .request-steps span {
+    min-height: 58px;
+    padding: 14px;
+  }
+
+  .request-empty,
+  .request-auth,
+  .request-form {
+    padding: 22px;
   }
 
   .official-grid article {

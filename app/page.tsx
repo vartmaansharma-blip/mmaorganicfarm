@@ -1,5 +1,7 @@
+import DeliveryRequest from "./DeliveryRequest";
+
 const whatsappOrder =
-  "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20to%20order%20fresh%20milk%20for%20my%20home%20in%20Jamshedpur.";
+  "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20to%20ask%20about%20fresh%20milk%20delivery%20for%20my%20home%20in%20Jamshedpur.";
 
 const whatsappStart =
   "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20to%20start%20fresh%20milk%20delivery%20to%20my%20home%20in%20Jamshedpur.";
@@ -44,15 +46,15 @@ const features = [
   },
   {
     number: "03",
-    title: "Easy first order",
-    copy: "No account needed on the landing page. Start through WhatsApp or call.",
+    title: "Digital request first",
+    copy: "Start with Google, then share only your phone number and address.",
   },
 ];
 
 const officialPoints = [
   {
-    label: "Official ordering",
-    copy: "WhatsApp and call links go directly to M'ma Organic Farm.",
+    label: "Official request",
+    copy: "The website collects the first delivery request before planning starts.",
   },
   {
     label: "Current milk price",
@@ -63,8 +65,8 @@ const officialPoints = [
     copy: "Built for fresh milk delivery to Jamshedpur homes.",
   },
   {
-    label: "Simple direct order",
-    copy: "Message the farm first, then confirm your milk delivery personally.",
+    label: "WhatsApp support",
+    copy: "WhatsApp remains available if someone prefers to chat first.",
   },
 ];
 
@@ -160,8 +162,8 @@ export default function Home() {
             <br />
             Jamshedpur homes.
           </p>
-          <a className="button button-dark sidebar-cta" href={whatsappOrder}>
-            Shop now <span>↗</span>
+          <a className="button button-dark sidebar-cta" href="#delivery-request">
+            Request delivery <span>↗</span>
           </a>
         </div>
       </aside>
@@ -172,8 +174,8 @@ export default function Home() {
             <p>Jamshedpur · Fresh from farm</p>
             <a
               className="order-orbit"
-              href={whatsappOrder}
-              aria-label="Order fresh M'ma milk on WhatsApp"
+              href="#delivery-request"
+              aria-label="Request fresh M'ma milk delivery"
             >
               <span className="order-orbit-text" aria-hidden="true">
                 {orderLoopLetters.map((letter, index) => (
@@ -204,16 +206,15 @@ export default function Home() {
               Organic Farm.
             </p>
             <div className="hero-actions">
-              <a className="button button-dark" href={whatsappOrder}>
-                Shop now <span>↗</span>
+              <a className="button button-dark" href="#delivery-request">
+                Request fresh milk <span>↗</span>
               </a>
               <a className="button button-light" href="#milk">
                 Explore the milk <span>↓</span>
               </a>
             </div>
             <p className="hero-reassurance">
-              Direct WhatsApp ordering. No long form. Just the farm and
-              the bottle.
+              Google gets name and email. You add phone and address only.
             </p>
           </div>
 
@@ -245,13 +246,15 @@ export default function Home() {
           ))}
         </section>
 
+        <DeliveryRequest />
+
         <div className="ticker" aria-label="M'ma Organic Farm ordering summary">
           <div>
             <span>
-              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ ORDER DIRECT ON WHATSAPP ✦
+              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ REQUEST DELIVERY ONLINE ✦
             </span>
             <span>
-              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ ORDER DIRECT ON WHATSAPP ✦
+              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ REQUEST DELIVERY ONLINE ✦
             </span>
           </div>
         </div>
@@ -278,7 +281,7 @@ export default function Home() {
             <div className="milk-details">
               <p className="large-copy">
                 A better everyday bottle: farm-fresh milk, rich texture, clear
-                price, and a simple WhatsApp order path for your home.
+                price, and a simple digital request path for your home.
               </p>
               <div className="feature-list">
                 {features.map((item) => (
@@ -289,8 +292,8 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <a className="button button-yellow" href={whatsappOrder}>
-                Order milk on WhatsApp <span>↗</span>
+              <a className="button button-yellow" href="#delivery-request">
+                Request fresh milk <span>↗</span>
               </a>
             </div>
           </div>
@@ -338,10 +341,10 @@ export default function Home() {
             <h2>
               Clear enough
               <br />
-              to order.
+              to request.
             </h2>
             <p>
-              A professional landing page should answer the basic buying
+              A professional landing page should answer the basic request
               questions without making the customer search.
             </p>
           </div>
@@ -392,11 +395,11 @@ export default function Home() {
           </h2>
           <p>Fresh from farm. Glass bottle. ₹62 per litre. Jamshedpur homes.</p>
           <div className="closing-actions">
-            <a className="button button-dark" href={whatsappStart}>
-              Shop now on WhatsApp <span>↗</span>
+            <a className="button button-dark" href="#delivery-request">
+              Request fresh milk <span>↗</span>
             </a>
-            <a className="button button-light" href="tel:+919818804419">
-              Call to order <span>↗</span>
+            <a className="button button-light" href={whatsappStart}>
+              Chat on WhatsApp <span>↗</span>
             </a>
           </div>
         </section>
@@ -419,7 +422,7 @@ export default function Home() {
         aria-label="Chat with M'ma Organic Farm on WhatsApp"
       >
         <img src="/whatsapp.svg" alt="" aria-hidden="true" />
-        <small>Order milk</small>
+        <small>Chat</small>
       </a>
     </>
   );

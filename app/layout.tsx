@@ -4,7 +4,7 @@ import "./globals.css";
 const siteUrl = "https://mmaorganicfarm-tvn8.vercel.app";
 const siteTitle = "M'ma Organic Farm | Fresh Farm Milk Delivery in Jamshedpur";
 const siteDescription =
-  "Order fresh farm milk in Jamshedpur from M'ma Organic Farm. ₹62 per litre, glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
+  "Request fresh farm milk delivery in Jamshedpur from M'ma Organic Farm. ₹62 per litre, glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
