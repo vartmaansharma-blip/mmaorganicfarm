@@ -5,6 +5,9 @@ import test from "node:test";
 const pageUrl = new URL("../app/page.tsx", import.meta.url);
 const layoutUrl = new URL("../app/layout.tsx", import.meta.url);
 const stylesUrl = new URL("../app/globals.css", import.meta.url);
+const signInUrl = new URL("../app/sign-in/page.tsx", import.meta.url);
+const authActionsUrl = new URL("../app/sign-in/actions.ts", import.meta.url);
+const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -41,7 +44,28 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /application\/ld\+json/);
   assert.match(page, /LocalBusiness/);
   assert.match(page, /Product/);
-  assert.doesNotMatch(page, /login|password|database|checkout|cart/i);
+  assert.match(page, /href="\/sign-in"/);
+});
+
+test("provides Google and email account creation without delivery friction", async () => {
+  const [signIn, actions, schema] = await Promise.all([
+    readFile(signInUrl, "utf8"),
+    readFile(authActionsUrl, "utf8"),
+    readFile(profileSchemaUrl, "utf8"),
+  ]);
+
+  assert.match(signIn, /Continue with Google/);
+  assert.match(signIn, /google-g\.svg/);
+  assert.match(signIn, /Create your account/);
+  assert.match(signIn, /Delivery details come later/);
+  assert.doesNotMatch(signIn, /quantity|delivery time|payment method/i);
+  assert.match(actions, /signInWithOAuth/);
+  assert.match(actions, /provider: "google"/);
+  assert.match(actions, /signUpWithEmail/);
+  assert.match(actions, /Customer accounts are being connected/);
+  assert.match(schema, /enable row level security/i);
+  assert.match(schema, /auth\.uid\(\).*user_id/);
+  assert.doesNotMatch(schema, /service_role/i);
 });
 
 test("styles the official details section responsively", async () => {

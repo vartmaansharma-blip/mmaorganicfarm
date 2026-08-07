@@ -152,6 +152,9 @@ export default function Home() {
           <a className="nav-link" href="#farm">
             <span>04</span>Farm
           </a>
+          <a className="nav-link" href="/sign-in">
+            <span>05</span>Sign in
+          </a>
         </nav>
 
         <div className="sidebar-bottom">
@@ -170,25 +173,30 @@ export default function Home() {
         <section className="hero" id="home">
           <header className="topbar">
             <p>Jamshedpur · Fresh from farm</p>
-            <a
-              className="order-orbit"
-              href={whatsappOrder}
-              aria-label="Order fresh M'ma milk on WhatsApp"
-            >
-              <span className="order-orbit-text" aria-hidden="true">
-                {orderLoopLetters.map((letter, index) => (
-                  <span
-                    key={`${letter}-${index}`}
-                    style={{
-                      transform: `rotate(${index * (360 / orderLoopLetters.length)}deg) translateY(var(--order-radius, -36px))`,
-                    }}
-                  >
-                    {letter}
-                  </span>
-                ))}
-              </span>
-              <span className="order-orbit-core" aria-hidden="true">↗</span>
-            </a>
+            <div className="topbar-actions">
+              <a className="account-link" href="/sign-in">
+                Sign in
+              </a>
+              <a
+                className="order-orbit"
+                href={whatsappOrder}
+                aria-label="Order fresh M'ma milk on WhatsApp"
+              >
+                <span className="order-orbit-text" aria-hidden="true">
+                  {orderLoopLetters.map((letter, index) => (
+                    <span
+                      key={`${letter}-${index}`}
+                      style={{
+                        transform: `rotate(${index * (360 / orderLoopLetters.length)}deg) translateY(var(--order-radius, -36px))`,
+                      }}
+                    >
+                      {letter}
+                    </span>
+                  ))}
+                </span>
+                <span className="order-orbit-core" aria-hidden="true">↗</span>
+              </a>
+            </div>
           </header>
 
           <div className="hero-copy">
