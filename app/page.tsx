@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AccountLink } from "@/app/components/account-link";
 import { LandingSidebar } from "@/app/components/landing-sidebar";
 import { createClient } from "@/lib/supabase/server";
 import landingStyles from "./landing.module.css";
@@ -152,6 +153,7 @@ export default async function Home() {
           <header className="topbar">
             <p>Jamshedpur · Fresh from farm</p>
             <div className="topbar-actions">
+              <AccountLink className="account-link" />
               <a
                 className="order-orbit"
                 href={orderPath}
