@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 function safeNext(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//")
     ? value
-    : "/account";
+    : "/";
 }
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = safeNext(requestUrl.searchParams.get("next"));
+  const cookieStore = await cookies();
+  const next = safeNext(
+    requestUrl.searchParams.get("next") ??
+      cookieStore.get("mma_auth_next")?.value ??
+      null,
+  );
 
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -56,6 +62,8 @@ export async function GET(request: Request) {
       { onConflict: "user_id" },
     );
   }
+
+  cookieStore.delete("mma_auth_next");
 
   const forwardedHost = request.headers.get("x-forwarded-host");
   const host = forwardedHost ? `https://${forwardedHost}` : requestUrl.origin;

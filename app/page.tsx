@@ -1,10 +1,12 @@
+import { redirect } from "next/navigation";
 import { AccountLink } from "@/app/components/account-link";
+import { createClient } from "@/lib/supabase/server";
 
-const whatsappOrder =
-  "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20to%20order%20fresh%20milk%20for%20my%20home%20in%20Jamshedpur.";
+export const dynamic = "force-dynamic";
 
-const whatsappStart =
-  "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20to%20start%20fresh%20milk%20delivery%20to%20my%20home%20in%20Jamshedpur.";
+const orderPath = "/order";
+const whatsappContact =
+  "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%20have%20a%20question%20about%20fresh%20milk%20delivery.";
 
 const orderLoopText = "ORDER NOW • FRESH MILK • ";
 const orderLoopLetters = Array.from(orderLoopText);
@@ -47,7 +49,7 @@ const features = [
   {
     number: "03",
     title: "Easy first order",
-    copy: "No account needed on the landing page. Start through WhatsApp or call.",
+    copy: "Sign in, add your phone and address, then continue personally with the farm.",
   },
 ];
 
@@ -121,7 +123,16 @@ const structuredData = {
   ],
 };
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in?next=%2F");
+  }
+
   return (
     <>
       <script
@@ -163,7 +174,7 @@ export default function Home() {
             <br />
             Jamshedpur homes.
           </p>
-          <a className="button button-dark sidebar-cta" href={whatsappOrder}>
+          <a className="button button-dark sidebar-cta" href={orderPath}>
             Shop now <span>↗</span>
           </a>
         </div>
@@ -177,8 +188,8 @@ export default function Home() {
               <AccountLink className="account-link" />
               <a
                 className="order-orbit"
-                href={whatsappOrder}
-                aria-label="Order fresh M'ma milk on WhatsApp"
+                href={orderPath}
+                aria-label="Start a fresh M'ma milk order"
               >
                 <span className="order-orbit-text" aria-hidden="true">
                   {orderLoopLetters.map((letter, index) => (
@@ -210,7 +221,7 @@ export default function Home() {
               Organic Farm.
             </p>
             <div className="hero-actions">
-              <a className="button button-dark" href={whatsappOrder}>
+              <a className="button button-dark" href={orderPath}>
                 Shop now <span>↗</span>
               </a>
               <a className="button button-light" href="#milk">
@@ -218,8 +229,8 @@ export default function Home() {
               </a>
             </div>
             <p className="hero-reassurance">
-              Direct WhatsApp ordering. No long form. Just the farm and
-              the bottle.
+              Sign in, share your delivery details, then speak directly with
+              the farm.
             </p>
           </div>
 
@@ -295,8 +306,8 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <a className="button button-yellow" href={whatsappOrder}>
-                Order milk on WhatsApp <span>↗</span>
+              <a className="button button-yellow" href={orderPath}>
+                Order milk <span>↗</span>
               </a>
             </div>
           </div>
@@ -398,8 +409,8 @@ export default function Home() {
           </h2>
           <p>Fresh from farm. Glass bottle. ₹62 per litre. Jamshedpur homes.</p>
           <div className="closing-actions">
-            <a className="button button-dark" href={whatsappStart}>
-              Shop now on WhatsApp <span>↗</span>
+            <a className="button button-dark" href={orderPath}>
+              Shop now <span>↗</span>
             </a>
             <a className="button button-light" href="tel:+919818804419">
               Call to order <span>↗</span>
@@ -421,7 +432,7 @@ export default function Home() {
 
       <a
         className="whatsapp-float"
-        href={whatsappOrder}
+        href={whatsappContact}
         aria-label="Chat with M'ma Organic Farm on WhatsApp"
       >
         <img src="/whatsapp.svg" alt="" aria-hidden="true" />

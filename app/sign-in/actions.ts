@@ -1,11 +1,32 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-function signInUrl(type: "error" | "message", message: string, mode = "sign-in") {
-  return `/sign-in?mode=${mode}&${type}=${encodeURIComponent(message)}`;
+function signInUrl(
+  type: "error" | "message",
+  message: string,
+  mode = "sign-in",
+  next = "/",
+) {
+  return `/sign-in?mode=${mode}&next=${encodeURIComponent(next)}&${type}=${encodeURIComponent(message)}`;
+}
+
+function safeNext(value: FormDataEntryValue | string | null) {
+  const path = typeof value === "string" ? value : "";
+  return path.startsWith("/") && !path.startsWith("//") ? path : "/";
+}
+
+async function rememberNext(path: string) {
+  const cookieStore = await cookies();
+  cookieStore.set("mma_auth_next", path, {
+    httpOnly: true,
+    maxAge: 600,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
 }
 
 function ensureSupabaseIsReady(mode = "sign-in") {
@@ -52,10 +73,11 @@ async function saveProfile() {
   );
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData: FormData) {
   ensureSupabaseIsReady();
   const supabase = await createClient();
   const origin = await requestOrigin();
+  await rememberNext(safeNext(formData.get("next")));
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -74,20 +96,23 @@ export async function signInWithEmail(formData: FormData) {
   ensureSupabaseIsReady();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = safeNext(formData.get("next"));
 
   if (!email || !password) {
-    redirect(signInUrl("error", "Enter your email and password."));
+    redirect(signInUrl("error", "Enter your email and password.", "sign-in", next));
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(signInUrl("error", "That email or password did not match."));
+    redirect(
+      signInUrl("error", "That email or password did not match.", "sign-in", next),
+    );
   }
 
   await saveProfile();
-  redirect("/#milk");
+  redirect(next);
 }
 
 export async function signUpWithEmail(formData: FormData) {
@@ -95,6 +120,7 @@ export async function signUpWithEmail(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = safeNext(formData.get("next"));
 
   if (!fullName || !email || password.length < 8) {
     redirect(
@@ -102,12 +128,14 @@ export async function signUpWithEmail(formData: FormData) {
         "error",
         "Add your name, email, and a password with at least 8 characters.",
         "sign-up",
+        next,
       ),
     );
   }
 
   const supabase = await createClient();
   const origin = await requestOrigin();
+  await rememberNext(next);
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -118,12 +146,12 @@ export async function signUpWithEmail(formData: FormData) {
   });
 
   if (error) {
-    redirect(signInUrl("error", error.message, "sign-up"));
+    redirect(signInUrl("error", error.message, "sign-up", next));
   }
 
   if (data.session) {
     await saveProfile();
-    redirect("/#milk");
+    redirect(next);
   }
 
   redirect(
@@ -131,6 +159,7 @@ export async function signUpWithEmail(formData: FormData) {
       "message",
       "Check your email to finish creating your account.",
       "sign-up",
+      next,
     ),
   );
 }

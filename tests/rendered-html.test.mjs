@@ -13,6 +13,8 @@ const accountLinkUrl = new URL("../app/components/account-link.tsx", import.meta
 const accountPageUrl = new URL("../app/account/page.tsx", import.meta.url);
 const authCallbackUrl = new URL("../app/auth/callback/route.ts", import.meta.url);
 const proxyUrl = new URL("../proxy.ts", import.meta.url);
+const orderPageUrl = new URL("../app/order/page.tsx", import.meta.url);
+const orderActionsUrl = new URL("../app/order/actions.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
@@ -51,6 +53,8 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /LocalBusiness/);
   assert.match(page, /Product/);
   assert.match(page, /AccountLink/);
+  assert.match(page, /supabase\.auth\.getUser\(\)/);
+  assert.match(page, /redirect\("\/sign-in\?next=%2F"\)/);
 });
 
 test("provides Google and email account creation without delivery friction", async () => {
@@ -71,7 +75,8 @@ test("provides Google and email account creation without delivery friction", asy
   assert.match(actions, /provider: "google"/);
   assert.match(actions, /redirectTo: `\$\{origin\}\/auth\/callback`/);
   assert.doesNotMatch(actions, /auth\/callback\?next=/);
-  assert.match(callback, /: "\/account"/);
+  assert.match(callback, /: "\/"/);
+  assert.match(signIn, /if \(user\) \{\s*redirect\(next\)/);
   assert.match(proxy, /searchParams\.has\("code"\)/);
   assert.match(proxy, /callbackUrl\.pathname = "\/auth\/callback"/);
   assert.match(actions, /signUpWithEmail/);
@@ -130,4 +135,26 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /customer_profiles/);
   assert.match(accountPage, /Google connected/);
   assert.match(accountPage, /signOut/);
+});
+
+test("collects delivery details only when a customer starts an order", async () => {
+  const [page, signIn, callback, orderPage, orderActions] = await Promise.all([
+    readFile(pageUrl, "utf8"),
+    readFile(signInUrl, "utf8"),
+    readFile(authCallbackUrl, "utf8"),
+    readFile(orderPageUrl, "utf8"),
+    readFile(orderActionsUrl, "utf8"),
+  ]);
+
+  assert.match(page, /const orderPath = "\/order"/);
+  assert.match(signIn, /name="next"/);
+  assert.match(callback, /mma_auth_next/);
+  assert.match(orderPage, /Mobile number/);
+  assert.match(orderPage, /Delivery address/);
+  assert.match(orderPage, /Save &amp; continue to WhatsApp/);
+  assert.doesNotMatch(orderPage, /quantity|delivery time|payment method/i);
+  assert.match(orderActions, /customer_profiles/);
+  assert.match(orderActions, /phone: `\+91\$\{phone\}`/);
+  assert.match(orderActions, /address_line: address/);
+  assert.match(orderActions, /wa\.me\/919818804419/);
 });

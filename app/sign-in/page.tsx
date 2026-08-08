@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import {
   signInWithEmail,
   signInWithGoogle,
@@ -15,17 +17,29 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const dynamic = "force-dynamic";
+
 type SignInPageProps = {
   searchParams: Promise<{
     mode?: string;
     error?: string;
     message?: string;
+    next?: string;
   }>;
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = await searchParams;
   const isSignUp = params.mode === "sign-up";
+  const next = params.next?.startsWith("/") ? params.next : "/";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect(next);
+  }
 
   return (
     <main className={styles.page}>
@@ -79,6 +93,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           ) : null}
 
           <form action={signInWithGoogle}>
+            <input name="next" type="hidden" value={next} />
             <button className={styles.googleButton} type="submit">
               <Image
                 src="/google-g.svg"
@@ -99,6 +114,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             action={isSignUp ? signUpWithEmail : signInWithEmail}
             className={styles.emailForm}
           >
+            <input name="next" type="hidden" value={next} />
             {isSignUp ? (
               <label>
                 Full name
@@ -146,7 +162,13 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
           <p className={styles.switchMode}>
             {isSignUp ? "Already have an account?" : "New to M'ma Organic Farm?"}{" "}
-            <Link href={isSignUp ? "/sign-in" : "/sign-in?mode=sign-up"}>
+            <Link
+              href={
+                isSignUp
+                  ? `/sign-in?next=${encodeURIComponent(next)}`
+                  : `/sign-in?mode=sign-up&next=${encodeURIComponent(next)}`
+              }
+            >
               {isSignUp ? "Sign in" : "Create an account"}
             </Link>
           </p>

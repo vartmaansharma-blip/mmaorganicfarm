@@ -49,9 +49,13 @@ export default async function AccountPage() {
         <p className={styles.eyebrow}>Customer account</p>
         <h1>Welcome, {name.split(/\s+/)[0]}.</h1>
         <p className={styles.intro}>
-          Your account is active. Ordering and delivery details will appear here
-          as those workflows are added.
+          Your account keeps your contact and delivery details ready for a
+          faster order.
         </p>
+
+        <Link className={styles.startOrder} href="/order">
+          Start a milk order <span>→</span>
+        </Link>
 
         <div className={styles.profile}>
           {profile?.avatar_url ? (

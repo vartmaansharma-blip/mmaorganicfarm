@@ -58,6 +58,20 @@
   line-height: 1.65;
 }
 
+.startOrder {
+  width: fit-content;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0 0 28px;
+  padding: 0 17px;
+  color: #fff;
+  background: #141414;
+  font-size: 13px;
+  font-weight: 850;
+}
+
 .profile {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
