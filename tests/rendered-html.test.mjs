@@ -29,6 +29,45 @@ test("defines search and social metadata for fresh milk delivery", async () => {
   assert.match(layout, /hero-milk\.png/);
 });
 
+test("loads one consistent Inter typography system", async () => {
+  const [layout, styles, signInStyles, orderStyles] = await Promise.all([
+    readFile(layoutUrl, "utf8"),
+    readFile(stylesUrl, "utf8"),
+    readFile(new URL("../app/sign-in/sign-in.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/order/order.module.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(layout, /Inter/);
+  assert.match(layout, /variable: "--font-inter"/);
+  assert.match(styles, /--font-sans: var\(--font-inter\)/);
+  assert.match(styles, /font-family: var\(--font-sans\)/);
+  assert.doesNotMatch(signInStyles, /font-weight: 900/);
+  assert.doesNotMatch(orderStyles, /font-weight: 850/);
+});
+
+test("uses scoped layouts for authentication, ordering, and landing navigation", async () => {
+  const [styles, page, signInStyles, orderStyles, sidebarStyles] =
+    await Promise.all([
+      readFile(stylesUrl, "utf8"),
+      readFile(pageUrl, "utf8"),
+      readFile(new URL("../app/sign-in/sign-in.module.css", import.meta.url), "utf8"),
+      readFile(new URL("../app/order/order.module.css", import.meta.url), "utf8"),
+      readFile(
+        new URL("../app/components/landing-sidebar.module.css", import.meta.url),
+        "utf8",
+      ),
+    ]);
+
+  assert.doesNotMatch(styles, /^main\s*\{/m);
+  assert.match(page, /LandingSidebar/);
+  assert.match(page, /landingStyles\.main/);
+  assert.match(signInStyles, /grid-template-rows: 210px 1fr/);
+  assert.doesNotMatch(signInStyles, /grid-template-columns: minmax\(0, 1\.06fr\)/);
+  assert.match(orderStyles, /width: min\(100%, 760px\)/);
+  assert.doesNotMatch(orderStyles, /grid-template-columns: minmax\(0, 0\.88fr\)/);
+  assert.match(sidebarStyles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+});
+
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
 

@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 const siteUrl = "https://mmaorganicfarm-tvn8.vercel.app";
 const siteTitle = "M'ma Organic Farm | Fresh Farm Milk Delivery in Jamshedpur";
@@ -61,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html className={inter.variable} lang="en">
       <body>{children}</body>
     </html>
   );

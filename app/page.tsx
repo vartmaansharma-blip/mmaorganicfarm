@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { AccountLink } from "@/app/components/account-link";
+import { LandingSidebar } from "@/app/components/landing-sidebar";
 import { createClient } from "@/lib/supabase/server";
+import landingStyles from "./landing.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -144,43 +146,9 @@ export default async function Home() {
         Skip to content
       </a>
 
-      <aside className="sidebar" aria-label="Primary navigation">
-        <a className="brand" href="#home" aria-label="M'ma Organic Farm home">
-          <span className="brand-mark" aria-hidden="true" />
-          <span className="brand-copy">
-            <strong>M&apos;ma Organic Farm</strong>
-          </span>
-        </a>
+      <LandingSidebar />
 
-        <nav>
-          <a className="nav-link active" href="#home">
-            <span>01</span>Landing
-          </a>
-          <a className="nav-link" href="#milk">
-            <span>02</span>Milk
-          </a>
-          <a className="nav-link" href="#about">
-            <span>03</span>About
-          </a>
-          <a className="nav-link" href="#farm">
-            <span>04</span>Farm
-          </a>
-          <AccountLink className="nav-link" prefix="05" />
-        </nav>
-
-        <div className="sidebar-bottom">
-          <p>
-            Fresh milk for
-            <br />
-            Jamshedpur homes.
-          </p>
-          <a className="button button-dark sidebar-cta" href={orderPath}>
-            Shop now <span>↗</span>
-          </a>
-        </div>
-      </aside>
-
-      <main id="main">
+      <main className={landingStyles.main} id="main">
         <section className="hero" id="home">
           <header className="topbar">
             <p>Jamshedpur · Fresh from farm</p>

@@ -1,0 +1,18 @@
+.main {
+  margin-left: 240px;
+  overflow: hidden;
+}
+
+@media (max-width: 980px) {
+  .main {
+    margin-left: 0;
+    padding-top: 72px;
+  }
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding-top: 0;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+}
