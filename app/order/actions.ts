@@ -173,6 +173,33 @@ export async function saveDeliveryDetails(formData: FormData) {
     );
   }
 
+  if (purchase === "plan" && weeklySchedule) {
+    const { error: planError } = await supabase.rpc(
+      "save_pending_weekly_milk_plan",
+      {
+        p_bottle_choice: bottle,
+        p_schedule: weeklySchedule,
+        p_start_date: start,
+      },
+    );
+
+    if (planError) {
+      console.error("Unable to save weekly milk plan", planError.message);
+      redirect(
+        orderUrl(
+          "error",
+          "We saved your delivery details but could not save the weekly plan. Please try again.",
+          purchase,
+          bottle,
+          milk,
+          extras,
+          schedule,
+          start,
+        ),
+      );
+    }
+  }
+
   const message = [
     "Hello M'ma Organic Farm, I'd like to continue a farm order.",
     `Name: ${fullName}`,

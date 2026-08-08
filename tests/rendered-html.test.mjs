@@ -28,6 +28,7 @@ const milkStylesUrl = new URL("../app/milk/milk.module.css", import.meta.url);
 const farmProductsUrl = new URL("../lib/farm-products.ts", import.meta.url);
 const milkPlanUrl = new URL("../lib/milk-plan.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
+const deliveryPlanSchemaUrl = new URL("../supabase/delivery_plans.sql", import.meta.url);
 const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
 const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
 
@@ -277,13 +278,14 @@ test("provides a separate mobile-first farm product and plan page", async () => 
 });
 
 test("collects delivery details only when a customer starts an order", async () => {
-  const [page, signIn, callback, orderPage, orderActions, milkPlan] = await Promise.all([
+  const [page, signIn, callback, orderPage, orderActions, milkPlan, deliveryPlanSchema] = await Promise.all([
     readFile(pageUrl, "utf8"),
     readFile(signInUrl, "utf8"),
     readFile(authCallbackUrl, "utf8"),
     readFile(orderPageUrl, "utf8"),
     readFile(orderActionsUrl, "utf8"),
     readFile(milkPlanUrl, "utf8"),
+    readFile(deliveryPlanSchemaUrl, "utf8"),
   ]);
 
   assert.match(page, /const orderPath = "\/milk"/);
@@ -309,6 +311,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderActions, /No milk this time/);
   assert.match(orderActions, /Weekly schedule/);
   assert.match(orderActions, /parseWeeklyMilkSchedule/);
+  assert.match(orderActions, /save_pending_weekly_milk_plan/);
   assert.match(orderActions, /milkLitres === 0/);
   assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);
   assert.doesNotMatch(orderActions, /Delivery address: \$\{address\}, Jamshedpur/);
@@ -316,4 +319,9 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(milkPlan, /MILK_PLAN_DAYS/);
   assert.match(milkPlan, /serializeWeeklyMilkSchedule/);
   assert.match(milkPlan, /describeWeeklyMilkSchedule/);
+  assert.match(deliveryPlanSchema, /create table if not exists public\.delivery_plans/);
+  assert.match(deliveryPlanSchema, /create table if not exists public\.weekly_delivery_items/);
+  assert.match(deliveryPlanSchema, /enable row level security/);
+  assert.match(deliveryPlanSchema, /\(select auth\.uid\(\)\) = user_id/);
+  assert.match(deliveryPlanSchema, /save_pending_weekly_milk_plan/);
 });
