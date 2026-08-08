@@ -524,22 +524,34 @@ h1 {
 @keyframes bottle-mobile-turn {
   0%,
   100% {
-    transform: rotate(-9deg) translateY(0) scale(0.96);
+    transform: rotateY(-22deg) rotateZ(-2deg) translateY(5px) scale(0.95);
   }
   25% {
-    transform: rotate(0deg) translateY(-10px) scale(1.01);
+    transform: rotateY(0deg) rotateZ(0deg) translateY(-7px) scale(0.99);
   }
   50% {
-    transform: rotate(9deg) translateY(-18px) scale(1.05);
+    transform: rotateY(22deg) rotateZ(2deg) translateY(-14px) scale(1.02);
   }
   75% {
-    transform: rotate(0deg) translateY(-10px) scale(1.01);
+    transform: rotateY(0deg) rotateZ(0deg) translateY(-7px) scale(0.99);
   }
 }
 
 @keyframes bottle-orbit-mobile {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes bottle-shadow-mobile {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: scaleX(0.88);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scaleX(1.06);
   }
 }
 
@@ -993,8 +1005,11 @@ footer {
   }
 
   .bottle-stage {
+    grid-column: 1;
+    grid-row: auto;
     width: min(86vw, 600px);
     margin-bottom: 0;
+    justify-self: center;
   }
 
   .hero-facts {
@@ -1170,19 +1185,33 @@ footer {
   }
 
   .bottle-stage {
+    grid-column: 1;
+    grid-row: auto;
     width: 100%;
     height: auto;
-    min-height: 290px;
-    margin: 6px 0 0;
+    min-height: 340px;
+    margin: 18px 0 0;
     align-self: stretch;
-    perspective: 900px;
+    justify-self: center;
+    perspective: 1100px;
+    transform-style: preserve-3d;
   }
 
   .bottle-stage img {
-    width: min(68%, 320px);
-    height: 330px;
-    animation: bottle-mobile-turn 3.4s ease-in-out infinite;
-    transform-origin: 50% 62%;
+    width: min(76%, 340px);
+    height: 350px;
+    object-fit: contain;
+    border-radius: 0;
+    animation: bottle-mobile-turn 5.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    transform-origin: 50% 58%;
+    backface-visibility: visible;
+    will-change: transform;
+  }
+
+  .bottle-shadow {
+    bottom: 5%;
+    width: 48%;
+    animation: bottle-shadow-mobile 2.8s ease-in-out infinite;
   }
 
   .orbit-one {

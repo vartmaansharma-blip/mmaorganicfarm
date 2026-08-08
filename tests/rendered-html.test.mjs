@@ -140,6 +140,9 @@ test("styles the official details section responsively", async () => {
   assert.match(styles, /order-ring-pulse/);
   assert.match(styles, /bottle-mobile-turn/);
   assert.match(styles, /bottle-orbit-mobile/);
+  assert.match(styles, /bottle-shadow-mobile/);
+  assert.match(styles, /grid-column: 1/);
+  assert.match(styles, /object-fit: contain/);
   assert.doesNotMatch(styles, /\.benefit-bar-section/);
   assert.doesNotMatch(styles, /\.benefit-track/);
   assert.doesNotMatch(styles, /\.proof-section/);
