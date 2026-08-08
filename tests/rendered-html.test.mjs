@@ -75,7 +75,7 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
   assert.match(orderStyles, /width: min\(100%, 620px\)/);
   assert.doesNotMatch(orderStyles, /box-shadow/);
   assert.doesNotMatch(orderStyles, /grid-template-columns: minmax\(0, 0\.88fr\)/);
-  assert.match(sidebarStyles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(sidebarStyles, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
 });
 
 test("uses stable profile and home navigation labels", async () => {
@@ -86,7 +86,10 @@ test("uses stable profile and home navigation labels", async () => {
   assert.match(accountLink, /authenticatedLabel = "Profile"/);
   assert.doesNotMatch(accountLink, /firstName/);
   assert.match(sidebar, /<span>01<\/span>Home/);
+  assert.match(sidebar, /href="#milk">\s*<span>02<\/span>Milk/);
+  assert.match(sidebar, /href="\/milk">\s*<span>03<\/span>Products/);
   assert.match(sidebar, /authenticatedLabel="Profile"/);
+  assert.match(sidebar, /prefix="06"/);
   assert.match(whatsappIcon, /viewBox="0 0 24 24"/);
 });
 
@@ -228,6 +231,14 @@ test("provides a separate mobile-first milk product and plan page", async () => 
   assert.match(builder, /Review milk plan/);
   assert.match(builder, /weeklyLitres/);
   assert.match(builder, /PRICE_PER_LITRE = 62/);
+  assert.match(builder, /NEW_BOTTLE_PRICE = 10/);
+  assert.match(builder, /STEP = 1/);
+  assert.doesNotMatch(builder, /STEP = 0\.5/);
+  assert.match(builder, /Return a bottle/);
+  assert.match(builder, /hand it back on delivery/);
+  assert.match(builder, /No bottle to return/);
+  assert.match(builder, /includes a ₹10 glass bottle/);
+  assert.match(builder, /bottle=\$\{needsNewBottle \? "new" : "return"\}/);
   assert.doesNotMatch(builder, /Shopify|checkout|payment/i);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /grid-template-columns: 1fr/);

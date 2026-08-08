@@ -3,8 +3,14 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-function orderUrl(type: "error" | "message", message: string) {
-  return `/order?${type}=${encodeURIComponent(message)}`;
+function orderUrl(
+  type: "error" | "message",
+  message: string,
+  purchase: string,
+  bottle: string,
+) {
+  const params = new URLSearchParams({ [type]: message, purchase, bottle });
+  return `/order?${params.toString()}`;
 }
 
 function normalizePhone(value: string) {
@@ -26,13 +32,19 @@ export async function saveDeliveryDetails(formData: FormData) {
 
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
   const address = String(formData.get("address") ?? "").trim();
+  const purchase = formData.get("purchase") === "plan" ? "plan" : "once";
+  const bottle = formData.get("bottle") === "new" ? "new" : "return";
 
   if (phone.length !== 10) {
-    redirect(orderUrl("error", "Enter a valid 10-digit mobile number."));
+    redirect(
+      orderUrl("error", "Enter a valid 10-digit mobile number.", purchase, bottle),
+    );
   }
 
   if (address.length < 8) {
-    redirect(orderUrl("error", "Enter your complete delivery address."));
+    redirect(
+      orderUrl("error", "Enter your complete delivery address.", purchase, bottle),
+    );
   }
 
   const fullName =
@@ -52,7 +64,14 @@ export async function saveDeliveryDetails(formData: FormData) {
   );
 
   if (error) {
-    redirect(orderUrl("error", "We could not save your details. Please try again."));
+    redirect(
+      orderUrl(
+        "error",
+        "We could not save your details. Please try again.",
+        purchase,
+        bottle,
+      ),
+    );
   }
 
   const message = [
@@ -60,6 +79,8 @@ export async function saveDeliveryDetails(formData: FormData) {
     `Name: ${fullName}`,
     `Phone: +91 ${phone}`,
     `Delivery address: ${address}`,
+    `Order type: ${purchase === "plan" ? "Weekly milk plan" : "One-time order"}`,
+    `Bottle: ${bottle === "new" ? "No return bottle (+₹10 once)" : "M'ma bottle will be returned on delivery (₹62 exchange price)"}`,
   ].join("\n");
   const whatsapp = new URL("https://wa.me/919818804419");
   whatsapp.searchParams.set("text", message);

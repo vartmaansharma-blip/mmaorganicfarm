@@ -212,6 +212,68 @@
   background: #214d3a;
 }
 
+.bottleChoice {
+  width: min(100%, 620px);
+  margin: -26px 0 44px 220px;
+  padding: 0;
+  border: 0;
+}
+
+.bottleChoice legend {
+  margin-bottom: 10px;
+  color: #77746d;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.bottleOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bottleOptions label {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 13px 14px;
+  border: 1px solid #c9c8c2;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.bottleOptions label:has(input:checked) {
+  border-color: #214d3a;
+  background: #f1f6f3;
+}
+
+.bottleOptions input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #214d3a;
+}
+
+.bottleOptions strong,
+.bottleOptions small {
+  display: block;
+}
+
+.bottleOptions strong {
+  font-size: 13px;
+}
+
+.bottleOptions small {
+  margin-top: 4px;
+  color: #77746d;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .onceLayout,
 .planLayout {
   border-top: 1px solid #deddd8;
@@ -529,6 +591,10 @@
     margin-left: 0;
   }
 
+  .bottleChoice {
+    margin-left: 0;
+  }
+
   .planLayout {
     grid-template-columns: 1fr;
   }
@@ -602,6 +668,15 @@
   .modeSwitch {
     width: 100%;
     margin: 28px 0 34px;
+  }
+
+  .bottleChoice {
+    width: 100%;
+    margin: -16px 0 30px;
+  }
+
+  .bottleOptions {
+    grid-template-columns: 1fr;
   }
 
   .onceLayout {

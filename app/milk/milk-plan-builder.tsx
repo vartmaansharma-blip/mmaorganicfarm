@@ -5,8 +5,9 @@ import { useState } from "react";
 import styles from "./milk.module.css";
 
 const PRICE_PER_LITRE = 62;
+const NEW_BOTTLE_PRICE = 10;
 const MAX_LITRES = 5;
-const STEP = 0.5;
+const STEP = 1;
 const dateFormatter = new Intl.DateTimeFormat("en-IN", {
   day: "numeric",
   month: "short",
@@ -26,7 +27,7 @@ const initialSchedule = [
 type PurchaseMode = "once" | "plan";
 
 function formatLitres(value: number) {
-  return Number.isInteger(value) ? `${value} L` : `${value.toFixed(1)} L`;
+  return `${value} L`;
 }
 
 function formatDate(value: string) {
@@ -41,12 +42,15 @@ export function MilkPlanBuilder() {
   const [schedule, setSchedule] = useState(initialSchedule);
   const [startDate, setStartDate] = useState("");
   const [reviewed, setReviewed] = useState(false);
+  const [bottleOption, setBottleOption] = useState<"return" | "new">("return");
 
   const weeklyLitres = schedule.reduce(
     (total, day) => total + day.litres,
     0,
   );
   const weeklyEstimate = weeklyLitres * PRICE_PER_LITRE;
+  const needsNewBottle = bottleOption === "new";
+  const bottleCharge = needsNewBottle ? NEW_BOTTLE_PRICE : 0;
   const deliveryDays = schedule.filter((day) => day.litres > 0).length;
 
   function updateSchedule(index: number, delta: number) {
@@ -103,6 +107,42 @@ export function MilkPlanBuilder() {
         </button>
       </div>
 
+      <fieldset className={styles.bottleChoice}>
+        <legend>Choose one bottle option</legend>
+        <div className={styles.bottleOptions}>
+          <label>
+            <input
+              type="radio"
+              name="bottle-option"
+              checked={bottleOption === "return"}
+              onChange={() => {
+                setBottleOption("return");
+                setReviewed(false);
+              }}
+            />
+            <span>
+              <strong>Return a bottle</strong>
+              <small>₹62/L · hand it back on delivery</small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="bottle-option"
+              checked={bottleOption === "new"}
+              onChange={() => {
+                setBottleOption("new");
+                setReviewed(false);
+              }}
+            />
+            <span>
+              <strong>No bottle to return</strong>
+              <small>₹72 for 1 L · includes a ₹10 glass bottle</small>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
       {mode === "once" ? (
         <div className={styles.onceLayout}>
           <div className={styles.onceCopy}>
@@ -133,9 +173,12 @@ export function MilkPlanBuilder() {
             </div>
             <div className={styles.totalLine}>
               <span>One-time total</span>
-              <strong>₹{onceQuantity * PRICE_PER_LITRE}</strong>
+              <strong>₹{onceQuantity * PRICE_PER_LITRE + bottleCharge}</strong>
             </div>
-            <Link className={styles.primaryAction} href="/order?purchase=once">
+            <Link
+              className={styles.primaryAction}
+              href={`/order?purchase=once&bottle=${needsNewBottle ? "new" : "return"}`}
+            >
               Continue to delivery details <span>→</span>
             </Link>
           </div>
@@ -224,6 +267,16 @@ export function MilkPlanBuilder() {
                 <dd>₹{weeklyEstimate}</dd>
               </div>
               <div>
+                <dt>Glass bottle</dt>
+                <dd>{needsNewBottle ? "+₹10 once" : "Return on delivery"}</dd>
+              </div>
+              {needsNewBottle ? (
+                <div>
+                  <dt>First-week estimate</dt>
+                  <dd>₹{weeklyEstimate + bottleCharge}</dd>
+                </div>
+              ) : null}
+              <div>
                 <dt>Start</dt>
                 <dd>{formatDate(startDate)}</dd>
               </div>
@@ -237,7 +290,10 @@ export function MilkPlanBuilder() {
             ) : null}
 
             {reviewed ? (
-              <Link className={styles.primaryAction} href="/order?purchase=plan">
+              <Link
+                className={styles.primaryAction}
+                href={`/order?purchase=plan&bottle=${needsNewBottle ? "new" : "return"}`}
+              >
                 Continue to delivery details <span>→</span>
               </Link>
             ) : (
@@ -251,8 +307,8 @@ export function MilkPlanBuilder() {
               </button>
             )}
             <p className={styles.summaryNote}>
-              Estimated at ₹62 per litre. Final delivery details are confirmed
-              with the farm.
+              ₹62 is the bottle-exchange price and requires a bottle returned
+              on delivery. Without a return bottle, ₹10 is added once.
             </p>
           </aside>
         </div>

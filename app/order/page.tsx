@@ -14,7 +14,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 type OrderPageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{
+    bottle?: "new" | "return";
+    error?: string;
+    purchase?: "once" | "plan";
+  }>;
 };
 
 export default async function OrderPage({ searchParams }: OrderPageProps) {
@@ -69,6 +73,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
         </div>
 
         <form className={styles.form} action={saveDeliveryDetails}>
+          <input name="bottle" type="hidden" value={params.bottle ?? "return"} />
+          <input name="purchase" type="hidden" value={params.purchase ?? "once"} />
           {params.error ? (
             <p className={styles.error} role="alert">
               {params.error}
