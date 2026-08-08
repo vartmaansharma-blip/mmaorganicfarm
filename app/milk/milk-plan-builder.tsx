@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import {
+  FARM_PRODUCTS,
+  type FarmProductFrequency,
+  type FarmProductId,
+} from "@/lib/farm-products";
 import styles from "./milk.module.css";
 
 const PRICE_PER_LITRE = 62;
@@ -26,6 +31,13 @@ const initialSchedule = [
 
 type PurchaseMode = "once" | "plan";
 
+const initialExtras: Record<FarmProductId, FarmProductFrequency | null> = {
+  paneer: null,
+  ghee: null,
+  papaya: null,
+  sweets: null,
+};
+
 function formatLitres(value: number) {
   return `${value} L`;
 }
@@ -43,6 +55,7 @@ export function MilkPlanBuilder() {
   const [startDate, setStartDate] = useState("");
   const [reviewed, setReviewed] = useState(false);
   const [bottleOption, setBottleOption] = useState<"return" | "new">("return");
+  const [extras, setExtras] = useState(initialExtras);
 
   const weeklyLitres = schedule.reduce(
     (total, day) => total + day.litres,
@@ -52,6 +65,16 @@ export function MilkPlanBuilder() {
   const needsNewBottle = bottleOption === "new";
   const bottleCharge = needsNewBottle ? NEW_BOTTLE_PRICE : 0;
   const deliveryDays = schedule.filter((day) => day.litres > 0).length;
+  const selectedExtras = FARM_PRODUCTS.filter(({ id }) => extras[id]);
+  const extrasTotal = selectedExtras.reduce((total, product) => {
+    return total + product.price;
+  }, 0);
+  const weeklyExtrasTotal = selectedExtras.reduce((total, product) => {
+    return total + (extras[product.id] === "weekly" ? product.price : 0);
+  }, 0);
+  const firstDeliveryExtrasTotal = selectedExtras.reduce((total, product) => {
+    return total + (extras[product.id] === "once" ? product.price : 0);
+  }, 0);
 
   function updateSchedule(index: number, delta: number) {
     setSchedule((current) =>
@@ -81,11 +104,40 @@ export function MilkPlanBuilder() {
     setReviewed(false);
   }
 
+  function toggleExtra(id: FarmProductId) {
+    setExtras((current) => ({
+      ...current,
+      [id]: current[id] ? null : "once",
+    }));
+    setReviewed(false);
+  }
+
+  function setExtraFrequency(
+    id: FarmProductId,
+    frequency: FarmProductFrequency,
+  ) {
+    setExtras((current) => ({ ...current, [id]: frequency }));
+    setReviewed(false);
+  }
+
+  function orderHref(purchase: PurchaseMode) {
+    const selected = selectedExtras
+      .map(({ id }) => `${id}:${purchase === "plan" ? extras[id] : "once"}`)
+      .join(",");
+    const params = new URLSearchParams({
+      purchase,
+      bottle: needsNewBottle ? "new" : "return",
+    });
+
+    if (selected) params.set("extras", selected);
+    return `/order?${params.toString()}`;
+  }
+
   return (
     <section className={styles.builder} aria-labelledby="choose-order-title">
       <div className={styles.builderHeading}>
-        <p className={styles.eyebrow}>Choose how you order</p>
-        <h2 id="choose-order-title">Milk that follows your week.</h2>
+        <p className={styles.eyebrow}>Build your farm order</p>
+        <h2 id="choose-order-title">One delivery. More from the farm.</h2>
       </div>
 
       <div className={styles.modeSwitch} aria-label="Purchase type">
@@ -95,7 +147,7 @@ export function MilkPlanBuilder() {
           aria-pressed={mode === "once"}
           onClick={() => chooseMode("once")}
         >
-          Buy once
+          Order once
         </button>
         <button
           className={mode === "plan" ? styles.modeActive : undefined}
@@ -103,7 +155,7 @@ export function MilkPlanBuilder() {
           aria-pressed={mode === "plan"}
           onClick={() => chooseMode("plan")}
         >
-          Start milk plan
+          Build a weekly plan
         </button>
       </div>
 
@@ -143,6 +195,62 @@ export function MilkPlanBuilder() {
         </div>
       </fieldset>
 
+      <section className={styles.extras} aria-labelledby="farm-add-ons-title">
+        <div className={styles.extrasHeading}>
+          <div>
+            <p className={styles.stepLabel}>Add to the same order</p>
+            <h3 id="farm-add-ons-title">More from M&apos;ma Organic Farm</h3>
+          </div>
+          <p>Choose any combination. Regular rates are included in your total.</p>
+        </div>
+
+        <div className={styles.extraGrid}>
+          {FARM_PRODUCTS.map((product) => {
+            const frequency = extras[product.id];
+
+            return (
+              <article
+                className={frequency ? styles.extraSelected : undefined}
+                key={product.id}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(frequency)}
+                    onChange={() => toggleExtra(product.id)}
+                  />
+                  <span>
+                    <strong>{product.name}</strong>
+                    <small>
+                      {product.unit} · ₹{product.price}
+                    </small>
+                  </span>
+                </label>
+
+                {frequency && mode === "plan" ? (
+                  <div className={styles.extraFrequency} aria-label={`${product.name} schedule`}>
+                    <button
+                      type="button"
+                      aria-pressed={frequency === "once"}
+                      onClick={() => setExtraFrequency(product.id, "once")}
+                    >
+                      First delivery
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={frequency === "weekly"}
+                      onClick={() => setExtraFrequency(product.id, "weekly")}
+                    >
+                      Every week
+                    </button>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
       {mode === "once" ? (
         <div className={styles.onceLayout}>
           <div className={styles.onceCopy}>
@@ -172,12 +280,20 @@ export function MilkPlanBuilder() {
               </button>
             </div>
             <div className={styles.totalLine}>
-              <span>One-time total</span>
-              <strong>₹{onceQuantity * PRICE_PER_LITRE + bottleCharge}</strong>
+              <span>Milk and bottle total</span>
+              <strong>
+                ₹{onceQuantity * PRICE_PER_LITRE + bottleCharge + extrasTotal}
+              </strong>
             </div>
+            {selectedExtras.length ? (
+              <p className={styles.extrasPriceNote}>
+                {selectedExtras.length} farm add-on
+                {selectedExtras.length === 1 ? "" : "s"} included in this total.
+              </p>
+            ) : null}
             <Link
               className={styles.primaryAction}
-              href={`/order?purchase=once&bottle=${needsNewBottle ? "new" : "return"}`}
+              href={orderHref("once")}
             >
               Continue to delivery details <span>→</span>
             </Link>
@@ -264,16 +380,36 @@ export function MilkPlanBuilder() {
               </div>
               <div>
                 <dt>Weekly estimate</dt>
-                <dd>₹{weeklyEstimate}</dd>
+                <dd>₹{weeklyEstimate + weeklyExtrasTotal}</dd>
               </div>
               <div>
                 <dt>Glass bottle</dt>
                 <dd>{needsNewBottle ? "+₹10 once" : "Return on delivery"}</dd>
               </div>
-              {needsNewBottle ? (
+              <div>
+                <dt>Farm add-ons</dt>
+                <dd>
+                  {selectedExtras.length
+                    ? `${selectedExtras.length} selected`
+                    : "None"}
+                </dd>
+              </div>
+              {firstDeliveryExtrasTotal > 0 ? (
+                <div>
+                  <dt>First delivery add-ons</dt>
+                  <dd>₹{firstDeliveryExtrasTotal}</dd>
+                </div>
+              ) : null}
+              {needsNewBottle || firstDeliveryExtrasTotal > 0 ? (
                 <div>
                   <dt>First-week estimate</dt>
-                  <dd>₹{weeklyEstimate + bottleCharge}</dd>
+                  <dd>
+                    ₹
+                    {weeklyEstimate +
+                      weeklyExtrasTotal +
+                      firstDeliveryExtrasTotal +
+                      bottleCharge}
+                  </dd>
                 </div>
               ) : null}
               <div>
@@ -292,7 +428,7 @@ export function MilkPlanBuilder() {
             {reviewed ? (
               <Link
                 className={styles.primaryAction}
-                href={`/order?purchase=plan&bottle=${needsNewBottle ? "new" : "return"}`}
+                href={orderHref("plan")}
               >
                 Continue to delivery details <span>→</span>
               </Link>

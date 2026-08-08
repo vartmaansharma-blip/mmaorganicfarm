@@ -7,9 +7,9 @@ import { MilkPlanBuilder } from "./milk-plan-builder";
 import styles from "./milk.module.css";
 
 export const metadata: Metadata = {
-  title: "Fresh Milk",
+  title: "Farm Products",
   description:
-    "Choose a one-time fresh milk order or build a weekly M'ma Organic Farm milk plan for your Jamshedpur home.",
+    "Build one M'ma Organic Farm order with fresh milk, paneer, ghee, papaya, and milk sweets for your Jamshedpur home.",
   robots: { index: false, follow: false },
 };
 
@@ -51,27 +51,27 @@ export default async function MilkPage() {
         </div>
 
         <div className={styles.productCopy}>
-          <p className={styles.eyebrow}>The everyday bottle</p>
-          <h1 id="milk-title">Fresh farm milk</h1>
+          <p className={styles.eyebrow}>Choose from the farm</p>
+          <h1 id="milk-title">One farm order</h1>
           <p className={styles.price}>
-            ₹62 <span>per litre</span>
+            Milk ₹62 <span>per litre with bottle return</span>
           </p>
           <p className={styles.intro}>
-            Build a milk routine around your household. Order once for tomorrow,
-            or set a different quantity for every day of the week.
+            Combine your milk with fresh paneer, ghee, papaya, and milk sweets.
+            Choose once or build a weekly farm delivery.
           </p>
           <dl className={styles.productFacts}>
             <div>
-              <dt>Format</dt>
-              <dd>1 litre glass bottle</dd>
+              <dt>Dairy</dt>
+              <dd>Milk · 1 kg paneer · ghee · sweets</dd>
             </div>
             <div>
-              <dt>Delivery</dt>
-              <dd>Jamshedpur homes</dd>
+              <dt>Produce</dt>
+              <dd>Farm-picked papaya</dd>
             </div>
             <div>
-              <dt>Source</dt>
-              <dd>Fresh from the farm</dd>
+              <dt>Order</dt>
+              <dd>One combined farm delivery</dd>
             </div>
           </dl>
         </div>

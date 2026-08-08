@@ -1,6 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import {
+  parseFarmProductSelections,
+  serializeFarmProductSelections,
+} from "@/lib/farm-products";
 import { createClient } from "@/lib/supabase/server";
 
 function orderUrl(
@@ -8,8 +12,10 @@ function orderUrl(
   message: string,
   purchase: string,
   bottle: string,
+  extras: string,
 ) {
   const params = new URLSearchParams({ [type]: message, purchase, bottle });
+  if (extras) params.set("extras", extras);
   return `/order?${params.toString()}`;
 }
 
@@ -34,16 +40,32 @@ export async function saveDeliveryDetails(formData: FormData) {
   const address = String(formData.get("address") ?? "").trim();
   const purchase = formData.get("purchase") === "plan" ? "plan" : "once";
   const bottle = formData.get("bottle") === "new" ? "new" : "return";
+  const selectedProducts = parseFarmProductSelections(
+    String(formData.get("extras") ?? ""),
+  );
+  const extras = serializeFarmProductSelections(selectedProducts);
 
   if (phone.length !== 10) {
     redirect(
-      orderUrl("error", "Enter a valid 10-digit mobile number.", purchase, bottle),
+      orderUrl(
+        "error",
+        "Enter a valid 10-digit mobile number.",
+        purchase,
+        bottle,
+        extras,
+      ),
     );
   }
 
   if (address.length < 8) {
     redirect(
-      orderUrl("error", "Enter your complete delivery address.", purchase, bottle),
+      orderUrl(
+        "error",
+        "Enter your complete delivery address.",
+        purchase,
+        bottle,
+        extras,
+      ),
     );
   }
 
@@ -70,6 +92,7 @@ export async function saveDeliveryDetails(formData: FormData) {
         "We could not save your details. Please try again.",
         purchase,
         bottle,
+        extras,
       ),
     );
   }
@@ -81,6 +104,15 @@ export async function saveDeliveryDetails(formData: FormData) {
     `Delivery address: ${address}`,
     `Order type: ${purchase === "plan" ? "Weekly milk plan" : "One-time order"}`,
     `Bottle: ${bottle === "new" ? "No return bottle (+₹10 once)" : "M'ma bottle will be returned on delivery (₹62 exchange price)"}`,
+    ...(selectedProducts.length
+      ? [
+          "Added farm products:",
+          ...selectedProducts.map(
+            (product) =>
+              `- ${product.name}, ${product.unit}, ₹${product.price}, ${product.frequency === "weekly" ? "every week" : "once"}`,
+          ),
+        ]
+      : []),
   ].join("\n");
   const whatsapp = new URL("https://wa.me/919818804419");
   whatsapp.searchParams.set("text", message);

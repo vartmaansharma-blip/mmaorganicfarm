@@ -275,6 +275,113 @@
   line-height: 1.4;
 }
 
+.extras {
+  margin: 0 0 48px;
+  padding: 34px 0 38px;
+  border-top: 1px solid #deddd8;
+  border-bottom: 1px solid #deddd8;
+}
+
+.extrasHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 22px;
+}
+
+.extrasHeading h3 {
+  margin: 9px 0 0;
+  font-size: 25px;
+}
+
+.extrasHeading > p {
+  max-width: 34ch;
+  margin: 0;
+  color: #77746d;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.extraGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.extraGrid article {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #d2d0c9;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.extraGrid .extraSelected {
+  border-color: #214d3a;
+  background: #f1f6f3;
+}
+
+.extraGrid label {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  cursor: pointer;
+}
+
+.extraGrid input {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: #214d3a;
+}
+
+.extraGrid strong,
+.extraGrid small {
+  display: block;
+}
+
+.extraGrid strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.extraGrid small {
+  margin-top: 4px;
+  color: #77746d;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.extraFrequency {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 12px;
+}
+
+.extraFrequency button {
+  min-height: 32px;
+  padding: 4px;
+  border: 1px solid #c9c8c2;
+  border-radius: 3px;
+  color: #66645e;
+  background: #fff;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.extraFrequency button[aria-pressed="true"] {
+  border-color: #214d3a;
+  color: #fff;
+  background: #214d3a;
+}
+
 .onceLayout,
 .planLayout {
   border-top: 1px solid #deddd8;
@@ -369,6 +476,13 @@
 
 .totalLine strong {
   font-size: 22px;
+}
+
+.extrasPriceNote {
+  margin: -10px 0 20px;
+  color: #77746d;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .primaryAction {
@@ -600,6 +714,10 @@
     grid-template-columns: 1fr;
   }
 
+  .extraGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .summary {
     position: static;
   }
@@ -679,6 +797,21 @@
     grid-template-columns: 1fr;
   }
 
+  .extras {
+    margin-bottom: 34px;
+    padding: 28px 0;
+  }
+
+  .extrasHeading {
+    display: grid;
+    gap: 10px;
+  }
+
+  .extrasHeading > p {
+    max-width: none;
+    text-align: left;
+  }
+
   .onceLayout {
     grid-template-columns: 1fr;
     gap: 28px;
@@ -748,6 +881,10 @@
   .modeSwitch button {
     padding: 0 8px;
     font-size: 12px;
+  }
+
+  .extraGrid {
+    grid-template-columns: 1fr;
   }
 
   .day {

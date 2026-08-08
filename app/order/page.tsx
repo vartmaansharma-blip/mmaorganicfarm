@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { parseFarmProductSelections } from "@/lib/farm-products";
 import { saveDeliveryDetails } from "./actions";
 import styles from "./order.module.css";
 
@@ -17,6 +18,7 @@ type OrderPageProps = {
   searchParams: Promise<{
     bottle?: "new" | "return";
     error?: string;
+    extras?: string;
     purchase?: "once" | "plan";
   }>;
 };
@@ -44,6 +46,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
     user.user_metadata.name ??
     "there"
   ).split(/\s+/)[0];
+  const selectedProducts = parseFarmProductSelections(params.extras ?? "");
 
   return (
     <main className={styles.page}>
@@ -70,10 +73,28 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             <span className={styles.active}>Delivery details</span>
             <span>WhatsApp confirmation</span>
           </div>
+          {selectedProducts.length ? (
+            <div className={styles.orderSummary}>
+              <strong>Added to this farm order</strong>
+              <ul>
+                {selectedProducts.map((product) => (
+                  <li key={product.id}>
+                    <span>
+                      {product.name} · {product.unit}
+                    </span>
+                    <b>
+                      ₹{product.price} · {product.frequency === "weekly" ? "weekly" : "once"}
+                    </b>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
 
         <form className={styles.form} action={saveDeliveryDetails}>
           <input name="bottle" type="hidden" value={params.bottle ?? "return"} />
+          <input name="extras" type="hidden" value={params.extras ?? ""} />
           <input name="purchase" type="hidden" value={params.purchase ?? "once"} />
           {params.error ? (
             <p className={styles.error} role="alert">
