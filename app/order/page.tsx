@@ -48,7 +48,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
           <span>M&apos;ma Organic Farm</span>
         </Link>
-        <Link className={styles.back} href="/#milk">
+        <Link className={styles.back} href="/milk">
           Back to milk
         </Link>
       </header>

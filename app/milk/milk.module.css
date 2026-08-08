@@ -1,0 +1,685 @@
+.page {
+  min-height: 100svh;
+  padding: 0 24px 80px;
+  color: #191919;
+  background: #fff;
+}
+
+.header {
+  width: min(100%, 1180px);
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto;
+  border-bottom: 1px solid #e7e6e2;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.brand img {
+  width: 58px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.back {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.product {
+  width: min(100%, 1180px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(360px, 0.98fr);
+  align-items: stretch;
+  margin: 40px auto 0;
+  border-bottom: 1px solid #deddd8;
+}
+
+.visual {
+  position: relative;
+  min-height: 600px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #f4c84b;
+}
+
+.visual::after {
+  position: absolute;
+  inset: 24px;
+  border: 1px solid rgba(20, 20, 20, 0.24);
+  pointer-events: none;
+  content: "";
+}
+
+.visual > p,
+.visual > span {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.visual > p {
+  top: 42px;
+  left: 44px;
+}
+
+.visual > span {
+  right: 44px;
+  bottom: 42px;
+}
+
+.visual img {
+  width: 68%;
+  height: 500px;
+  object-fit: contain;
+  filter: drop-shadow(0 30px 24px rgba(54, 41, 8, 0.2));
+}
+
+.productCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 58px 64px;
+  border-top: 1px solid #deddd8;
+  border-right: 1px solid #deddd8;
+}
+
+.eyebrow,
+.stepLabel {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.productCopy h1 {
+  max-width: 9ch;
+  margin: 18px 0 0;
+  font-size: 64px;
+  font-weight: 760;
+  line-height: 0.98;
+}
+
+.price {
+  margin: 28px 0 0;
+  color: #224f3b;
+  font-size: 30px;
+  font-weight: 750;
+}
+
+.price span {
+  color: #6f6d66;
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.intro {
+  max-width: 42ch;
+  margin: 24px 0 0;
+  color: #66645e;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.productFacts {
+  margin: 36px 0 0;
+  border-top: 1px solid #deddd8;
+}
+
+.productFacts div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #deddd8;
+}
+
+.productFacts dt,
+.productFacts dd {
+  font-size: 13px;
+}
+
+.productFacts dt {
+  color: #8a8881;
+}
+
+.productFacts dd {
+  margin: 0;
+  font-weight: 620;
+}
+
+.builder {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding-top: 72px;
+}
+
+.builderHeading {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.builderHeading h2 {
+  max-width: 14ch;
+  margin: 0;
+  font-size: 46px;
+  font-weight: 720;
+  line-height: 1.08;
+}
+
+.modeSwitch {
+  width: min(100%, 620px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 38px 0 48px 220px;
+  border: 1px solid #c9c8c2;
+  border-radius: 5px;
+  background: #f4f3f0;
+}
+
+.modeSwitch button {
+  min-height: 52px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 4px;
+  color: #77746d;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.modeSwitch .modeActive {
+  color: #fff;
+  background: #214d3a;
+}
+
+.onceLayout,
+.planLayout {
+  border-top: 1px solid #deddd8;
+}
+
+.onceLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+  gap: 70px;
+  padding: 48px 0;
+}
+
+.onceCopy h3,
+.panelHeading h3 {
+  margin: 12px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.onceCopy > p:last-child {
+  color: #75736d;
+  font-size: 16px;
+}
+
+.onceAction {
+  padding-left: 36px;
+  border-left: 1px solid #deddd8;
+}
+
+.largeStepper,
+.stepper {
+  display: grid;
+  align-items: center;
+  border: 1px solid #c9c8c2;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.largeStepper {
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  min-height: 62px;
+}
+
+.largeStepper button,
+.stepper button {
+  border: 0;
+  color: #191919;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.largeStepper button {
+  height: 60px;
+  font-size: 22px;
+}
+
+.largeStepper button:first-child,
+.stepper button:first-child {
+  border-right: 1px solid #deddd8;
+}
+
+.largeStepper button:last-child,
+.stepper button:last-child {
+  border-left: 1px solid #deddd8;
+}
+
+.largeStepper button:disabled,
+.stepper button:disabled,
+.primaryAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.largeStepper strong {
+  text-align: center;
+  font-size: 18px;
+}
+
+.totalLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0 22px;
+  font-size: 14px;
+}
+
+.totalLine span {
+  color: #77746d;
+}
+
+.totalLine strong {
+  font-size: 22px;
+}
+
+.primaryAction {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border: 1px solid #171717;
+  border-radius: 4px;
+  color: #fff;
+  background: #171717;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.planLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 56px;
+  padding: 48px 0 0;
+}
+
+.schedulePanel {
+  min-width: 0;
+}
+
+.panelHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.resetButton {
+  padding: 0;
+  border: 0;
+  color: #6f6d66;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-top: 28px;
+  border-top: 1px solid #deddd8;
+  border-left: 1px solid #deddd8;
+}
+
+.day {
+  min-width: 0;
+  padding: 14px 10px 12px;
+  border-right: 1px solid #deddd8;
+  border-bottom: 1px solid #deddd8;
+}
+
+.dayName {
+  min-height: 43px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.dayName strong {
+  font-size: 13px;
+}
+
+.dayName span {
+  color: #8a8881;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.stepper {
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  min-height: 34px;
+}
+
+.stepper button {
+  height: 32px;
+  font-size: 16px;
+}
+
+.stepper output {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dateSection {
+  padding: 32px 0;
+  border-bottom: 1px solid #deddd8;
+}
+
+.dateSection label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  align-items: center;
+  gap: 24px;
+}
+
+.dateSection input {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid #c9c8c2;
+  border-radius: 4px;
+  color: #191919;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.summary {
+  align-self: start;
+  padding: 28px;
+  border: 1px solid #cfcdbf;
+  border-radius: 5px;
+  background: #fff8d8;
+}
+
+.summaryMetric {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.summaryMetric strong {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.summaryMetric span {
+  color: #6f6b58;
+  font-size: 13px;
+}
+
+.summary dl {
+  margin: 26px 0 24px;
+  border-top: 1px solid rgba(20, 20, 20, 0.18);
+}
+
+.summary dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(20, 20, 20, 0.18);
+}
+
+.summary dt,
+.summary dd {
+  font-size: 12px;
+}
+
+.summary dt {
+  color: #77725f;
+}
+
+.summary dd {
+  margin: 0;
+  font-weight: 650;
+  text-align: right;
+}
+
+.reviewed {
+  margin: 0 0 16px;
+  padding: 14px;
+  border-left: 3px solid #214d3a;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.reviewed strong {
+  font-size: 13px;
+}
+
+.reviewed p {
+  margin: 5px 0 0;
+  color: #686558;
+  font-size: 12px;
+}
+
+.summaryNote {
+  margin: 14px 0 0;
+  color: #77725f;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 980px) {
+  .product {
+    grid-template-columns: 1fr;
+  }
+
+  .visual {
+    min-height: 520px;
+  }
+
+  .productCopy {
+    padding: 52px 7vw;
+    border-left: 1px solid #deddd8;
+  }
+
+  .productCopy h1 {
+    font-size: 54px;
+  }
+
+  .modeSwitch {
+    margin-left: 0;
+  }
+
+  .planLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .summary {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 0 16px 48px;
+  }
+
+  .header {
+    min-height: 72px;
+  }
+
+  .brand span {
+    display: none;
+  }
+
+  .product {
+    margin-top: 16px;
+  }
+
+  .visual {
+    min-height: 430px;
+  }
+
+  .visual::after {
+    inset: 14px;
+  }
+
+  .visual > p {
+    top: 28px;
+    left: 28px;
+  }
+
+  .visual > span {
+    right: 28px;
+    bottom: 28px;
+  }
+
+  .visual img {
+    width: 84%;
+    height: 350px;
+  }
+
+  .productCopy {
+    padding: 38px 24px 42px;
+  }
+
+  .productCopy h1 {
+    font-size: 44px;
+  }
+
+  .builder {
+    padding-top: 48px;
+  }
+
+  .builderHeading {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .builderHeading h2 {
+    font-size: 36px;
+  }
+
+  .modeSwitch {
+    width: 100%;
+    margin: 28px 0 34px;
+  }
+
+  .onceLayout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 34px 0;
+  }
+
+  .onceAction {
+    padding: 0;
+    border-left: 0;
+  }
+
+  .planLayout {
+    gap: 32px;
+    padding-top: 34px;
+  }
+
+  .week {
+    grid-template-columns: 1fr;
+    border-top: 0;
+  }
+
+  .day {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 148px;
+    align-items: center;
+    gap: 18px;
+    min-height: 66px;
+    padding: 10px 12px;
+    border-top: 1px solid #deddd8;
+  }
+
+  .dayName {
+    min-height: 0;
+    align-items: center;
+  }
+
+  .stepper {
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+  }
+
+  .stepper output {
+    font-size: 12px;
+  }
+
+  .dateSection label {
+    grid-template-columns: 1fr;
+  }
+
+  .summary {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 390px) {
+  .visual {
+    min-height: 390px;
+  }
+
+  .visual img {
+    height: 310px;
+  }
+
+  .productCopy h1 {
+    font-size: 40px;
+  }
+
+  .builderHeading h2 {
+    font-size: 32px;
+  }
+
+  .modeSwitch button {
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .day {
+    grid-template-columns: minmax(0, 1fr) 138px;
+  }
+}

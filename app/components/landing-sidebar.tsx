@@ -13,7 +13,7 @@ export function LandingSidebar() {
         <a className={`${styles.navLink} ${styles.active}`} href="#home">
           <span>01</span>Home
         </a>
-        <a className={styles.navLink} href="#milk">
+        <a className={styles.navLink} href="/milk">
           <span>02</span>Milk
         </a>
         <a className={styles.navLink} href="#about">
@@ -31,7 +31,7 @@ export function LandingSidebar() {
 
       <div className={styles.bottom}>
         <p>Fresh milk for Jamshedpur homes.</p>
-        <a className={styles.orderButton} href="/order">
+        <a className={styles.orderButton} href="/milk">
           Shop now <span>↗</span>
         </a>
       </div>

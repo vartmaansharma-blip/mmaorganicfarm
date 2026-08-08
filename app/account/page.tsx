@@ -59,7 +59,7 @@ export default async function AccountPage() {
               Manage the details used for your M&apos;ma milk orders.
             </p>
           </div>
-          <Link className={styles.startOrder} href="/order">
+          <Link className={styles.startOrder} href="/milk">
             Start an order
           </Link>
         </div>

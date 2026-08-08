@@ -15,6 +15,12 @@ const authCallbackUrl = new URL("../app/auth/callback/route.ts", import.meta.url
 const proxyUrl = new URL("../proxy.ts", import.meta.url);
 const orderPageUrl = new URL("../app/order/page.tsx", import.meta.url);
 const orderActionsUrl = new URL("../app/order/actions.ts", import.meta.url);
+const milkPageUrl = new URL("../app/milk/page.tsx", import.meta.url);
+const milkBuilderUrl = new URL(
+  "../app/milk/milk-plan-builder.tsx",
+  import.meta.url,
+);
+const milkStylesUrl = new URL("../app/milk/milk.module.css", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
 const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
@@ -198,6 +204,39 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /signOut/);
 });
 
+test("provides a separate mobile-first milk product and plan page", async () => {
+  const [page, builder, styles, landing, sidebar, account, order] =
+    await Promise.all([
+      readFile(milkPageUrl, "utf8"),
+      readFile(milkBuilderUrl, "utf8"),
+      readFile(milkStylesUrl, "utf8"),
+      readFile(pageUrl, "utf8"),
+      readFile(sidebarUrl, "utf8"),
+      readFile(accountPageUrl, "utf8"),
+      readFile(orderPageUrl, "utf8"),
+    ]);
+
+  assert.match(page, /Fresh farm milk/);
+  assert.match(page, /₹62/);
+  assert.match(page, /farm-bottle\.png/);
+  assert.match(page, /MilkPlanBuilder/);
+  assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk"\)/);
+  assert.match(builder, /Buy once/);
+  assert.match(builder, /Start milk plan/);
+  assert.match(builder, /Weekly quantity/);
+  assert.match(builder, /Start date/);
+  assert.match(builder, /Review milk plan/);
+  assert.match(builder, /weeklyLitres/);
+  assert.match(builder, /PRICE_PER_LITRE = 62/);
+  assert.doesNotMatch(builder, /Shopify|checkout|payment/i);
+  assert.match(styles, /@media \(max-width: 720px\)/);
+  assert.match(styles, /grid-template-columns: 1fr/);
+  assert.match(landing, /const orderPath = "\/milk"/);
+  assert.match(sidebar, /href="\/milk"/);
+  assert.match(account, /href="\/milk"/);
+  assert.match(order, /href="\/milk"/);
+});
+
 test("collects delivery details only when a customer starts an order", async () => {
   const [page, signIn, callback, orderPage, orderActions] = await Promise.all([
     readFile(pageUrl, "utf8"),
@@ -207,7 +246,7 @@ test("collects delivery details only when a customer starts an order", async () 
     readFile(orderActionsUrl, "utf8"),
   ]);
 
-  assert.match(page, /const orderPath = "\/order"/);
+  assert.match(page, /const orderPath = "\/milk"/);
   assert.match(signIn, /name="next"/);
   assert.match(callback, /mma_auth_next/);
   assert.match(orderPage, /Phone number/);

@@ -5,7 +5,7 @@ import landingStyles from "./landing.module.css";
 
 export const dynamic = "force-dynamic";
 
-const orderPath = "/order";
+const orderPath = "/milk";
 const whatsappContact =
   "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%20have%20a%20question%20about%20fresh%20milk%20delivery.";
 
