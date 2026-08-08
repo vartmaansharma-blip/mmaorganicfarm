@@ -4,7 +4,7 @@
   --white: #fff;
   --yellow: #f4c84a;
   --blue: #8ecbed;
-  --green: #274839;
+  --blue-deep: #126fa9;
   --line: rgba(20, 20, 20, 0.15);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -210,7 +210,7 @@ a {
 .order-orbit::before {
   inset: -5px;
   z-index: -1;
-  background: conic-gradient(from 0deg, var(--ink), transparent 28%, var(--green), transparent 62%, var(--ink));
+  background: conic-gradient(from 0deg, var(--ink), transparent 28%, var(--blue-deep), transparent 62%, var(--ink));
   animation: order-ring-spin 4.5s linear infinite;
   opacity: 0.48;
 }
@@ -303,18 +303,6 @@ a {
   overflow: hidden;
 }
 
-.hero::after {
-  content: "";
-  position: absolute;
-  right: -90px;
-  bottom: -180px;
-  width: 390px;
-  height: 390px;
-  border: 74px solid rgba(255, 255, 255, 0.28);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
 .hero-copy {
   grid-column: 1;
   grid-row: 1;
@@ -326,25 +314,21 @@ a {
 .hero-brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   margin-bottom: 26px;
 }
 
 .hero-brand-lockup img {
-  width: clamp(96px, 9vw, 136px);
+  width: clamp(94px, 8vw, 126px);
   height: auto;
-  padding: 7px;
-  border: 1px solid rgba(20, 20, 20, 0.28);
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 6px 6px 0 rgba(20, 20, 20, 0.16);
+  filter: drop-shadow(0 8px 10px rgba(20, 20, 20, 0.11));
 }
 
 .hero-brand-lockup span {
-  max-width: 12ch;
-  font-size: clamp(18px, 2vw, 28px);
-  font-weight: 900;
-  line-height: 1;
+  max-width: 14ch;
+  font-size: clamp(18px, 1.7vw, 24px);
+  font-weight: 600;
+  line-height: 1.08;
 }
 
 .eyebrow {
@@ -373,7 +357,7 @@ h1 {
 
 .hero-copy h1 span {
   display: block;
-  color: var(--green);
+  color: var(--blue-deep);
 }
 
 .hero-conversion {
@@ -458,43 +442,39 @@ h1 {
   place-items: center;
   justify-self: stretch;
   overflow: hidden;
-  border-left: 1px solid rgba(20, 20, 20, 0.32);
-  background: var(--blue);
+  background: transparent;
   perspective: 1200px;
 }
 
-.bottle-stage img {
-  z-index: 2;
-  width: min(68%, 500px);
-  height: 78%;
-  object-fit: contain;
-  object-position: center;
-  border-radius: 0;
-  filter: drop-shadow(0 34px 28px rgba(30, 24, 10, 0.27));
-  animation: bottle-turn 8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-  transform-style: preserve-3d;
-  will-change: transform;
-}
-
-.bottle-stage:hover img,
-.bottle-stage:focus-visible img {
-  animation-play-state: paused;
-}
-
-.bottle-shadow {
+.bottle-scene-link {
   position: absolute;
-  bottom: 7%;
-  width: 54%;
-  height: 7%;
-  border-radius: 50%;
-  background: rgba(18, 17, 14, 0.22);
-  filter: blur(14px);
+  inset: 6% 7% 3%;
+  z-index: 2;
+  display: block;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.bottle-scene-link:active {
+  cursor: grabbing;
+}
+
+.bottle-canvas,
+.bottle-fallback {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bottle-fallback {
+  object-fit: contain;
+  filter: drop-shadow(0 34px 28px rgba(30, 24, 10, 0.22));
 }
 
 .visual-word {
   position: absolute;
   z-index: 0;
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(18, 111, 169, 0.34);
   font-size: clamp(100px, 11vw, 170px);
   font-weight: 900;
   line-height: 0.78;
@@ -510,6 +490,7 @@ h1 {
 .visual-word-bottom {
   right: -1%;
   bottom: 10%;
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .bottle-badge {
@@ -544,7 +525,7 @@ h1 {
 
 .orbit {
   position: absolute;
-  border: 1px solid rgba(20, 20, 20, 0.35);
+  border: 1px solid rgba(18, 111, 169, 0.48);
   border-radius: 50%;
 }
 
@@ -575,50 +556,9 @@ h1 {
   text-transform: uppercase;
 }
 
-@keyframes bottle-turn {
-  0%,
-  100% {
-    transform: rotateY(-12deg) rotateZ(-1deg) translateY(0);
-  }
-  45% {
-    transform: rotateY(12deg) rotateZ(1deg) translateY(-12px);
-  }
-  50% {
-    transform: rotateY(14deg) rotateZ(1deg) translateY(-12px);
-  }
-}
-
-@keyframes bottle-mobile-turn {
-  0%,
-  100% {
-    transform: rotateY(-22deg) rotateZ(-2deg) translateY(5px) scale(0.95);
-  }
-  25% {
-    transform: rotateY(0deg) rotateZ(0deg) translateY(-7px) scale(0.99);
-  }
-  50% {
-    transform: rotateY(22deg) rotateZ(2deg) translateY(-14px) scale(1.02);
-  }
-  75% {
-    transform: rotateY(0deg) rotateZ(0deg) translateY(-7px) scale(0.99);
-  }
-}
-
 @keyframes bottle-orbit-mobile {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes bottle-shadow-mobile {
-  0%,
-  100% {
-    opacity: 0.34;
-    transform: scaleX(0.88);
-  }
-  50% {
-    opacity: 0.2;
-    transform: scaleX(1.06);
   }
 }
 
@@ -864,7 +804,7 @@ h1 {
   min-height: 0;
   display: grid;
   place-items: center;
-  background: var(--green);
+  background: var(--blue-deep);
 }
 
 .glass-story {
@@ -1079,10 +1019,7 @@ footer {
     min-height: 600px;
     margin: 0;
     justify-self: stretch;
-    border-top: 1px solid rgba(20, 20, 20, 0.3);
-    border-right: 0;
-    border-bottom: 1px solid rgba(20, 20, 20, 0.3);
-    border-left: 0;
+    border: 0;
   }
 
   .hero-conversion {
@@ -1213,12 +1150,11 @@ footer {
 
   .hero-brand-lockup img {
     width: 86px;
-    padding: 5px;
-    box-shadow: 4px 4px 0 rgba(20, 20, 20, 0.14);
   }
 
   .hero-brand-lockup span {
-    font-size: 18px;
+    font-size: 17px;
+    font-weight: 600;
   }
 
   h1 {
@@ -1282,21 +1218,8 @@ footer {
     transform-style: preserve-3d;
   }
 
-  .bottle-stage img {
-    width: min(72%, 320px);
-    height: 370px;
-    object-fit: contain;
-    border-radius: 0;
-    animation: bottle-mobile-turn 5.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-    transform-origin: 50% 58%;
-    backface-visibility: visible;
-    will-change: transform;
-  }
-
-  .bottle-shadow {
-    bottom: 5%;
-    width: 48%;
-    animation: bottle-shadow-mobile 2.8s ease-in-out infinite;
+  .bottle-scene-link {
+    inset: 0 2% 0;
   }
 
   .visual-word {

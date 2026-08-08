@@ -18,6 +18,7 @@ const orderActionsUrl = new URL("../app/order/actions.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
 const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
+const bottleSceneUrl = new URL("../app/components/bottle-scene.tsx", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -75,10 +76,12 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
 
-  assert.match(page, /Fresh milk/);
+  assert.match(page, /Fresh milk/i);
   assert.match(page, /hero-brand-lockup/);
   assert.match(page, /visual-word-top/);
-  assert.match(page, /Farm to home/);
+  assert.match(page, /Dairy should always be fresh/);
+  assert.match(page, /From the farm/);
+  assert.match(page, /BottleScene/);
   assert.match(page, /order-orbit/);
   assert.match(page, /ORDER NOW/);
   assert.match(page, /₹62 per litre/);
@@ -134,21 +137,32 @@ test("provides Google and email account creation without delivery friction", asy
   assert.doesNotMatch(schema, /service_role/i);
 });
 
-test("styles the official details section responsively", async () => {
-  const styles = await readFile(stylesUrl, "utf8");
+test("renders a responsive controllable 3D milk bottle", async () => {
+  const [styles, bottleScene] = await Promise.all([
+    readFile(stylesUrl, "utf8"),
+    readFile(bottleSceneUrl, "utf8"),
+  ]);
 
   assert.match(styles, /\.official-section/);
   assert.match(styles, /\.official-grid/);
   assert.match(styles, /\.hero-reassurance/);
   assert.match(styles, /order-ring-spin/);
   assert.match(styles, /order-ring-pulse/);
-  assert.match(styles, /bottle-mobile-turn/);
   assert.match(styles, /bottle-orbit-mobile/);
-  assert.match(styles, /bottle-shadow-mobile/);
+  assert.match(styles, /\.bottle-scene-link/);
+  assert.match(styles, /\.bottle-canvas/);
   assert.match(styles, /\.hero-conversion/);
   assert.match(styles, /\.visual-word/);
   assert.match(styles, /grid-column: 1/);
   assert.match(styles, /object-fit: contain/);
+  assert.doesNotMatch(styles, /var\(--green\)/);
+  assert.doesNotMatch(styles, /\.hero-brand-lockup img\s*\{[^}]*border-radius:\s*50%/s);
+  assert.match(bottleScene, /from "three"/);
+  assert.match(bottleScene, /LatheGeometry/);
+  assert.match(bottleScene, /WebGLRenderer/);
+  assert.match(bottleScene, /mma-logo\.png/);
+  assert.match(bottleScene, /requestAnimationFrame/);
+  assert.match(bottleScene, /dragVelocityRef/);
   assert.doesNotMatch(styles, /\.benefit-bar-section/);
   assert.doesNotMatch(styles, /\.benefit-track/);
   assert.doesNotMatch(styles, /\.proof-section/);
