@@ -1,8 +1,8 @@
 .page {
   min-height: 100svh;
   padding: 0 24px 72px;
-  color: #141414;
-  background: #fbfbfa;
+  color: #191919;
+  background: #fff;
 }
 
 .header {
@@ -38,8 +38,8 @@
 }
 
 .layout {
-  width: min(100%, 760px);
-  margin: clamp(62px, 9vh, 96px) auto 0;
+  width: min(100%, 620px);
+  margin: clamp(54px, 8vh, 84px) auto 0;
 }
 
 .eyebrow {
@@ -50,59 +50,51 @@
 }
 
 .copy h1 {
-  max-width: 14ch;
+  max-width: 18ch;
   margin: 0;
-  font-size: clamp(46px, 6vw, 68px);
-  font-weight: 750;
-  line-height: 1.03;
+  font-size: clamp(36px, 5vw, 48px);
+  font-weight: 700;
+  line-height: 1.12;
 }
 
 .copy > p:not(.eyebrow) {
   max-width: 56ch;
   margin: 22px 0 30px;
-  color: #5e5b54;
-  line-height: 1.65;
+  color: #787774;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+  color: #9b9a97;
+  font-size: 11px;
 }
 
 .steps span {
-  min-height: 42px;
-  display: grid;
-  place-items: center;
-  padding: 8px;
-  border: 1px solid rgba(20, 20, 20, 0.22);
-  color: #77736b;
-  font-size: 10px;
-  font-weight: 650;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.steps .complete {
-  color: #24503b;
-  border-color: #9fc2ae;
-  background: #edf8f1;
+.steps span:not(:last-child)::after {
+  color: #d3d3d1;
+  content: "→";
 }
 
+.steps .complete,
 .steps .active {
-  color: #141414;
-  border-color: #d9ad25;
-  background: #f4c84a;
+  color: #191919;
+  font-weight: 600;
 }
 
 .form {
   display: grid;
-  gap: 24px;
-  padding: clamp(26px, 5vw, 46px);
-  border: 1px solid rgba(20, 20, 20, 0.16);
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: 0 20px 55px rgba(20, 20, 20, 0.07);
+  gap: 22px;
+  padding: 0;
 }
 
 .form label {
@@ -115,8 +107,8 @@
 .form input,
 .form textarea {
   width: 100%;
-  border: 1px solid rgba(20, 20, 20, 0.3);
-  border-radius: 5px;
+  border: 1px solid #d3d3d1;
+  border-radius: 4px;
   outline: none;
   color: #141414;
   background: #fff;
@@ -137,23 +129,9 @@
 
 .form input:focus,
 .form textarea:focus {
-  border-color: #141414;
-  box-shadow: 0 0 0 3px rgba(244, 200, 74, 0.45);
-}
-
-.phoneField {
-  display: grid;
-  grid-template-columns: 58px 1fr;
-}
-
-.phoneField > span {
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(20, 20, 20, 0.3);
-  border-right: 0;
-  background: #ebe8df;
-  font-size: 13px;
-  border-radius: 5px 0 0 5px;
+  border-color: #2383e2;
+  outline: 2px solid rgba(35, 131, 226, 0.18);
+  outline-offset: 1px;
 }
 
 .city {
@@ -175,7 +153,7 @@
   min-height: 56px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 0 18px;
   border: 1px solid #141414;
   border-radius: 5px;
@@ -188,7 +166,7 @@
 }
 
 .form button span {
-  font-size: 18px;
+  display: none;
 }
 
 .note {
@@ -210,7 +188,7 @@
 
 @media (max-width: 820px) {
   .copy h1 {
-    max-width: 11ch;
+    max-width: 18ch;
   }
 }
 
@@ -228,16 +206,16 @@
   }
 
   .copy h1 {
-    font-size: 44px;
+    font-size: 36px;
   }
 
   .form {
-    padding: 22px 18px;
-    box-shadow: 0 14px 36px rgba(20, 20, 20, 0.06);
+    padding: 0;
   }
 
-  .steps span {
-    min-height: 38px;
-    font-size: 9px;
+  .steps {
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 10px;
   }
 }

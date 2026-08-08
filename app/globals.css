@@ -21,7 +21,7 @@ html {
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--paper);
+  background: #fff;
   font-family: var(--font-sans);
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;

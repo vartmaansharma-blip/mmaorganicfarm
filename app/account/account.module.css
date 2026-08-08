@@ -1,8 +1,8 @@
 .page {
   min-height: 100svh;
   padding: 0 24px 72px;
-  color: #141414;
-  background: #fbfbfa;
+  color: #191919;
+  background: #fff;
 }
 
 .header {
@@ -38,8 +38,8 @@
 }
 
 .content {
-  width: min(100%, 820px);
-  margin: clamp(62px, 9vh, 96px) auto 0;
+  width: min(100%, 680px);
+  margin: clamp(54px, 8vh, 84px) auto 0;
 }
 
 .eyebrow {
@@ -51,16 +51,17 @@
 
 .content h1 {
   margin: 0;
-  font-size: clamp(46px, 7vw, 70px);
-  font-weight: 750;
-  line-height: 1.03;
+  font-size: clamp(36px, 5vw, 48px);
+  font-weight: 700;
+  line-height: 1.12;
 }
 
 .intro {
   max-width: 50ch;
   margin: 22px 0 32px;
-  color: #5e5b54;
-  line-height: 1.65;
+  color: #787774;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .startOrder {
@@ -82,10 +83,9 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
-  padding: 20px;
-  border: 1px solid rgba(20, 20, 20, 0.16);
-  border-radius: 6px 6px 0 0;
-  background: #fff;
+  padding: 20px 0;
+  border-top: 1px solid #ededeb;
+  border-bottom: 1px solid #ededeb;
 }
 
 .avatar,
@@ -126,9 +126,9 @@
 
 .status {
   padding: 8px 10px;
-  border: 1px solid #9fc2ae;
-  color: #24503b;
-  background: #edf8f1;
+  border: 1px solid #d3d3d1;
+  color: #55544f;
+  background: #fff;
   font-size: 11px;
   font-weight: 650;
 }
@@ -137,19 +137,17 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
-  border-right: 1px solid rgba(20, 20, 20, 0.16);
-  border-left: 1px solid rgba(20, 20, 20, 0.16);
-  background: #fff;
 }
 
 .details div {
   min-height: 130px;
-  padding: 22px;
-  border-bottom: 1px solid rgba(20, 20, 20, 0.16);
+  padding: 22px 0;
+  border-bottom: 1px solid #ededeb;
 }
 
 .details div + div {
-  border-left: 1px solid rgba(20, 20, 20, 0.16);
+  padding-left: 24px;
+  border-left: 1px solid #ededeb;
 }
 
 .details dt {

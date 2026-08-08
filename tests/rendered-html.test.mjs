@@ -61,9 +61,11 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
   assert.doesNotMatch(styles, /^main\s*\{/m);
   assert.match(page, /LandingSidebar/);
   assert.match(page, /landingStyles\.main/);
-  assert.match(signInStyles, /grid-template-rows: 210px 1fr/);
+  assert.match(signInStyles, /background: #fff/);
+  assert.doesNotMatch(signInStyles, /farmShade|farmPanel/);
   assert.doesNotMatch(signInStyles, /grid-template-columns: minmax\(0, 1\.06fr\)/);
-  assert.match(orderStyles, /width: min\(100%, 760px\)/);
+  assert.match(orderStyles, /width: min\(100%, 620px\)/);
+  assert.doesNotMatch(orderStyles, /box-shadow/);
   assert.doesNotMatch(orderStyles, /grid-template-columns: minmax\(0, 0\.88fr\)/);
   assert.match(sidebarStyles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
 });
@@ -108,8 +110,9 @@ test("provides Google and email account creation without delivery friction", asy
   assert.match(signIn, /Continue with Google/);
   assert.match(signIn, /google-g\.svg/);
   assert.match(signIn, /Create your account/);
-  assert.match(signIn, /Delivery details come later/);
+  assert.match(signIn, /delivery details only after/i);
   assert.doesNotMatch(signIn, /quantity|delivery time|payment method/i);
+  assert.doesNotMatch(signIn, /Mobile number|Delivery address/);
   assert.match(actions, /signInWithOAuth/);
   assert.match(actions, /provider: "google"/);
   assert.match(actions, /redirectTo: `\$\{origin\}\/auth\/callback`/);
@@ -188,7 +191,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(page, /const orderPath = "\/order"/);
   assert.match(signIn, /name="next"/);
   assert.match(callback, /mma_auth_next/);
-  assert.match(orderPage, /Mobile number/);
+  assert.match(orderPage, /Phone number for delivery updates/);
   assert.match(orderPage, /Delivery address/);
   assert.match(orderPage, /Save &amp; continue to WhatsApp/);
   assert.doesNotMatch(orderPage, /quantity|delivery time|payment method/i);

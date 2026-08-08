@@ -55,16 +55,16 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
 
       <section className={styles.layout}>
         <div className={styles.copy}>
-          <p className={styles.eyebrow}>Delivery details</p>
+          <p className={styles.eyebrow}>Step 2 of 3</p>
           <h1>Where should we bring your milk, {firstName}?</h1>
           <p>
-            Add only the details the farm needs to contact you and identify your
-            delivery address. You will confirm the order personally on WhatsApp.
+            Add a contact number and delivery address. You will confirm what you
+            need personally on WhatsApp.
           </p>
           <div className={styles.steps} aria-label="Order progress">
-            <span className={styles.complete}>01 Account</span>
-            <span className={styles.active}>02 Address</span>
-            <span>03 WhatsApp</span>
+            <span className={styles.complete}>Account</span>
+            <span className={styles.active}>Delivery details</span>
+            <span>WhatsApp confirmation</span>
           </div>
         </div>
 
@@ -76,21 +76,17 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           ) : null}
 
           <label>
-            Mobile number
-            <div className={styles.phoneField}>
-              <span>+91</span>
-              <input
-                autoComplete="tel"
-                defaultValue={profile?.phone?.replace(/^\+91/, "") ?? ""}
-                inputMode="numeric"
-                maxLength={10}
-                name="phone"
-                pattern="[0-9]{10}"
-                placeholder="10-digit mobile number"
-                required
-                type="tel"
-              />
-            </div>
+            Phone number for delivery updates
+            <input
+              autoComplete="tel"
+              defaultValue={profile?.phone ?? ""}
+              inputMode="tel"
+              maxLength={16}
+              name="phone"
+              placeholder="+91 10-digit mobile number"
+              required
+              type="tel"
+            />
           </label>
 
           <label>
@@ -114,8 +110,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             Save &amp; continue to WhatsApp <span>→</span>
           </button>
           <p className={styles.note}>
-            This saves your phone and address to your M&apos;ma account. It does
-            not place or charge for an order.
+            These details are saved securely to your account. No order is placed
+            and no payment is taken on this page.
           </p>
         </form>
       </section>

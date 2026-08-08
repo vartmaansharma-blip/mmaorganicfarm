@@ -43,42 +43,21 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
   return (
     <main className={styles.page}>
-      <section className={styles.farmPanel} aria-label="M'ma Organic Farm">
-        <Image
-          src="/farm-bottle.png"
-          alt="M'ma Organic Farm milk bottle at the farm"
-          fill
-          priority
-          sizes="(max-width: 820px) 100vw, 52vw"
-        />
-        <div className={styles.farmShade} />
-        <Link className={styles.brand} href="/">
-          <Image src="/mma-logo.png" alt="" width={88} height={76} />
+      <header className={styles.header}>
+        <Link className={styles.brand} href="/" aria-label="M'ma Organic Farm">
+          <Image src="/mma-logo.png" alt="" width={72} height={62} priority />
           <span>M&apos;ma Organic Farm</span>
         </Link>
-        <div className={styles.farmCopy}>
-          <p>Fresh milk · Jamshedpur</p>
-          <h1>Your morning milk, now easier to manage.</h1>
-          <div className={styles.promiseRow}>
-            <span>Order history</span>
-            <span>Delivery status</span>
-            <span>Faster checkout</span>
-          </div>
-        </div>
-      </section>
+        <span className={styles.location}>Fresh milk in Jamshedpur</span>
+      </header>
 
       <section className={styles.authPanel}>
-        <Link className={styles.backLink} href="/">
-          ← Back to the farm
-        </Link>
-
         <div className={styles.authContent}>
-          <p className={styles.eyebrow}>Customer account</p>
-          <h2>{isSignUp ? "Create your account" : "Welcome back"}</h2>
+          <h1>{isSignUp ? "Create your account" : "Welcome back"}</h1>
           <p className={styles.intro}>
             {isSignUp
-              ? "Start with your identity. Delivery details come later, only when you order."
-              : "Sign in to continue your milk order and, later, view delivery updates."}
+              ? "Sign up with Google or email. We will ask for delivery details only after you choose to order."
+              : "Sign in to continue to M'ma Organic Farm."}
           </p>
 
           {params.error ? (
@@ -174,8 +153,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           </p>
 
           <p className={styles.privacyNote}>
-            We use your account only for ordering, payment receipts, delivery
-            updates, and customer support.
+            Your account is used only for orders, delivery updates, receipts,
+            and customer support.
           </p>
         </div>
       </section>
