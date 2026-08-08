@@ -6,6 +6,10 @@ const pageUrl = new URL("../app/page.tsx", import.meta.url);
 const layoutUrl = new URL("../app/layout.tsx", import.meta.url);
 const stylesUrl = new URL("../app/globals.css", import.meta.url);
 const signInUrl = new URL("../app/sign-in/page.tsx", import.meta.url);
+const googleSignInUrl = new URL(
+  "../app/sign-in/google-sign-in-button.tsx",
+  import.meta.url,
+);
 const authActionsUrl = new URL("../app/sign-in/actions.ts", import.meta.url);
 const forgotPasswordUrl = new URL("../app/forgot-password/actions.ts", import.meta.url);
 const resetPasswordUrl = new URL("../app/reset-password/actions.ts", import.meta.url);
@@ -124,24 +128,29 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
 });
 
 test("provides Google and email account creation without delivery friction", async () => {
-  const [signIn, actions, callback, proxy, schema] = await Promise.all([
+  const [signIn, googleSignIn, actions, callback, proxy, schema] = await Promise.all([
     readFile(signInUrl, "utf8"),
+    readFile(googleSignInUrl, "utf8"),
     readFile(authActionsUrl, "utf8"),
     readFile(authCallbackUrl, "utf8"),
     readFile(proxyUrl, "utf8"),
     readFile(profileSchemaUrl, "utf8"),
   ]);
 
-  assert.match(signIn, /Continue with Google/);
-  assert.match(signIn, /google-g\.svg/);
+  assert.match(signIn, /GoogleSignInButton/);
+  assert.match(googleSignIn, /Continue with Google/);
+  assert.match(googleSignIn, /google-g\.svg/);
   assert.match(signIn, /Create your account/);
   assert.match(signIn, /delivery details only after/i);
   assert.doesNotMatch(signIn, /quantity|delivery time|payment method/i);
   assert.doesNotMatch(signIn, /Mobile number|Delivery address/);
-  assert.match(actions, /signInWithOAuth/);
-  assert.match(actions, /provider: "google"/);
-  assert.match(actions, /redirectTo: `\$\{origin\}\/auth\/callback`/);
-  assert.doesNotMatch(actions, /auth\/callback\?next=/);
+  assert.match(googleSignIn, /signInWithOAuth/);
+  assert.match(googleSignIn, /provider: "google"/);
+  assert.match(googleSignIn, /new URL\("\/auth\/callback", window\.location\.origin\)/);
+  assert.match(googleSignIn, /started\.current/);
+  assert.match(googleSignIn, /disabled=\{isStarting\}/);
+  assert.match(googleSignIn, /searchParams\.set\("next", next\)/);
+  assert.doesNotMatch(actions, /signInWithOAuth/);
   assert.match(callback, /: "\/"/);
   assert.match(signIn, /if \(user\) \{\s*redirect\(next\)/);
   assert.match(proxy, /searchParams\.has\("code"\)/);

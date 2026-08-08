@@ -73,25 +73,6 @@ async function saveProfile() {
   );
 }
 
-export async function signInWithGoogle(formData: FormData) {
-  ensureSupabaseIsReady();
-  const supabase = await createClient();
-  const origin = await requestOrigin();
-  await rememberNext(safeNext(formData.get("next")));
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${origin}/auth/callback`,
-    },
-  });
-
-  if (error || !data.url) {
-    redirect(signInUrl("error", "Google sign-in is not available yet."));
-  }
-
-  redirect(data.url);
-}
-
 export async function signInWithEmail(formData: FormData) {
   ensureSupabaseIsReady();
   const email = String(formData.get("email") ?? "").trim();

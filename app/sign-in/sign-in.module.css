@@ -125,6 +125,21 @@
   border-color: #b8b8b5;
 }
 
+.googleButton:disabled {
+  color: #787774;
+  background: #f7f7f5;
+  border-color: #d3d3d1;
+  cursor: wait;
+}
+
+.inlineError {
+  margin: 10px 0 0;
+  color: #812f26;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .divider {
   display: flex;
   align-items: center;

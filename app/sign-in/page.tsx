@@ -3,11 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import {
-  signInWithEmail,
-  signInWithGoogle,
-  signUpWithEmail,
-} from "./actions";
+import { signInWithEmail, signUpWithEmail } from "./actions";
+import { GoogleSignInButton } from "./google-sign-in-button";
 import styles from "./sign-in.module.css";
 
 export const metadata: Metadata = {
@@ -31,7 +28,10 @@ type SignInPageProps = {
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = await searchParams;
   const isSignUp = params.mode === "sign-up";
-  const next = params.next?.startsWith("/") ? params.next : "/";
+  const next =
+    params.next?.startsWith("/") && !params.next.startsWith("//")
+      ? params.next
+      : "/";
   const supabase = await createClient();
   const {
     data: { user },
@@ -71,19 +71,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </p>
           ) : null}
 
-          <form action={signInWithGoogle}>
-            <input name="next" type="hidden" value={next} />
-            <button className={styles.googleButton} type="submit">
-              <Image
-                src="/google-g.svg"
-                alt=""
-                aria-hidden="true"
-                width={22}
-                height={22}
-              />
-              Continue with Google
-            </button>
-          </form>
+          <GoogleSignInButton next={next} />
 
           <div className={styles.divider}>
             <span>or use email</span>
