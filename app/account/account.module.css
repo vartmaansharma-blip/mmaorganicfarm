@@ -203,6 +203,114 @@
   font-weight: 600;
 }
 
+.planSection {
+  margin-top: 44px;
+  padding-top: 32px;
+  border-top: 1px solid #ededeb;
+}
+
+.planHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.planHeading h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.planHeading p {
+  margin: 6px 0 0;
+  color: #787774;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.planStatus {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 4px;
+  color: #805500;
+  background: #fff3c4;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.planSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 24px 0 0;
+  background: #ededeb;
+  border: 1px solid #ededeb;
+}
+
+.planSummary div {
+  min-width: 0;
+  padding: 16px;
+  background: #fff;
+}
+
+.planSummary dt {
+  margin-bottom: 7px;
+  color: #787774;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.planSummary dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.planWeek {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-top: 16px;
+  border-top: 1px solid #ededeb;
+  border-bottom: 1px solid #ededeb;
+}
+
+.planDay {
+  min-width: 0;
+  padding: 14px 6px;
+  text-align: center;
+}
+
+.planDay + .planDay {
+  border-left: 1px solid #ededeb;
+}
+
+.planDay span,
+.planDay strong {
+  display: block;
+}
+
+.planDay span {
+  margin-bottom: 6px;
+  color: #787774;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.planDay strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.planNote {
+  margin: 12px 0 0;
+  color: #787774;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .accountFooter {
   display: flex;
   align-items: center;
@@ -264,6 +372,27 @@
   .details div {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .planHeading {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .planSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .planWeek {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .planDay:nth-child(5) {
+    border-left: 0;
+  }
+
+  .planDay:nth-child(n + 5) {
+    border-top: 1px solid #ededeb;
   }
 
   .accountFooter {

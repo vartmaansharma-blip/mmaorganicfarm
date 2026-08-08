@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./actions";
 import styles from "./account.module.css";
@@ -27,6 +28,17 @@ export default async function AccountPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const { data: deliveryPlan } = await supabase
+    .from("delivery_plans")
+    .select(
+      "id, status, start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity, unit)",
+    )
+    .eq("user_id", user.id)
+    .in("status", ["pending_confirmation", "active", "paused"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const name = profile?.full_name ?? user.user_metadata.full_name ?? "Customer";
   const email = profile?.email ?? user.email ?? "";
   const googleConnected = user.identities?.some(
@@ -35,6 +47,21 @@ export default async function AccountPage() {
   const hasPhone = Boolean(profile?.phone?.trim());
   const hasAddress = Boolean(profile?.address_line?.trim());
   const hasDeliveryDetails = hasPhone || hasAddress;
+  const milkByDay = new Map(
+    (deliveryPlan?.weekly_delivery_items ?? [])
+      .filter((item) => item.product_key === "milk")
+      .map((item) => [item.day_of_week, Number(item.quantity)]),
+  );
+  const weeklyLitres = [...milkByDay.values()].reduce(
+    (total, litres) => total + litres,
+    0,
+  );
+  const planStatus =
+    deliveryPlan?.status === "active"
+      ? "Active"
+      : deliveryPlan?.status === "paused"
+        ? "Paused"
+        : "Awaiting confirmation";
 
   return (
     <main className={styles.page}>
@@ -119,6 +146,53 @@ export default async function AccountPage() {
             {hasDeliveryDetails ? "Update delivery details" : "Add delivery details"}
           </Link>
         </section>
+
+        {deliveryPlan ? (
+          <section className={styles.planSection} aria-labelledby="plan-heading">
+            <div className={styles.planHeading}>
+              <div>
+                <h2 id="plan-heading">Your weekly milk plan</h2>
+                <p>Saved to your account and ready for farm confirmation.</p>
+              </div>
+              <span className={styles.planStatus}>{planStatus}</span>
+            </div>
+
+            <dl className={styles.planSummary}>
+              <div>
+                <dt>Starts</dt>
+                <dd>{formatPlanStartDate(deliveryPlan.start_date)}</dd>
+              </div>
+              <div>
+                <dt>Each week</dt>
+                <dd>{weeklyLitres} L</dd>
+              </div>
+              <div>
+                <dt>Glass bottle</dt>
+                <dd>
+                  {deliveryPlan.bottle_choice === "new"
+                    ? "New bottle"
+                    : "Return on delivery"}
+                </dd>
+              </div>
+            </dl>
+
+            <div className={styles.planWeek} aria-label="Saved weekly milk schedule">
+              {MILK_PLAN_DAYS.map((day, index) => {
+                const litres = milkByDay.get(index + 1) ?? 0;
+                return (
+                  <div className={styles.planDay} key={day.label}>
+                    <span>{day.short}</span>
+                    <strong>{litres ? `${litres} L` : "Skip"}</strong>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className={styles.planNote}>
+              WhatsApp confirmation activates the plan. No payment is taken here.
+            </p>
+          </section>
+        ) : null}
 
         <div className={styles.accountFooter}>
           <span>Signed in as {email}</span>

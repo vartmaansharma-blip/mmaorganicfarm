@@ -215,6 +215,11 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /hasDeliveryDetails/);
   assert.match(accountPage, /hasPhone \? \(/);
   assert.match(accountPage, /hasAddress \? \(/);
+  assert.match(accountPage, /delivery_plans/);
+  assert.match(accountPage, /weekly_delivery_items/);
+  assert.match(accountPage, /Your weekly milk plan/);
+  assert.match(accountPage, /Saved weekly milk schedule/);
+  assert.match(accountPage, /Awaiting confirmation/);
   assert.doesNotMatch(accountPage, /Not added yet/);
   assert.match(accountPage, /signOut/);
 });
