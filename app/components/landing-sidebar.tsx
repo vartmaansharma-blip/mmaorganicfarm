@@ -11,7 +11,7 @@ export function LandingSidebar() {
 
       <nav className={styles.navigation}>
         <a className={`${styles.navLink} ${styles.active}`} href="#home">
-          <span>01</span>Home
+          <span>01</span>Landing
         </a>
         <a className={styles.navLink} href="#milk">
           <span>02</span>Milk
@@ -22,7 +22,7 @@ export function LandingSidebar() {
         <a className={styles.navLink} href="#farm">
           <span>04</span>Farm
         </a>
-        <AccountLink className={styles.navLink} prefix="05" authenticatedLabel="Profile" />
+        <AccountLink className={styles.navLink} prefix="05" />
       </nav>
 
       <div className={styles.bottom}>
