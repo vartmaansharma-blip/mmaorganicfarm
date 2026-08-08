@@ -155,7 +155,8 @@ test("renders a responsive controllable 3D milk bottle", async () => {
   assert.match(styles, /\.visual-word/);
   assert.match(styles, /grid-column: 1/);
   assert.match(styles, /object-fit: contain/);
-  assert.doesNotMatch(styles, /var\(--green\)/);
+  assert.match(styles, /var\(--green\)/);
+  assert.doesNotMatch(styles, /var\(--blue-deep\)/);
   assert.doesNotMatch(styles, /\.hero-brand-lockup img\s*\{[^}]*border-radius:\s*50%/s);
   assert.match(bottleScene, /from "three"/);
   assert.match(bottleScene, /LatheGeometry/);

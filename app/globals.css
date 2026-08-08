@@ -4,7 +4,7 @@
   --white: #fff;
   --yellow: #f4c84a;
   --blue: #8ecbed;
-  --blue-deep: #126fa9;
+  --green: #274839;
   --line: rgba(20, 20, 20, 0.15);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -210,7 +210,7 @@ a {
 .order-orbit::before {
   inset: -5px;
   z-index: -1;
-  background: conic-gradient(from 0deg, var(--ink), transparent 28%, var(--blue-deep), transparent 62%, var(--ink));
+  background: conic-gradient(from 0deg, var(--ink), transparent 28%, var(--green), transparent 62%, var(--ink));
   animation: order-ring-spin 4.5s linear infinite;
   opacity: 0.48;
 }
@@ -357,7 +357,7 @@ h1 {
 
 .hero-copy h1 span {
   display: block;
-  color: var(--blue-deep);
+  color: var(--green);
 }
 
 .hero-conversion {
@@ -474,7 +474,7 @@ h1 {
 .visual-word {
   position: absolute;
   z-index: 0;
-  color: rgba(18, 111, 169, 0.34);
+  color: rgba(39, 72, 57, 0.34);
   font-size: clamp(100px, 11vw, 170px);
   font-weight: 900;
   line-height: 0.78;
@@ -525,7 +525,7 @@ h1 {
 
 .orbit {
   position: absolute;
-  border: 1px solid rgba(18, 111, 169, 0.48);
+  border: 1px solid rgba(39, 72, 57, 0.48);
   border-radius: 50%;
 }
 
@@ -804,7 +804,7 @@ h1 {
   min-height: 0;
   display: grid;
   place-items: center;
-  background: var(--blue-deep);
+  background: var(--green);
 }
 
 .glass-story {
