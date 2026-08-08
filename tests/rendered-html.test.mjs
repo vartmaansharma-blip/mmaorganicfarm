@@ -195,12 +195,16 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(page, /const orderPath = "\/order"/);
   assert.match(signIn, /name="next"/);
   assert.match(callback, /mma_auth_next/);
-  assert.match(orderPage, /Phone number for delivery updates/);
+  assert.match(orderPage, /Phone number/);
+  assert.match(orderPage, /Used only for delivery updates/);
   assert.match(orderPage, /Delivery address/);
   assert.match(orderPage, /Save &amp; continue to WhatsApp/);
+  assert.doesNotMatch(orderPage, /Delivery city/);
   assert.doesNotMatch(orderPage, /quantity|delivery time|payment method/i);
   assert.match(orderActions, /customer_profiles/);
   assert.match(orderActions, /phone: `\+91\$\{phone\}`/);
   assert.match(orderActions, /address_line: address/);
+  assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);
+  assert.doesNotMatch(orderActions, /Delivery address: \$\{address\}, Jamshedpur/);
   assert.match(orderActions, /wa\.me\/919818804419/);
 });

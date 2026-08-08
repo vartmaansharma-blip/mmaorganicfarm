@@ -23,7 +23,7 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("customer_profiles")
-    .select("full_name, email, avatar_url, phone, address_line, city, postal_code")
+    .select("full_name, email, avatar_url, phone, address_line, postal_code")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -106,7 +106,7 @@ export default async function AccountPage() {
                 <div>
                   <dt>Delivery address</dt>
                   <dd>
-                    {[profile?.address_line, profile?.city, profile?.postal_code]
+                    {[profile?.address_line, profile?.postal_code]
                       .filter(Boolean)
                       .join(", ")}
                   </dd>

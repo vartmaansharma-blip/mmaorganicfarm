@@ -76,35 +76,42 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           ) : null}
 
           <label>
-            Phone number for delivery updates
-            <input
-              autoComplete="tel"
-              defaultValue={profile?.phone ?? ""}
-              inputMode="tel"
-              maxLength={16}
-              name="phone"
-              placeholder="+91 10-digit mobile number"
-              required
-              type="tel"
-            />
+            <span className={styles.fieldLabel}>Phone number</span>
+            <div className={styles.phoneField}>
+              <span aria-hidden="true">+91</span>
+              <input
+                aria-describedby="phone-help"
+                autoComplete="tel"
+                defaultValue={profile?.phone?.replace(/^\+91/, "") ?? ""}
+                inputMode="numeric"
+                maxLength={10}
+                name="phone"
+                pattern="[0-9]{10}"
+                placeholder="98765 43210"
+                required
+                type="tel"
+              />
+            </div>
+            <span className={styles.fieldHelp} id="phone-help">
+              Used only for delivery updates.
+            </span>
           </label>
 
           <label>
-            Delivery address
+            <span className={styles.fieldLabel}>Delivery address</span>
             <textarea
+              aria-describedby="address-help"
               autoComplete="street-address"
               defaultValue={profile?.address_line ?? ""}
               name="address"
               placeholder="House or flat, street, area and landmark"
               required
-              rows={5}
+              rows={4}
             />
+            <span className={styles.fieldHelp} id="address-help">
+              Add a landmark only when it helps the delivery team find you.
+            </span>
           </label>
-
-          <div className={styles.city}>
-            <span>Delivery city</span>
-            <strong>Jamshedpur</strong>
-          </div>
 
           <button type="submit">
             Save &amp; continue to WhatsApp <span>→</span>

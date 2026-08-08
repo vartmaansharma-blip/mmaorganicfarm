@@ -54,13 +54,13 @@
 .eyebrow {
   margin: 0 0 8px;
   color: #787774;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
 .content h1 {
   margin: 0;
-  font-size: 36px;
+  font-size: 40px;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -68,7 +68,7 @@
 .intro {
   margin: 10px 0 0;
   color: #787774;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.55;
 }
 
@@ -82,7 +82,7 @@
   border-radius: 4px;
   color: #fff;
   background: #191919;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -92,14 +92,14 @@
 
 .sectionHeading h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 650;
 }
 
 .sectionHeading p {
   margin: 6px 0 18px;
   color: #787774;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.5;
 }
 
@@ -140,13 +140,13 @@
 
 .identity strong {
   margin-bottom: 4px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
 }
 
 .identity span {
   color: #787774;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .status {
@@ -154,7 +154,7 @@
   align-items: center;
   gap: 7px;
   color: #55544f;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -184,14 +184,14 @@
 }
 
 .details dt {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .details dd {
   margin: 0;
   color: #55544f;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.55;
 }
 
@@ -199,7 +199,7 @@
   display: inline-flex;
   margin-top: 18px;
   color: #2383e2;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -212,7 +212,7 @@
   padding-top: 22px;
   border-top: 1px solid #ededeb;
   color: #9b9a97;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .signOut {
@@ -221,7 +221,7 @@
   color: #55544f;
   background: transparent;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;

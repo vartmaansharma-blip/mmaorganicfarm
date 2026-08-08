@@ -46,7 +46,6 @@ export async function saveDeliveryDetails(formData: FormData) {
         user.user_metadata.avatar_url ?? user.user_metadata.picture ?? null,
       phone: `+91${phone}`,
       address_line: address,
-      city: "Jamshedpur",
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },
@@ -60,7 +59,7 @@ export async function saveDeliveryDetails(formData: FormData) {
     "Hello M'ma Organic Farm, I'd like to continue a fresh milk order.",
     `Name: ${fullName}`,
     `Phone: +91 ${phone}`,
-    `Delivery address: ${address}, Jamshedpur`,
+    `Delivery address: ${address}`,
   ].join("\n");
   const whatsapp = new URL("https://wa.me/919818804419");
   whatsapp.searchParams.set("text", message);
