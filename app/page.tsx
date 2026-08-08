@@ -179,16 +179,10 @@ export default async function Home() {
           <div className="hero-copy">
             <div className="hero-brand-lockup" aria-label="M'ma Organic Farm">
               <img src="/mma-logo.png" alt="" aria-hidden="true" />
-              <div className="hero-brand-copy">
-                <strong>M&apos;ma Organic Farm</strong>
-                <small>Fresh dairy, straight from the farm.</small>
-              </div>
+              <span>M&apos;ma Organic Farm</span>
             </div>
-            <p className="eyebrow">Jamshedpur milk delivery · ₹62 per litre</p>
-            <h1>
-              Fresh milk.
-              <span>Farm to home.</span>
-            </h1>
+            <p className="eyebrow">Official farm milk page · ₹62 per litre</p>
+            <h1>Fresh farm milk, delivered daily in Jamshedpur.</h1>
             <p className="hero-intro">
               Low fat, rich texture, fresh from farm and delivered directly home
               in a glass bottle. A cleaner daily milk routine from M&apos;ma

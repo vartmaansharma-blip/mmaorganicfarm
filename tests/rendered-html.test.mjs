@@ -87,10 +87,7 @@ test("uses stable profile and home navigation labels", async () => {
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
 
-  assert.match(page, /Fresh milk/);
-  assert.match(page, /Farm to home/);
-  assert.match(page, /Fresh dairy, straight from the farm/);
-  assert.match(page, /Jamshedpur milk delivery/);
+  assert.match(page, /Fresh farm milk, delivered daily in Jamshedpur/);
   assert.match(page, /hero-brand-lockup/);
   assert.match(page, /order-orbit/);
   assert.match(page, /ORDER NOW/);

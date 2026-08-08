@@ -326,34 +326,27 @@ a {
 .hero-brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 38px;
+  gap: 16px;
+  margin-bottom: 30px;
+  padding: 10px 16px 10px 10px;
+  border: 1px solid rgba(20, 20, 20, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: 0 18px 44px rgba(30, 24, 10, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .hero-brand-lockup img {
-  width: clamp(92px, 9vw, 132px);
+  width: clamp(86px, 9vw, 128px);
   height: auto;
-  filter: drop-shadow(0 10px 16px rgba(30, 24, 10, 0.15));
 }
 
-.hero-brand-copy {
-  display: grid;
-  gap: 8px;
-  max-width: 300px;
-}
-
-.hero-brand-copy strong {
-  max-width: 11ch;
-  font-size: 40px;
-  font-weight: 850;
-  line-height: 0.96;
-}
-
-.hero-brand-copy small {
-  color: rgba(20, 20, 20, 0.66);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.35;
+.hero-brand-lockup span {
+  max-width: 12ch;
+  font-size: clamp(18px, 2vw, 28px);
+  font-weight: 900;
+  line-height: 1;
 }
 
 .eyebrow {
@@ -376,13 +369,8 @@ h1 {
 }
 
 .hero-copy h1 {
-  max-width: 10ch;
-  font-size: 82px;
-}
-
-.hero-copy h1 span {
-  display: block;
-  color: var(--green);
+  max-width: 9ch;
+  font-size: clamp(58px, 5.5vw, 82px);
 }
 
 .hero-intro {
@@ -1140,24 +1128,16 @@ footer {
 
   .hero-brand-lockup {
     gap: 12px;
-    margin-bottom: 26px;
+    margin-bottom: 18px;
+    padding: 8px 12px 8px 8px;
   }
 
   .hero-brand-lockup img {
-    width: 82px;
+    width: 86px;
   }
 
-  .hero-brand-copy {
-    gap: 5px;
-  }
-
-  .hero-brand-copy strong {
-    font-size: 24px;
-  }
-
-  .hero-brand-copy small {
-    max-width: 22ch;
-    font-size: 11px;
+  .hero-brand-lockup span {
+    font-size: 18px;
   }
 
   h1 {
@@ -1166,8 +1146,8 @@ footer {
   }
 
   .hero-copy h1 {
-    max-width: 9ch;
-    font-size: 52px;
+    max-width: 10ch;
+    font-size: clamp(44px, 13vw, 62px);
   }
 
   .hero-intro {
