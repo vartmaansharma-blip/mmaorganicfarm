@@ -59,7 +59,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback?next=/#milk`,
+      redirectTo: `${origin}/auth/callback`,
     },
   });
 
@@ -113,7 +113,7 @@ export async function signUpWithEmail(formData: FormData) {
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${origin}/auth/callback?next=/#milk`,
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 

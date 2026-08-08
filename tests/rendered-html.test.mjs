@@ -9,6 +9,10 @@ const signInUrl = new URL("../app/sign-in/page.tsx", import.meta.url);
 const authActionsUrl = new URL("../app/sign-in/actions.ts", import.meta.url);
 const forgotPasswordUrl = new URL("../app/forgot-password/actions.ts", import.meta.url);
 const resetPasswordUrl = new URL("../app/reset-password/actions.ts", import.meta.url);
+const accountLinkUrl = new URL("../app/components/account-link.tsx", import.meta.url);
+const accountPageUrl = new URL("../app/account/page.tsx", import.meta.url);
+const authCallbackUrl = new URL("../app/auth/callback/route.ts", import.meta.url);
+const proxyUrl = new URL("../proxy.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
@@ -46,13 +50,15 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /application\/ld\+json/);
   assert.match(page, /LocalBusiness/);
   assert.match(page, /Product/);
-  assert.match(page, /href="\/sign-in"/);
+  assert.match(page, /AccountLink/);
 });
 
 test("provides Google and email account creation without delivery friction", async () => {
-  const [signIn, actions, schema] = await Promise.all([
+  const [signIn, actions, callback, proxy, schema] = await Promise.all([
     readFile(signInUrl, "utf8"),
     readFile(authActionsUrl, "utf8"),
+    readFile(authCallbackUrl, "utf8"),
+    readFile(proxyUrl, "utf8"),
     readFile(profileSchemaUrl, "utf8"),
   ]);
 
@@ -63,6 +69,11 @@ test("provides Google and email account creation without delivery friction", asy
   assert.doesNotMatch(signIn, /quantity|delivery time|payment method/i);
   assert.match(actions, /signInWithOAuth/);
   assert.match(actions, /provider: "google"/);
+  assert.match(actions, /redirectTo: `\$\{origin\}\/auth\/callback`/);
+  assert.doesNotMatch(actions, /auth\/callback\?next=/);
+  assert.match(callback, /: "\/account"/);
+  assert.match(proxy, /searchParams\.has\("code"\)/);
+  assert.match(proxy, /callbackUrl\.pathname = "\/auth\/callback"/);
   assert.match(actions, /signUpWithEmail/);
   assert.match(actions, /Customer accounts are being connected/);
   assert.match(schema, /enable row level security/i);
@@ -104,4 +115,19 @@ test("provides a complete password recovery path", async () => {
   assert.match(forgotPassword, /next=\/reset-password/);
   assert.match(resetPassword, /updateUser\(\{ password \}\)/);
   assert.match(resetPassword, /signOut/);
+});
+
+test("shows a real customer account after authentication", async () => {
+  const [page, accountLink, accountPage] = await Promise.all([
+    readFile(pageUrl, "utf8"),
+    readFile(accountLinkUrl, "utf8"),
+    readFile(accountPageUrl, "utf8"),
+  ]);
+
+  assert.match(page, /AccountLink/);
+  assert.match(accountLink, /onAuthStateChange/);
+  assert.match(accountLink, /\/account/);
+  assert.match(accountPage, /customer_profiles/);
+  assert.match(accountPage, /Google connected/);
+  assert.match(accountPage, /signOut/);
 });

@@ -1,3 +1,5 @@
+import { AccountLink } from "@/app/components/account-link";
+
 const whatsappOrder =
   "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20to%20order%20fresh%20milk%20for%20my%20home%20in%20Jamshedpur.";
 
@@ -152,9 +154,7 @@ export default function Home() {
           <a className="nav-link" href="#farm">
             <span>04</span>Farm
           </a>
-          <a className="nav-link" href="/sign-in">
-            <span>05</span>Sign in
-          </a>
+          <AccountLink className="nav-link" prefix="05" />
         </nav>
 
         <div className="sidebar-bottom">
@@ -174,9 +174,7 @@ export default function Home() {
           <header className="topbar">
             <p>Jamshedpur · Fresh from farm</p>
             <div className="topbar-actions">
-              <a className="account-link" href="/sign-in">
-                Sign in
-              </a>
+              <AccountLink className="account-link" />
               <a
                 className="order-orbit"
                 href={whatsappOrder}
