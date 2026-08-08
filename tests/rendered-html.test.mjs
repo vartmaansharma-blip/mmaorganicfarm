@@ -176,6 +176,10 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountLink, /\/account/);
   assert.match(accountPage, /customer_profiles/);
   assert.match(accountPage, /Google connected/);
+  assert.match(accountPage, /hasDeliveryDetails/);
+  assert.match(accountPage, /hasPhone \? \(/);
+  assert.match(accountPage, /hasAddress \? \(/);
+  assert.doesNotMatch(accountPage, /Not added yet/);
   assert.match(accountPage, /signOut/);
 });
 

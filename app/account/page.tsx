@@ -32,6 +32,9 @@ export default async function AccountPage() {
   const googleConnected = user.identities?.some(
     (identity) => identity.provider === "google",
   );
+  const hasPhone = Boolean(profile?.phone?.trim());
+  const hasAddress = Boolean(profile?.address_line?.trim());
+  const hasDeliveryDetails = hasPhone || hasAddress;
 
   return (
     <main className={styles.page}>
@@ -46,63 +49,85 @@ export default async function AccountPage() {
       </header>
 
       <section className={styles.content}>
-        <p className={styles.eyebrow}>Customer account</p>
-        <h1>Welcome, {name.split(/\s+/)[0]}.</h1>
-        <p className={styles.intro}>
-          Your account keeps your contact and delivery details ready for a
-          faster order.
-        </p>
-
-        <Link className={styles.startOrder} href="/order">
-          Start a milk order <span>→</span>
-        </Link>
-
-        <div className={styles.profile}>
-          {profile?.avatar_url ? (
-            <Image
-              className={styles.avatar}
-              src={profile.avatar_url}
-              alt=""
-              width={72}
-              height={72}
-              unoptimized
-            />
-          ) : (
-            <span className={styles.avatarFallback} aria-hidden="true">
-              {name.charAt(0).toUpperCase()}
-            </span>
-          )}
+        <div className={styles.pageHeading}>
           <div>
-            <strong>{name}</strong>
-            <span>{email}</span>
+            <p className={styles.eyebrow}>
+              Welcome, {name.split(/\s+/)[0]}
+            </p>
+            <h1>Your account</h1>
+            <p className={styles.intro}>
+              Manage the details used for your M&apos;ma milk orders.
+            </p>
           </div>
-          <span className={styles.status}>
-            {googleConnected ? "Google connected" : "Email account"}
-          </span>
+          <Link className={styles.startOrder} href="/order">
+            Start an order
+          </Link>
         </div>
 
-        <dl className={styles.details}>
-          <div>
-            <dt>Phone</dt>
-            <dd>{profile?.phone || "Add when placing your first order"}</dd>
+        <section className={styles.accountSection} aria-labelledby="profile-heading">
+          <div className={styles.sectionHeading}>
+            <h2 id="profile-heading">Profile</h2>
+            <p>Your sign-in identity and delivery contact information.</p>
           </div>
-          <div>
-            <dt>Delivery address</dt>
-            <dd>
-              {profile?.address_line
-                ? [profile.address_line, profile.city, profile.postal_code]
-                    .filter(Boolean)
-                    .join(", ")
-                : "Add when placing your first order"}
-            </dd>
-          </div>
-        </dl>
 
-        <form action={signOut}>
-          <button className={styles.signOut} type="submit">
-            Sign out
-          </button>
-        </form>
+          <div className={styles.profile}>
+            {profile?.avatar_url ? (
+              <Image
+                className={styles.avatar}
+                src={profile.avatar_url}
+                alt=""
+                width={56}
+                height={56}
+                unoptimized
+              />
+            ) : (
+              <span className={styles.avatarFallback} aria-hidden="true">
+                {name.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div className={styles.identity}>
+              <strong>{name}</strong>
+              <span>{email}</span>
+            </div>
+            <span className={styles.status}>
+              {googleConnected ? "Google connected" : "Email account"}
+            </span>
+          </div>
+
+          {hasDeliveryDetails ? (
+            <dl className={styles.details}>
+              {hasPhone ? (
+                <div>
+                  <dt>Phone</dt>
+                  <dd>{profile?.phone}</dd>
+                </div>
+              ) : null}
+              {hasAddress ? (
+                <div>
+                  <dt>Delivery address</dt>
+                  <dd>
+                    {[profile?.address_line, profile?.city, profile?.postal_code]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+
+          <Link className={styles.editDetails} href="/order">
+            {hasDeliveryDetails ? "Update delivery details" : "Add delivery details"}
+          </Link>
+        </section>
+
+        <div className={styles.accountFooter}>
+          <span>Signed in as {email}</span>
+          <form action={signOut}>
+            <button className={styles.signOut} type="submit">
+              Sign out
+            </button>
+          </form>
+        </div>
       </section>
     </main>
   );
