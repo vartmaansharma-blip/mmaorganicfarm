@@ -7,9 +7,14 @@ import { createClient } from "@/lib/supabase/client";
 type AccountLinkProps = {
   className?: string;
   prefix?: string;
+  authenticatedLabel?: string;
 };
 
-export function AccountLink({ className, prefix }: AccountLinkProps) {
+export function AccountLink({
+  className,
+  prefix,
+  authenticatedLabel = "Profile",
+}: AccountLinkProps) {
   const [account, setAccount] = useState({ href: "/sign-in", label: "Sign in" });
 
   useEffect(() => {
@@ -23,10 +28,7 @@ export function AccountLink({ className, prefix }: AccountLinkProps) {
         return;
       }
 
-      const fullName =
-        user.user_metadata?.full_name ?? user.user_metadata?.name ?? "";
-      const firstName = fullName.trim().split(/\s+/)[0];
-      setAccount({ href: "/account", label: firstName || "Account" });
+      setAccount({ href: "/account", label: authenticatedLabel });
     }
 
     supabase.auth.getUser().then(({ data }) => updateAccount(data.user));
@@ -37,7 +39,7 @@ export function AccountLink({ className, prefix }: AccountLinkProps) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [authenticatedLabel]);
 
   return (
     <Link className={className} href={account.href}>

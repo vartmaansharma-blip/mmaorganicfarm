@@ -16,6 +16,8 @@ const proxyUrl = new URL("../proxy.ts", import.meta.url);
 const orderPageUrl = new URL("../app/order/page.tsx", import.meta.url);
 const orderActionsUrl = new URL("../app/order/actions.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
+const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
+const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -68,6 +70,18 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
   assert.doesNotMatch(orderStyles, /box-shadow/);
   assert.doesNotMatch(orderStyles, /grid-template-columns: minmax\(0, 0\.88fr\)/);
   assert.match(sidebarStyles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+});
+
+test("uses stable profile and home navigation labels", async () => {
+  const accountLink = await readFile(accountLinkUrl, "utf8");
+  const sidebar = await readFile(sidebarUrl, "utf8");
+  const whatsappIcon = await readFile(whatsappIconUrl, "utf8");
+
+  assert.match(accountLink, /authenticatedLabel = "Profile"/);
+  assert.doesNotMatch(accountLink, /firstName/);
+  assert.match(sidebar, /<span>01<\/span>Home/);
+  assert.match(sidebar, /authenticatedLabel="Profile"/);
+  assert.match(whatsappIcon, /viewBox="0 0 24 24"/);
 });
 
 test("keeps the landing page focused on milk conversion and trust", async () => {
