@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { AccountLink } from "@/app/components/account-link";
 import { LandingSidebar } from "@/app/components/landing-sidebar";
 import { createClient } from "@/lib/supabase/server";
 import landingStyles from "./landing.module.css";
@@ -153,7 +152,6 @@ export default async function Home() {
           <header className="topbar">
             <p>Jamshedpur · Fresh from farm</p>
             <div className="topbar-actions">
-              <AccountLink className="account-link" />
               <a
                 className="order-orbit"
                 href={orderPath}
@@ -182,7 +180,25 @@ export default async function Home() {
               <span>M&apos;ma Organic Farm</span>
             </div>
             <p className="eyebrow">Official farm milk page · ₹62 per litre</p>
-            <h1>Fresh farm milk, delivered daily in Jamshedpur.</h1>
+            <h1>
+              Fresh milk.
+              <span>Farm to home.</span>
+            </h1>
+          </div>
+
+          <a className="bottle-stage" href="#milk" aria-label="Explore M'ma farm fresh milk">
+            <span className="visual-word visual-word-top" aria-hidden="true">Fresh</span>
+            <span className="visual-word visual-word-bottom" aria-hidden="true">Milk</span>
+            <span className="bottle-badge bottle-badge-price" aria-hidden="true">₹62 / L</span>
+            <span className="bottle-badge bottle-badge-glass" aria-hidden="true">Glass bottle</span>
+            <span className="orbit orbit-one" />
+            <span className="orbit orbit-two" />
+            <span className="bottle-shadow" />
+            <img src="/hero-milk.png" alt="M'ma Farms fresh milk bottle" />
+            <span className="bottle-note">Hover to pause · Click to explore</span>
+          </a>
+
+          <div className="hero-conversion">
             <p className="hero-intro">
               Low fat, rich texture, fresh from farm and delivered directly home
               in a glass bottle. A cleaner daily milk routine from M&apos;ma
@@ -201,14 +217,6 @@ export default async function Home() {
               the farm.
             </p>
           </div>
-
-          <a className="bottle-stage" href="#milk" aria-label="Explore M'ma farm fresh milk">
-            <span className="orbit orbit-one" />
-            <span className="orbit orbit-two" />
-            <span className="bottle-shadow" />
-            <img src="/hero-milk.png" alt="M'ma Farms fresh milk bottle" />
-            <span className="bottle-note">Hover to pause · Click to explore</span>
-          </a>
 
           <div className="hero-facts" aria-label="Key milk facts">
             {facts.map(([value, label]) => (

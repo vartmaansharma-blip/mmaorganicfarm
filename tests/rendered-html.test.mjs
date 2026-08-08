@@ -16,6 +16,8 @@ const proxyUrl = new URL("../proxy.ts", import.meta.url);
 const orderPageUrl = new URL("../app/order/page.tsx", import.meta.url);
 const orderActionsUrl = new URL("../app/order/actions.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
+const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
+const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -73,8 +75,10 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
 
-  assert.match(page, /Fresh farm milk, delivered daily in Jamshedpur/);
+  assert.match(page, /Fresh milk/);
   assert.match(page, /hero-brand-lockup/);
+  assert.match(page, /visual-word-top/);
+  assert.match(page, /Farm to home/);
   assert.match(page, /order-orbit/);
   assert.match(page, /ORDER NOW/);
   assert.match(page, /₹62 per litre/);
@@ -93,7 +97,7 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /application\/ld\+json/);
   assert.match(page, /LocalBusiness/);
   assert.match(page, /Product/);
-  assert.match(page, /AccountLink/);
+  assert.doesNotMatch(page, /AccountLink/);
   assert.match(page, /supabase\.auth\.getUser\(\)/);
   assert.match(page, /redirect\("\/sign-in\?next=%2F"\)/);
 });
@@ -141,6 +145,8 @@ test("styles the official details section responsively", async () => {
   assert.match(styles, /bottle-mobile-turn/);
   assert.match(styles, /bottle-orbit-mobile/);
   assert.match(styles, /bottle-shadow-mobile/);
+  assert.match(styles, /\.hero-conversion/);
+  assert.match(styles, /\.visual-word/);
   assert.match(styles, /grid-column: 1/);
   assert.match(styles, /object-fit: contain/);
   assert.doesNotMatch(styles, /\.benefit-bar-section/);
@@ -174,9 +180,10 @@ test("shows a real customer account after authentication", async () => {
     readFile(accountPageUrl, "utf8"),
   ]);
 
-  assert.match(page, /AccountLink/);
+  assert.doesNotMatch(page, /AccountLink/);
   assert.match(accountLink, /onAuthStateChange/);
   assert.match(accountLink, /\/account/);
+  assert.match(accountLink, /authenticatedLabel/);
   assert.match(accountPage, /customer_profiles/);
   assert.match(accountPage, /Google connected/);
   assert.match(accountPage, /hasDeliveryDetails/);
@@ -210,4 +217,22 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);
   assert.doesNotMatch(orderActions, /Delivery address: \$\{address\}, Jamshedpur/);
   assert.match(orderActions, /wa\.me\/919818804419/);
+});
+
+test("uses clear navigation labels and the official WhatsApp treatment", async () => {
+  const [page, sidebar, accountLink, whatsappIcon] = await Promise.all([
+    readFile(pageUrl, "utf8"),
+    readFile(sidebarUrl, "utf8"),
+    readFile(accountLinkUrl, "utf8"),
+    readFile(whatsappIconUrl, "utf8"),
+  ]);
+
+  assert.doesNotMatch(page, /Vartmaan/);
+  assert.doesNotMatch(sidebar, /Vartmaan|>\s*Landing/);
+  assert.match(sidebar, /<\/span>Home/);
+  assert.match(sidebar, /authenticatedLabel="Profile"/);
+  assert.match(accountLink, /authenticatedLabel = "Profile"/);
+  assert.match(whatsappIcon, /#25D366/);
+  assert.match(whatsappIcon, /<circle/);
+  assert.doesNotMatch(whatsappIcon, /transform=/);
 });
