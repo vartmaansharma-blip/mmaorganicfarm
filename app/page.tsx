@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { BottleScene } from "@/app/components/bottle-scene";
 import { LandingSidebar } from "@/app/components/landing-sidebar";
 import { createClient } from "@/lib/supabase/server";
 import landingStyles from "./landing.module.css";
@@ -182,20 +181,22 @@ export default async function Home() {
             </div>
             <p className="eyebrow">Official farm milk page · ₹62 per litre</p>
             <h1>
-              Dairy should always be fresh.
-              <span>From the farm.</span>
+              Fresh milk.
+              <span>Farm to home.</span>
             </h1>
           </div>
 
-          <div className="bottle-stage">
+          <a className="bottle-stage" href="#milk" aria-label="Explore M'ma farm fresh milk">
             <span className="visual-word visual-word-top" aria-hidden="true">Fresh</span>
-            <span className="visual-word visual-word-bottom" aria-hidden="true">Dairy</span>
+            <span className="visual-word visual-word-bottom" aria-hidden="true">Milk</span>
             <span className="bottle-badge bottle-badge-price" aria-hidden="true">₹62 / L</span>
             <span className="bottle-badge bottle-badge-glass" aria-hidden="true">Glass bottle</span>
             <span className="orbit orbit-one" />
             <span className="orbit orbit-two" />
-            <BottleScene />
-          </div>
+            <span className="bottle-shadow" />
+            <img src="/hero-milk.png" alt="M'ma Farms fresh milk bottle" />
+            <span className="bottle-note">Hover to pause · Click to explore</span>
+          </a>
 
           <div className="hero-conversion">
             <p className="hero-intro">
