@@ -236,6 +236,11 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /PRICE_PER_LITRE = 62/);
   assert.match(builder, /NEW_BOTTLE_PRICE = 10/);
   assert.match(builder, /STEP = 1/);
+  assert.match(builder, /useState\(1\)/);
+  assert.match(builder, /Math\.max\(0/);
+  assert.match(builder, /Choose 0 L for an add-ons-only delivery/);
+  assert.match(builder, /onceQuantity > 0 \|\| selectedExtras\.length > 0/);
+  assert.match(builder, /Select milk or an add-on/);
   assert.doesNotMatch(builder, /STEP = 0\.5/);
   assert.match(builder, /Return a bottle/);
   assert.match(builder, /hand it back on delivery/);
@@ -278,6 +283,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /Delivery address/);
   assert.match(orderPage, /Added to this farm order/);
   assert.match(orderPage, /name="extras"/);
+  assert.match(orderPage, /name="milk"/);
   assert.match(orderPage, /Save &amp; continue to WhatsApp/);
   assert.doesNotMatch(orderPage, /Delivery city/);
   assert.doesNotMatch(orderPage, /quantity|delivery time|payment method/i);
@@ -286,6 +292,8 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderActions, /address_line: address/);
   assert.match(orderActions, /Added farm products/);
   assert.match(orderActions, /parseFarmProductSelections/);
+  assert.match(orderActions, /No milk this time/);
+  assert.match(orderActions, /milkLitres === 0/);
   assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);
   assert.doesNotMatch(orderActions, /Delivery address: \$\{address\}, Jamshedpur/);
   assert.match(orderActions, /wa\.me\/919818804419/);

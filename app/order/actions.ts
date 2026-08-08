@@ -12,9 +12,15 @@ function orderUrl(
   message: string,
   purchase: string,
   bottle: string,
+  milk: string,
   extras: string,
 ) {
-  const params = new URLSearchParams({ [type]: message, purchase, bottle });
+  const params = new URLSearchParams({
+    [type]: message,
+    purchase,
+    bottle,
+    milk,
+  });
   if (extras) params.set("extras", extras);
   return `/order?${params.toString()}`;
 }
@@ -39,11 +45,39 @@ export async function saveDeliveryDetails(formData: FormData) {
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
   const address = String(formData.get("address") ?? "").trim();
   const purchase = formData.get("purchase") === "plan" ? "plan" : "once";
-  const bottle = formData.get("bottle") === "new" ? "new" : "return";
+  const parsedMilk = Number(formData.get("milk"));
+  const maximumMilk = purchase === "plan" ? 35 : 5;
+  const milkLitres =
+    Number.isInteger(parsedMilk) && parsedMilk >= 0 && parsedMilk <= maximumMilk
+      ? parsedMilk
+      : purchase === "plan"
+        ? 1
+        : 0;
+  const milk = String(milkLitres);
+  const requestedBottle = formData.get("bottle");
+  const bottle =
+    milkLitres === 0
+      ? "none"
+      : requestedBottle === "new"
+        ? "new"
+        : "return";
   const selectedProducts = parseFarmProductSelections(
     String(formData.get("extras") ?? ""),
   );
   const extras = serializeFarmProductSelections(selectedProducts);
+
+  if (milkLitres === 0 && selectedProducts.length === 0) {
+    redirect(
+      orderUrl(
+        "error",
+        "Choose milk or at least one farm product.",
+        purchase,
+        bottle,
+        milk,
+        extras,
+      ),
+    );
+  }
 
   if (phone.length !== 10) {
     redirect(
@@ -52,6 +86,7 @@ export async function saveDeliveryDetails(formData: FormData) {
         "Enter a valid 10-digit mobile number.",
         purchase,
         bottle,
+        milk,
         extras,
       ),
     );
@@ -64,6 +99,7 @@ export async function saveDeliveryDetails(formData: FormData) {
         "Enter your complete delivery address.",
         purchase,
         bottle,
+        milk,
         extras,
       ),
     );
@@ -92,18 +128,24 @@ export async function saveDeliveryDetails(formData: FormData) {
         "We could not save your details. Please try again.",
         purchase,
         bottle,
+        milk,
         extras,
       ),
     );
   }
 
   const message = [
-    "Hello M'ma Organic Farm, I'd like to continue a fresh milk order.",
+    "Hello M'ma Organic Farm, I'd like to continue a farm order.",
     `Name: ${fullName}`,
     `Phone: +91 ${phone}`,
     `Delivery address: ${address}`,
-    `Order type: ${purchase === "plan" ? "Weekly milk plan" : "One-time order"}`,
-    `Bottle: ${bottle === "new" ? "No return bottle (+₹10 once)" : "M'ma bottle will be returned on delivery (₹62 exchange price)"}`,
+    `Order type: ${purchase === "plan" ? "Weekly farm plan" : "One-time farm order"}`,
+    `Milk: ${milkLitres === 0 ? "No milk this time" : purchase === "plan" ? `${milkLitres} L per week` : `${milkLitres} L`}`,
+    ...(milkLitres > 0
+      ? [
+          `Bottle: ${bottle === "new" ? "No return bottle (+₹10 once)" : "M'ma bottle will be returned on delivery (₹62 exchange price)"}`,
+        ]
+      : []),
     ...(selectedProducts.length
       ? [
           "Added farm products:",

@@ -8,7 +8,7 @@ import { saveDeliveryDetails } from "./actions";
 import styles from "./order.module.css";
 
 export const metadata: Metadata = {
-  title: "Start your milk order",
+  title: "Start your farm order",
   robots: { index: false, follow: false },
 };
 
@@ -16,9 +16,10 @@ export const dynamic = "force-dynamic";
 
 type OrderPageProps = {
   searchParams: Promise<{
-    bottle?: "new" | "return";
+    bottle?: "new" | "none" | "return";
     error?: string;
     extras?: string;
+    milk?: string;
     purchase?: "once" | "plan";
   }>;
 };
@@ -56,14 +57,14 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <span>M&apos;ma Organic Farm</span>
         </Link>
         <Link className={styles.back} href="/milk">
-          Back to milk
+          Back to products
         </Link>
       </header>
 
       <section className={styles.layout}>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>Step 2 of 3</p>
-          <h1>Where should we bring your milk, {firstName}?</h1>
+          <h1>Where should we bring your order, {firstName}?</h1>
           <p>
             Add a contact number and delivery address. You will confirm what you
             need personally on WhatsApp.
@@ -95,6 +96,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
         <form className={styles.form} action={saveDeliveryDetails}>
           <input name="bottle" type="hidden" value={params.bottle ?? "return"} />
           <input name="extras" type="hidden" value={params.extras ?? ""} />
+          <input name="milk" type="hidden" value={params.milk ?? "1"} />
           <input name="purchase" type="hidden" value={params.purchase ?? "once"} />
           {params.error ? (
             <p className={styles.error} role="alert">

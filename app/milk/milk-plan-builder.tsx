@@ -63,7 +63,9 @@ export function MilkPlanBuilder() {
   );
   const weeklyEstimate = weeklyLitres * PRICE_PER_LITRE;
   const needsNewBottle = bottleOption === "new";
-  const bottleCharge = needsNewBottle ? NEW_BOTTLE_PRICE : 0;
+  const selectedMilkLitres = mode === "once" ? onceQuantity : weeklyLitres;
+  const hasMilk = selectedMilkLitres > 0;
+  const bottleCharge = needsNewBottle && hasMilk ? NEW_BOTTLE_PRICE : 0;
   const deliveryDays = schedule.filter((day) => day.litres > 0).length;
   const selectedExtras = FARM_PRODUCTS.filter(({ id }) => extras[id]);
   const extrasTotal = selectedExtras.reduce((total, product) => {
@@ -95,7 +97,7 @@ export function MilkPlanBuilder() {
 
   function updateOnceQuantity(delta: number) {
     setOnceQuantity((current) =>
-      Math.min(MAX_LITRES, Math.max(STEP, Number((current + delta).toFixed(1)))),
+      Math.min(MAX_LITRES, Math.max(0, Number((current + delta).toFixed(1)))),
     );
   }
 
@@ -126,7 +128,13 @@ export function MilkPlanBuilder() {
       .join(",");
     const params = new URLSearchParams({
       purchase,
-      bottle: needsNewBottle ? "new" : "return",
+      bottle:
+        purchase === "once" && onceQuantity === 0
+          ? "none"
+          : needsNewBottle
+            ? "new"
+            : "return",
+      milk: String(purchase === "once" ? onceQuantity : weeklyLitres),
     });
 
     if (selected) params.set("extras", selected);
@@ -159,7 +167,8 @@ export function MilkPlanBuilder() {
         </button>
       </div>
 
-      <fieldset className={styles.bottleChoice}>
+      {hasMilk ? (
+        <fieldset className={styles.bottleChoice}>
         <legend>Choose one bottle option</legend>
         <div className={styles.bottleOptions}>
           <label>
@@ -193,7 +202,8 @@ export function MilkPlanBuilder() {
             </span>
           </label>
         </div>
-      </fieldset>
+        </fieldset>
+      ) : null}
 
       <section className={styles.extras} aria-labelledby="farm-add-ons-title">
         <div className={styles.extrasHeading}>
@@ -256,7 +266,7 @@ export function MilkPlanBuilder() {
           <div className={styles.onceCopy}>
             <p className={styles.stepLabel}>Tomorrow&apos;s bottle</p>
             <h3>How much milk do you need?</h3>
-            <p>Choose the quantity for one delivery.</p>
+            <p>Choose 0 L for an add-ons-only delivery.</p>
           </div>
 
           <div className={styles.onceAction}>
@@ -264,7 +274,7 @@ export function MilkPlanBuilder() {
               <button
                 type="button"
                 aria-label="Reduce one-time quantity"
-                disabled={onceQuantity <= STEP}
+                disabled={onceQuantity === 0}
                 onClick={() => updateOnceQuantity(-STEP)}
               >
                 −
@@ -280,7 +290,7 @@ export function MilkPlanBuilder() {
               </button>
             </div>
             <div className={styles.totalLine}>
-              <span>Milk and bottle total</span>
+              <span>Order total</span>
               <strong>
                 ₹{onceQuantity * PRICE_PER_LITRE + bottleCharge + extrasTotal}
               </strong>
@@ -291,12 +301,18 @@ export function MilkPlanBuilder() {
                 {selectedExtras.length === 1 ? "" : "s"} included in this total.
               </p>
             ) : null}
-            <Link
-              className={styles.primaryAction}
-              href={orderHref("once")}
-            >
-              Continue to delivery details <span>→</span>
-            </Link>
+            {onceQuantity > 0 || selectedExtras.length > 0 ? (
+              <Link
+                className={styles.primaryAction}
+                href={orderHref("once")}
+              >
+                Continue to delivery details <span>→</span>
+              </Link>
+            ) : (
+              <button className={styles.primaryAction} type="button" disabled>
+                Select milk or an add-on <span>→</span>
+              </button>
+            )}
           </div>
         </div>
       ) : (
