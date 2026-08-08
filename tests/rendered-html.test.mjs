@@ -107,7 +107,7 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /application\/ld\+json/);
   assert.match(page, /LocalBusiness/);
   assert.match(page, /Product/);
-  assert.match(page, /AccountLink/);
+  assert.doesNotMatch(page, /AccountLink/);
   assert.match(page, /supabase\.auth\.getUser\(\)/);
   assert.match(page, /redirect\("\/sign-in\?next=%2F"\)/);
 });
@@ -182,13 +182,11 @@ test("provides a complete password recovery path", async () => {
 });
 
 test("shows a real customer account after authentication", async () => {
-  const [page, accountLink, accountPage] = await Promise.all([
-    readFile(pageUrl, "utf8"),
+  const [accountLink, accountPage] = await Promise.all([
     readFile(accountLinkUrl, "utf8"),
     readFile(accountPageUrl, "utf8"),
   ]);
 
-  assert.match(page, /AccountLink/);
   assert.match(accountLink, /onAuthStateChange/);
   assert.match(accountLink, /\/account/);
   assert.match(accountPage, /customer_profiles/);
