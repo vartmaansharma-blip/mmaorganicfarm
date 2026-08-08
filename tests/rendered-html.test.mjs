@@ -221,7 +221,8 @@ test("provides a separate mobile-first milk product and plan page", async () => 
 
   assert.match(page, /Fresh farm milk/);
   assert.match(page, /₹62/);
-  assert.match(page, /farm-bottle\.png/);
+  assert.match(page, /cowshed\.jpeg/);
+  assert.doesNotMatch(page, /farm-bottle\.png/);
   assert.match(page, /MilkPlanBuilder/);
   assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk"\)/);
   assert.match(builder, /Buy once/);

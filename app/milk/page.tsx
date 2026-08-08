@@ -39,15 +39,15 @@ export default async function MilkPage() {
 
       <section className={styles.product} aria-labelledby="milk-title">
         <div className={styles.visual}>
-          <p>Fresh from farm · Jamshedpur</p>
+          <p>Our farm · Jamshedpur</p>
           <Image
-            src="/farm-bottle.png"
-            alt="M'ma Organic Farm milk bottle at the farm"
-            width={900}
-            height={1100}
+            src="/cowshed.jpeg"
+            alt="Cows resting inside M'ma Organic Farm"
+            fill
+            sizes="(max-width: 980px) 100vw, 52vw"
             priority
           />
-          <span>1 litre · Glass bottle</span>
+          <span>Raised and cared for at the farm</span>
         </div>
 
         <div className={styles.productCopy}>

@@ -66,8 +66,11 @@
 .visual > p,
 .visual > span {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
+  padding: 7px 9px;
   margin: 0;
+  color: #fff;
+  background: rgba(20, 20, 20, 0.72);
   font-size: 11px;
   font-weight: 750;
   text-transform: uppercase;
@@ -84,10 +87,8 @@
 }
 
 .visual img {
-  width: 68%;
-  height: 500px;
-  object-fit: contain;
-  filter: drop-shadow(0 30px 24px rgba(54, 41, 8, 0.2));
+  object-fit: cover;
+  object-position: center;
 }
 
 .productCopy {
@@ -640,8 +641,7 @@
   }
 
   .visual img {
-    width: 84%;
-    height: 350px;
+    object-position: 56% center;
   }
 
   .productCopy {
@@ -735,10 +735,6 @@
 @media (max-width: 390px) {
   .visual {
     min-height: 390px;
-  }
-
-  .visual img {
-    height: 310px;
   }
 
   .productCopy h1 {
