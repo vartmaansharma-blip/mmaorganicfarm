@@ -103,12 +103,64 @@
   font-size: 13px;
 }
 
+.planReview {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #dfdfdc;
+}
+
+.planReview > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  font-size: 12px;
+}
+
+.weekReview {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.weekReview span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 8px 3px;
+  border: 1px solid #dfdfdc;
+  border-radius: 3px;
+  background: #fff;
+  text-align: center;
+}
+
+.weekReview small {
+  color: #787774;
+  font-size: 9px;
+}
+
+.weekReview b {
+  font-size: 11px;
+}
+
 .orderSummary ul {
   display: grid;
   gap: 10px;
   margin: 14px 0 0;
   padding: 0;
   list-style: none;
+}
+
+.productReview {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #dfdfdc;
+}
+
+.productReview > span {
+  color: #787774;
+  font-size: 11px;
 }
 
 .orderSummary li {
@@ -280,5 +332,9 @@
   .orderSummary li {
     display: grid;
     gap: 4px;
+  }
+
+  .weekReview {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

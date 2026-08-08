@@ -4,6 +4,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { parseFarmProductSelections } from "@/lib/farm-products";
+import {
+  formatPlanStartDate,
+  MILK_PLAN_DAYS,
+  parseWeeklyMilkSchedule,
+} from "@/lib/milk-plan";
 import { saveDeliveryDetails } from "./actions";
 import styles from "./order.module.css";
 
@@ -21,6 +26,8 @@ type OrderPageProps = {
     extras?: string;
     milk?: string;
     purchase?: "once" | "plan";
+    schedule?: string;
+    start?: string;
   }>;
 };
 
@@ -48,6 +55,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
     "there"
   ).split(/\s+/)[0];
   const selectedProducts = parseFarmProductSelections(params.extras ?? "");
+  const weeklySchedule = parseWeeklyMilkSchedule(params.schedule ?? "");
+  const planSchedule = params.purchase === "plan" ? weeklySchedule : null;
 
   return (
     <main className={styles.page}>
@@ -74,21 +83,42 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             <span className={styles.active}>Delivery details</span>
             <span>WhatsApp confirmation</span>
           </div>
-          {selectedProducts.length ? (
+          {planSchedule || selectedProducts.length ? (
             <div className={styles.orderSummary}>
-              <strong>Added to this farm order</strong>
-              <ul>
-                {selectedProducts.map((product) => (
-                  <li key={product.id}>
-                    <span>
-                      {product.name} · {product.unit}
-                    </span>
-                    <b>
-                      ₹{product.price} · {product.frequency === "weekly" ? "weekly" : "once"}
-                    </b>
-                  </li>
-                ))}
-              </ul>
+              <strong>Your farm order</strong>
+              {planSchedule ? (
+                <div className={styles.planReview}>
+                  <div>
+                    <span>Starts</span>
+                    <b>{formatPlanStartDate(params.start ?? "")}</b>
+                  </div>
+                  <div className={styles.weekReview} aria-label="Weekly milk schedule">
+                    {MILK_PLAN_DAYS.map((day, index) => (
+                      <span key={day.label}>
+                        <small>{day.short}</small>
+                        <b>{planSchedule[index]} L</b>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {selectedProducts.length ? (
+                <div className={styles.productReview}>
+                  <span>Added to this farm order</span>
+                  <ul>
+                    {selectedProducts.map((product) => (
+                      <li key={product.id}>
+                        <span>
+                          {product.name} · {product.unit}
+                        </span>
+                        <b>
+                          ₹{product.price} · {product.frequency === "weekly" ? "weekly" : "once"}
+                        </b>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -98,6 +128,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <input name="extras" type="hidden" value={params.extras ?? ""} />
           <input name="milk" type="hidden" value={params.milk ?? "1"} />
           <input name="purchase" type="hidden" value={params.purchase ?? "once"} />
+          <input name="schedule" type="hidden" value={params.schedule ?? ""} />
+          <input name="start" type="hidden" value={params.start ?? ""} />
           {params.error ? (
             <p className={styles.error} role="alert">
               {params.error}

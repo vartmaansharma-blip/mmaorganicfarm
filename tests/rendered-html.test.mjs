@@ -22,6 +22,7 @@ const milkBuilderUrl = new URL(
 );
 const milkStylesUrl = new URL("../app/milk/milk.module.css", import.meta.url);
 const farmProductsUrl = new URL("../lib/farm-products.ts", import.meta.url);
+const milkPlanUrl = new URL("../lib/milk-plan.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
 const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
@@ -267,12 +268,13 @@ test("provides a separate mobile-first farm product and plan page", async () => 
 });
 
 test("collects delivery details only when a customer starts an order", async () => {
-  const [page, signIn, callback, orderPage, orderActions] = await Promise.all([
+  const [page, signIn, callback, orderPage, orderActions, milkPlan] = await Promise.all([
     readFile(pageUrl, "utf8"),
     readFile(signInUrl, "utf8"),
     readFile(authCallbackUrl, "utf8"),
     readFile(orderPageUrl, "utf8"),
     readFile(orderActionsUrl, "utf8"),
+    readFile(milkPlanUrl, "utf8"),
   ]);
 
   assert.match(page, /const orderPath = "\/milk"/);
@@ -284,6 +286,9 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /Added to this farm order/);
   assert.match(orderPage, /name="extras"/);
   assert.match(orderPage, /name="milk"/);
+  assert.match(orderPage, /name="schedule"/);
+  assert.match(orderPage, /name="start"/);
+  assert.match(orderPage, /Weekly milk schedule/);
   assert.match(orderPage, /Save &amp; continue to WhatsApp/);
   assert.doesNotMatch(orderPage, /Delivery city/);
   assert.doesNotMatch(orderPage, /quantity|delivery time|payment method/i);
@@ -293,8 +298,13 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderActions, /Added farm products/);
   assert.match(orderActions, /parseFarmProductSelections/);
   assert.match(orderActions, /No milk this time/);
+  assert.match(orderActions, /Weekly schedule/);
+  assert.match(orderActions, /parseWeeklyMilkSchedule/);
   assert.match(orderActions, /milkLitres === 0/);
   assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);
   assert.doesNotMatch(orderActions, /Delivery address: \$\{address\}, Jamshedpur/);
   assert.match(orderActions, /wa\.me\/919818804419/);
+  assert.match(milkPlan, /MILK_PLAN_DAYS/);
+  assert.match(milkPlan, /serializeWeeklyMilkSchedule/);
+  assert.match(milkPlan, /describeWeeklyMilkSchedule/);
 });

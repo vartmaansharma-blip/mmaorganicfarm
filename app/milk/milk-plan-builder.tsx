@@ -7,27 +7,19 @@ import {
   type FarmProductFrequency,
   type FarmProductId,
 } from "@/lib/farm-products";
+import {
+  formatPlanStartDate,
+  MILK_PLAN_DAYS,
+  serializeWeeklyMilkSchedule,
+  type WeeklyMilkSchedule,
+} from "@/lib/milk-plan";
 import styles from "./milk.module.css";
 
 const PRICE_PER_LITRE = 62;
 const NEW_BOTTLE_PRICE = 10;
 const MAX_LITRES = 5;
 const STEP = 1;
-const dateFormatter = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
-const initialSchedule = [
-  { short: "Mon", label: "Monday", litres: 1 },
-  { short: "Tue", label: "Tuesday", litres: 1 },
-  { short: "Wed", label: "Wednesday", litres: 1 },
-  { short: "Thu", label: "Thursday", litres: 1 },
-  { short: "Fri", label: "Friday", litres: 1 },
-  { short: "Sat", label: "Saturday", litres: 2 },
-  { short: "Sun", label: "Sunday", litres: 2 },
-];
+const initialSchedule: WeeklyMilkSchedule = [1, 1, 1, 1, 1, 2, 2];
 
 type PurchaseMode = "once" | "plan";
 
@@ -42,12 +34,6 @@ function formatLitres(value: number) {
   return `${value} L`;
 }
 
-function formatDate(value: string) {
-  return value
-    ? dateFormatter.format(new Date(`${value}T00:00:00`))
-    : "Choose date";
-}
-
 export function MilkPlanBuilder() {
   const [mode, setMode] = useState<PurchaseMode>("plan");
   const [onceQuantity, setOnceQuantity] = useState(1);
@@ -57,16 +43,13 @@ export function MilkPlanBuilder() {
   const [bottleOption, setBottleOption] = useState<"return" | "new">("return");
   const [extras, setExtras] = useState(initialExtras);
 
-  const weeklyLitres = schedule.reduce(
-    (total, day) => total + day.litres,
-    0,
-  );
+  const weeklyLitres = schedule.reduce((total, litres) => total + litres, 0);
   const weeklyEstimate = weeklyLitres * PRICE_PER_LITRE;
   const needsNewBottle = bottleOption === "new";
   const selectedMilkLitres = mode === "once" ? onceQuantity : weeklyLitres;
   const hasMilk = selectedMilkLitres > 0;
   const bottleCharge = needsNewBottle && hasMilk ? NEW_BOTTLE_PRICE : 0;
-  const deliveryDays = schedule.filter((day) => day.litres > 0).length;
+  const deliveryDays = schedule.filter((litres) => litres > 0).length;
   const selectedExtras = FARM_PRODUCTS.filter(({ id }) => extras[id]);
   const extrasTotal = selectedExtras.reduce((total, product) => {
     return total + product.price;
@@ -80,17 +63,11 @@ export function MilkPlanBuilder() {
 
   function updateSchedule(index: number, delta: number) {
     setSchedule((current) =>
-      current.map((day, dayIndex) =>
+      current.map((litres, dayIndex) =>
         dayIndex === index
-          ? {
-              ...day,
-              litres: Math.min(
-                MAX_LITRES,
-                Math.max(0, Number((day.litres + delta).toFixed(1))),
-              ),
-            }
-          : day,
-      ),
+          ? Math.min(MAX_LITRES, Math.max(0, litres + delta))
+          : litres,
+      ) as WeeklyMilkSchedule,
     );
     setReviewed(false);
   }
@@ -138,6 +115,10 @@ export function MilkPlanBuilder() {
     });
 
     if (selected) params.set("extras", selected);
+    if (purchase === "plan") {
+      params.set("schedule", serializeWeeklyMilkSchedule(schedule));
+      params.set("start", startDate);
+    }
     return `/order?${params.toString()}`;
   }
 
@@ -336,28 +317,28 @@ export function MilkPlanBuilder() {
             </div>
 
             <div className={styles.week}>
-              {schedule.map((day, index) => (
+              {MILK_PLAN_DAYS.map((day, index) => (
                 <div className={styles.day} key={day.label}>
                   <div className={styles.dayName}>
                     <strong>{day.short}</strong>
-                    <span>{day.litres === 0 ? "Skip" : "Deliver"}</span>
+                    <span>{schedule[index] === 0 ? "Skip" : "Deliver"}</span>
                   </div>
                   <div className={styles.stepper}>
                     <button
                       type="button"
                       aria-label={`Reduce ${day.label} quantity`}
-                      disabled={day.litres === 0}
+                      disabled={schedule[index] === 0}
                       onClick={() => updateSchedule(index, -STEP)}
                     >
                       −
                     </button>
                     <output aria-label={`${day.label} quantity`}>
-                      {formatLitres(day.litres)}
+                      {formatLitres(schedule[index])}
                     </output>
                     <button
                       type="button"
                       aria-label={`Increase ${day.label} quantity`}
-                      disabled={day.litres >= MAX_LITRES}
+                      disabled={schedule[index] >= MAX_LITRES}
                       onClick={() => updateSchedule(index, STEP)}
                     >
                       +
@@ -430,7 +411,7 @@ export function MilkPlanBuilder() {
               ) : null}
               <div>
                 <dt>Start</dt>
-                <dd>{formatDate(startDate)}</dd>
+                <dd>{formatPlanStartDate(startDate)}</dd>
               </div>
             </dl>
 

@@ -5,6 +5,12 @@ import {
   parseFarmProductSelections,
   serializeFarmProductSelections,
 } from "@/lib/farm-products";
+import {
+  describeWeeklyMilkSchedule,
+  formatPlanStartDate,
+  normalizePlanStartDate,
+  parseWeeklyMilkSchedule,
+} from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 
 function orderUrl(
@@ -14,6 +20,8 @@ function orderUrl(
   bottle: string,
   milk: string,
   extras: string,
+  schedule: string,
+  start: string,
 ) {
   const params = new URLSearchParams({
     [type]: message,
@@ -22,6 +30,8 @@ function orderUrl(
     milk,
   });
   if (extras) params.set("extras", extras);
+  if (schedule) params.set("schedule", schedule);
+  if (start) params.set("start", start);
   return `/order?${params.toString()}`;
 }
 
@@ -65,6 +75,27 @@ export async function saveDeliveryDetails(formData: FormData) {
     String(formData.get("extras") ?? ""),
   );
   const extras = serializeFarmProductSelections(selectedProducts);
+  const schedule = String(formData.get("schedule") ?? "");
+  const weeklySchedule = parseWeeklyMilkSchedule(schedule);
+  const start = normalizePlanStartDate(String(formData.get("start") ?? ""));
+
+  if (
+    purchase === "plan" &&
+    (!weeklySchedule || !start || weeklySchedule.every((litres) => litres === 0))
+  ) {
+    redirect(
+      orderUrl(
+        "error",
+        "Return to products and complete your weekly milk schedule.",
+        purchase,
+        bottle,
+        milk,
+        extras,
+        schedule,
+        start,
+      ),
+    );
+  }
 
   if (milkLitres === 0 && selectedProducts.length === 0) {
     redirect(
@@ -75,6 +106,8 @@ export async function saveDeliveryDetails(formData: FormData) {
         bottle,
         milk,
         extras,
+        schedule,
+        start,
       ),
     );
   }
@@ -88,6 +121,8 @@ export async function saveDeliveryDetails(formData: FormData) {
         bottle,
         milk,
         extras,
+        schedule,
+        start,
       ),
     );
   }
@@ -101,6 +136,8 @@ export async function saveDeliveryDetails(formData: FormData) {
         bottle,
         milk,
         extras,
+        schedule,
+        start,
       ),
     );
   }
@@ -130,6 +167,8 @@ export async function saveDeliveryDetails(formData: FormData) {
         bottle,
         milk,
         extras,
+        schedule,
+        start,
       ),
     );
   }
@@ -141,6 +180,12 @@ export async function saveDeliveryDetails(formData: FormData) {
     `Delivery address: ${address}`,
     `Order type: ${purchase === "plan" ? "Weekly farm plan" : "One-time farm order"}`,
     `Milk: ${milkLitres === 0 ? "No milk this time" : purchase === "plan" ? `${milkLitres} L per week` : `${milkLitres} L`}`,
+    ...(purchase === "plan" && weeklySchedule
+      ? [
+          `Plan starts: ${formatPlanStartDate(start)}`,
+          `Weekly schedule: ${describeWeeklyMilkSchedule(weeklySchedule)}`,
+        ]
+      : []),
     ...(milkLitres > 0
       ? [
           `Bottle: ${bottle === "new" ? "No return bottle (+₹10 once)" : "M'ma bottle will be returned on delivery (₹62 exchange price)"}`,
