@@ -34,3 +34,40 @@ for update
 to authenticated
 using ((select auth.uid()) = user_id)
 with check ((select auth.uid()) = user_id);
+
+create or replace function public.sync_customer_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.customer_profiles (
+    user_id,
+    full_name,
+    email,
+    avatar_url
+  )
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'avatar_url', new.raw_user_meta_data ->> 'picture')
+  )
+  on conflict (user_id) do update
+  set
+    full_name = excluded.full_name,
+    email = excluded.email,
+    avatar_url = excluded.avatar_url,
+    updated_at = now();
+
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_customer_profile_from_auth on auth.users;
+
+create trigger sync_customer_profile_from_auth
+after insert or update of email, raw_user_meta_data
+on auth.users
+for each row execute function public.sync_customer_profile();

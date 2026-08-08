@@ -133,6 +133,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
                 type="password"
               />
             </label>
+            {!isSignUp ? (
+              <Link className={styles.forgotLink} href="/forgot-password">
+                Forgot your password?
+              </Link>
+            ) : null}
             <button className={styles.submitButton} type="submit">
               {isSignUp ? "Create account" : "Sign in"}
               <span>→</span>

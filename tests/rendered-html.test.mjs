@@ -7,6 +7,8 @@ const layoutUrl = new URL("../app/layout.tsx", import.meta.url);
 const stylesUrl = new URL("../app/globals.css", import.meta.url);
 const signInUrl = new URL("../app/sign-in/page.tsx", import.meta.url);
 const authActionsUrl = new URL("../app/sign-in/actions.ts", import.meta.url);
+const forgotPasswordUrl = new URL("../app/forgot-password/actions.ts", import.meta.url);
+const resetPasswordUrl = new URL("../app/reset-password/actions.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
@@ -65,6 +67,8 @@ test("provides Google and email account creation without delivery friction", asy
   assert.match(actions, /Customer accounts are being connected/);
   assert.match(schema, /enable row level security/i);
   assert.match(schema, /auth\.uid\(\).*user_id/);
+  assert.match(schema, /sync_customer_profile_from_auth/);
+  assert.match(schema, /security definer/i);
   assert.doesNotMatch(schema, /service_role/i);
 });
 
@@ -86,4 +90,18 @@ test("styles the official details section responsively", async () => {
   assert.match(styles, /@media \(max-width: 980px\)/);
   assert.match(styles, /@media \(max-width: 640px\)/);
   assert.match(styles, /grid-template-columns:\s*1fr/);
+});
+
+test("provides a complete password recovery path", async () => {
+  const [signIn, forgotPassword, resetPassword] = await Promise.all([
+    readFile(signInUrl, "utf8"),
+    readFile(forgotPasswordUrl, "utf8"),
+    readFile(resetPasswordUrl, "utf8"),
+  ]);
+
+  assert.match(signIn, /Forgot your password/);
+  assert.match(forgotPassword, /resetPasswordForEmail/);
+  assert.match(forgotPassword, /next=\/reset-password/);
+  assert.match(resetPassword, /updateUser\(\{ password \}\)/);
+  assert.match(resetPassword, /signOut/);
 });
