@@ -311,6 +311,14 @@
   line-height: 1.5;
 }
 
+.editPlan {
+  display: inline-flex;
+  margin-top: 14px;
+  color: #2383e2;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .accountFooter {
   display: flex;
   align-items: center;

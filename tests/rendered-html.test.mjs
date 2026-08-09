@@ -220,6 +220,7 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /Your weekly milk plan/);
   assert.match(accountPage, /Saved weekly milk schedule/);
   assert.match(accountPage, /Awaiting confirmation/);
+  assert.match(accountPage, /href="\/milk\?edit=plan"/);
   assert.doesNotMatch(accountPage, /Not added yet/);
   assert.match(accountPage, /signOut/);
 });
@@ -242,9 +243,15 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(page, /cowshed\.jpeg/);
   assert.doesNotMatch(page, /farm-bottle\.png/);
   assert.match(page, /MilkPlanBuilder/);
+  assert.match(page, /params\.edit === "plan"/);
+  assert.match(page, /weekly_delivery_items/);
+  assert.match(page, /initialSchedule=\{savedSchedule\}/);
   assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk"\)/);
   assert.match(builder, /Order once/);
   assert.match(builder, /Build a weekly plan/);
+  assert.match(builder, /Edit your weekly milk plan/);
+  assert.match(builder, /Review updated plan/);
+  assert.match(builder, /Undo changes/);
   assert.match(builder, /Weekly quantity/);
   assert.match(builder, /Start date/);
   assert.match(builder, /Review milk plan/);

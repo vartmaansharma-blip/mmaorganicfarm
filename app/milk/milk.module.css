@@ -185,6 +185,17 @@
   line-height: 1.08;
 }
 
+.editingNote {
+  max-width: 620px;
+  margin: 20px 0 0 220px;
+  padding: 12px 14px;
+  border-left: 3px solid #f4c84b;
+  color: #55544f;
+  background: #fbfaf8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .modeSwitch {
   width: min(100%, 620px);
   display: grid;
@@ -703,6 +714,10 @@
   }
 
   .modeSwitch {
+    margin-left: 0;
+  }
+
+  .editingNote {
     margin-left: 0;
   }
 

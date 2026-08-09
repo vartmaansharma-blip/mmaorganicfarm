@@ -191,6 +191,9 @@ export default async function AccountPage() {
             <p className={styles.planNote}>
               WhatsApp confirmation activates the plan. No payment is taken here.
             </p>
+            <Link className={styles.editPlan} href="/milk?edit=plan">
+              Edit weekly plan
+            </Link>
           </section>
         ) : null}
 

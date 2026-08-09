@@ -19,7 +19,7 @@ const PRICE_PER_LITRE = 62;
 const NEW_BOTTLE_PRICE = 10;
 const MAX_LITRES = 5;
 const STEP = 1;
-const initialSchedule: WeeklyMilkSchedule = [1, 1, 1, 1, 1, 2, 2];
+const defaultSchedule: WeeklyMilkSchedule = [1, 1, 1, 1, 1, 2, 2];
 
 type PurchaseMode = "once" | "plan";
 
@@ -34,13 +34,26 @@ function formatLitres(value: number) {
   return `${value} L`;
 }
 
-export function MilkPlanBuilder() {
+type MilkPlanBuilderProps = {
+  initialBottleOption?: "return" | "new";
+  initialSchedule?: WeeklyMilkSchedule;
+  initialStartDate?: string;
+  isEditing?: boolean;
+};
+
+export function MilkPlanBuilder({
+  initialBottleOption = "return",
+  initialSchedule = defaultSchedule,
+  initialStartDate = "",
+  isEditing = false,
+}: MilkPlanBuilderProps) {
   const [mode, setMode] = useState<PurchaseMode>("plan");
   const [onceQuantity, setOnceQuantity] = useState(1);
   const [schedule, setSchedule] = useState(initialSchedule);
-  const [startDate, setStartDate] = useState("");
+  const [startDate, setStartDate] = useState(initialStartDate);
   const [reviewed, setReviewed] = useState(false);
-  const [bottleOption, setBottleOption] = useState<"return" | "new">("return");
+  const [bottleOption, setBottleOption] =
+    useState<"return" | "new">(initialBottleOption);
   const [extras, setExtras] = useState(initialExtras);
 
   const weeklyLitres = schedule.reduce((total, litres) => total + litres, 0);
@@ -125,28 +138,41 @@ export function MilkPlanBuilder() {
   return (
     <section className={styles.builder} aria-labelledby="choose-order-title">
       <div className={styles.builderHeading}>
-        <p className={styles.eyebrow}>Build your farm order</p>
-        <h2 id="choose-order-title">One delivery. More from the farm.</h2>
+        <p className={styles.eyebrow}>
+          {isEditing ? "Update your delivery routine" : "Build your farm order"}
+        </p>
+        <h2 id="choose-order-title">
+          {isEditing
+            ? "Edit your weekly milk plan."
+            : "One delivery. More from the farm."}
+        </h2>
       </div>
 
-      <div className={styles.modeSwitch} aria-label="Purchase type">
-        <button
-          className={mode === "once" ? styles.modeActive : undefined}
-          type="button"
-          aria-pressed={mode === "once"}
-          onClick={() => chooseMode("once")}
-        >
-          Order once
-        </button>
-        <button
-          className={mode === "plan" ? styles.modeActive : undefined}
-          type="button"
-          aria-pressed={mode === "plan"}
-          onClick={() => chooseMode("plan")}
-        >
-          Build a weekly plan
-        </button>
-      </div>
+      {isEditing ? (
+        <p className={styles.editingNote}>
+          Your saved schedule is loaded below. Review any changes before
+          continuing.
+        </p>
+      ) : (
+        <div className={styles.modeSwitch} aria-label="Purchase type">
+          <button
+            className={mode === "once" ? styles.modeActive : undefined}
+            type="button"
+            aria-pressed={mode === "once"}
+            onClick={() => chooseMode("once")}
+          >
+            Order once
+          </button>
+          <button
+            className={mode === "plan" ? styles.modeActive : undefined}
+            type="button"
+            aria-pressed={mode === "plan"}
+            onClick={() => chooseMode("plan")}
+          >
+            Build a weekly plan
+          </button>
+        </div>
+      )}
 
       {hasMilk ? (
         <fieldset className={styles.bottleChoice}>
@@ -309,10 +335,12 @@ export function MilkPlanBuilder() {
                 type="button"
                 onClick={() => {
                   setSchedule(initialSchedule);
+                  setStartDate(initialStartDate);
+                  setBottleOption(initialBottleOption);
                   setReviewed(false);
                 }}
               >
-                Reset week
+                {isEditing ? "Undo changes" : "Reset week"}
               </button>
             </div>
 
@@ -436,7 +464,8 @@ export function MilkPlanBuilder() {
                 disabled={weeklyLitres === 0 || !startDate}
                 onClick={() => setReviewed(true)}
               >
-                Review milk plan <span>→</span>
+                {isEditing ? "Review updated plan" : "Review milk plan"}{" "}
+                <span>→</span>
               </button>
             )}
             <p className={styles.summaryNote}>
