@@ -152,6 +152,14 @@ export function MilkPlanBuilder({
     (extra) => extra.frequency === "weekly" && extra.days.length === 0,
   );
   const hasPlanItems = weeklyLitres > 0 || selectedExtras.length > 0;
+  const basketItems = (hasMilk ? 1 : 0) + selectedExtras.length;
+  const basketTotal =
+    mode === "once"
+      ? oncePricing.total
+      : weeklyEstimate +
+        weeklyExtrasTotal +
+        firstDeliveryExtrasTotal +
+        bottleCharge;
 
   function updateSchedule(index: number, delta: number) {
     setSchedule((current) =>
@@ -272,7 +280,11 @@ export function MilkPlanBuilder({
   }
 
   return (
-    <section className={styles.builder} aria-labelledby="choose-order-title">
+    <section
+      className={styles.builder}
+      id="build-order"
+      aria-labelledby="choose-order-title"
+    >
       <div className={styles.builderHeading}>
         <p className={styles.eyebrow}>
           {isEditing ? "Update your delivery routine" : "Build your farm order"}
@@ -282,6 +294,11 @@ export function MilkPlanBuilder({
             ? "Edit your weekly milk plan."
             : "One delivery. More from the farm."}
         </h2>
+        <div className={styles.basketStatus} aria-live="polite">
+          <span>Current basket</span>
+          <strong>{basketItems} {basketItems === 1 ? "product" : "products"}</strong>
+          <small>₹{basketTotal} estimated</small>
+        </div>
       </div>
 
       {isEditing ? (
@@ -393,6 +410,10 @@ export function MilkPlanBuilder({
                 className={selection ? styles.extraSelected : undefined}
                 key={product.id}
               >
+                <div className={styles.productMarker}>
+                  <span>0{FARM_PRODUCTS.indexOf(product) + 2}</span>
+                  <small>{product.id === "papaya" ? "Produce" : "Dairy"}</small>
+                </div>
                 <label>
                   <input
                     type="checkbox"
@@ -405,6 +426,7 @@ export function MilkPlanBuilder({
                       {product.unit} · ₹{product.price}
                     </small>
                   </span>
+                  <b>{selection ? "Added" : "Add +"}</b>
                 </label>
 
                 {selection ? (

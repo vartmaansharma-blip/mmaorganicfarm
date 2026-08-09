@@ -430,7 +430,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
       readFile(orderPageUrl, "utf8"),
     ]);
 
-  assert.match(page, /One farm order/);
+  assert.match(page, /Build your farm basket/);
   assert.match(page, /₹62/);
   assert.match(page, /cowshed\.jpeg/);
   assert.doesNotMatch(page, /farm-bottle\.png/);
@@ -497,6 +497,22 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(sidebar, /href="\/milk"/);
   assert.match(account, /href="\/milk"/);
   assert.match(order, /href="\/milk"/);
+});
+
+test("presents the product builder as a visible farm shop", async () => {
+  const [page, builder, styles] = await Promise.all([
+    readFile(new URL("../app/milk/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/milk/milk-plan-builder.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/milk/milk.module.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /Farm shop/);
+  assert.match(page, /Build your farm basket/);
+  assert.match(page, /collectionStrip/);
+  assert.match(builder, /Current basket/);
+  assert.match(builder, /productMarker/);
+  assert.match(styles, /scroll-snap-type: x mandatory/);
+  assert.match(styles, /position: sticky/);
 });
 
 test("provides persistent mobile-first farm delivery operations", async () => {

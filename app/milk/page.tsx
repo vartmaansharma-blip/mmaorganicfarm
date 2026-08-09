@@ -109,11 +109,17 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
       <header className={styles.header}>
         <Link className={styles.brand} href="/">
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
-          <span>M&apos;ma Organic Farm</span>
+          <span>
+            M&apos;ma Organic Farm
+            <small>Farm shop</small>
+          </span>
         </Link>
-        <Link className={styles.back} href="/#milk">
-          Back to farm
-        </Link>
+        <div className={styles.headerActions}>
+          <span>5 products</span>
+          <Link className={styles.back} href="/#milk">
+            Back to farm
+          </Link>
+        </div>
       </header>
 
       <section className={styles.product} aria-labelledby="milk-title">
@@ -130,8 +136,8 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
         </div>
 
         <div className={styles.productCopy}>
-          <p className={styles.eyebrow}>Choose from the farm</p>
-          <h1 id="milk-title">One farm order</h1>
+          <p className={styles.eyebrow}>M&apos;ma farm shop</p>
+          <h1 id="milk-title">Build your farm basket.</h1>
           <p className={styles.price}>
             Milk ₹62 <span>per litre with bottle return</span>
           </p>
@@ -155,6 +161,18 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
           </dl>
         </div>
       </section>
+
+      <nav className={styles.collectionStrip} aria-label="Farm shop collection">
+        <a href="#build-order">
+          <span>01</span><strong>Fresh milk</strong><small>₹62 / litre</small>
+        </a>
+        {FARM_PRODUCTS.map((product, index) => (
+          <a href="#farm-add-ons-title" key={product.id}>
+            <span>0{index + 2}</span><strong>{product.name}</strong>
+            <small>₹{product.price} / {product.unit}</small>
+          </a>
+        ))}
+      </nav>
 
       <MilkPlanBuilder
         initialExtras={savedExtras}
