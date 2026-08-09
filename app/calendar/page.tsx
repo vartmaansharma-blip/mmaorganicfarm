@@ -7,8 +7,8 @@ import {
   buildDeliveryCalendar,
   estimateCompletionDate,
   formatCalendarDate,
+  nextDeliveryDateInIndia,
   productName,
-  todayInIndia,
 } from "@/lib/delivery-calendar";
 import { formatPlanStartDate, normalizePlanStartDate } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
@@ -86,7 +86,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     ? formatPlanStartDate(estimatedCompletion)
     : estimatedCompletion;
   const activePauses = (plan.delivery_pauses ?? []).filter(
-    (pause) => pause.end_date >= todayInIndia(),
+    (pause) => pause.end_date >= nextDeliveryDateInIndia(),
   );
   const statusLabel =
     plan.status === "active"
@@ -113,7 +113,8 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             <p className={styles.eyebrow}>Your delivery routine</p>
             <h1>Delivery calendar</h1>
             <p>
-              Skip one day, change its milk quantity, or pause two or more days.
+              Plan from tomorrow: skip one day, change milk, or pause two or
+              more days.
             </p>
           </div>
           <span className={styles.status}>{statusLabel}</span>
@@ -312,7 +313,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
               <span>From</span>
               <input
                 defaultValue={selectedDay.date}
-                min={todayInIndia()}
+                min={nextDeliveryDateInIndia()}
                 name="start_date"
                 type="date"
               />
@@ -321,7 +322,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
               <span>Until</span>
               <input
                 defaultValue={addCalendarDays(selectedDay.date, 1)}
-                min={addCalendarDays(todayInIndia(), 1)}
+                min={addCalendarDays(nextDeliveryDateInIndia(), 1)}
                 name="end_date"
                 type="date"
               />

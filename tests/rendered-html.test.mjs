@@ -33,6 +33,10 @@ const deliveryCalendarSchemaUrl = new URL(
   "../supabase/delivery_calendar.sql",
   import.meta.url,
 );
+const nextDayDeliverySchemaUrl = new URL(
+  "../supabase/next_day_delivery_start.sql",
+  import.meta.url,
+);
 const deliveryCalendarUrl = new URL(
   "../lib/delivery-calendar.ts",
   import.meta.url,
@@ -250,14 +254,16 @@ test("shows a real customer account after authentication", async () => {
 });
 
 test("provides an intelligent customer delivery calendar", async () => {
-  const [page, actions, styles, calendar, schema, account] = await Promise.all([
-    readFile(calendarPageUrl, "utf8"),
-    readFile(calendarActionsUrl, "utf8"),
-    readFile(calendarStylesUrl, "utf8"),
-    readFile(deliveryCalendarUrl, "utf8"),
-    readFile(deliveryCalendarSchemaUrl, "utf8"),
-    readFile(accountPageUrl, "utf8"),
-  ]);
+  const [page, actions, styles, calendar, schema, nextDaySchema, account] =
+    await Promise.all([
+      readFile(calendarPageUrl, "utf8"),
+      readFile(calendarActionsUrl, "utf8"),
+      readFile(calendarStylesUrl, "utf8"),
+      readFile(deliveryCalendarUrl, "utf8"),
+      readFile(deliveryCalendarSchemaUrl, "utf8"),
+      readFile(nextDayDeliverySchemaUrl, "utf8"),
+      readFile(accountPageUrl, "utf8"),
+    ]);
 
   assert.match(page, /Delivery calendar/);
   assert.match(page, /Upcoming deliveries/);
@@ -266,6 +272,8 @@ test("provides an intelligent customer delivery calendar", async () => {
   assert.match(page, /Keep add-on/);
   assert.match(page, /Pause multiple days/);
   assert.match(page, /Minimum 2 consecutive days/);
+  assert.match(page, /Plan from tomorrow/);
+  assert.match(page, /nextDeliveryDateInIndia/);
   assert.match(page, /Purchased/);
   assert.match(page, /Delivered/);
   assert.match(page, /Remaining/);
@@ -276,10 +284,12 @@ test("provides an intelligent customer delivery calendar", async () => {
   assert.match(actions, /endDate <= startDate/);
   assert.match(actions, /delivery_exceptions/);
   assert.match(actions, /delivery_pauses/);
+  assert.match(actions, /date < minimumDate/);
   assert.match(calendar, /normal weekly/i);
   assert.match(calendar, /buildDeliveryCalendar/);
   assert.match(calendar, /weekdayFromYmd/);
   assert.match(calendar, /estimateCompletionDate/);
+  assert.match(calendar, /nextDeliveryDateInIndia/);
   assert.match(schema, /purchased_deliveries/);
   assert.match(schema, /delivered_deliveries/);
   assert.match(schema, /create table if not exists public\.delivery_exceptions/);
@@ -288,6 +298,9 @@ test("provides an intelligent customer delivery calendar", async () => {
   assert.match(schema, /enable row level security/);
   assert.match(schema, /revoke update on public\.delivery_plans from authenticated/);
   assert.match(schema, /grant update \(status, start_date, bottle_choice, updated_at\)/);
+  assert.match(nextDaySchema, /enforce_next_day_delivery_start/);
+  assert.match(nextDaySchema, /Asia\/Kolkata/);
+  assert.match(nextDaySchema, /new\.start_date < v_earliest_start/);
   assert.match(account, /Only a completed milk delivery uses one delivery/);
   assert.match(styles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(min-width: 900px\)/);
@@ -325,6 +338,9 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /Undo changes/);
   assert.match(builder, /Weekly quantity/);
   assert.match(builder, /Start date/);
+  assert.match(builder, /Earliest delivery is tomorrow/);
+  assert.match(builder, /min=\{minimumStartDate\}/);
+  assert.match(builder, /nextDeliveryDateInIndia/);
   assert.match(builder, /Review milk plan/);
   assert.match(builder, /weeklyLitres/);
   assert.match(builder, /PRICE_PER_LITRE = 62/);
@@ -402,6 +418,8 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderActions, /Weekly schedule/);
   assert.match(orderActions, /parseWeeklyMilkSchedule/);
   assert.match(orderActions, /save_pending_delivery_plan/);
+  assert.match(orderActions, /start < minimumStartDate/);
+  assert.match(orderActions, /Delivery plans can begin from tomorrow/);
   assert.match(orderActions, /p_add_ons/);
   assert.match(orderActions, /day_of_week/);
   assert.match(orderActions, /first delivery/);
@@ -420,6 +438,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(deliveryPlanSchema, /\(select auth\.uid\(\)\) = user_id/);
   assert.match(deliveryPlanSchema, /save_pending_delivery_plan/);
   assert.match(deliveryPlanSchema, /p_add_ons jsonb/);
+  assert.match(deliveryPlanSchema, /Asia\/Kolkata/);
   assert.match(deliveryPlanSchema, /'none'/);
   assert.doesNotMatch(deliveryPlanSchema, /delivery charge|delivery fee/i);
 });

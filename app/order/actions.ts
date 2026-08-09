@@ -11,6 +11,7 @@ import {
   normalizePlanStartDate,
   parseWeeklyMilkSchedule,
 } from "@/lib/milk-plan";
+import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { createClient } from "@/lib/supabase/server";
 
 function orderUrl(
@@ -78,11 +79,13 @@ export async function saveDeliveryDetails(formData: FormData) {
   const schedule = String(formData.get("schedule") ?? "");
   const weeklySchedule = parseWeeklyMilkSchedule(schedule);
   const start = normalizePlanStartDate(String(formData.get("start") ?? ""));
+  const minimumStartDate = nextDeliveryDateInIndia();
 
   if (
     purchase === "plan" &&
     (!weeklySchedule ||
       !start ||
+      start < minimumStartDate ||
       (weeklySchedule.every((litres) => litres === 0) &&
         selectedProducts.length === 0) ||
       selectedProducts.some(
@@ -93,7 +96,9 @@ export async function saveDeliveryDetails(formData: FormData) {
     redirect(
       orderUrl(
         "error",
-        "Return to products and complete your weekly milk schedule.",
+        start && start < minimumStartDate
+          ? "Delivery plans can begin from tomorrow. Choose a later start date."
+          : "Return to products and complete your weekly milk schedule.",
         purchase,
         bottle,
         milk,

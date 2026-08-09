@@ -164,6 +164,10 @@ begin
     raise exception 'Start date is required';
   end if;
 
+  if p_start_date < ((now() at time zone 'Asia/Kolkata')::date + 1) then
+    raise exception 'Delivery plans can begin from tomorrow';
+  end if;
+
   if p_bottle_choice not in ('return', 'new') then
     raise exception 'Invalid bottle choice';
   end if;
@@ -262,6 +266,10 @@ begin
 
   if p_start_date is null then
     raise exception 'Start date is required';
+  end if;
+
+  if p_start_date < ((now() at time zone 'Asia/Kolkata')::date + 1) then
+    raise exception 'Delivery plans can begin from tomorrow';
   end if;
 
   if coalesce(array_length(p_schedule, 1), 0) <> 7

@@ -82,6 +82,10 @@ export function todayInIndia() {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+export function nextDeliveryDateInIndia() {
+  return addCalendarDays(todayInIndia(), 1);
+}
+
 export function formatCalendarDate(value: string) {
   return fullDateFormatter.format(dateFromYmd(value));
 }
@@ -121,7 +125,8 @@ export function buildDeliveryCalendar({
   startDate: string;
   weeklyItems: WeeklyDeliveryItem[];
 }) {
-  const firstDate = startDate > todayInIndia() ? startDate : todayInIndia();
+  const earliestDate = nextDeliveryDateInIndia();
+  const firstDate = startDate > earliestDate ? startDate : earliestDate;
 
   return Array.from({ length: days }, (_, index): CalendarDay => {
     const date = addCalendarDays(firstDate, index);

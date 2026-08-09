@@ -15,6 +15,7 @@ import {
   serializeWeeklyMilkSchedule,
   type WeeklyMilkSchedule,
 } from "@/lib/milk-plan";
+import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import styles from "./milk.module.css";
 
 const PRICE_PER_LITRE = 62;
@@ -82,10 +83,15 @@ export function MilkPlanBuilder({
   initialStartDate = "",
   isEditing = false,
 }: MilkPlanBuilderProps) {
+  const minimumStartDate = nextDeliveryDateInIndia();
+  const firstAvailableStartDate =
+    initialStartDate >= minimumStartDate
+      ? initialStartDate
+      : minimumStartDate;
   const [mode, setMode] = useState<PurchaseMode>("plan");
   const [onceQuantity, setOnceQuantity] = useState(1);
   const [schedule, setSchedule] = useState(initialSchedule);
-  const [startDate, setStartDate] = useState(initialStartDate);
+  const [startDate, setStartDate] = useState(firstAvailableStartDate);
   const [reviewed, setReviewed] = useState(false);
   const [bottleOption, setBottleOption] =
     useState<"return" | "new">(initialBottleOption);
@@ -537,7 +543,7 @@ export function MilkPlanBuilder({
                 type="button"
                 onClick={() => {
                   setSchedule(initialSchedule);
-                  setStartDate(initialStartDate);
+                  setStartDate(firstAvailableStartDate);
                   setBottleOption(initialBottleOption);
                   setExtras(
                     initialExtras.reduce(
@@ -593,8 +599,12 @@ export function MilkPlanBuilder({
 
             <div className={styles.dateSection}>
               <label>
-                <span className={styles.stepLabel}>02 · Start date</span>
+                <span className={styles.dateCopy}>
+                  <span className={styles.stepLabel}>02 · Start date</span>
+                  <small>Earliest delivery is tomorrow.</small>
+                </span>
                 <input
+                  min={minimumStartDate}
                   type="date"
                   value={startDate}
                   onInput={(event) => {

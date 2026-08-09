@@ -741,6 +741,17 @@
   gap: 24px;
 }
 
+.dateCopy {
+  display: grid;
+  gap: 7px;
+}
+
+.dateCopy small {
+  color: #77746d;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .dateSection input {
   min-height: 46px;
   padding: 0 12px;

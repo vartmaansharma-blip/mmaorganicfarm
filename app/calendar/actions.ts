@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { normalizePlanStartDate } from "@/lib/milk-plan";
-import { todayInIndia, weekdayFromYmd } from "@/lib/delivery-calendar";
+import {
+  nextDeliveryDateInIndia,
+  weekdayFromYmd,
+} from "@/lib/delivery-calendar";
 import { createClient } from "@/lib/supabase/server";
 
 const productKeys = new Set(["milk", "paneer", "ghee", "papaya", "sweets"]);
@@ -43,8 +46,15 @@ export async function saveDateChange(formData: FormData) {
   const productKey = String(formData.get("product_key") ?? "");
   const action = String(formData.get("change_action") ?? "normal");
 
-  if (!date || !productKeys.has(productKey) || date < todayInIndia()) {
-    redirect(calendarUrl(date || todayInIndia(), "error", "Choose a valid upcoming date."));
+  const minimumDate = nextDeliveryDateInIndia();
+  if (!date || !productKeys.has(productKey) || date < minimumDate) {
+    redirect(
+      calendarUrl(
+        date || minimumDate,
+        "error",
+        "Choose tomorrow or a later delivery date.",
+      ),
+    );
   }
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
@@ -105,8 +115,15 @@ export async function saveDeliveryDayChange(formData: FormData) {
   const date = normalizePlanStartDate(String(formData.get("date") ?? ""));
   const action = String(formData.get("day_action") ?? "normal");
 
-  if (!date || date < todayInIndia() || !["normal", "skip"].includes(action)) {
-    redirect(calendarUrl(date || todayInIndia(), "error", "Choose a valid upcoming date."));
+  const minimumDate = nextDeliveryDateInIndia();
+  if (!date || date < minimumDate || !["normal", "skip"].includes(action)) {
+    redirect(
+      calendarUrl(
+        date || minimumDate,
+        "error",
+        "Choose tomorrow or a later delivery date.",
+      ),
+    );
   }
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
@@ -195,19 +212,26 @@ export async function saveDeliveryDayChange(formData: FormData) {
 
 export async function savePause(formData: FormData) {
   const planId = String(formData.get("plan_id") ?? "");
-  const startDate = normalizePlanStartDate(String(formData.get("start_date") ?? ""));
-  const endDate = normalizePlanStartDate(String(formData.get("end_date") ?? ""));
-  const selectedDate = normalizePlanStartDate(String(formData.get("selected_date") ?? ""));
+  const startDate = normalizePlanStartDate(
+    String(formData.get("start_date") ?? ""),
+  );
+  const endDate = normalizePlanStartDate(
+    String(formData.get("end_date") ?? ""),
+  );
+  const selectedDate = normalizePlanStartDate(
+    String(formData.get("selected_date") ?? ""),
+  );
+  const minimumDate = nextDeliveryDateInIndia();
 
   if (
     !startDate ||
     !endDate ||
-    startDate < todayInIndia() ||
+    startDate < minimumDate ||
     endDate <= startDate
   ) {
     redirect(
       calendarUrl(
-        selectedDate || todayInIndia(),
+        selectedDate || minimumDate,
         "error",
         "A pause must cover at least two consecutive days.",
       ),
