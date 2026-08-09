@@ -19,7 +19,9 @@ html {
 }
 
 body {
+  max-width: 100%;
   margin: 0;
+  overflow-x: hidden;
   color: var(--ink);
   background: #fff;
   font-family: var(--font-sans);
@@ -890,15 +892,43 @@ h1 {
   font-size: 18px;
 }
 
-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.site-footer {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(280px, 1.6fr) auto;
+  align-items: start;
   gap: 24px;
   padding: 34px clamp(28px, 6vw, 96px);
   color: white;
   background: var(--ink);
   font-size: 12px;
+}
+
+.footer-identity {
+  display: grid;
+  gap: 10px;
+}
+
+.footer-identity p,
+.footer-copyright {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 22px;
+}
+
+.footer-links a {
+  color: white;
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
 }
 
 .footer-brand .brand-mark {
@@ -974,14 +1004,17 @@ footer {
   }
 
   .hero {
+    width: 100%;
+    max-width: 100vw;
     min-height: 0;
     height: auto;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     padding: 130px 0 42px;
   }
 
   .hero-copy {
+    min-width: 0;
     padding: 60px 7vw 20px;
   }
 
@@ -1098,12 +1131,16 @@ footer {
     min-height: 0;
     height: auto;
     max-height: none;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     align-content: start;
     padding: 54px 0 22px;
   }
 
   .hero-copy {
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
     padding: 34px 20px 0;
   }
 
@@ -1122,16 +1159,19 @@ footer {
   }
 
   h1 {
-    font-size: clamp(44px, 13vw, 62px);
-    line-height: 0.94;
+    font-size: 44px;
+    line-height: 0.97;
   }
 
   .hero-copy h1 {
-    max-width: 10ch;
-    font-size: clamp(44px, 13vw, 62px);
+    width: calc(100vw - 40px);
+    max-width: 100%;
+    font-size: 44px;
+    overflow-wrap: break-word;
   }
 
   .hero-intro {
+    width: calc(100vw - 40px);
     max-width: 38ch;
     margin-top: 18px;
     font-size: 14px;
@@ -1139,6 +1179,7 @@ footer {
   }
 
   .hero-reassurance {
+    width: calc(100vw - 40px);
     font-size: 12px;
   }
 
@@ -1147,14 +1188,16 @@ footer {
   }
 
   .hero-actions {
+    width: calc(100vw - 40px);
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
     margin-top: 20px;
   }
 
   .hero-actions .button {
-    width: auto;
+    width: 100%;
+    min-width: 0;
     min-height: 46px;
     gap: 9px;
     padding: 0 12px;
@@ -1282,9 +1325,14 @@ footer {
     min-height: 420px;
   }
 
-  footer {
+  .site-footer {
+    grid-template-columns: 1fr;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .footer-links {
+    justify-content: flex-start;
   }
 
   .whatsapp-float {

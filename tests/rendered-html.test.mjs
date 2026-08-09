@@ -68,6 +68,19 @@ const dailyDeliveriesSchemaUrl = new URL(
   import.meta.url,
 );
 const farmDashboardActionsUrl = new URL("../app/farm/actions.ts", import.meta.url);
+const pricingPageUrl = new URL("../app/pricing/page.tsx", import.meta.url);
+const shippingPageUrl = new URL("../app/shipping/page.tsx", import.meta.url);
+const contactPageUrl = new URL("../app/contact/page.tsx", import.meta.url);
+const termsPageUrl = new URL("../app/terms/page.tsx", import.meta.url);
+const privacyPageUrl = new URL("../app/privacy/page.tsx", import.meta.url);
+const cancellationPageUrl = new URL(
+  "../app/cancellation-refunds/page.tsx",
+  import.meta.url,
+);
+const publicInformationLayoutUrl = new URL(
+  "../app/components/public-information-layout.tsx",
+  import.meta.url,
+);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -119,7 +132,7 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
   assert.match(orderStyles, /width: min\(100%, 620px\)/);
   assert.doesNotMatch(orderStyles, /box-shadow/);
   assert.doesNotMatch(orderStyles, /grid-template-columns: minmax\(0, 0\.88fr\)/);
-  assert.match(sidebarStyles, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(sidebarStyles, /grid-template-columns: repeat\(6, calc\(\(100% - 10px\) \/ 6\)\)/);
 });
 
 test("uses stable profile and home navigation labels", async () => {
@@ -161,8 +174,37 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /LocalBusiness/);
   assert.match(page, /Product/);
   assert.doesNotMatch(page, /AccountLink/);
-  assert.match(page, /supabase\.auth\.getUser\(\)/);
-  assert.match(page, /redirect\("\/sign-in\?next=%2F"\)/);
+  assert.doesNotMatch(page, /supabase\.auth\.getUser\(\)/);
+  assert.doesNotMatch(page, /redirect\("\/sign-in\?next=%2F"\)/);
+  assert.match(page, /href="\/pricing"/);
+  assert.match(page, /href="\/privacy"/);
+  assert.match(page, /href="\/cancellation-refunds"/);
+});
+
+test("publishes complete business and policy information", async () => {
+  const [pricing, shipping, contact, terms, privacy, cancellation, shell] =
+    await Promise.all([
+      readFile(pricingPageUrl, "utf8"),
+      readFile(shippingPageUrl, "utf8"),
+      readFile(contactPageUrl, "utf8"),
+      readFile(termsPageUrl, "utf8"),
+      readFile(privacyPageUrl, "utf8"),
+      readFile(cancellationPageUrl, "utf8"),
+      readFile(publicInformationLayoutUrl, "utf8"),
+    ]);
+
+  assert.match(pricing, /MILK_PRICE_PER_LITRE/);
+  assert.match(pricing, /FARM_PRODUCTS/);
+  assert.match(shipping, /Jamshedpur/);
+  assert.match(shipping, /next delivery day/);
+  assert.match(contact, /919818804419/);
+  assert.match(terms, /Terms and conditions/);
+  assert.match(privacy, /Supabase/);
+  assert.match(privacy, /does not store complete card or bank credentials/);
+  assert.match(cancellation, /does not create a cash refund/);
+  assert.match(cancellation, /carried forward/);
+  assert.match(shell, /Cancellations & refunds/);
+  assert.doesNotMatch(shell, /createClient|redirect\(/);
 });
 
 test("provides Google and email account creation without delivery friction", async () => {

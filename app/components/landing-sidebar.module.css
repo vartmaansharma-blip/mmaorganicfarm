@@ -165,17 +165,19 @@
     width: 100%;
     height: 100%;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(6, calc((100% - 10px) / 6));
     gap: 2px;
     margin: 0;
+    overflow: hidden;
   }
 
   .navLink {
+    width: 100%;
     min-height: 50px;
     display: grid;
     place-items: center;
     padding: 0 2px;
-    font-size: 9px;
+    font-size: 8px;
     text-align: center;
   }
 

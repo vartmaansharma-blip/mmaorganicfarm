@@ -1,9 +1,5 @@
-import { redirect } from "next/navigation";
 import { LandingSidebar } from "@/app/components/landing-sidebar";
-import { createClient } from "@/lib/supabase/server";
 import landingStyles from "./landing.module.css";
-
-export const dynamic = "force-dynamic";
 
 const orderPath = "/milk";
 const whatsappContact =
@@ -125,15 +121,6 @@ const structuredData = {
 };
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/sign-in?next=%2F");
-  }
-
   return (
     <>
       <script
@@ -384,15 +371,25 @@ export default async function Home() {
           </div>
         </section>
 
-        <footer>
-          <a className="brand footer-brand" href="#home">
-            <span className="brand-mark" aria-hidden="true" />
-            <span className="brand-copy">
-              <strong>M&apos;ma Organic Farm</strong>
-            </span>
-          </a>
-          <p>Fresh from farm · Jamshedpur</p>
-          <p>© 2026 M&apos;ma Organic Farm</p>
+        <footer className="site-footer">
+          <div className="footer-identity">
+            <a className="brand footer-brand" href="#home">
+              <span className="brand-mark" aria-hidden="true" />
+              <span className="brand-copy">
+                <strong>M&apos;ma Organic Farm</strong>
+              </span>
+            </a>
+            <p>Fresh from farm · Jamshedpur</p>
+          </div>
+          <nav className="footer-links" aria-label="Business information">
+            <a href="/pricing">Pricing</a>
+            <a href="/shipping">Delivery</a>
+            <a href="/contact">Contact</a>
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/cancellation-refunds">Cancellations &amp; refunds</a>
+          </nav>
+          <p className="footer-copyright">© 2026 M&apos;ma Organic Farm</p>
         </footer>
       </main>
 
