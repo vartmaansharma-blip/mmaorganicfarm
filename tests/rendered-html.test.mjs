@@ -81,6 +81,27 @@ const publicInformationLayoutUrl = new URL(
   "../app/components/public-information-layout.tsx",
   import.meta.url,
 );
+const shopifyUrl = new URL("../lib/shopify.ts", import.meta.url);
+const shopifyCheckoutUrl = new URL(
+  "../app/api/commerce/shopify/checkout/route.ts",
+  import.meta.url,
+);
+const shopifyWebhookUrl = new URL(
+  "../app/api/commerce/shopify/webhook/route.ts",
+  import.meta.url,
+);
+const shopifyButtonUrl = new URL(
+  "../app/checkout/review/shopify-checkout-button.tsx",
+  import.meta.url,
+);
+const checkoutReviewUrl = new URL(
+  "../app/checkout/review/page.tsx",
+  import.meta.url,
+);
+const shopifySchemaUrl = new URL(
+  "../supabase/shopify_commerce.sql",
+  import.meta.url,
+);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -205,6 +226,34 @@ test("publishes complete business and policy information", async () => {
   assert.match(cancellation, /carried forward/);
   assert.match(shell, /Cancellations & refunds/);
   assert.doesNotMatch(shell, /createClient|redirect\(/);
+});
+
+test("hands commerce to Shopify without replacing the delivery calendar", async () => {
+  const [shopify, checkout, webhook, button, review, schema, calendar] =
+    await Promise.all([
+      readFile(shopifyUrl, "utf8"),
+      readFile(shopifyCheckoutUrl, "utf8"),
+      readFile(shopifyWebhookUrl, "utf8"),
+      readFile(shopifyButtonUrl, "utf8"),
+      readFile(checkoutReviewUrl, "utf8"),
+      readFile(shopifySchemaUrl, "utf8"),
+      readFile(deliveryCalendarUrl, "utf8"),
+    ]);
+
+  assert.match(shopify, /cartCreate/);
+  assert.match(shopify, /checkoutUrl/);
+  assert.match(shopify, /X-Shopify-Storefront-Access-Token/);
+  assert.match(checkout, /mma_delivery_plan_id/);
+  assert.match(checkout, /shopify_cart_id/);
+  assert.match(webhook, /x-shopify-hmac-sha256/);
+  assert.match(webhook, /timingSafeEqual/);
+  assert.match(webhook, /orders\/paid/);
+  assert.match(webhook, /status: "active"/);
+  assert.match(button, /Continue to pay/);
+  assert.match(review, /Your delivery calendar stays with/);
+  assert.match(schema, /commerce_provider/);
+  assert.match(schema, /provider in \('razorpay', 'shopify'\)/);
+  assert.match(calendar, /buildDeliveryCalendar/);
 });
 
 test("provides Google and email account creation without delivery friction", async () => {
