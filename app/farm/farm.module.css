@@ -35,14 +35,81 @@
   margin: 9px 0 0;
 }
 
+.headerActions {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.headerActions form {
+  display: contents;
+}
+
+.generateButton,
 .locationLink {
-  background: #191919;
   border: 1px solid #191919;
-  color: #fff;
   font-size: 13px;
   font-weight: 680;
   padding: 11px 14px;
+  text-align: center;
   text-decoration: none;
+  width: 100%;
+}
+
+.generateButton {
+  background: #191919;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.locationLink {
+  background: #fff;
+  color: #191919;
+}
+
+.notice {
+  background: #eef7f0;
+  border: 1px solid #b8d5bf;
+  color: #244c30;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 18px 0 0;
+  padding: 11px 13px;
+}
+
+.error {
+  background: #fff1ef;
+  border-color: #e2b8b0;
+  color: #7d2b21;
+}
+
+.sheetStatus {
+  align-items: flex-start;
+  background: #f7f7f5;
+  border-left: 3px solid #191919;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding: 14px;
+}
+
+.sheetStatus div {
+  display: grid;
+  gap: 4px;
+}
+
+.sheetStatus strong {
+  font-size: 13px;
+}
+
+.sheetStatus span {
+  color: #696864;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .metrics {
@@ -50,7 +117,7 @@
   border-top: 1px solid #e8e7e3;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 .metrics article {
@@ -215,6 +282,30 @@
   line-height: 1.45;
 }
 
+.stopItems small {
+  color: #787773;
+  font-size: 9px;
+  font-weight: 720;
+  text-transform: uppercase;
+}
+
+.stopActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+.stopActions a {
+  background: #f6cb4f;
+  border: 1px solid #d2aa32;
+  color: #191919;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 9px;
+  text-decoration: none;
+}
+
 .stopItems {
   grid-column: 2;
   margin-top: 5px;
@@ -299,6 +390,16 @@
 
   .metrics strong {
     font-size: 34px;
+  }
+
+  .headerActions {
+    display: flex;
+    width: auto;
+  }
+
+  .generateButton,
+  .locationLink {
+    width: auto;
   }
 
   .production,

@@ -4,9 +4,9 @@ import {
   formatCalendarDate,
   nextDeliveryDateInIndia,
   productName,
-  weekdayFromYmd,
 } from "@/lib/delivery-calendar";
 import { requireFarmStaff } from "@/lib/farm-dashboard";
+import { generateTomorrowDeliverySheet } from "./actions";
 import styles from "./farm.module.css";
 
 export const metadata: Metadata = {
@@ -15,40 +15,13 @@ export const metadata: Metadata = {
 };
 
 type ProfileRow = {
-  address_line: string | null;
   delivery_area_id: string | null;
   delivery_route_id: string | null;
-  full_name: string | null;
-  landmark: string | null;
-  phone: string | null;
-  postal_code: string | null;
-  route_stop_order: number | null;
-  user_id: string;
 };
 
 type PlanRow = {
   id: string;
-  start_date: string;
   status: string;
-  user_id: string;
-};
-
-type DeliveryItemRow = {
-  day_of_week?: number;
-  delivery_date?: string;
-  plan_id: string;
-  product_key: string;
-  quantity: number;
-  unit: string;
-};
-
-type ExceptionRow = {
-  action: "override" | "skip";
-  delivery_date: string;
-  plan_id: string;
-  product_key: string;
-  quantity: number | null;
-  unit: string | null;
 };
 
 type PauseRow = {
@@ -57,17 +30,32 @@ type PauseRow = {
   start_date: string;
 };
 
-type PlannedItem = {
-  productKey: string;
+type DailyItemRow = {
+  product_key: string;
   quantity: number;
   unit: string;
 };
 
+type DailyDeliveryRow = {
+  address_snapshot: string | null;
+  customer_name: string;
+  daily_delivery_items: DailyItemRow[];
+  delivery_area_id: string | null;
+  delivery_route_id: string | null;
+  generated_at: string;
+  id: string;
+  phone_snapshot: string | null;
+  route_stop_order: number | null;
+  status: string;
+};
+
 type Stop = {
   address: string;
-  items: PlannedItem[];
+  id: string;
+  items: DailyItemRow[];
   name: string;
-  phone: string;
+  phone: string | null;
+  status: string;
   stopOrder: number | null;
 };
 
@@ -81,100 +69,53 @@ type AreaGroup = {
   routes: Map<string, RouteGroup>;
 };
 
-function plannedItemsForDate({
-  date,
-  exceptions,
-  scheduled,
-  weekly,
+function formatQuantity(item: DailyItemRow) {
+  const quantity = Number(item.quantity);
+  if (/^1\s/.test(item.unit)) return `${quantity} × ${item.unit}`;
+  return `${quantity} ${item.unit}${quantity === 1 ? "" : "s"}`;
+}
+
+function mapUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+export default async function FarmDashboardPage({
+  searchParams,
 }: {
-  date: string;
-  exceptions: ExceptionRow[];
-  scheduled: DeliveryItemRow[];
-  weekly: DeliveryItemRow[];
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
-  const itemMap = new Map<string, PlannedItem>();
-  const weekday = weekdayFromYmd(date);
-
-  weekly
-    .filter((item) => item.day_of_week === weekday)
-    .forEach((item) => {
-      itemMap.set(item.product_key, {
-        productKey: item.product_key,
-        quantity: Number(item.quantity),
-        unit: item.unit,
-      });
-    });
-
-  scheduled
-    .filter((item) => item.delivery_date === date)
-    .forEach((item) => {
-      itemMap.set(item.product_key, {
-        productKey: item.product_key,
-        quantity: Number(item.quantity),
-        unit: item.unit,
-      });
-    });
-
-  exceptions
-    .filter((item) => item.delivery_date === date)
-    .forEach((item) => {
-      if (item.action === "skip") {
-        itemMap.delete(item.product_key);
-      } else if (item.quantity && item.unit) {
-        itemMap.set(item.product_key, {
-          productKey: item.product_key,
-          quantity: Number(item.quantity),
-          unit: item.unit,
-        });
-      }
-    });
-
-  return [...itemMap.values()];
-}
-
-function formatQuantity(item: PlannedItem) {
-  return `${item.quantity} ${item.unit}${item.quantity === 1 ? "" : "s"}`;
-}
-
-export default async function FarmDashboardPage() {
   const { supabase } = await requireFarmStaff();
   const deliveryDate = nextDeliveryDateInIndia();
+  const params = await searchParams;
 
   const [
     profilesResult,
     areasResult,
     routesResult,
     plansResult,
-    weeklyResult,
-    scheduledResult,
-    exceptionsResult,
     pausesResult,
+    deliveriesResult,
   ] = await Promise.all([
     supabase
       .from("customer_profiles")
-      .select(
-        "user_id, full_name, phone, address_line, postal_code, landmark, delivery_area_id, delivery_route_id, route_stop_order",
-      ),
+      .select("delivery_area_id, delivery_route_id"),
     supabase.from("delivery_areas").select("id, name, active, sort_order"),
     supabase
       .from("delivery_routes")
       .select("id, area_id, name, code, active, sort_order"),
     supabase
       .from("delivery_plans")
-      .select("id, user_id, status, start_date")
+      .select("id, status")
       .in("status", ["pending_confirmation", "active", "paused"]),
-    supabase
-      .from("weekly_delivery_items")
-      .select("plan_id, product_key, day_of_week, quantity, unit"),
-    supabase
-      .from("scheduled_delivery_items")
-      .select("plan_id, product_key, delivery_date, quantity, unit"),
-    supabase
-      .from("delivery_exceptions")
-      .select("plan_id, delivery_date, product_key, action, quantity, unit"),
     supabase
       .from("delivery_pauses")
       .select("plan_id, start_date, end_date"),
+    supabase
+      .from("daily_deliveries")
+      .select(
+        "id, status, generated_at, customer_name, phone_snapshot, address_snapshot, delivery_area_id, delivery_route_id, route_stop_order, daily_delivery_items(product_key, quantity, unit)",
+      )
+      .eq("delivery_date", deliveryDate),
   ]);
 
   const databaseError = [
@@ -182,21 +123,16 @@ export default async function FarmDashboardPage() {
     areasResult.error,
     routesResult.error,
     plansResult.error,
-    weeklyResult.error,
-    scheduledResult.error,
-    exceptionsResult.error,
     pausesResult.error,
+    deliveriesResult.error,
   ].find(Boolean);
 
   if (databaseError) throw databaseError;
 
   const profiles = (profilesResult.data ?? []) as ProfileRow[];
   const plans = (plansResult.data ?? []) as PlanRow[];
-  const weekly = (weeklyResult.data ?? []) as DeliveryItemRow[];
-  const scheduled = (scheduledResult.data ?? []) as DeliveryItemRow[];
-  const exceptions = (exceptionsResult.data ?? []) as ExceptionRow[];
   const pauses = (pausesResult.data ?? []) as PauseRow[];
-  const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
+  const deliveries = (deliveriesResult.data ?? []) as DailyDeliveryRow[];
   const areaById = new Map(
     (areasResult.data ?? []).map((area) => [area.id, area]),
   );
@@ -205,67 +141,44 @@ export default async function FarmDashboardPage() {
   );
   const areaGroups = new Map<string, AreaGroup>();
   const totals = new Map<string, number>();
-  let pausedTomorrow = 0;
 
-  plans
-    .filter((plan) => plan.status === "active" && plan.start_date <= deliveryDate)
-    .forEach((plan) => {
-      const isPaused = pauses.some(
-        (pause) =>
-          pause.plan_id === plan.id &&
-          deliveryDate >= pause.start_date &&
-          deliveryDate <= pause.end_date,
-      );
-      if (isPaused) {
-        pausedTomorrow += 1;
-        return;
-      }
+  deliveries.forEach((delivery) => {
+    const area = delivery.delivery_area_id
+      ? areaById.get(delivery.delivery_area_id)
+      : null;
+    const route = delivery.delivery_route_id
+      ? routeById.get(delivery.delivery_route_id)
+      : null;
+    const areaKey = area?.id ?? "unassigned";
+    const routeKey = route?.id ?? `${areaKey}-unassigned`;
+    const areaGroup: AreaGroup = areaGroups.get(areaKey) ?? {
+      name: area?.name ?? "Unassigned area",
+      routes: new Map<string, RouteGroup>(),
+    };
+    const routeGroup: RouteGroup = areaGroup.routes.get(routeKey) ?? {
+      name: route?.name ?? "Route not assigned",
+      stops: [],
+    };
 
-      const items = plannedItemsForDate({
-        date: deliveryDate,
-        exceptions: exceptions.filter((item) => item.plan_id === plan.id),
-        scheduled: scheduled.filter((item) => item.plan_id === plan.id),
-        weekly: weekly.filter((item) => item.plan_id === plan.id),
-      });
-      if (!items.length) return;
-
-      const profile = profileByUser.get(plan.user_id);
-      const area = profile?.delivery_area_id
-        ? areaById.get(profile.delivery_area_id)
-        : null;
-      const route = profile?.delivery_route_id
-        ? routeById.get(profile.delivery_route_id)
-        : null;
-      const areaKey = area?.id ?? "unassigned";
-      const routeKey = route?.id ?? `${areaKey}-unassigned`;
-      const areaGroup: AreaGroup = areaGroups.get(areaKey) ?? {
-        name: area?.name ?? "Unassigned area",
-        routes: new Map<string, RouteGroup>(),
-      };
-      const routeGroup: RouteGroup = areaGroup.routes.get(routeKey) ?? {
-        name: route?.name ?? "Route not assigned",
-        stops: [],
-      };
-
-      routeGroup.stops.push({
-        address: [profile?.address_line, profile?.landmark, profile?.postal_code]
-          .filter(Boolean)
-          .join(", "),
-        items,
-        name: profile?.full_name ?? "Customer",
-        phone: profile?.phone ?? "No phone saved",
-        stopOrder: profile?.route_stop_order ?? null,
-      });
-      areaGroup.routes.set(routeKey, routeGroup);
-      areaGroups.set(areaKey, areaGroup);
-
-      items.forEach((item) => {
-        totals.set(
-          item.productKey,
-          (totals.get(item.productKey) ?? 0) + item.quantity,
-        );
-      });
+    routeGroup.stops.push({
+      address: delivery.address_snapshot ?? "",
+      id: delivery.id,
+      items: delivery.daily_delivery_items ?? [],
+      name: delivery.customer_name,
+      phone: delivery.phone_snapshot,
+      status: delivery.status,
+      stopOrder: delivery.route_stop_order,
     });
+    areaGroup.routes.set(routeKey, routeGroup);
+    areaGroups.set(areaKey, areaGroup);
+
+    (delivery.daily_delivery_items ?? []).forEach((item) => {
+      totals.set(
+        item.product_key,
+        (totals.get(item.product_key) ?? 0) + Number(item.quantity),
+      );
+    });
+  });
 
   const groups = [...areaGroups.values()]
     .map((area) => ({
@@ -282,22 +195,31 @@ export default async function FarmDashboardPage() {
       if (b.name === "Unassigned area") return -1;
       return a.name.localeCompare(b.name);
     });
-  const deliveryCount = groups.reduce(
-    (sum, area) =>
-      sum + area.routes.reduce((routeSum, route) => routeSum + route.stops.length, 0),
-    0,
-  );
   const pendingCount = plans.filter(
     (plan) => plan.status === "pending_confirmation",
   ).length;
   const unassignedCount = profiles.filter(
     (profile) => !profile.delivery_area_id || !profile.delivery_route_id,
   ).length;
+  const pausedTomorrow = plans.filter(
+    (plan) =>
+      plan.status === "active" &&
+      pauses.some(
+        (pause) =>
+          pause.plan_id === plan.id &&
+          deliveryDate >= pause.start_date &&
+          deliveryDate <= pause.end_date,
+      ),
+  ).length;
   const productTotals = [...totals.entries()].sort(([a], [b]) => {
     if (a === "milk") return -1;
     if (b === "milk") return 1;
     return a.localeCompare(b);
   });
+  const generatedAt = deliveries
+    .map((delivery) => delivery.generated_at)
+    .sort()
+    .at(-1);
 
   return (
     <main className={styles.page}>
@@ -307,15 +229,41 @@ export default async function FarmDashboardPage() {
           <h1>Tomorrow&apos;s delivery plan</h1>
           <p className={styles.date}>{formatCalendarDate(deliveryDate)}</p>
         </div>
-        <Link className={styles.locationLink} href="/farm/locations">
-          Manage locations
-        </Link>
+        <div className={styles.headerActions}>
+          <form action={generateTomorrowDeliverySheet}>
+            <button className={styles.generateButton} type="submit">
+              Generate tomorrow&apos;s sheet
+            </button>
+          </form>
+          <Link className={styles.locationLink} href="/farm/locations">
+            Manage locations
+          </Link>
+        </div>
       </header>
+
+      {params.message ? (
+        <p className={styles.notice}>{params.message}</p>
+      ) : null}
+      {params.error ? (
+        <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
+      ) : null}
+
+      <section className={styles.sheetStatus} aria-label="Daily sheet status">
+        <div>
+          <strong>{generatedAt ? "Daily sheet ready" : "Daily sheet not generated"}</strong>
+          <span>
+            {generatedAt
+              ? `${deliveries.length} persistent stops saved for tomorrow.`
+              : "Generate after paid plans are active. Pending checkout is never included."}
+          </span>
+        </div>
+        <span>{pausedTomorrow} paused</span>
+      </section>
 
       <section className={styles.metrics} aria-label="Tomorrow's totals">
         <article>
           <span>Customer stops</span>
-          <strong>{deliveryCount}</strong>
+          <strong>{deliveries.length}</strong>
         </article>
         <article>
           <span>Milk</span>
@@ -353,7 +301,7 @@ export default async function FarmDashboardPage() {
             <p className={styles.sectionLabel}>Date → area → route → customer</p>
             <h2 id="routes-title">Delivery routes</h2>
           </div>
-          <span>{pausedTomorrow} paused</span>
+          <span>{deliveries.length} stops</span>
         </div>
 
         {groups.length ? (
@@ -372,21 +320,34 @@ export default async function FarmDashboardPage() {
                       <h4>{route.name}</h4>
                       <ol>
                         {route.stops.map((stop, index) => (
-                          <li key={`${stop.name}-${index}`}>
+                          <li key={stop.id}>
                             <span className={styles.stopNumber}>
                               {stop.stopOrder ?? index + 1}
                             </span>
                             <div className={styles.stopCopy}>
                               <strong>{stop.name}</strong>
                               <span>{stop.address || "Address not saved"}</span>
-                              <small>{stop.phone}</small>
+                              <small>{stop.phone ?? "No phone saved"}</small>
+                              <div className={styles.stopActions}>
+                                {stop.address ? (
+                                  <a
+                                    href={mapUrl(stop.address)}
+                                    rel="noreferrer"
+                                    target="_blank"
+                                  >
+                                    Open map
+                                  </a>
+                                ) : null}
+                                {stop.phone ? <a href={`tel:${stop.phone}`}>Call</a> : null}
+                              </div>
                             </div>
                             <div className={styles.stopItems}>
                               {stop.items.map((item) => (
-                                <span key={item.productKey}>
-                                  {productName(item.productKey)} · {formatQuantity(item)}
+                                <span key={item.product_key}>
+                                  {productName(item.product_key)} · {formatQuantity(item)}
                                 </span>
                               ))}
+                              <small>{stop.status.replaceAll("_", " ")}</small>
                             </div>
                           </li>
                         ))}
@@ -401,7 +362,7 @@ export default async function FarmDashboardPage() {
           <div className={styles.empty}>
             <strong>No active deliveries for tomorrow yet.</strong>
             <p>
-              Pending plans will appear here only after verified payment activates them.
+              Generate the sheet after payment activates a plan. Pending plans are excluded.
             </p>
           </div>
         )}
@@ -414,7 +375,7 @@ export default async function FarmDashboardPage() {
         </div>
         <ol>
           <li><span>01</span>Verified payment activates the selected plan</li>
-          <li><span>02</span>Generate real daily delivery records</li>
+          <li><span>02</span>Assign each route to a delivery driver</li>
           <li><span>03</span>Driver marks out for delivery, delivered, or failed</li>
           <li><span>04</span>Use one milk credit only after successful delivery</li>
           <li><span>05</span>Send customer confirmations and exceptions</li>

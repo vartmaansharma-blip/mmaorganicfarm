@@ -63,6 +63,11 @@ const farmActionsUrl = new URL(
   import.meta.url,
 );
 const farmSchemaUrl = new URL("../supabase/farm_dashboard.sql", import.meta.url);
+const dailyDeliveriesSchemaUrl = new URL(
+  "../supabase/daily_deliveries.sql",
+  import.meta.url,
+);
+const farmDashboardActionsUrl = new URL("../app/farm/actions.ts", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -403,18 +408,27 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(order, /href="\/milk"/);
 });
 
-test("provides a protected location-first farm operations foundation", async () => {
-  const [dashboard, locations, actions, schema] = await Promise.all([
+test("provides persistent mobile-first farm delivery operations", async () => {
+  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, styles] = await Promise.all([
     readFile(farmDashboardUrl, "utf8"),
+    readFile(farmDashboardActionsUrl, "utf8"),
     readFile(farmLocationsUrl, "utf8"),
     readFile(farmActionsUrl, "utf8"),
     readFile(farmSchemaUrl, "utf8"),
+    readFile(dailyDeliveriesSchemaUrl, "utf8"),
+    readFile(new URL("../app/farm/farm.module.css", import.meta.url), "utf8"),
   ]);
 
   assert.match(dashboard, /Tomorrow&apos;s delivery plan/);
   assert.match(dashboard, /Date → area → route → customer/);
-  assert.match(dashboard, /Pending plans will appear here only after verified payment/);
+  assert.match(dashboard, /Generate tomorrow&apos;s sheet/);
+  assert.match(dashboard, /daily_deliveries/);
+  assert.match(dashboard, /Open map/);
+  assert.match(dashboard, /google\.com\/maps\/search/);
+  assert.match(dashboard, /Pending plans are excluded/);
   assert.match(dashboard, /Work remaining/);
+  assert.match(dashboardActions, /generate_daily_deliveries/);
+  assert.match(dashboardActions, /nextDeliveryDateInIndia/);
   assert.match(locations, /Delivery locations/);
   assert.match(locations, /Assignment queue/);
   assert.match(locations, /Unassigned area/);
@@ -426,6 +440,19 @@ test("provides a protected location-first farm operations foundation", async () 
   assert.match(schema, /enable row level security/);
   assert.match(schema, /Customers and staff can read profiles/);
   assert.doesNotMatch(schema, /service_role/);
+  assert.match(dailySchema, /create table if not exists public\.daily_deliveries/);
+  assert.match(dailySchema, /create table if not exists public\.daily_delivery_items/);
+  assert.match(dailySchema, /create or replace function public\.generate_daily_deliveries/);
+  assert.match(dailySchema, /plans\.status = 'active'/);
+  assert.match(dailySchema, /delivery_pauses/);
+  assert.match(dailySchema, /delivery_exceptions/);
+  assert.match(dailySchema, /unique \(plan_id, delivery_date\)/);
+  assert.match(dailySchema, /enable row level security/);
+  assert.match(dailySchema, /farm_staff\.active/);
+  assert.doesNotMatch(dailySchema, /service_role/);
+  assert.match(styles, /\.headerActions/);
+  assert.match(styles, /width: 100%/);
+  assert.match(styles, /@media \(min-width: 700px\)/);
 });
 
 test("collects delivery details only when a customer starts an order", async () => {
