@@ -95,16 +95,15 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
 
       <section className={styles.layout}>
         <div className={styles.copy}>
-          <p className={styles.eyebrow}>Step 2 of 3</p>
+          <p className={styles.eyebrow}>Step 2 of 4</p>
           <h1>Where should we bring your order, {firstName}?</h1>
           <p>
-            Add a contact number and delivery address. You will confirm what you
-            need personally on WhatsApp.
+            Add a contact number and delivery address. You can review every detail before payment.
           </p>
           <div className={styles.steps} aria-label="Order progress">
             <span className={styles.complete}>Account</span>
             <span className={styles.active}>Delivery details</span>
-            <span>WhatsApp confirmation</span>
+            <span>Review &amp; pay</span><span>Confirmed</span>
           </div>
           {hasOrder ? (
             <div className={styles.orderSummary}>
@@ -232,7 +231,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           </label>
 
           <button type="submit">
-            Save &amp; continue to WhatsApp <span>→</span>
+            Save &amp; review order <span>→</span>
           </button>
           <p className={styles.note}>
             These details are saved securely to your account. No order is placed

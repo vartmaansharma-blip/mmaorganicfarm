@@ -6,13 +6,11 @@ import {
   serializeFarmProductSelections,
 } from "@/lib/farm-products";
 import {
-  describeWeeklyMilkSchedule,
-  formatPlanStartDate,
   normalizePlanStartDate,
   parseWeeklyMilkSchedule,
 } from "@/lib/milk-plan";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
-import { calculateOrderPricing } from "@/lib/order-pricing";
+import { calculateOrderPricing, MILK_PRICE_PER_LITRE } from "@/lib/order-pricing";
 import { createClient } from "@/lib/supabase/server";
 
 function orderUrl(
@@ -81,12 +79,12 @@ export async function saveDeliveryDetails(formData: FormData) {
   const weeklySchedule = parseWeeklyMilkSchedule(schedule);
   const start = normalizePlanStartDate(String(formData.get("start") ?? ""));
   const minimumStartDate = nextDeliveryDateInIndia();
+  const effectiveMilkLitres = purchase === "plan" && weeklySchedule
+    ? weeklySchedule.reduce((total, litres) => total + litres, 0)
+    : milkLitres;
   const pricing = calculateOrderPricing({
     bottleChoice: bottle,
-    milkLitres:
-      purchase === "plan" && weeklySchedule
-        ? weeklySchedule.reduce((total, litres) => total + litres, 0)
-        : milkLitres,
+    milkLitres: effectiveMilkLitres,
     products: selectedProducts,
   });
 
@@ -194,6 +192,7 @@ export async function saveDeliveryDetails(formData: FormData) {
     );
   }
 
+  let deliveryPlanId: string | null = null;
   if (purchase === "plan" && weeklySchedule) {
     const scheduledAddOns = selectedProducts.flatMap((product) =>
       product.frequency === "weekly"
@@ -211,7 +210,7 @@ export async function saveDeliveryDetails(formData: FormData) {
             },
           ],
     );
-    const { error: planError } = await supabase.rpc(
+    const { data: planId, error: planError } = await supabase.rpc(
       "save_pending_delivery_plan",
       {
         p_add_ons: scheduledAddOns,
@@ -236,44 +235,34 @@ export async function saveDeliveryDetails(formData: FormData) {
         ),
       );
     }
+    deliveryPlanId = planId;
   }
 
-  const message = [
-    "Hello M'ma Organic Farm, I'd like to continue a farm order.",
-    `Name: ${fullName}`,
-    `Phone: +91 ${phone}`,
-    `Delivery address: ${address}`,
-    `Order type: ${purchase === "plan" ? "Weekly farm plan" : "One-time farm order"}`,
-    `Milk: ${milkLitres === 0 ? "No milk this time" : purchase === "plan" ? `${milkLitres} L per week` : `${milkLitres} L`}`,
-    ...(purchase === "plan" && weeklySchedule
-      ? [
-          `Plan starts: ${formatPlanStartDate(start)}`,
-          `Weekly schedule: ${describeWeeklyMilkSchedule(weeklySchedule)}`,
-        ]
-      : []),
-    ...(milkLitres > 0
-      ? [
-          `Bottle: ${bottle === "new" ? "No return bottle (+₹10 once)" : "M'ma bottle will be returned on delivery (₹62 exchange price)"}`,
-        ]
-      : []),
-    ...(selectedProducts.length
-      ? [
-          "Added farm products:",
-          ...selectedProducts.map(
-            (product) =>
-              `- ${product.name}, ${product.quantity} × ${product.unit}, ₹${product.price * product.quantity}, ${
-                product.frequency === "weekly"
-                  ? `every ${product.days
-                      .map((day) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][day - 1])
-                      .join(", ")}`
-                  : "first delivery"
-              }`,
-          ),
-        ]
-      : []),
-    `${purchase === "plan" ? "First 7-day estimate" : "Order total"}: ₹${pricing.total}`,
-  ].join("\n");
-  const whatsapp = new URL("https://wa.me/919818804419");
-  whatsapp.searchParams.set("text", message);
-  redirect(whatsapp.toString());
+  const { data: order, error: orderError } = await supabase.from("orders").insert({
+    address_snapshot: address, bottle_charge_paise: pricing.bottleCharge * 100, bottle_choice: bottle,
+    currency: "INR", delivery_plan_id: deliveryPlanId, milk_litres: effectiveMilkLitres,
+    phone_snapshot: `+91${phone}`, purchase_mode: purchase, start_date: purchase === "plan" ? start : null,
+    status: "draft", subtotal_paise: (pricing.total - pricing.bottleCharge) * 100,
+    total_paise: pricing.total * 100, user_id: user.id,
+  }).select("id").single();
+  if (orderError || !order) redirect(orderUrl("error", "We saved your details but could not prepare checkout. Please try again.", purchase, bottle, milk, extras, schedule, start));
+
+  const orderItems = [
+    ...(effectiveMilkLitres > 0 ? [{
+      delivery_date: purchase === "plan" ? start : null, frequency: purchase === "plan" ? "weekly" : "once",
+      line_total_paise: effectiveMilkLitres * MILK_PRICE_PER_LITRE * 100, order_id: order.id,
+      product_key: "milk", product_name: "Fresh farm milk", quantity: effectiveMilkLitres,
+      scheduled_days: purchase === "plan" && weeklySchedule ? weeklySchedule.flatMap((litres, index) => litres > 0 ? [index + 1] : []) : [],
+      unit: purchase === "plan" ? "litres / week" : "litre", unit_price_paise: MILK_PRICE_PER_LITRE * 100, user_id: user.id,
+    }] : []),
+    ...selectedProducts.map((product) => ({
+      delivery_date: product.frequency === "once" && purchase === "plan" ? start : null,
+      frequency: product.frequency, line_total_paise: product.price * product.quantity * (product.frequency === "weekly" ? product.days.length : 1) * 100,
+      order_id: order.id, product_key: product.id, product_name: product.name, quantity: product.quantity,
+      scheduled_days: product.days, unit: product.unit, unit_price_paise: product.price * 100, user_id: user.id,
+    })),
+  ];
+  const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+  if (itemsError) redirect(orderUrl("error", "We could not prepare your order summary. Please try again.", purchase, bottle, milk, extras, schedule, start));
+  redirect(`/checkout/review?order=${order.id}`);
 }
