@@ -9,7 +9,7 @@ import { signOut } from "./actions";
 import styles from "./account.module.css";
 
 export const metadata: Metadata = {
-  title: "Your account",
+  title: "Profile",
   robots: { index: false, follow: false },
 };
 
@@ -32,7 +32,7 @@ export default async function AccountPage() {
   const { data: deliveryPlan } = await supabase
     .from("delivery_plans")
     .select(
-      "id, status, start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit)",
+      "id, status, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit)",
     )
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
@@ -98,6 +98,12 @@ export default async function AccountPage() {
       : deliveryPlan?.status === "paused"
         ? "Paused"
         : "Awaiting confirmation";
+  const purchasedDeliveries = Number(deliveryPlan?.purchased_deliveries ?? 30);
+  const deliveredDeliveries = Number(deliveryPlan?.delivered_deliveries ?? 0);
+  const remainingDeliveries = Math.max(
+    0,
+    purchasedDeliveries - deliveredDeliveries,
+  );
 
   return (
     <main className={styles.page}>
@@ -117,9 +123,9 @@ export default async function AccountPage() {
             <p className={styles.eyebrow}>
               Welcome, {name.split(/\s+/)[0]}
             </p>
-            <h1>Your account</h1>
+            <h1>Profile</h1>
             <p className={styles.intro}>
-              Manage the details used for your M&apos;ma milk orders.
+              Your details, delivery routine, and plan in one place.
             </p>
           </div>
           <Link className={styles.startOrder} href="/milk">
@@ -203,6 +209,10 @@ export default async function AccountPage() {
                 <dd>{weeklyLitres} L</dd>
               </div>
               <div>
+                <dt>Remaining</dt>
+                <dd>{remainingDeliveries} deliveries</dd>
+              </div>
+              <div>
                 <dt>Glass bottle</dt>
                 <dd>
                   {deliveryPlan.bottle_choice === "new"
@@ -244,11 +254,17 @@ export default async function AccountPage() {
             ) : null}
 
             <p className={styles.planNote}>
-              WhatsApp confirmation activates the plan. No payment is taken here.
+              Only a completed milk delivery uses one delivery. Skips and pauses
+              leave your balance unchanged.
             </p>
-            <Link className={styles.editPlan} href="/milk?edit=plan">
-              Edit weekly plan
-            </Link>
+            <div className={styles.planActions}>
+              <Link className={styles.openCalendar} href="/calendar">
+                Open delivery calendar
+              </Link>
+              <Link className={styles.editPlan} href="/milk?edit=plan">
+                Edit normal week
+              </Link>
+            </div>
           </section>
         ) : null}
 

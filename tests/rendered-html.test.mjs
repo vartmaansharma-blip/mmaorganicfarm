@@ -29,6 +29,23 @@ const farmProductsUrl = new URL("../lib/farm-products.ts", import.meta.url);
 const milkPlanUrl = new URL("../lib/milk-plan.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 const deliveryPlanSchemaUrl = new URL("../supabase/delivery_plans.sql", import.meta.url);
+const deliveryCalendarSchemaUrl = new URL(
+  "../supabase/delivery_calendar.sql",
+  import.meta.url,
+);
+const deliveryCalendarUrl = new URL(
+  "../lib/delivery-calendar.ts",
+  import.meta.url,
+);
+const calendarPageUrl = new URL("../app/calendar/page.tsx", import.meta.url);
+const calendarActionsUrl = new URL(
+  "../app/calendar/actions.ts",
+  import.meta.url,
+);
+const calendarStylesUrl = new URL(
+  "../app/calendar/calendar.module.css",
+  import.meta.url,
+);
 const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
 const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
 
@@ -211,6 +228,8 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountLink, /onAuthStateChange/);
   assert.match(accountLink, /\/account/);
   assert.match(accountPage, /customer_profiles/);
+  assert.match(accountPage, /<h1>Profile<\/h1>/);
+  assert.doesNotMatch(accountPage, /<h1>Your account<\/h1>/);
   assert.match(accountPage, /Google connected/);
   assert.match(accountPage, /hasDeliveryDetails/);
   assert.match(accountPage, /hasPhone \? \(/);
@@ -221,10 +240,57 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /Saved weekly milk schedule/);
   assert.match(accountPage, /Scheduled add-ons/);
   assert.match(accountPage, /scheduled_delivery_items/);
+  assert.match(accountPage, /remainingDeliveries/);
+  assert.match(accountPage, /href="\/calendar"/);
+  assert.match(accountPage, /Open delivery calendar/);
   assert.match(accountPage, /Awaiting confirmation/);
   assert.match(accountPage, /href="\/milk\?edit=plan"/);
   assert.doesNotMatch(accountPage, /Not added yet/);
   assert.match(accountPage, /signOut/);
+});
+
+test("provides an intelligent customer delivery calendar", async () => {
+  const [page, actions, styles, calendar, schema, account] = await Promise.all([
+    readFile(calendarPageUrl, "utf8"),
+    readFile(calendarActionsUrl, "utf8"),
+    readFile(calendarStylesUrl, "utf8"),
+    readFile(deliveryCalendarUrl, "utf8"),
+    readFile(deliveryCalendarSchemaUrl, "utf8"),
+    readFile(accountPageUrl, "utf8"),
+  ]);
+
+  assert.match(page, /Delivery calendar/);
+  assert.match(page, /Upcoming deliveries/);
+  assert.match(page, /Skip this delivery day/);
+  assert.match(page, /Skip milk only/);
+  assert.match(page, /Keep add-on/);
+  assert.match(page, /Pause multiple days/);
+  assert.match(page, /Minimum 2 consecutive days/);
+  assert.match(page, /Purchased/);
+  assert.match(page, /Delivered/);
+  assert.match(page, /Remaining/);
+  assert.match(page, /estimateCompletionDate/);
+  assert.match(actions, /saveDeliveryDayChange/);
+  assert.match(actions, /saveDateChange/);
+  assert.match(actions, /savePause/);
+  assert.match(actions, /endDate <= startDate/);
+  assert.match(actions, /delivery_exceptions/);
+  assert.match(actions, /delivery_pauses/);
+  assert.match(calendar, /normal weekly/i);
+  assert.match(calendar, /buildDeliveryCalendar/);
+  assert.match(calendar, /weekdayFromYmd/);
+  assert.match(calendar, /estimateCompletionDate/);
+  assert.match(schema, /purchased_deliveries/);
+  assert.match(schema, /delivered_deliveries/);
+  assert.match(schema, /create table if not exists public\.delivery_exceptions/);
+  assert.match(schema, /create table if not exists public\.delivery_pauses/);
+  assert.match(schema, /check \(end_date > start_date\)/);
+  assert.match(schema, /enable row level security/);
+  assert.match(schema, /revoke update on public\.delivery_plans from authenticated/);
+  assert.match(schema, /grant update \(status, start_date, bottle_choice, updated_at\)/);
+  assert.match(account, /Only a completed milk delivery uses one delivery/);
+  assert.match(styles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(min-width: 900px\)/);
 });
 
 test("provides a separate mobile-first farm product and plan page", async () => {

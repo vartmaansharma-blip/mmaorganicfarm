@@ -242,11 +242,37 @@
 
 .planSummary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   margin: 24px 0 0;
   background: #ededeb;
   border: 1px solid #ededeb;
+}
+
+.planActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.openCalendar,
+.editPlan {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid #d3d3d1;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.openCalendar {
+  color: #fff;
+  border-color: #191919;
+  background: #191919;
 }
 
 .planSummary div {
@@ -348,14 +374,6 @@
   line-height: 1.5;
 }
 
-.editPlan {
-  display: inline-flex;
-  margin-top: 14px;
-  color: #2383e2;
-  font-size: 14px;
-  font-weight: 600;
-}
-
 .accountFooter {
   display: flex;
   align-items: center;
@@ -425,7 +443,11 @@
   }
 
   .planSummary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planActions > a {
+    flex: 1 1 100%;
   }
 
   .planWeek {
