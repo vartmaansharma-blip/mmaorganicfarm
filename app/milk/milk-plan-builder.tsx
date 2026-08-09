@@ -16,10 +16,13 @@ import {
   type WeeklyMilkSchedule,
 } from "@/lib/milk-plan";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
+import {
+  calculateOrderPricing,
+  MILK_PRICE_PER_LITRE,
+  NEW_BOTTLE_CHARGE,
+} from "@/lib/order-pricing";
 import styles from "./milk.module.css";
 
-const PRICE_PER_LITRE = 62;
-const NEW_BOTTLE_PRICE = 10;
 const MAX_LITRES = 5;
 const STEP = 1;
 const defaultSchedule: WeeklyMilkSchedule = [1, 1, 1, 1, 1, 2, 2];
@@ -110,28 +113,32 @@ export function MilkPlanBuilder({
   );
 
   const weeklyLitres = schedule.reduce((total, litres) => total + litres, 0);
-  const weeklyEstimate = weeklyLitres * PRICE_PER_LITRE;
   const needsNewBottle = bottleOption === "new";
   const selectedMilkLitres = mode === "once" ? onceQuantity : weeklyLitres;
   const hasMilk = selectedMilkLitres > 0;
-  const bottleCharge = needsNewBottle && hasMilk ? NEW_BOTTLE_PRICE : 0;
   const selectedExtras = FARM_PRODUCTS.flatMap((product) => {
     const selection = extras[product.id];
     return selection ? [{ ...product, ...selection }] : [];
   });
-  const extrasTotal = selectedExtras.reduce((total, product) => {
-    return total + product.price * product.quantity;
-  }, 0);
-  const weeklyExtrasTotal = selectedExtras.reduce((total, product) => {
-    return total +
-      (product.frequency === "weekly"
-        ? product.price * product.quantity * product.days.length
-        : 0);
-  }, 0);
-  const firstDeliveryExtrasTotal = selectedExtras.reduce((total, product) => {
-    return total +
-      (product.frequency === "once" ? product.price * product.quantity : 0);
-  }, 0);
+  const oncePricing = calculateOrderPricing({
+    bottleChoice: hasMilk ? bottleOption : "none",
+    milkLitres: onceQuantity,
+    products: selectedExtras.map((product) => ({
+      ...product,
+      days: [],
+      frequency: "once",
+    })),
+  });
+  const planPricing = calculateOrderPricing({
+    bottleChoice: hasMilk ? bottleOption : "none",
+    milkLitres: weeklyLitres,
+    products: selectedExtras,
+  });
+  const weeklyEstimate = planPricing.milkTotal;
+  const weeklyExtrasTotal = planPricing.recurringAddOnsTotal;
+  const firstDeliveryExtrasTotal = planPricing.oneTimeAddOnsTotal;
+  const bottleCharge =
+    mode === "once" ? oncePricing.bottleCharge : planPricing.bottleCharge;
   const scheduledDays = new Set(
     schedule.flatMap((litres, index) => (litres > 0 ? [index + 1] : [])),
   );
@@ -507,7 +514,7 @@ export function MilkPlanBuilder({
             <div className={styles.totalLine}>
               <span>Order total</span>
               <strong>
-                ₹{onceQuantity * PRICE_PER_LITRE + bottleCharge + extrasTotal}
+                ₹{oncePricing.total}
               </strong>
             </div>
             {selectedExtras.length ? (
@@ -693,8 +700,9 @@ export function MilkPlanBuilder({
               </button>
             )}
             <p className={styles.summaryNote}>
-              ₹62 is the bottle-exchange price and requires a bottle returned
-              on delivery. Without a return bottle, ₹10 is added once.
+              ₹{MILK_PRICE_PER_LITRE} is the bottle-exchange price and requires
+              a bottle returned on delivery. Without a return bottle, ₹
+              {NEW_BOTTLE_CHARGE} is added once.
             </p>
           </aside>
         </div>

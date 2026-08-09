@@ -26,6 +26,7 @@ const milkBuilderUrl = new URL(
 );
 const milkStylesUrl = new URL("../app/milk/milk.module.css", import.meta.url);
 const farmProductsUrl = new URL("../lib/farm-products.ts", import.meta.url);
+const orderPricingUrl = new URL("../lib/order-pricing.ts", import.meta.url);
 const milkPlanUrl = new URL("../lib/milk-plan.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 const deliveryPlanSchemaUrl = new URL("../supabase/delivery_plans.sql", import.meta.url);
@@ -52,6 +53,16 @@ const calendarStylesUrl = new URL(
 );
 const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
 const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
+const farmDashboardUrl = new URL("../app/farm/page.tsx", import.meta.url);
+const farmLocationsUrl = new URL(
+  "../app/farm/locations/page.tsx",
+  import.meta.url,
+);
+const farmActionsUrl = new URL(
+  "../app/farm/locations/actions.ts",
+  import.meta.url,
+);
+const farmSchemaUrl = new URL("../supabase/farm_dashboard.sql", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -266,18 +277,21 @@ test("provides an intelligent customer delivery calendar", async () => {
     ]);
 
   assert.match(page, /Delivery calendar/);
-  assert.match(page, /Upcoming deliveries/);
+  assert.match(page, /7-day order sheet/);
   assert.match(page, /Skip this delivery day/);
   assert.match(page, /Skip milk only/);
   assert.match(page, /Keep add-on/);
   assert.match(page, /Pause multiple days/);
   assert.match(page, /Minimum 2 consecutive days/);
   assert.match(page, /Plan from tomorrow/);
+  assert.match(page, /30-day plan/);
   assert.match(page, /nextDeliveryDateInIndia/);
   assert.match(page, /Purchased/);
   assert.match(page, /Delivered/);
   assert.match(page, /Remaining/);
-  assert.match(page, /estimateCompletionDate/);
+  assert.match(page, /days: 7/);
+  assert.doesNotMatch(page, /days: 120/);
+  assert.doesNotMatch(page, /estimateCompletionDate/);
   assert.match(actions, /saveDeliveryDayChange/);
   assert.match(actions, /saveDateChange/);
   assert.match(actions, /savePause/);
@@ -307,12 +321,13 @@ test("provides an intelligent customer delivery calendar", async () => {
 });
 
 test("provides a separate mobile-first farm product and plan page", async () => {
-  const [page, builder, styles, products, landing, sidebar, account, order] =
+  const [page, builder, styles, products, pricing, landing, sidebar, account, order] =
     await Promise.all([
       readFile(milkPageUrl, "utf8"),
       readFile(milkBuilderUrl, "utf8"),
       readFile(milkStylesUrl, "utf8"),
       readFile(farmProductsUrl, "utf8"),
+      readFile(orderPricingUrl, "utf8"),
       readFile(pageUrl, "utf8"),
       readFile(sidebarUrl, "utf8"),
       readFile(accountPageUrl, "utf8"),
@@ -343,8 +358,13 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /nextDeliveryDateInIndia/);
   assert.match(builder, /Review milk plan/);
   assert.match(builder, /weeklyLitres/);
-  assert.match(builder, /PRICE_PER_LITRE = 62/);
-  assert.match(builder, /NEW_BOTTLE_PRICE = 10/);
+  assert.match(builder, /calculateOrderPricing/);
+  assert.match(pricing, /MILK_PRICE_PER_LITRE = 62/);
+  assert.match(pricing, /NEW_BOTTLE_CHARGE = 10/);
+  assert.match(pricing, /calculatePaidMilkAdjustment/);
+  assert.match(pricing, /additionalPayment/);
+  assert.match(pricing, /carryForwardLitres/);
+  assert.match(pricing, /refund: 0/);
   assert.match(builder, /STEP = 1/);
   assert.match(builder, /useState\(1\)/);
   assert.match(builder, /Math\.max\(0/);
@@ -383,6 +403,31 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(order, /href="\/milk"/);
 });
 
+test("provides a protected location-first farm operations foundation", async () => {
+  const [dashboard, locations, actions, schema] = await Promise.all([
+    readFile(farmDashboardUrl, "utf8"),
+    readFile(farmLocationsUrl, "utf8"),
+    readFile(farmActionsUrl, "utf8"),
+    readFile(farmSchemaUrl, "utf8"),
+  ]);
+
+  assert.match(dashboard, /Tomorrow&apos;s delivery plan/);
+  assert.match(dashboard, /Date → area → route → customer/);
+  assert.match(dashboard, /Pending plans will appear here only after verified payment/);
+  assert.match(dashboard, /Work remaining/);
+  assert.match(locations, /Delivery locations/);
+  assert.match(locations, /Assignment queue/);
+  assert.match(locations, /Unassigned area/);
+  assert.match(actions, /assignCustomerLocation/);
+  assert.match(actions, /route\.area_id/);
+  assert.match(schema, /create table if not exists public\.farm_staff/);
+  assert.match(schema, /create table if not exists public\.delivery_areas/);
+  assert.match(schema, /create table if not exists public\.delivery_routes/);
+  assert.match(schema, /enable row level security/);
+  assert.match(schema, /Customers and staff can read profiles/);
+  assert.doesNotMatch(schema, /service_role/);
+});
+
 test("collects delivery details only when a customer starts an order", async () => {
   const [page, signIn, callback, orderPage, orderActions, milkPlan, deliveryPlanSchema] = await Promise.all([
     readFile(pageUrl, "utf8"),
@@ -406,6 +451,8 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /name="schedule"/);
   assert.match(orderPage, /name="start"/);
   assert.match(orderPage, /Weekly milk schedule/);
+  assert.match(orderPage, /First 7-day estimate/);
+  assert.match(orderPage, /calculateOrderPricing/);
   assert.match(orderPage, /Save &amp; continue to WhatsApp/);
   assert.doesNotMatch(orderPage, /Delivery city/);
   assert.doesNotMatch(orderPage, /delivery time|payment method/i);
@@ -423,6 +470,8 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderActions, /p_add_ons/);
   assert.match(orderActions, /day_of_week/);
   assert.match(orderActions, /first delivery/);
+  assert.match(orderActions, /calculateOrderPricing/);
+  assert.match(orderActions, /Order total/);
   assert.match(orderActions, /milkLitres === 0/);
   assert.doesNotMatch(orderActions, /delivery charge|delivery fee/i);
   assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);

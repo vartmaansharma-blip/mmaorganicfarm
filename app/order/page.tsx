@@ -9,6 +9,10 @@ import {
   MILK_PLAN_DAYS,
   parseWeeklyMilkSchedule,
 } from "@/lib/milk-plan";
+import {
+  calculateOrderPricing,
+  type BottleChoice,
+} from "@/lib/order-pricing";
 import { saveDeliveryDetails } from "./actions";
 import styles from "./order.module.css";
 
@@ -57,6 +61,25 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
   const selectedProducts = parseFarmProductSelections(params.extras ?? "");
   const weeklySchedule = parseWeeklyMilkSchedule(params.schedule ?? "");
   const planSchedule = params.purchase === "plan" ? weeklySchedule : null;
+  const purchase = params.purchase === "plan" ? "plan" : "once";
+  const parsedMilk = Number(params.milk ?? "0");
+  const milkLitres = Number.isFinite(parsedMilk) ? Math.max(0, parsedMilk) : 0;
+  const requestedBottle = params.bottle;
+  const bottleChoice: BottleChoice =
+    milkLitres === 0
+      ? "none"
+      : requestedBottle === "new"
+        ? "new"
+        : "return";
+  const pricing = calculateOrderPricing({
+    bottleChoice,
+    milkLitres:
+      purchase === "plan" && planSchedule
+        ? planSchedule.reduce((total, litres) => total + litres, 0)
+        : milkLitres,
+    products: selectedProducts,
+  });
+  const hasOrder = milkLitres > 0 || selectedProducts.length > 0;
 
   return (
     <main className={styles.page}>
@@ -83,7 +106,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             <span className={styles.active}>Delivery details</span>
             <span>WhatsApp confirmation</span>
           </div>
-          {planSchedule || selectedProducts.length ? (
+          {hasOrder ? (
             <div className={styles.orderSummary}>
               <strong>Your farm order</strong>
               {planSchedule ? (
@@ -125,15 +148,43 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                   </ul>
                 </div>
               ) : null}
+              <dl className={styles.priceReview}>
+                <div>
+                  <dt>Milk</dt>
+                  <dd>₹{pricing.milkTotal}</dd>
+                </div>
+                {pricing.recurringAddOnsTotal > 0 ? (
+                  <div>
+                    <dt>Scheduled add-ons</dt>
+                    <dd>₹{pricing.recurringAddOnsTotal}</dd>
+                  </div>
+                ) : null}
+                {pricing.oneTimeAddOnsTotal > 0 ? (
+                  <div>
+                    <dt>First-delivery add-ons</dt>
+                    <dd>₹{pricing.oneTimeAddOnsTotal}</dd>
+                  </div>
+                ) : null}
+                {pricing.bottleCharge > 0 ? (
+                  <div>
+                    <dt>New glass bottle</dt>
+                    <dd>₹{pricing.bottleCharge}</dd>
+                  </div>
+                ) : null}
+                <div className={styles.priceTotal}>
+                  <dt>{purchase === "plan" ? "First 7-day estimate" : "Order total"}</dt>
+                  <dd>₹{pricing.total}</dd>
+                </div>
+              </dl>
             </div>
           ) : null}
         </div>
 
         <form className={styles.form} action={saveDeliveryDetails}>
-          <input name="bottle" type="hidden" value={params.bottle ?? "return"} />
+          <input name="bottle" type="hidden" value={bottleChoice} />
           <input name="extras" type="hidden" value={params.extras ?? ""} />
           <input name="milk" type="hidden" value={params.milk ?? "1"} />
-          <input name="purchase" type="hidden" value={params.purchase ?? "once"} />
+          <input name="purchase" type="hidden" value={purchase} />
           <input name="schedule" type="hidden" value={params.schedule ?? ""} />
           <input name="start" type="hidden" value={params.start ?? ""} />
           {params.error ? (

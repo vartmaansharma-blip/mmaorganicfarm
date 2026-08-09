@@ -12,6 +12,7 @@ import {
   parseWeeklyMilkSchedule,
 } from "@/lib/milk-plan";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
+import { calculateOrderPricing } from "@/lib/order-pricing";
 import { createClient } from "@/lib/supabase/server";
 
 function orderUrl(
@@ -80,6 +81,14 @@ export async function saveDeliveryDetails(formData: FormData) {
   const weeklySchedule = parseWeeklyMilkSchedule(schedule);
   const start = normalizePlanStartDate(String(formData.get("start") ?? ""));
   const minimumStartDate = nextDeliveryDateInIndia();
+  const pricing = calculateOrderPricing({
+    bottleChoice: bottle,
+    milkLitres:
+      purchase === "plan" && weeklySchedule
+        ? weeklySchedule.reduce((total, litres) => total + litres, 0)
+        : milkLitres,
+    products: selectedProducts,
+  });
 
   if (
     purchase === "plan" &&
@@ -262,6 +271,7 @@ export async function saveDeliveryDetails(formData: FormData) {
           ),
         ]
       : []),
+    `${purchase === "plan" ? "First 7-day estimate" : "Order total"}: ₹${pricing.total}`,
   ].join("\n");
   const whatsapp = new URL("https://wa.me/919818804419");
   whatsapp.searchParams.set("text", message);

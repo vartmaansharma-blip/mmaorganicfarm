@@ -1,0 +1,262 @@
+.page {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 28px 18px 56px;
+}
+
+.header {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.eyebrow,
+.sectionHeading p {
+  color: #72716e;
+  font-size: 11px;
+  font-weight: 720;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  font-size: clamp(30px, 7vw, 50px);
+  letter-spacing: 0;
+  line-height: 1.04;
+  margin: 0;
+}
+
+.header p:not(.eyebrow) {
+  color: #62615e;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 10px 0 0;
+  max-width: 520px;
+}
+
+.header a {
+  border: 1px solid #d8d7d3;
+  color: #222;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.summary {
+  border-bottom: 1px solid #e8e7e3;
+  border-top: 1px solid #e8e7e3;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 28px;
+}
+
+.summary div {
+  display: grid;
+  gap: 5px;
+  padding: 16px 12px 16px 0;
+}
+
+.summary div:nth-child(even) {
+  border-left: 1px solid #e8e7e3;
+  padding-left: 12px;
+}
+
+.summary div:nth-child(n + 3) {
+  border-top: 1px solid #e8e7e3;
+}
+
+.summary strong {
+  font-size: 26px;
+}
+
+.summary span {
+  color: #6d6c68;
+  font-size: 11px;
+}
+
+.setup,
+.customerSection {
+  border-top: 3px solid #1d1d1d;
+  display: grid;
+  gap: 20px;
+  margin-top: 38px;
+  padding-top: 18px;
+}
+
+.sectionHeading h2 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.setup form {
+  background: #f7f7f5;
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+}
+
+.setup label {
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.inlineFields,
+.assignmentForm {
+  display: grid;
+  gap: 8px;
+}
+
+.setup input,
+.setup select,
+.assignmentForm input,
+.assignmentForm select {
+  appearance: none;
+  background: #fff;
+  border: 1px solid #d8d7d3;
+  border-radius: 0;
+  color: #202020;
+  font: inherit;
+  font-size: 13px;
+  min-height: 42px;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+.setup button,
+.assignmentForm button {
+  background: #1d1d1d;
+  border: 1px solid #1d1d1d;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 680;
+  min-height: 42px;
+  padding: 9px 13px;
+}
+
+.setup button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.customerList {
+  border: 1px solid #dfdedb;
+}
+
+.customer {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.customer + .customer {
+  border-top: 1px solid #e8e7e3;
+}
+
+.customerIdentity {
+  align-items: flex-start;
+  display: grid;
+  gap: 11px;
+  grid-template-columns: 38px minmax(0, 1fr);
+}
+
+.customerIdentity > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.initial {
+  align-items: center;
+  background: #f6cb4f;
+  display: flex;
+  font-size: 15px;
+  font-weight: 760;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.customerIdentity strong {
+  font-size: 13px;
+}
+
+.customerIdentity span,
+.customerIdentity small,
+.currentAssignment span {
+  color: #686763;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.currentAssignment {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.currentAssignment span {
+  background: #f2f2ef;
+  border: 1px solid #e4e3df;
+  padding: 5px 7px;
+}
+
+.assignmentForm input[type="number"] {
+  min-width: 0;
+}
+
+.empty {
+  background: #f7f7f5;
+  color: #686763;
+  font-size: 13px;
+  padding: 20px;
+}
+
+@media (min-width: 700px) {
+  .page {
+    padding: 46px 40px 70px;
+  }
+
+  .summary {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .summary div,
+  .summary div:nth-child(n + 3) {
+    border-top: 0;
+    padding: 20px;
+  }
+
+  .summary div:first-child {
+    padding-left: 0;
+  }
+
+  .summary div + div {
+    border-left: 1px solid #e8e7e3;
+  }
+
+  .setup {
+    grid-template-columns: minmax(170px, 0.55fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .inlineFields {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .setup form:last-child .inlineFields {
+    grid-template-columns: minmax(0, 1fr) 110px auto;
+  }
+
+  .customer {
+    align-items: center;
+    grid-template-columns: minmax(210px, 1fr) minmax(130px, 0.55fr) minmax(360px, 1.5fr);
+  }
+
+  .assignmentForm {
+    grid-template-columns: 1fr 1fr 70px auto;
+  }
+}

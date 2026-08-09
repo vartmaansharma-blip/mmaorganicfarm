@@ -177,6 +177,41 @@
   font-weight: 650;
 }
 
+.priceReview {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #dfdfdc;
+}
+
+.priceReview div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  color: #55544f;
+  font-size: 12px;
+}
+
+.priceReview dt,
+.priceReview dd {
+  margin: 0;
+}
+
+.priceReview dd {
+  color: #191919;
+  font-weight: 650;
+}
+
+.priceReview .priceTotal {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #d3d3d1;
+  color: #191919;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .form {
   display: grid;
   gap: 28px;

@@ -1,0 +1,164 @@
+.shell {
+  --farm-ink: #191919;
+  --farm-muted: #696969;
+  --farm-line: #e8e7e3;
+  --farm-soft: #f7f7f5;
+  background: #fff;
+  color: var(--farm-ink);
+  min-height: 100svh;
+}
+
+.sidebar {
+  background: var(--farm-soft);
+  border-bottom: 1px solid var(--farm-line);
+  padding: 14px 18px;
+}
+
+.brand {
+  align-items: center;
+  color: inherit;
+  display: flex;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand img {
+  height: 38px;
+  object-fit: contain;
+  width: 44px;
+}
+
+.brand span {
+  display: grid;
+  gap: 1px;
+}
+
+.brand strong {
+  font-size: 14px;
+  font-weight: 720;
+}
+
+.brand small,
+.staff span {
+  color: var(--farm-muted);
+  font-size: 11px;
+}
+
+.nav,
+.staff {
+  display: none;
+}
+
+.workspace {
+  min-width: 0;
+  padding-bottom: 78px;
+}
+
+.mobileNav {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--farm-line);
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  left: 0;
+  padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+  position: fixed;
+  right: 0;
+  z-index: 20;
+}
+
+.mobileNav a,
+.mobileNav span {
+  color: var(--farm-ink);
+  font-size: 12px;
+  font-weight: 650;
+  padding: 8px 4px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.mobileNav span {
+  color: #a0a0a0;
+}
+
+@media (min-width: 820px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 228px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    border-bottom: 0;
+    border-right: 1px solid var(--farm-line);
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    padding: 20px 14px;
+    position: sticky;
+    top: 0;
+  }
+
+  .nav {
+    display: grid;
+    gap: 3px;
+    margin-top: 32px;
+  }
+
+  .nav a,
+  .nav > span {
+    align-items: center;
+    border-radius: 5px;
+    color: #404040;
+    display: flex;
+    font-size: 13px;
+    font-weight: 580;
+    justify-content: space-between;
+    padding: 9px 10px;
+    text-decoration: none;
+  }
+
+  .nav a:hover {
+    background: #ecece9;
+    color: #111;
+  }
+
+  .nav > span {
+    color: #9a9a96;
+  }
+
+  .nav small {
+    border: 1px solid #d9d8d4;
+    border-radius: 999px;
+    font-size: 8px;
+    padding: 2px 5px;
+    text-transform: uppercase;
+  }
+
+  .staff {
+    border-top: 1px solid var(--farm-line);
+    display: grid;
+    gap: 5px;
+    margin-top: auto;
+    padding: 16px 10px 2px;
+  }
+
+  .staff strong {
+    font-size: 12px;
+    text-transform: capitalize;
+  }
+
+  .staff a {
+    color: var(--farm-muted);
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .workspace {
+    padding-bottom: 0;
+  }
+
+  .mobileNav {
+    display: none;
+  }
+}

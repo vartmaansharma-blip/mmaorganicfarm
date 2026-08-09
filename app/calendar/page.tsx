@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import {
   addCalendarDays,
   buildDeliveryCalendar,
-  estimateCompletionDate,
   formatCalendarDate,
   nextDeliveryDateInIndia,
   productName,
@@ -58,17 +57,16 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   if (!plan) redirect("/milk");
 
   const calendar = buildDeliveryCalendar({
-    days: 120,
+    days: 7,
     exceptions: plan.delivery_exceptions ?? [],
     pauses: plan.delivery_pauses ?? [],
     scheduledItems: plan.scheduled_delivery_items ?? [],
     startDate: plan.start_date,
     weeklyItems: plan.weekly_delivery_items ?? [],
   });
-  const upcomingDays = calendar.slice(0, 21);
   const requestedDate = normalizePlanStartDate(params.date ?? "");
   const selectedDay =
-    calendar.find((day) => day.date === requestedDate) ?? upcomingDays[0];
+    calendar.find((day) => day.date === requestedDate) ?? calendar[0];
   const selectedMilk = selectedDay.items.find(
     (item) => item.productKey === "milk",
   );
@@ -81,10 +79,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   const delivered = Number(plan.delivered_deliveries ?? 0);
   const purchased = Number(plan.purchased_deliveries ?? 30);
   const remaining = Math.max(0, purchased - delivered);
-  const estimatedCompletion = estimateCompletionDate(calendar, remaining);
-  const completionLabel = /^\d{4}-\d{2}-\d{2}$/.test(estimatedCompletion)
-    ? formatPlanStartDate(estimatedCompletion)
-    : estimatedCompletion;
+  const nextSevenDeliveries = calendar.filter((day) =>
+    day.items.some((item) => item.productKey === "milk"),
+  ).length;
   const activePauses = (plan.delivery_pauses ?? []).filter(
     (pause) => pause.end_date >= nextDeliveryDateInIndia(),
   );
@@ -117,7 +114,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
               more days.
             </p>
           </div>
-          <span className={styles.status}>{statusLabel}</span>
+          <span className={styles.status}>{statusLabel} · 30-day plan</span>
         </div>
 
         <dl className={styles.balance}>
@@ -134,8 +131,8 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             <dd>{remaining}</dd>
           </div>
           <div>
-            <dt>Estimated completion</dt>
-            <dd>{completionLabel}</dd>
+            <dt>Next 7 days</dt>
+            <dd>{nextSevenDeliveries} deliveries</dd>
           </div>
         </dl>
 
@@ -154,13 +151,13 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           <div className={styles.sectionHeading}>
             <div>
               <p className={styles.sectionNumber}>01</p>
-              <h2 id="upcoming-heading">Upcoming deliveries</h2>
+              <h2 id="upcoming-heading">7-day order sheet</h2>
             </div>
             <Link href="/milk?edit=plan">Edit normal week</Link>
           </div>
 
           <div className={styles.dayGrid}>
-            {upcomingDays.map((day) => {
+            {calendar.map((day) => {
               const isSelected = day.date === selectedDay.date;
               const skipped =
                 day.items.length === 0 && day.skippedProductKeys.length > 0;
