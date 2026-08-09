@@ -81,7 +81,14 @@ export async function saveDeliveryDetails(formData: FormData) {
 
   if (
     purchase === "plan" &&
-    (!weeklySchedule || !start || weeklySchedule.every((litres) => litres === 0))
+    (!weeklySchedule ||
+      !start ||
+      (weeklySchedule.every((litres) => litres === 0) &&
+        selectedProducts.length === 0) ||
+      selectedProducts.some(
+        (product) =>
+          product.frequency === "weekly" && product.days.length === 0,
+      ))
   ) {
     redirect(
       orderUrl(
@@ -174,9 +181,26 @@ export async function saveDeliveryDetails(formData: FormData) {
   }
 
   if (purchase === "plan" && weeklySchedule) {
+    const scheduledAddOns = selectedProducts.flatMap((product) =>
+      product.frequency === "weekly"
+        ? product.days.map((day) => ({
+            day_of_week: day,
+            frequency: "weekly",
+            product_key: product.id,
+            quantity: product.quantity,
+          }))
+        : [
+            {
+              frequency: "once",
+              product_key: product.id,
+              quantity: product.quantity,
+            },
+          ],
+    );
     const { error: planError } = await supabase.rpc(
-      "save_pending_weekly_milk_plan",
+      "save_pending_delivery_plan",
       {
+        p_add_ons: scheduledAddOns,
         p_bottle_choice: bottle,
         p_schedule: weeklySchedule,
         p_start_date: start,
@@ -223,7 +247,13 @@ export async function saveDeliveryDetails(formData: FormData) {
           "Added farm products:",
           ...selectedProducts.map(
             (product) =>
-              `- ${product.name}, ${product.unit}, ₹${product.price}, ${product.frequency === "weekly" ? "every week" : "once"}`,
+              `- ${product.name}, ${product.quantity} × ${product.unit}, ₹${product.price * product.quantity}, ${
+                product.frequency === "weekly"
+                  ? `every ${product.days
+                      .map((day) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][day - 1])
+                      .join(", ")}`
+                  : "first delivery"
+              }`,
           ),
         ]
       : []),

@@ -217,8 +217,10 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /hasAddress \? \(/);
   assert.match(accountPage, /delivery_plans/);
   assert.match(accountPage, /weekly_delivery_items/);
-  assert.match(accountPage, /Your weekly milk plan/);
+  assert.match(accountPage, /Your weekly delivery plan/);
   assert.match(accountPage, /Saved weekly milk schedule/);
+  assert.match(accountPage, /Scheduled add-ons/);
+  assert.match(accountPage, /scheduled_delivery_items/);
   assert.match(accountPage, /Awaiting confirmation/);
   assert.match(accountPage, /href="\/milk\?edit=plan"/);
   assert.doesNotMatch(accountPage, /Not added yet/);
@@ -249,6 +251,9 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk"\)/);
   assert.match(builder, /Order once/);
   assert.match(builder, /Build a weekly plan/);
+  assert.match(builder, /Two recommended schedules/);
+  assert.match(builder, /Everyday family/);
+  assert.match(builder, /Lighter four-day/);
   assert.match(builder, /Edit your weekly milk plan/);
   assert.match(builder, /Review updated plan/);
   assert.match(builder, /Undo changes/);
@@ -270,6 +275,12 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /No bottle to return/);
   assert.match(builder, /includes a ₹10 glass bottle/);
   assert.match(builder, /More from M&apos;ma Organic Farm/);
+  assert.match(builder, /First delivery/);
+  assert.match(builder, /Every week/);
+  assert.match(builder, /Choose delivery days/);
+  assert.match(builder, /updateExtraQuantity/);
+  assert.match(builder, /toggleExtraDay/);
+  assert.match(builder, /serializeFarmProductSelections/);
   assert.match(builder, /orderHref/);
   assert.match(products, /Fresh paneer/);
   assert.match(products, /price: 400/);
@@ -281,6 +292,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(products, /price: 450/);
   assert.doesNotMatch(products, /vegetables/i);
   assert.doesNotMatch(builder, /Shopify|checkout|payment/i);
+  assert.doesNotMatch(builder, /delivery charge|delivery fee/i);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /grid-template-columns: 1fr/);
   assert.match(landing, /const orderPath = "\/milk"/);
@@ -314,7 +326,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /Weekly milk schedule/);
   assert.match(orderPage, /Save &amp; continue to WhatsApp/);
   assert.doesNotMatch(orderPage, /Delivery city/);
-  assert.doesNotMatch(orderPage, /quantity|delivery time|payment method/i);
+  assert.doesNotMatch(orderPage, /delivery time|payment method/i);
   assert.match(orderActions, /customer_profiles/);
   assert.match(orderActions, /phone: `\+91\$\{phone\}`/);
   assert.match(orderActions, /address_line: address/);
@@ -323,8 +335,12 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderActions, /No milk this time/);
   assert.match(orderActions, /Weekly schedule/);
   assert.match(orderActions, /parseWeeklyMilkSchedule/);
-  assert.match(orderActions, /save_pending_weekly_milk_plan/);
+  assert.match(orderActions, /save_pending_delivery_plan/);
+  assert.match(orderActions, /p_add_ons/);
+  assert.match(orderActions, /day_of_week/);
+  assert.match(orderActions, /first delivery/);
   assert.match(orderActions, /milkLitres === 0/);
+  assert.doesNotMatch(orderActions, /delivery charge|delivery fee/i);
   assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);
   assert.doesNotMatch(orderActions, /Delivery address: \$\{address\}, Jamshedpur/);
   assert.match(orderActions, /wa\.me\/919818804419/);
@@ -333,7 +349,11 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(milkPlan, /describeWeeklyMilkSchedule/);
   assert.match(deliveryPlanSchema, /create table if not exists public\.delivery_plans/);
   assert.match(deliveryPlanSchema, /create table if not exists public\.weekly_delivery_items/);
+  assert.match(deliveryPlanSchema, /create table if not exists public\.scheduled_delivery_items/);
   assert.match(deliveryPlanSchema, /enable row level security/);
   assert.match(deliveryPlanSchema, /\(select auth\.uid\(\)\) = user_id/);
-  assert.match(deliveryPlanSchema, /save_pending_weekly_milk_plan/);
+  assert.match(deliveryPlanSchema, /save_pending_delivery_plan/);
+  assert.match(deliveryPlanSchema, /p_add_ons jsonb/);
+  assert.match(deliveryPlanSchema, /'none'/);
+  assert.doesNotMatch(deliveryPlanSchema, /delivery charge|delivery fee/i);
 });

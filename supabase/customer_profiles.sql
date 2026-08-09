@@ -71,3 +71,7 @@ create trigger sync_customer_profile_from_auth
 after insert or update of email, raw_user_meta_data
 on auth.users
 for each row execute function public.sync_customer_profile();
+
+-- This function is trigger-only and must not be callable through the API.
+revoke execute on function public.sync_customer_profile()
+from public, anon, authenticated;

@@ -293,6 +293,67 @@
   border-bottom: 1px solid #deddd8;
 }
 
+.recommended {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
+  gap: 34px;
+  align-items: start;
+  margin: 8px 0 48px;
+  padding: 28px 0;
+  border-top: 1px solid #deddd8;
+  border-bottom: 1px solid #deddd8;
+}
+
+.recommended h3 {
+  margin: 9px 0 0;
+  font-size: 24px;
+}
+
+.recommendedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recommendedGrid button {
+  min-height: 148px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid #c9c8c2;
+  border-radius: 5px;
+  color: #191919;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recommendedGrid button:hover,
+.recommendedGrid button:focus-visible {
+  border-color: #214d3a;
+  background: #f1f6f3;
+}
+
+.recommendedGrid strong {
+  font-size: 15px;
+}
+
+.recommendedGrid span {
+  margin-top: 8px;
+  color: #6f6d67;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.recommendedGrid small {
+  margin-top: auto;
+  padding-top: 18px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .extrasHeading {
   display: flex;
   align-items: end;
@@ -374,6 +435,41 @@
   margin-top: 12px;
 }
 
+.extraControls {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.extraQuantity {
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  border: 1px solid #c9c8c2;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.extraQuantity button {
+  height: 32px;
+  border: 0;
+  color: #191919;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.extraQuantity button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.extraQuantity strong {
+  text-align: center;
+  font-size: 11px;
+}
+
 .extraFrequency button {
   min-height: 32px;
   padding: 4px;
@@ -388,6 +484,44 @@
 }
 
 .extraFrequency button[aria-pressed="true"] {
+  border-color: #214d3a;
+  color: #fff;
+  background: #214d3a;
+}
+
+.extraDays {
+  display: grid;
+  gap: 7px;
+  padding-top: 3px;
+}
+
+.extraDays > span {
+  color: #66645e;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.extraDays > div {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.extraDays button {
+  min-width: 0;
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid #c9c8c2;
+  border-radius: 3px;
+  color: #66645e;
+  background: #fff;
+  font: inherit;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.extraDays button[aria-pressed="true"] {
   border-color: #214d3a;
   color: #fff;
   background: #214d3a;
@@ -812,6 +946,12 @@
     grid-template-columns: 1fr;
   }
 
+  .recommended {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-bottom: 34px;
+  }
+
   .extras {
     margin-bottom: 34px;
     padding: 28px 0;
@@ -900,6 +1040,14 @@
 
   .extraGrid {
     grid-template-columns: 1fr;
+  }
+
+  .recommendedGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendedGrid button {
+    min-height: 128px;
   }
 
   .day {

@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  FARM_PRODUCTS,
+  type FarmProductId,
+  type FarmProductSelection,
+} from "@/lib/farm-products";
 import { MILK_PLAN_DAYS, type WeeklyMilkSchedule } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 import { MilkPlanBuilder } from "./milk-plan-builder";
@@ -36,7 +41,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
     ? await supabase
         .from("delivery_plans")
         .select(
-          "start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity)",
+          "start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity), scheduled_delivery_items(delivery_date, product_key, quantity)",
         )
         .eq("user_id", user.id)
         .in("status", ["pending_confirmation", "active", "paused"])
@@ -55,6 +60,49 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
         (_, index) => savedMilkByDay.get(index + 1) ?? 0,
       ) as WeeklyMilkSchedule)
     : undefined;
+  const savedWeeklyExtras = new Map<
+    FarmProductId,
+    { days: number[]; quantity: number }
+  >();
+  (savedPlan?.weekly_delivery_items ?? [])
+    .filter((item) => item.product_key !== "milk")
+    .forEach((item) => {
+      const id = item.product_key as FarmProductId;
+      const current = savedWeeklyExtras.get(id) ?? {
+        days: [] as number[],
+        quantity: Number(item.quantity),
+      };
+      current.days.push(item.day_of_week);
+      savedWeeklyExtras.set(id, current);
+    });
+  const savedOnceExtras = new Map(
+    (savedPlan?.scheduled_delivery_items ?? []).map((item) => [
+      item.product_key as FarmProductId,
+      Number(item.quantity),
+    ]),
+  );
+  const savedExtras: FarmProductSelection[] = savedPlan
+    ? FARM_PRODUCTS.reduce<FarmProductSelection[]>((result, product) => {
+        const weekly = savedWeeklyExtras.get(product.id);
+        const onceQuantity = savedOnceExtras.get(product.id);
+        if (weekly) {
+          result.push({
+            ...product,
+            days: weekly.days.sort((a, b) => a - b),
+            frequency: "weekly",
+            quantity: weekly.quantity,
+          });
+        } else if (onceQuantity) {
+          result.push({
+            ...product,
+            days: [],
+            frequency: "once",
+            quantity: onceQuantity,
+          });
+        }
+        return result;
+      }, [])
+    : [];
 
   return (
     <main className={styles.page}>
@@ -109,6 +157,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
       </section>
 
       <MilkPlanBuilder
+        initialExtras={savedExtras}
         initialBottleOption={
           savedPlan?.bottle_choice === "new" ? "new" : "return"
         }

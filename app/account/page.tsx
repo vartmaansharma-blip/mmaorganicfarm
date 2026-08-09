@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./actions";
@@ -31,7 +32,7 @@ export default async function AccountPage() {
   const { data: deliveryPlan } = await supabase
     .from("delivery_plans")
     .select(
-      "id, status, start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity, unit)",
+      "id, status, start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit)",
     )
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
@@ -56,6 +57,41 @@ export default async function AccountPage() {
     (total, litres) => total + litres,
     0,
   );
+  const productById = new Map(FARM_PRODUCTS.map((product) => [product.id, product]));
+  const weeklyAddOnMap = new Map<
+    FarmProductId,
+    { days: number[]; quantity: number; unit: string }
+  >();
+  (deliveryPlan?.weekly_delivery_items ?? [])
+    .filter((item) => item.product_key !== "milk")
+    .forEach((item) => {
+      const id = item.product_key as FarmProductId;
+      const current = weeklyAddOnMap.get(id) ?? {
+        days: [] as number[],
+        quantity: Number(item.quantity),
+        unit: item.unit,
+      };
+      current.days.push(item.day_of_week);
+      weeklyAddOnMap.set(id, current);
+    });
+  const scheduledAddOns = [
+    ...[...weeklyAddOnMap].map(([id, item]) => ({
+      ...item,
+      id,
+      label: `Every ${item.days
+        .sort((a, b) => a - b)
+        .map((day) => MILK_PLAN_DAYS[day - 1]?.short)
+        .filter(Boolean)
+        .join(", ")}`,
+    })),
+    ...(deliveryPlan?.scheduled_delivery_items ?? []).map((item) => ({
+      days: [],
+      id: item.product_key as FarmProductId,
+      label: `First delivery · ${formatPlanStartDate(item.delivery_date)}`,
+      quantity: Number(item.quantity),
+      unit: item.unit,
+    })),
+  ];
   const planStatus =
     deliveryPlan?.status === "active"
       ? "Active"
@@ -151,8 +187,8 @@ export default async function AccountPage() {
           <section className={styles.planSection} aria-labelledby="plan-heading">
             <div className={styles.planHeading}>
               <div>
-                <h2 id="plan-heading">Your weekly milk plan</h2>
-                <p>Saved to your account and ready for farm confirmation.</p>
+                <h2 id="plan-heading">Your weekly delivery plan</h2>
+                <p>Milk and farm add-ons saved together in one routine.</p>
               </div>
               <span className={styles.planStatus}>{planStatus}</span>
             </div>
@@ -171,7 +207,9 @@ export default async function AccountPage() {
                 <dd>
                   {deliveryPlan.bottle_choice === "new"
                     ? "New bottle"
-                    : "Return on delivery"}
+                    : deliveryPlan.bottle_choice === "return"
+                      ? "Return on delivery"
+                      : "Not needed"}
                 </dd>
               </div>
             </dl>
@@ -187,6 +225,23 @@ export default async function AccountPage() {
                 );
               })}
             </div>
+
+            {scheduledAddOns.length ? (
+              <div className={styles.addOnSchedule}>
+                <strong>Scheduled add-ons</strong>
+                <div>
+                  {scheduledAddOns.map((item) => (
+                    <article key={`${item.id}-${item.label}`}>
+                      <span>{productById.get(item.id)?.name ?? item.id}</span>
+                      <b>
+                        {item.quantity} × {item.unit}
+                      </b>
+                      <small>{item.label}</small>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <p className={styles.planNote}>
               WhatsApp confirmation activates the plan. No payment is taken here.

@@ -109,10 +109,16 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                     {selectedProducts.map((product) => (
                       <li key={product.id}>
                         <span>
-                          {product.name} · {product.unit}
+                          {product.name} · {product.quantity} × {product.unit}
                         </span>
                         <b>
-                          ₹{product.price} · {product.frequency === "weekly" ? "weekly" : "once"}
+                          ₹{product.price * product.quantity} ·{" "}
+                          {product.frequency === "weekly"
+                            ? `Every ${product.days
+                                .map((day) => MILK_PLAN_DAYS[day - 1]?.short)
+                                .filter(Boolean)
+                                .join(", ")}`
+                            : "First delivery"}
                         </b>
                       </li>
                     ))}

@@ -304,6 +304,43 @@
   font-weight: 650;
 }
 
+.addOnSchedule {
+  margin-top: 20px;
+}
+
+.addOnSchedule > strong {
+  font-size: 13px;
+}
+
+.addOnSchedule > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.addOnSchedule article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 12px;
+  padding: 13px 14px;
+  border: 1px solid #deddd8;
+  border-radius: 4px;
+  background: #f7f7f5;
+}
+
+.addOnSchedule article span,
+.addOnSchedule article b {
+  font-size: 12px;
+}
+
+.addOnSchedule article small {
+  grid-column: 1 / -1;
+  color: #787774;
+  font-size: 11px;
+}
+
 .planNote {
   margin: 12px 0 0;
   color: #787774;
@@ -401,6 +438,10 @@
 
   .planDay:nth-child(n + 5) {
     border-top: 1px solid #ededeb;
+  }
+
+  .addOnSchedule > div {
+    grid-template-columns: 1fr;
   }
 
   .accountFooter {

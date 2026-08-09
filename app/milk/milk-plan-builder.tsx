@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   FARM_PRODUCTS,
+  serializeFarmProductSelections,
   type FarmProductFrequency,
   type FarmProductId,
+  type FarmProductSelection,
 } from "@/lib/farm-products";
 import {
   formatPlanStartDate,
@@ -23,18 +25,50 @@ const defaultSchedule: WeeklyMilkSchedule = [1, 1, 1, 1, 1, 2, 2];
 
 type PurchaseMode = "once" | "plan";
 
-const initialExtras: Record<FarmProductId, FarmProductFrequency | null> = {
+type ExtraSchedule = Pick<
+  FarmProductSelection,
+  "days" | "frequency" | "quantity"
+>;
+
+type ExtraScheduleState = Record<FarmProductId, ExtraSchedule | null>;
+
+const emptyExtras: ExtraScheduleState = {
   paneer: null,
   ghee: null,
   papaya: null,
   sweets: null,
 };
 
+const recommendedSchedules: Array<{
+  description: string;
+  extras: Partial<ExtraScheduleState>;
+  label: string;
+  milk: WeeklyMilkSchedule;
+}> = [
+  {
+    label: "Everyday family",
+    description: "1 L on weekdays, 2 L on weekends, with paneer on Tuesday.",
+    milk: [1, 1, 1, 1, 1, 2, 2],
+    extras: {
+      paneer: { days: [2], frequency: "weekly", quantity: 1 },
+    },
+  },
+  {
+    label: "Lighter four-day",
+    description: "Milk on Monday, Wednesday, Friday and Saturday, with papaya midweek.",
+    milk: [1, 0, 1, 0, 1, 1, 0],
+    extras: {
+      papaya: { days: [3], frequency: "weekly", quantity: 1 },
+    },
+  },
+];
+
 function formatLitres(value: number) {
   return `${value} L`;
 }
 
 type MilkPlanBuilderProps = {
+  initialExtras?: FarmProductSelection[];
   initialBottleOption?: "return" | "new";
   initialSchedule?: WeeklyMilkSchedule;
   initialStartDate?: string;
@@ -42,6 +76,7 @@ type MilkPlanBuilderProps = {
 };
 
 export function MilkPlanBuilder({
+  initialExtras = [],
   initialBottleOption = "return",
   initialSchedule = defaultSchedule,
   initialStartDate = "",
@@ -54,7 +89,19 @@ export function MilkPlanBuilder({
   const [reviewed, setReviewed] = useState(false);
   const [bottleOption, setBottleOption] =
     useState<"return" | "new">(initialBottleOption);
-  const [extras, setExtras] = useState(initialExtras);
+  const [extras, setExtras] = useState<ExtraScheduleState>(() =>
+    initialExtras.reduce(
+      (result, extra) => ({
+        ...result,
+        [extra.id]: {
+          days: extra.days,
+          frequency: extra.frequency,
+          quantity: extra.quantity,
+        },
+      }),
+      { ...emptyExtras },
+    ),
+  );
 
   const weeklyLitres = schedule.reduce((total, litres) => total + litres, 0);
   const weeklyEstimate = weeklyLitres * PRICE_PER_LITRE;
@@ -62,17 +109,36 @@ export function MilkPlanBuilder({
   const selectedMilkLitres = mode === "once" ? onceQuantity : weeklyLitres;
   const hasMilk = selectedMilkLitres > 0;
   const bottleCharge = needsNewBottle && hasMilk ? NEW_BOTTLE_PRICE : 0;
-  const deliveryDays = schedule.filter((litres) => litres > 0).length;
-  const selectedExtras = FARM_PRODUCTS.filter(({ id }) => extras[id]);
+  const selectedExtras = FARM_PRODUCTS.flatMap((product) => {
+    const selection = extras[product.id];
+    return selection ? [{ ...product, ...selection }] : [];
+  });
   const extrasTotal = selectedExtras.reduce((total, product) => {
-    return total + product.price;
+    return total + product.price * product.quantity;
   }, 0);
   const weeklyExtrasTotal = selectedExtras.reduce((total, product) => {
-    return total + (extras[product.id] === "weekly" ? product.price : 0);
+    return total +
+      (product.frequency === "weekly"
+        ? product.price * product.quantity * product.days.length
+        : 0);
   }, 0);
   const firstDeliveryExtrasTotal = selectedExtras.reduce((total, product) => {
-    return total + (extras[product.id] === "once" ? product.price : 0);
+    return total +
+      (product.frequency === "once" ? product.price * product.quantity : 0);
   }, 0);
+  const scheduledDays = new Set(
+    schedule.flatMap((litres, index) => (litres > 0 ? [index + 1] : [])),
+  );
+  selectedExtras.forEach((extra) => {
+    if (extra.frequency === "weekly") {
+      extra.days.forEach((day) => scheduledDays.add(day));
+    }
+  });
+  const deliveryDays = scheduledDays.size;
+  const hasIncompleteExtra = selectedExtras.some(
+    (extra) => extra.frequency === "weekly" && extra.days.length === 0,
+  );
+  const hasPlanItems = weeklyLitres > 0 || selectedExtras.length > 0;
 
   function updateSchedule(index: number, delta: number) {
     setSchedule((current) =>
@@ -99,7 +165,9 @@ export function MilkPlanBuilder({
   function toggleExtra(id: FarmProductId) {
     setExtras((current) => ({
       ...current,
-      [id]: current[id] ? null : "once",
+      [id]: current[id]
+        ? null
+        : { days: [], frequency: "once", quantity: 1 },
     }));
     setReviewed(false);
   }
@@ -108,26 +176,81 @@ export function MilkPlanBuilder({
     id: FarmProductId,
     frequency: FarmProductFrequency,
   ) {
-    setExtras((current) => ({ ...current, [id]: frequency }));
+    setExtras((current) => {
+      const selection = current[id];
+      if (!selection) return current;
+      const firstMilkDay = schedule.findIndex((litres) => litres > 0) + 1;
+      return {
+        ...current,
+        [id]: {
+          ...selection,
+          days:
+            frequency === "weekly" && selection.days.length === 0
+              ? [firstMilkDay || 1]
+              : selection.days,
+          frequency,
+        },
+      };
+    });
+    setReviewed(false);
+  }
+
+  function updateExtraQuantity(id: FarmProductId, delta: number) {
+    setExtras((current) => {
+      const selection = current[id];
+      return selection
+        ? {
+            ...current,
+            [id]: {
+              ...selection,
+              quantity: Math.min(5, Math.max(1, selection.quantity + delta)),
+            },
+          }
+        : current;
+    });
+    setReviewed(false);
+  }
+
+  function toggleExtraDay(id: FarmProductId, day: number) {
+    setExtras((current) => {
+      const selection = current[id];
+      if (!selection) return current;
+      const days = selection.days.includes(day)
+        ? selection.days.filter((scheduledDay) => scheduledDay !== day)
+        : [...selection.days, day].sort((a, b) => a - b);
+      return { ...current, [id]: { ...selection, days } };
+    });
+    setReviewed(false);
+  }
+
+  function applyRecommendedSchedule(
+    milk: WeeklyMilkSchedule,
+    recommendedExtras: Partial<ExtraScheduleState>,
+  ) {
+    setSchedule([...milk] as WeeklyMilkSchedule);
+    setExtras({ ...emptyExtras, ...recommendedExtras });
     setReviewed(false);
   }
 
   function orderHref(purchase: PurchaseMode) {
-    const selected = selectedExtras
-      .map(({ id }) => `${id}:${purchase === "plan" ? extras[id] : "once"}`)
-      .join(",");
+    const selected = selectedExtras.map((extra) => ({
+      ...extra,
+      days: purchase === "plan" ? extra.days : [],
+      frequency: purchase === "plan" ? extra.frequency : ("once" as const),
+    }));
     const params = new URLSearchParams({
       purchase,
-      bottle:
-        purchase === "once" && onceQuantity === 0
-          ? "none"
-          : needsNewBottle
-            ? "new"
-            : "return",
+      bottle: selectedMilkLitres === 0
+        ? "none"
+        : needsNewBottle
+          ? "new"
+          : "return",
       milk: String(purchase === "once" ? onceQuantity : weeklyLitres),
     });
 
-    if (selected) params.set("extras", selected);
+    if (selected.length) {
+      params.set("extras", serializeFarmProductSelections(selected));
+    }
     if (purchase === "plan") {
       params.set("schedule", serializeWeeklyMilkSchedule(schedule));
       params.set("start", startDate);
@@ -174,41 +297,68 @@ export function MilkPlanBuilder({
         </div>
       )}
 
+      {mode === "plan" && !isEditing ? (
+        <section
+          className={styles.recommended}
+          aria-labelledby="recommended-title"
+        >
+          <div>
+            <p className={styles.stepLabel}>Quick start</p>
+            <h3 id="recommended-title">Two recommended schedules</h3>
+          </div>
+          <div className={styles.recommendedGrid}>
+            {recommendedSchedules.map((preset) => (
+              <button
+                type="button"
+                key={preset.label}
+                onClick={() =>
+                  applyRecommendedSchedule(preset.milk, preset.extras)
+                }
+              >
+                <strong>{preset.label}</strong>
+                <span>{preset.description}</span>
+                <small>Use this routine →</small>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {hasMilk ? (
         <fieldset className={styles.bottleChoice}>
-        <legend>Choose one bottle option</legend>
-        <div className={styles.bottleOptions}>
-          <label>
-            <input
-              type="radio"
-              name="bottle-option"
-              checked={bottleOption === "return"}
-              onChange={() => {
-                setBottleOption("return");
-                setReviewed(false);
-              }}
-            />
-            <span>
-              <strong>Return a bottle</strong>
-              <small>₹62/L · hand it back on delivery</small>
-            </span>
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="bottle-option"
-              checked={bottleOption === "new"}
-              onChange={() => {
-                setBottleOption("new");
-                setReviewed(false);
-              }}
-            />
-            <span>
-              <strong>No bottle to return</strong>
-              <small>₹72 for 1 L · includes a ₹10 glass bottle</small>
-            </span>
-          </label>
-        </div>
+          <legend>Choose one bottle option</legend>
+          <div className={styles.bottleOptions}>
+            <label>
+              <input
+                type="radio"
+                name="bottle-option"
+                checked={bottleOption === "return"}
+                onChange={() => {
+                  setBottleOption("return");
+                  setReviewed(false);
+                }}
+              />
+              <span>
+                <strong>Return a bottle</strong>
+                <small>₹62/L · hand it back on delivery</small>
+              </span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="bottle-option"
+                checked={bottleOption === "new"}
+                onChange={() => {
+                  setBottleOption("new");
+                  setReviewed(false);
+                }}
+              />
+              <span>
+                <strong>No bottle to return</strong>
+                <small>₹72 for 1 L · includes a ₹10 glass bottle</small>
+              </span>
+            </label>
+          </div>
         </fieldset>
       ) : null}
 
@@ -223,17 +373,17 @@ export function MilkPlanBuilder({
 
         <div className={styles.extraGrid}>
           {FARM_PRODUCTS.map((product) => {
-            const frequency = extras[product.id];
+            const selection = extras[product.id];
 
             return (
               <article
-                className={frequency ? styles.extraSelected : undefined}
+                className={selection ? styles.extraSelected : undefined}
                 key={product.id}
               >
                 <label>
                   <input
                     type="checkbox"
-                    checked={Boolean(frequency)}
+                    checked={Boolean(selection)}
                     onChange={() => toggleExtra(product.id)}
                   />
                   <span>
@@ -244,22 +394,74 @@ export function MilkPlanBuilder({
                   </span>
                 </label>
 
-                {frequency && mode === "plan" ? (
-                  <div className={styles.extraFrequency} aria-label={`${product.name} schedule`}>
-                    <button
-                      type="button"
-                      aria-pressed={frequency === "once"}
-                      onClick={() => setExtraFrequency(product.id, "once")}
+                {selection ? (
+                  <div className={styles.extraControls}>
+                    <div
+                      className={styles.extraQuantity}
+                      aria-label={`${product.name} quantity`}
                     >
-                      First delivery
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={frequency === "weekly"}
-                      onClick={() => setExtraFrequency(product.id, "weekly")}
-                    >
-                      Every week
-                    </button>
+                      <button
+                        type="button"
+                        aria-label={`Reduce ${product.name} quantity`}
+                        disabled={selection.quantity === 1}
+                        onClick={() => updateExtraQuantity(product.id, -1)}
+                      >
+                        −
+                      </button>
+                      <strong>{selection.quantity}</strong>
+                      <button
+                        type="button"
+                        aria-label={`Increase ${product.name} quantity`}
+                        disabled={selection.quantity === 5}
+                        onClick={() => updateExtraQuantity(product.id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {mode === "plan" ? (
+                      <>
+                        <div
+                          className={styles.extraFrequency}
+                          aria-label={`${product.name} schedule`}
+                        >
+                          <button
+                            type="button"
+                            aria-pressed={selection.frequency === "once"}
+                            onClick={() => setExtraFrequency(product.id, "once")}
+                          >
+                            First delivery
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={selection.frequency === "weekly"}
+                            onClick={() => setExtraFrequency(product.id, "weekly")}
+                          >
+                            Every week
+                          </button>
+                        </div>
+
+                        {selection.frequency === "weekly" ? (
+                          <div className={styles.extraDays}>
+                            <span>Choose delivery days</span>
+                            <div>
+                              {MILK_PLAN_DAYS.map((day, index) => (
+                                <button
+                                  type="button"
+                                  key={day.label}
+                                  aria-pressed={selection.days.includes(index + 1)}
+                                  onClick={() =>
+                                    toggleExtraDay(product.id, index + 1)
+                                  }
+                                >
+                                  {day.short}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
               </article>
@@ -337,6 +539,19 @@ export function MilkPlanBuilder({
                   setSchedule(initialSchedule);
                   setStartDate(initialStartDate);
                   setBottleOption(initialBottleOption);
+                  setExtras(
+                    initialExtras.reduce(
+                      (result, extra) => ({
+                        ...result,
+                        [extra.id]: {
+                          days: extra.days,
+                          frequency: extra.frequency,
+                          quantity: extra.quantity,
+                        },
+                      }),
+                      { ...emptyExtras },
+                    ),
+                  );
                   setReviewed(false);
                 }}
               >
@@ -389,7 +604,6 @@ export function MilkPlanBuilder({
                 />
               </label>
             </div>
-
           </div>
 
           <aside className={styles.summary} aria-live="polite">
@@ -461,7 +675,7 @@ export function MilkPlanBuilder({
               <button
                 className={styles.primaryAction}
                 type="button"
-                disabled={weeklyLitres === 0 || !startDate}
+                disabled={!hasPlanItems || !startDate || hasIncompleteExtra}
                 onClick={() => setReviewed(true)}
               >
                 {isEditing ? "Review updated plan" : "Review milk plan"}{" "}
