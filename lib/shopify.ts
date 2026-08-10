@@ -24,6 +24,11 @@ const variantEnvironmentKeys = {
 
 export type ShopifyProductKey = keyof typeof variantEnvironmentKeys;
 
+const requiredStorefrontKeys = [
+  "SHOPIFY_STORE_DOMAIN",
+  ...Object.values(variantEnvironmentKeys),
+] as const;
+
 function shopifyDomain() {
   const value = process.env.SHOPIFY_STORE_DOMAIN?.trim() ?? "";
   return value.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -40,11 +45,14 @@ function variantGid(value: string) {
 }
 
 export function hasShopifyStorefrontConfig() {
-  return Boolean(
-    shopifyDomain() &&
-      process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN &&
-      process.env.SHOPIFY_VARIANT_MILK,
-  );
+  return shopifyMissingConfiguration().length === 0;
+}
+
+export function shopifyMissingConfiguration() {
+  return requiredStorefrontKeys.filter((key) => {
+    if (key === "SHOPIFY_STORE_DOMAIN") return !shopifyDomain();
+    return !process.env[key]?.trim();
+  });
 }
 
 export function hasShopifyWebhookConfig() {
@@ -69,16 +77,28 @@ export function shopifyWebhookSecret() {
 export async function createShopifyCart({
   attributes,
   buyer,
+  buyerIp,
   lines,
 }: {
   attributes: Array<{ key: string; value: string }>;
   buyer: { email?: string; phone?: string };
+  buyerIp?: string;
   lines: ShopifyCartLine[];
 }) {
   const domain = shopifyDomain();
-  const token = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
-  if (!domain || !token) {
-    throw new Error("Shopify Storefront API is not configured.");
+  const publicToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim();
+  const privateToken =
+    process.env.SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN?.trim();
+  if (!domain) throw new Error("Shopify Storefront API is not configured.");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (privateToken) {
+    headers["Shopify-Storefront-Private-Token"] = privateToken;
+    if (buyerIp) headers["Shopify-Storefront-Buyer-IP"] = buyerIp;
+  } else if (publicToken) {
+    headers["X-Shopify-Storefront-Access-Token"] = publicToken;
   }
 
   const query = `
@@ -107,10 +127,7 @@ export async function createShopifyCart({
         },
       }),
       cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Storefront-Access-Token": token,
-      },
+      headers,
       method: "POST",
     },
   );

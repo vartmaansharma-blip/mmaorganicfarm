@@ -30,3 +30,7 @@ Configure the Shopify values documented in `.env.example`, create an
 `/api/commerce/shopify/webhook`, and keep all Admin API and webhook secrets
 server-side. Until Shopify is configured, the existing direct payment path is
 retained as a temporary fallback.
+
+`GET /api/commerce/shopify/status` reports whether the Storefront, signed
+webhook, and server-side database connection are ready. It returns only missing
+environment-variable names and never returns credential values.

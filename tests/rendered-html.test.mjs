@@ -94,6 +94,10 @@ const shopifyButtonUrl = new URL(
   "../app/checkout/review/shopify-checkout-button.tsx",
   import.meta.url,
 );
+const shopifyStatusUrl = new URL(
+  "../app/api/commerce/shopify/status/route.ts",
+  import.meta.url,
+);
 const checkoutReviewUrl = new URL(
   "../app/checkout/review/page.tsx",
   import.meta.url,
@@ -229,11 +233,12 @@ test("publishes complete business and policy information", async () => {
 });
 
 test("hands commerce to Shopify without replacing the delivery calendar", async () => {
-  const [shopify, checkout, webhook, button, review, schema, calendar] =
+  const [shopify, checkout, webhook, status, button, review, schema, calendar] =
     await Promise.all([
       readFile(shopifyUrl, "utf8"),
       readFile(shopifyCheckoutUrl, "utf8"),
       readFile(shopifyWebhookUrl, "utf8"),
+      readFile(shopifyStatusUrl, "utf8"),
       readFile(shopifyButtonUrl, "utf8"),
       readFile(checkoutReviewUrl, "utf8"),
       readFile(shopifySchemaUrl, "utf8"),
@@ -243,12 +248,16 @@ test("hands commerce to Shopify without replacing the delivery calendar", async 
   assert.match(shopify, /cartCreate/);
   assert.match(shopify, /checkoutUrl/);
   assert.match(shopify, /X-Shopify-Storefront-Access-Token/);
+  assert.match(shopify, /Shopify-Storefront-Private-Token/);
+  assert.match(shopify, /shopifyMissingConfiguration/);
   assert.match(checkout, /mma_delivery_plan_id/);
   assert.match(checkout, /shopify_cart_id/);
   assert.match(webhook, /x-shopify-hmac-sha256/);
   assert.match(webhook, /timingSafeEqual/);
   assert.match(webhook, /orders\/paid/);
   assert.match(webhook, /status: "active"/);
+  assert.match(status, /configured: storefront && webhook && database/);
+  assert.doesNotMatch(status, /process\.env/);
   assert.match(button, /Continue to pay/);
   assert.match(review, /Your delivery calendar stays with/);
   assert.match(schema, /commerce_provider/);

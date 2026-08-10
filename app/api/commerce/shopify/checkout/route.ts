@@ -94,6 +94,7 @@ export async function POST(request: Request) {
           : []),
       ],
       buyer: { email: user.email, phone: order.phone_snapshot },
+      buyerIp: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
       lines,
     });
 
