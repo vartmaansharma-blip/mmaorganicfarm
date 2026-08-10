@@ -1208,6 +1208,33 @@ h1 {
     width: 100%;
   }
 
+  .closing-section {
+    padding: 76px 20px 94px;
+  }
+
+  .closing-section h2 {
+    max-width: 330px;
+    font-size: 42px;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .closing-section h2 br {
+    display: none;
+  }
+
+  .closing-section > p:not(.eyebrow) {
+    max-width: 29ch;
+    margin-top: 22px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .closing-actions {
+    width: min(100%, 350px);
+    margin-top: 28px;
+  }
+
   .bottle-stage {
     grid-column: 1;
     grid-row: auto;
@@ -1225,7 +1252,7 @@ h1 {
     width: min(76%, 340px);
     height: 350px;
     object-fit: contain;
-    border-radius: 0;
+    border-radius: 8px;
     animation: bottle-mobile-turn 5.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
     transform-origin: 50% 58%;
     backface-visibility: visible;
@@ -1299,6 +1326,10 @@ h1 {
     font-size: clamp(40px, 12vw, 52px);
   }
 
+  .closing-section h2 {
+    font-size: 40px;
+  }
+
   .milk-visual,
   .milk-visual img {
     min-height: 440px;
@@ -1308,13 +1339,47 @@ h1 {
     font-size: 25px;
   }
 
+  .about-section {
+    padding: 54px 16px 64px;
+  }
+
+  .about-section .glass-story {
+    padding: 28px 24px 26px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .about-section .glass-story h2 {
+    font-size: 36px;
+    line-height: 1;
+  }
+
+  .about-section .glass-story > p:not(.eyebrow) {
+    margin: 22px 0 0;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
   .story-metrics {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 18px;
   }
 
   .story-metrics div {
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    min-width: 0;
+    padding: 0 4px;
+    border-bottom: 0;
+  }
+
+  .story-metrics strong {
+    font-size: 21px;
+  }
+
+  .story-metrics span {
+    font-size: 10px;
+    line-height: 1.35;
   }
 
   .farm-gallery {

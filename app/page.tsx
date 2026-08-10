@@ -358,7 +358,7 @@ export default async function Home() {
           <h2>
             Try tomorrow&apos;s milk
             <br />
-            the simple way.
+            {" "}the simple way.
           </h2>
           <p>Fresh from farm. Glass bottle. ₹62 per litre. Jamshedpur homes.</p>
           <div className="closing-actions">
