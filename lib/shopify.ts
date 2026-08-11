@@ -14,20 +14,23 @@ type ShopifyCartCreateResponse = {
 };
 
 const variantEnvironmentKeys = {
-  bottle: "SHOPIFY_VARIANT_GLASS_BOTTLE",
   ghee: "SHOPIFY_VARIANT_GHEE",
   milk: "SHOPIFY_VARIANT_MILK",
   paneer: "SHOPIFY_VARIANT_PANEER",
-  papaya: "SHOPIFY_VARIANT_PAPAYA",
-  sweets: "SHOPIFY_VARIANT_SWEETS",
 } as const;
 
 export type ShopifyProductKey = keyof typeof variantEnvironmentKeys;
 
-const requiredStorefrontKeys = [
+const requiredStorefrontKeys: readonly string[] = [
   "SHOPIFY_STORE_DOMAIN",
-  ...Object.values(variantEnvironmentKeys),
-] as const;
+  variantEnvironmentKeys.milk,
+  variantEnvironmentKeys.paneer,
+  variantEnvironmentKeys.ghee,
+];
+
+export function isShopifyProductKey(value: string): value is ShopifyProductKey {
+  return value in variantEnvironmentKeys;
+}
 
 function shopifyDomain() {
   const value = process.env.SHOPIFY_STORE_DOMAIN?.trim() ?? "";

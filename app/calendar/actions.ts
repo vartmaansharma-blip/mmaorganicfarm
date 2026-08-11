@@ -7,9 +7,10 @@ import {
   nextDeliveryDateInIndia,
   weekdayFromYmd,
 } from "@/lib/delivery-calendar";
+import { FARM_PRODUCTS } from "@/lib/farm-products";
 import { createClient } from "@/lib/supabase/server";
 
-const productKeys = new Set(["milk", "paneer", "ghee", "papaya", "sweets"]);
+const productKeys = new Set(["milk", ...FARM_PRODUCTS.map((product) => product.id)]);
 
 function calendarUrl(
   date: string,

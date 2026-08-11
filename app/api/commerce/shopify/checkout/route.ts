@@ -8,8 +8,8 @@ import {
 import {
   createShopifyCart,
   hasShopifyStorefrontConfig,
+  isShopifyProductKey,
   shopifyVariantId,
-  type ShopifyProductKey,
 } from "@/lib/shopify";
 
 export const runtime = "nodejs";
@@ -56,12 +56,37 @@ export async function POST(request: Request) {
     );
   }
 
+  if (order.bottle_choice === "new") {
+    return NextResponse.json(
+      {
+        error:
+          "New glass bottle checkout is not available yet. Return to products and use the return-bottle option.",
+      },
+      { status: 409 },
+    );
+  }
+
+  const unavailableProduct = (order.order_items ?? []).find(
+    (item) => !isShopifyProductKey(item.product_key),
+  );
+  if (unavailableProduct) {
+    return NextResponse.json(
+      {
+        error: `${unavailableProduct.product_key} is not available in online checkout yet. Return to products and update this order.`,
+      },
+      { status: 409 },
+    );
+  }
+
   let capacityReserved = false;
   try {
     await reserveOrderCapacity(order.id);
     capacityReserved = true;
 
     const lines = (order.order_items ?? []).map((item) => {
+      if (!isShopifyProductKey(item.product_key)) {
+        throw new Error(`${item.product_key} is not available in online checkout yet.`);
+      }
       const scheduledDays = item.scheduled_days ?? [];
       const deliveries =
         item.frequency === "weekly" && item.product_key !== "milk"
@@ -80,24 +105,10 @@ export async function POST(request: Request) {
             ? [{ key: "First delivery", value: item.delivery_date }]
             : []),
         ],
-        merchandiseId: shopifyVariantId(item.product_key as ShopifyProductKey),
+        merchandiseId: shopifyVariantId(item.product_key),
         quantity,
       };
     });
-
-    if (order.bottle_choice === "new") {
-      const bottleQuantity = (order.order_items ?? [])
-        .filter((item) => item.product_key === "milk")
-        .reduce((total, item) => total + Math.round(Number(item.quantity)), 0);
-      if (bottleQuantity < 1) {
-        throw new Error("The saved order contains no milk bottles.");
-      }
-      lines.push({
-        attributes: [{ key: "M'ma order", value: order.id }],
-        merchandiseId: shopifyVariantId("bottle"),
-        quantity: bottleQuantity,
-      });
-    }
 
     const cart = await createShopifyCart({
       attributes: [

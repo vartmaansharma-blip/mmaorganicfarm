@@ -64,13 +64,7 @@ export async function saveDeliveryDetails(formData: FormData) {
         ? 1
         : 0;
   const milk = String(milkLitres);
-  const requestedBottle = formData.get("bottle");
-  const bottle =
-    milkLitres === 0
-      ? "none"
-      : requestedBottle === "new"
-        ? "new"
-        : "return";
+  const bottle = milkLitres === 0 ? "none" : "return";
   const selectedProducts = parseFarmProductSelections(
     String(formData.get("extras") ?? ""),
   );

@@ -1,8 +1,6 @@
 export const FARM_PRODUCTS = [
-  { id: "paneer", image: "/paneer-500g.png", name: "Fresh paneer", price: 200, unit: "500 g" },
+  { id: "paneer", name: "Fresh paneer", price: 200, unit: "500 g" },
   { id: "ghee", image: "/ghee-500g.png", name: "Farm ghee", price: 375, unit: "500 g" },
-  { id: "papaya", name: "Papaya", price: 80, unit: "1 kg" },
-  { id: "sweets", image: "/milk-sweets.png", name: "Milk peda", price: 45, unit: "1 piece" },
 ] as const;
 
 export type FarmProductId = (typeof FARM_PRODUCTS)[number]["id"];

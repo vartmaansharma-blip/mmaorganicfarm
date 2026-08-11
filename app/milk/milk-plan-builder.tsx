@@ -16,11 +16,7 @@ import {
   type WeeklyMilkSchedule,
 } from "@/lib/milk-plan";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
-import {
-  calculateOrderPricing,
-  MILK_PRICE_PER_LITRE,
-  NEW_BOTTLE_CHARGE,
-} from "@/lib/order-pricing";
+import { calculateOrderPricing } from "@/lib/order-pricing";
 import styles from "./milk.module.css";
 
 const MAX_LITRES = 5;
@@ -39,8 +35,6 @@ type ExtraScheduleState = Record<FarmProductId, ExtraSchedule | null>;
 const emptyExtras: ExtraScheduleState = {
   paneer: null,
   ghee: null,
-  papaya: null,
-  sweets: null,
 };
 
 const recommendedSchedules: Array<{
@@ -59,10 +53,10 @@ const recommendedSchedules: Array<{
   },
   {
     label: "Lighter four-day",
-    description: "Milk on Monday, Wednesday, Friday and Saturday, with papaya midweek.",
+    description: "Milk on Monday, Wednesday, Friday and Saturday, with ghee in the first delivery.",
     milk: [1, 0, 1, 0, 1, 1, 0],
     extras: {
-      papaya: { days: [3], frequency: "weekly", quantity: 1 },
+      ghee: { days: [], frequency: "once", quantity: 1 },
     },
   },
 ];
@@ -368,7 +362,7 @@ export function MilkPlanBuilder({
                 ) : null}
                 <div className={styles.productMarker}>
                   <span>0{FARM_PRODUCTS.indexOf(product) + 2}</span>
-                  <small>{product.id === "papaya" ? "Produce" : "Dairy"}</small>
+                  <small>Dairy</small>
                 </div>
                 <label>
                   <input
@@ -617,7 +611,7 @@ export function MilkPlanBuilder({
               </div>
               <div>
                 <dt>Glass bottle</dt>
-                <dd>Choose at delivery details</dd>
+                <dd>Return bottle</dd>
               </div>
               <div>
                 <dt>Farm add-ons</dt>
@@ -676,8 +670,8 @@ export function MilkPlanBuilder({
               </button>
             )}
             <p className={styles.summaryNote}>
-              Choose whether to return a bottle or receive a new one at the end
-              of delivery details. Each new bottle adds ₹{NEW_BOTTLE_CHARGE}.
+              The current online milk price uses the return-bottle option. New
+              bottle ordering will be added later.
             </p>
           </aside>
         </div>

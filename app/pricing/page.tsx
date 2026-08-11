@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 import { FARM_PRODUCTS } from "@/lib/farm-products";
-import { MILK_PRICE_PER_LITRE, NEW_BOTTLE_CHARGE } from "@/lib/order-pricing";
+import { MILK_PRICE_PER_LITRE } from "@/lib/order-pricing";
 
 export const metadata: Metadata = {
   title: "Product Pricing",
@@ -29,11 +29,11 @@ export default function PricingPage() {
       </section>
       <section>
         <h2>Glass bottle</h2>
-        <p>Return a compatible bottle with each milk delivery, or add a new glass bottle for ₹{NEW_BOTTLE_CHARGE} per bottle. The order review shows the full bottle charge before payment.</p>
+        <p>The current online milk price uses the return-bottle option. New bottle ordering will be added later.</p>
       </section>
       <section>
         <h2>Final amount</h2>
-        <p>The final amount depends on the products, quantities, schedule, and bottle choice selected by the customer. Any price change is shown before payment.</p>
+        <p>The final amount depends on the products, quantities, and schedule selected by the customer. Any price change is shown before payment.</p>
       </section>
     </PublicInformationLayout>
   );

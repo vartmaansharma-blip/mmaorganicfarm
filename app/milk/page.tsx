@@ -15,7 +15,7 @@ import styles from "./milk.module.css";
 export const metadata: Metadata = {
   title: "Farm Products",
   description:
-    "Build one M'ma Organic Farm order with fresh milk, paneer, ghee, papaya, and milk sweets for your Jamshedpur home.",
+    "Build one M'ma Organic Farm order with fresh milk, paneer, and ghee for your Jamshedpur home.",
   robots: { index: false, follow: false },
 };
 
@@ -115,7 +115,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
           </span>
         </Link>
         <div className={styles.headerActions}>
-          <span>5 products</span>
+          <span>3 products</span>
           <Link className={styles.cartLink} href="#build-order">
             Cart
           </Link>
@@ -145,17 +145,13 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
             Milk ₹62 <span>per litre with bottle return</span>
           </p>
           <p className={styles.intro}>
-            Combine your milk with fresh paneer, ghee, papaya, and milk peda.
-            Choose once or build a weekly farm delivery.
+            Combine fresh milk with farm paneer and ghee. Choose a one-time
+            basket or build a weekly delivery routine.
           </p>
           <dl className={styles.productFacts}>
             <div>
               <dt>Dairy</dt>
-              <dd>Milk · 500 g paneer · 500 g ghee · milk peda</dd>
-            </div>
-            <div>
-              <dt>Produce</dt>
-              <dd>Farm-picked papaya</dd>
+              <dd>Milk · 500 g paneer · 500 g ghee</dd>
             </div>
             <div>
               <dt>Order</dt>

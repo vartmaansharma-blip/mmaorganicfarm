@@ -20,6 +20,8 @@ npm run build
 
 - Shopify owns products, inventory, cart, checkout, payment status, and the
   commercial order.
+- The active online catalog is limited to milk, paneer, and ghee. Glass
+  bottles, papaya, and sweets are postponed and do not block checkout setup.
 - Supabase owns customer delivery details, the weekly calendar, scheduled
   add-ons, skips, pauses, remaining deliveries, and farm operations.
 - The website saves a pending Supabase delivery plan before creating a Shopify
