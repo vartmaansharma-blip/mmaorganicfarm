@@ -38,6 +38,7 @@ type DailyItemRow = {
 
 type DailyDeliveryRow = {
   address_snapshot: string | null;
+  bottle_choice: "new" | "none" | "return";
   customer_name: string;
   daily_delivery_items: DailyItemRow[];
   delivery_area_id: string | null;
@@ -51,6 +52,7 @@ type DailyDeliveryRow = {
 
 type Stop = {
   address: string;
+  bottleChoice: "new" | "none" | "return";
   id: string;
   items: DailyItemRow[];
   name: string;
@@ -113,7 +115,7 @@ export default async function FarmDashboardPage({
     supabase
       .from("daily_deliveries")
       .select(
-        "id, status, generated_at, customer_name, phone_snapshot, address_snapshot, delivery_area_id, delivery_route_id, route_stop_order, daily_delivery_items(product_key, quantity, unit)",
+        "id, status, generated_at, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, route_stop_order, daily_delivery_items(product_key, quantity, unit)",
       )
       .eq("delivery_date", deliveryDate),
   ]);
@@ -162,6 +164,7 @@ export default async function FarmDashboardPage({
 
     routeGroup.stops.push({
       address: delivery.address_snapshot ?? "",
+      bottleChoice: delivery.bottle_choice,
       id: delivery.id,
       items: delivery.daily_delivery_items ?? [],
       name: delivery.customer_name,
@@ -347,6 +350,11 @@ export default async function FarmDashboardPage({
                                   {productName(item.product_key)} · {formatQuantity(item)}
                                 </span>
                               ))}
+                              {stop.bottleChoice !== "none" ? (
+                                <span>
+                                  Bottle · {stop.bottleChoice === "new" ? "Take new" : "Collect return"}
+                                </span>
+                              ) : null}
                               <small>{stop.status.replaceAll("_", " ")}</small>
                             </div>
                           </li>

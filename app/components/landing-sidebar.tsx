@@ -13,22 +13,19 @@ export function LandingSidebar() {
         <a className={`${styles.navLink} ${styles.active}`} href="#home">
           <span>01</span>Home
         </a>
-        <a className={styles.navLink} href="#milk">
-          <span>02</span>Milk
-        </a>
         <a className={styles.navLink} href="/milk">
-          <span>03</span>Products
+          <span>02</span>Shop
         </a>
         <a className={styles.navLink} href="#about">
-          <span>04</span>About
+          <span>03</span>About
         </a>
         <a className={styles.navLink} href="#farm">
-          <span>05</span>Farm
+          <span>04</span>Farm
         </a>
         <AccountLink
           authenticatedLabel="Profile"
           className={styles.navLink}
-          prefix="06"
+          prefix="05"
         />
       </nav>
 

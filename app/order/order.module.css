@@ -218,6 +218,77 @@
   padding: 0;
 }
 
+.bottleChoice {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.bottleChoice legend {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.bottleChoice > p {
+  margin: 7px 0 12px;
+  color: #787774;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.bottleChoice > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bottleChoice label {
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid #d3d3d1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bottleChoice label:has(input:checked) {
+  border-color: #214d3a;
+  background: #f1f6f3;
+}
+
+.bottleChoice input {
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  accent-color: #214d3a;
+}
+
+.bottleChoice strong,
+.bottleChoice small {
+  display: block;
+}
+
+.bottleChoice strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.bottleChoice small {
+  margin-top: 5px;
+  color: #787774;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .bottleChoice > div {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form label {
   display: grid;
   gap: 10px;

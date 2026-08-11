@@ -27,6 +27,7 @@ const milkBuilderUrl = new URL(
 const milkStylesUrl = new URL("../app/milk/milk.module.css", import.meta.url);
 const farmProductsUrl = new URL("../lib/farm-products.ts", import.meta.url);
 const orderPricingUrl = new URL("../lib/order-pricing.ts", import.meta.url);
+const checkoutPricingUrl = new URL("../lib/checkout.ts", import.meta.url);
 const milkPlanUrl = new URL("../lib/milk-plan.ts", import.meta.url);
 const profileSchemaUrl = new URL("../supabase/customer_profiles.sql", import.meta.url);
 const deliveryPlanSchemaUrl = new URL("../supabase/delivery_plans.sql", import.meta.url);
@@ -65,6 +66,10 @@ const farmActionsUrl = new URL(
 const farmSchemaUrl = new URL("../supabase/farm_dashboard.sql", import.meta.url);
 const dailyDeliveriesSchemaUrl = new URL(
   "../supabase/daily_deliveries.sql",
+  import.meta.url,
+);
+const paidOneTimeDeliveriesSchemaUrl = new URL(
+  "../supabase/paid_one_time_deliveries.sql",
   import.meta.url,
 );
 const farmDashboardActionsUrl = new URL("../app/farm/actions.ts", import.meta.url);
@@ -157,7 +162,7 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
   assert.match(orderStyles, /width: min\(100%, 620px\)/);
   assert.doesNotMatch(orderStyles, /box-shadow/);
   assert.doesNotMatch(orderStyles, /grid-template-columns: minmax\(0, 0\.88fr\)/);
-  assert.match(sidebarStyles, /grid-template-columns: repeat\(6, calc\(\(100% - 10px\) \/ 6\)\)/);
+  assert.match(sidebarStyles, /grid-template-columns: repeat\(5, calc\(\(100% - 8px\) \/ 5\)\)/);
 });
 
 test("uses stable profile and home navigation labels", async () => {
@@ -168,10 +173,9 @@ test("uses stable profile and home navigation labels", async () => {
   assert.match(accountLink, /authenticatedLabel = "Profile"/);
   assert.doesNotMatch(accountLink, /firstName/);
   assert.match(sidebar, /<span>01<\/span>Home/);
-  assert.match(sidebar, /href="#milk">\s*<span>02<\/span>Milk/);
-  assert.match(sidebar, /href="\/milk">\s*<span>03<\/span>Products/);
+  assert.match(sidebar, /href="\/milk">\s*<span>02<\/span>Shop/);
   assert.match(sidebar, /authenticatedLabel="Profile"/);
-  assert.match(sidebar, /prefix="06"/);
+  assert.match(sidebar, /prefix="05"/);
   assert.match(whatsappIcon, /viewBox="0 0 24 24"/);
 });
 
@@ -426,13 +430,14 @@ test("provides an intelligent customer delivery calendar", async () => {
 });
 
 test("provides a separate mobile-first farm product and plan page", async () => {
-  const [page, builder, styles, products, pricing, landing, sidebar, account, order] =
+  const [page, builder, styles, products, pricing, checkoutPricing, landing, sidebar, account, order] =
     await Promise.all([
       readFile(milkPageUrl, "utf8"),
       readFile(milkBuilderUrl, "utf8"),
       readFile(milkStylesUrl, "utf8"),
       readFile(farmProductsUrl, "utf8"),
       readFile(orderPricingUrl, "utf8"),
+      readFile(checkoutPricingUrl, "utf8"),
       readFile(pageUrl, "utf8"),
       readFile(sidebarUrl, "utf8"),
       readFile(accountPageUrl, "utf8"),
@@ -466,6 +471,8 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /calculateOrderPricing/);
   assert.match(pricing, /MILK_PRICE_PER_LITRE = 62/);
   assert.match(pricing, /NEW_BOTTLE_CHARGE = 10/);
+  assert.match(pricing, /safeMilkLitres \* NEW_BOTTLE_CHARGE/);
+  assert.match(checkoutPricing, /milkBottles \* NEW_BOTTLE_CHARGE/);
   assert.match(pricing, /calculatePaidMilkAdjustment/);
   assert.match(pricing, /additionalPayment/);
   assert.match(pricing, /carryForwardLitres/);
@@ -477,10 +484,12 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /onceQuantity > 0 \|\| selectedExtras\.length > 0/);
   assert.match(builder, /Select milk or an add-on/);
   assert.doesNotMatch(builder, /STEP = 0\.5/);
-  assert.match(builder, /Return a bottle/);
-  assert.match(builder, /hand it back on delivery/);
-  assert.match(builder, /No bottle to return/);
-  assert.match(builder, /includes a ₹10 glass bottle/);
+  assert.doesNotMatch(builder, /Choose one bottle option/);
+  assert.match(builder, /Choose at delivery details/);
+  assert.match(order, /Bottle for this delivery/);
+  assert.match(order, /I will return a bottle/);
+  assert.match(order, /I need a new glass bottle/);
+  assert.match(order, /₹10 is added for each bottle delivered/);
   assert.match(builder, /More from M&apos;ma Organic Farm/);
   assert.match(builder, /First delivery/);
   assert.match(builder, /Every week/);
@@ -490,13 +499,16 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /serializeFarmProductSelections/);
   assert.match(builder, /orderHref/);
   assert.match(products, /Fresh paneer/);
-  assert.match(products, /price: 400/);
+  assert.match(products, /price: 200/);
+  assert.match(products, /paneer-500g\.png/);
   assert.match(products, /Farm ghee/);
-  assert.match(products, /price: 750/);
+  assert.match(products, /price: 375/);
+  assert.match(products, /ghee-500g\.png/);
   assert.match(products, /Papaya/);
   assert.match(products, /price: 80/);
-  assert.match(products, /Fresh milk sweets/);
-  assert.match(products, /price: 450/);
+  assert.match(products, /Milk peda/);
+  assert.match(products, /price: 45/);
+  assert.match(products, /milk-sweets\.png/);
   assert.doesNotMatch(products, /vegetables/i);
   assert.doesNotMatch(builder, /Shopify|checkout|payment/i);
   assert.doesNotMatch(builder, /delivery charge|delivery fee/i);
@@ -525,13 +537,14 @@ test("presents the product builder as a visible farm shop", async () => {
 });
 
 test("provides persistent mobile-first farm delivery operations", async () => {
-  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, styles] = await Promise.all([
+  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, oneTimeSchema, styles] = await Promise.all([
     readFile(farmDashboardUrl, "utf8"),
     readFile(farmDashboardActionsUrl, "utf8"),
     readFile(farmLocationsUrl, "utf8"),
     readFile(farmActionsUrl, "utf8"),
     readFile(farmSchemaUrl, "utf8"),
     readFile(dailyDeliveriesSchemaUrl, "utf8"),
+    readFile(paidOneTimeDeliveriesSchemaUrl, "utf8"),
     readFile(new URL("../app/farm/farm.module.css", import.meta.url), "utf8"),
   ]);
 
@@ -566,6 +579,13 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(dailySchema, /enable row level security/);
   assert.match(dailySchema, /farm_staff\.active/);
   assert.doesNotMatch(dailySchema, /service_role/);
+  assert.match(oneTimeSchema, /add column if not exists order_id/);
+  assert.match(oneTimeSchema, /orders\.purchase_mode = 'once'/);
+  assert.match(oneTimeSchema, /orders\.status = 'paid'/);
+  assert.match(oneTimeSchema, /orders\.start_date = p_delivery_date/);
+  assert.match(oneTimeSchema, /items\.frequency = 'once'/);
+  assert.match(oneTimeSchema, /daily_deliveries_source_check/);
+  assert.match(dashboard, /Bottle ·/);
   assert.match(styles, /\.headerActions/);
   assert.match(styles, /width: 100%/);
   assert.match(styles, /@media \(min-width: 700px\)/);

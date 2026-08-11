@@ -78,10 +78,16 @@ export async function POST(request: Request) {
     });
 
     if (order.bottle_choice === "new") {
+      const bottleQuantity = (order.order_items ?? [])
+        .filter((item) => item.product_key === "milk")
+        .reduce((total, item) => total + Math.round(Number(item.quantity)), 0);
+      if (bottleQuantity < 1) {
+        throw new Error("The saved order contains no milk bottles.");
+      }
       lines.push({
         attributes: [{ key: "M'ma order", value: order.id }],
         merchandiseId: shopifyVariantId("bottle"),
-        quantity: 1,
+        quantity: bottleQuantity,
       });
     }
 

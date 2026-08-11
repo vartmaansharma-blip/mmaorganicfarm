@@ -247,8 +247,7 @@ export default async function Home() {
 
             <div className="milk-details">
               <p className="large-copy">
-                A better everyday bottle: farm-fresh milk, rich texture, clear
-                price, and a simple WhatsApp order path for your home.
+                Farm-fresh milk. Rich texture. Clear price.
               </p>
               <div className="feature-list">
                 {features.map((item) => (

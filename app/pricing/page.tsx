@@ -29,7 +29,7 @@ export default function PricingPage() {
       </section>
       <section>
         <h2>Glass bottle</h2>
-        <p>Return a compatible bottle with the milk delivery, or add a new glass bottle for ₹{NEW_BOTTLE_CHARGE}. The order review shows this charge before confirmation.</p>
+        <p>Return a compatible bottle with each milk delivery, or add a new glass bottle for ₹{NEW_BOTTLE_CHARGE} per bottle. The order review shows the full bottle charge before payment.</p>
       </section>
       <section>
         <h2>Final amount</h2>

@@ -73,7 +73,6 @@ function formatLitres(value: number) {
 
 type MilkPlanBuilderProps = {
   initialExtras?: FarmProductSelection[];
-  initialBottleOption?: "return" | "new";
   initialSchedule?: WeeklyMilkSchedule;
   initialStartDate?: string;
   isEditing?: boolean;
@@ -81,7 +80,6 @@ type MilkPlanBuilderProps = {
 
 export function MilkPlanBuilder({
   initialExtras = [],
-  initialBottleOption = "return",
   initialSchedule = defaultSchedule,
   initialStartDate = "",
   isEditing = false,
@@ -96,8 +94,6 @@ export function MilkPlanBuilder({
   const [schedule, setSchedule] = useState(initialSchedule);
   const [startDate, setStartDate] = useState(firstAvailableStartDate);
   const [reviewed, setReviewed] = useState(false);
-  const [bottleOption, setBottleOption] =
-    useState<"return" | "new">(initialBottleOption);
   const [extras, setExtras] = useState<ExtraScheduleState>(() =>
     initialExtras.reduce(
       (result, extra) => ({
@@ -113,7 +109,6 @@ export function MilkPlanBuilder({
   );
 
   const weeklyLitres = schedule.reduce((total, litres) => total + litres, 0);
-  const needsNewBottle = bottleOption === "new";
   const selectedMilkLitres = mode === "once" ? onceQuantity : weeklyLitres;
   const hasMilk = selectedMilkLitres > 0;
   const selectedExtras = FARM_PRODUCTS.flatMap((product) => {
@@ -121,7 +116,7 @@ export function MilkPlanBuilder({
     return selection ? [{ ...product, ...selection }] : [];
   });
   const oncePricing = calculateOrderPricing({
-    bottleChoice: hasMilk ? bottleOption : "none",
+    bottleChoice: hasMilk ? "return" : "none",
     milkLitres: onceQuantity,
     products: selectedExtras.map((product) => ({
       ...product,
@@ -130,15 +125,13 @@ export function MilkPlanBuilder({
     })),
   });
   const planPricing = calculateOrderPricing({
-    bottleChoice: hasMilk ? bottleOption : "none",
+    bottleChoice: hasMilk ? "return" : "none",
     milkLitres: weeklyLitres,
     products: selectedExtras,
   });
   const weeklyEstimate = planPricing.milkTotal;
   const weeklyExtrasTotal = planPricing.recurringAddOnsTotal;
   const firstDeliveryExtrasTotal = planPricing.oneTimeAddOnsTotal;
-  const bottleCharge =
-    mode === "once" ? oncePricing.bottleCharge : planPricing.bottleCharge;
   const scheduledDays = new Set(
     schedule.flatMap((litres, index) => (litres > 0 ? [index + 1] : [])),
   );
@@ -158,8 +151,7 @@ export function MilkPlanBuilder({
       ? oncePricing.total
       : weeklyEstimate +
         weeklyExtrasTotal +
-        firstDeliveryExtrasTotal +
-        bottleCharge;
+        firstDeliveryExtrasTotal;
 
   function updateSchedule(index: number, delta: number) {
     setSchedule((current) =>
@@ -261,11 +253,6 @@ export function MilkPlanBuilder({
     }));
     const params = new URLSearchParams({
       purchase,
-      bottle: selectedMilkLitres === 0
-        ? "none"
-        : needsNewBottle
-          ? "new"
-          : "return",
       milk: String(purchase === "once" ? onceQuantity : weeklyLitres),
     });
 
@@ -354,44 +341,6 @@ export function MilkPlanBuilder({
         </section>
       ) : null}
 
-      {hasMilk ? (
-        <fieldset className={styles.bottleChoice}>
-          <legend>Choose one bottle option</legend>
-          <div className={styles.bottleOptions}>
-            <label>
-              <input
-                type="radio"
-                name="bottle-option"
-                checked={bottleOption === "return"}
-                onChange={() => {
-                  setBottleOption("return");
-                  setReviewed(false);
-                }}
-              />
-              <span>
-                <strong>Return a bottle</strong>
-                <small>₹62/L · hand it back on delivery</small>
-              </span>
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="bottle-option"
-                checked={bottleOption === "new"}
-                onChange={() => {
-                  setBottleOption("new");
-                  setReviewed(false);
-                }}
-              />
-              <span>
-                <strong>No bottle to return</strong>
-                <small>₹72 for 1 L · includes a ₹10 glass bottle</small>
-              </span>
-            </label>
-          </div>
-        </fieldset>
-      ) : null}
-
       <section className={styles.extras} aria-labelledby="farm-add-ons-title">
         <div className={styles.extrasHeading}>
           <div>
@@ -410,6 +359,13 @@ export function MilkPlanBuilder({
                 className={selection ? styles.extraSelected : undefined}
                 key={product.id}
               >
+                {"image" in product ? (
+                  <img
+                    className={styles.extraImage}
+                    src={product.image}
+                    alt={`${product.name}, ${product.unit}`}
+                  />
+                ) : null}
                 <div className={styles.productMarker}>
                   <span>0{FARM_PRODUCTS.indexOf(product) + 2}</span>
                   <small>{product.id === "papaya" ? "Produce" : "Dairy"}</small>
@@ -573,7 +529,6 @@ export function MilkPlanBuilder({
                 onClick={() => {
                   setSchedule(initialSchedule);
                   setStartDate(firstAvailableStartDate);
-                  setBottleOption(initialBottleOption);
                   setExtras(
                     initialExtras.reduce(
                       (result, extra) => ({
@@ -662,7 +617,7 @@ export function MilkPlanBuilder({
               </div>
               <div>
                 <dt>Glass bottle</dt>
-                <dd>{needsNewBottle ? "+₹10 once" : "Return on delivery"}</dd>
+                <dd>Choose at delivery details</dd>
               </div>
               <div>
                 <dt>Farm add-ons</dt>
@@ -678,15 +633,14 @@ export function MilkPlanBuilder({
                   <dd>₹{firstDeliveryExtrasTotal}</dd>
                 </div>
               ) : null}
-              {needsNewBottle || firstDeliveryExtrasTotal > 0 ? (
+              {firstDeliveryExtrasTotal > 0 ? (
                 <div>
                   <dt>First-week estimate</dt>
                   <dd>
                     ₹
                     {weeklyEstimate +
                       weeklyExtrasTotal +
-                      firstDeliveryExtrasTotal +
-                      bottleCharge}
+                      firstDeliveryExtrasTotal}
                   </dd>
                 </div>
               ) : null}
@@ -722,9 +676,8 @@ export function MilkPlanBuilder({
               </button>
             )}
             <p className={styles.summaryNote}>
-              ₹{MILK_PRICE_PER_LITRE} is the bottle-exchange price and requires
-              a bottle returned on delivery. Without a return bottle, ₹
-              {NEW_BOTTLE_CHARGE} is added once.
+              Choose whether to return a bottle or receive a new one at the end
+              of delivery details. Each new bottle adds ₹{NEW_BOTTLE_CHARGE}.
             </p>
           </aside>
         </div>

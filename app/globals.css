@@ -603,7 +603,7 @@ h1 {
 
 .ticker {
   width: 100%;
-  padding: 18px 0;
+  padding: 10px 0;
   color: white;
   background: var(--ink);
   overflow: hidden;
@@ -617,8 +617,8 @@ h1 {
 
 .ticker span {
   padding-right: 20px;
-  font-size: 16px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 @keyframes ticker-move {

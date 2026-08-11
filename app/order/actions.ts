@@ -87,6 +87,7 @@ export async function saveDeliveryDetails(formData: FormData) {
     milkLitres: effectiveMilkLitres,
     products: selectedProducts,
   });
+  const orderDeliveryDate = purchase === "plan" ? start : minimumStartDate;
 
   if (
     purchase === "plan" &&
@@ -241,7 +242,7 @@ export async function saveDeliveryDetails(formData: FormData) {
   const { data: order, error: orderError } = await supabase.from("orders").insert({
     address_snapshot: address, bottle_charge_paise: pricing.bottleCharge * 100, bottle_choice: bottle,
     currency: "INR", delivery_plan_id: deliveryPlanId, milk_litres: effectiveMilkLitres,
-    phone_snapshot: `+91${phone}`, purchase_mode: purchase, start_date: purchase === "plan" ? start : null,
+    phone_snapshot: `+91${phone}`, purchase_mode: purchase, start_date: orderDeliveryDate,
     status: "draft", subtotal_paise: (pricing.total - pricing.bottleCharge) * 100,
     total_paise: pricing.total * 100, user_id: user.id,
   }).select("id").single();
@@ -249,14 +250,14 @@ export async function saveDeliveryDetails(formData: FormData) {
 
   const orderItems = [
     ...(effectiveMilkLitres > 0 ? [{
-      delivery_date: purchase === "plan" ? start : null, frequency: purchase === "plan" ? "weekly" : "once",
+      delivery_date: orderDeliveryDate, frequency: purchase === "plan" ? "weekly" : "once",
       line_total_paise: effectiveMilkLitres * MILK_PRICE_PER_LITRE * 100, order_id: order.id,
       product_key: "milk", product_name: "Fresh farm milk", quantity: effectiveMilkLitres,
       scheduled_days: purchase === "plan" && weeklySchedule ? weeklySchedule.flatMap((litres, index) => litres > 0 ? [index + 1] : []) : [],
       unit: purchase === "plan" ? "litres / week" : "litre", unit_price_paise: MILK_PRICE_PER_LITRE * 100, user_id: user.id,
     }] : []),
     ...selectedProducts.map((product) => ({
-      delivery_date: product.frequency === "once" && purchase === "plan" ? start : null,
+      delivery_date: product.frequency === "once" ? orderDeliveryDate : null,
       frequency: product.frequency, line_total_paise: product.price * product.quantity * (product.frequency === "weekly" ? product.days.length : 1) * 100,
       order_id: order.id, product_key: product.id, product_name: product.name, quantity: product.quantity,
       scheduled_days: product.days, unit: product.unit, unit_price_paise: product.price * 100, user_id: user.id,

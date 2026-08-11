@@ -35,7 +35,9 @@ export function calculateOrderPricing({
     0,
   );
   const bottleCharge =
-    safeMilkLitres > 0 && bottleChoice === "new" ? NEW_BOTTLE_CHARGE : 0;
+    safeMilkLitres > 0 && bottleChoice === "new"
+      ? safeMilkLitres * NEW_BOTTLE_CHARGE
+      : 0;
 
   return {
     bottleCharge,

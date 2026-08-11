@@ -116,6 +116,9 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
         </Link>
         <div className={styles.headerActions}>
           <span>5 products</span>
+          <Link className={styles.cartLink} href="#build-order">
+            Cart
+          </Link>
           <Link className={styles.back} href="/#milk">
             Back to farm
           </Link>
@@ -142,13 +145,13 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
             Milk ₹62 <span>per litre with bottle return</span>
           </p>
           <p className={styles.intro}>
-            Combine your milk with fresh paneer, ghee, papaya, and milk sweets.
+            Combine your milk with fresh paneer, ghee, papaya, and milk peda.
             Choose once or build a weekly farm delivery.
           </p>
           <dl className={styles.productFacts}>
             <div>
               <dt>Dairy</dt>
-              <dd>Milk · 1 kg paneer · ghee · sweets</dd>
+              <dd>Milk · 500 g paneer · 500 g ghee · milk peda</dd>
             </div>
             <div>
               <dt>Produce</dt>
@@ -176,9 +179,6 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
 
       <MilkPlanBuilder
         initialExtras={savedExtras}
-        initialBottleOption={
-          savedPlan?.bottle_choice === "new" ? "new" : "return"
-        }
         initialSchedule={savedSchedule}
         initialStartDate={savedPlan?.start_date ?? ""}
         isEditing={Boolean(savedPlan)}

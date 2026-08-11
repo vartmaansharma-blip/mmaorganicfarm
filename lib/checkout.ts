@@ -12,7 +12,12 @@ export function calculateCheckoutAmount(items: CheckoutItem[], bottleChoice: "ne
     if (deliveries < 1 || item.quantity <= 0) throw new Error("Invalid quantity or schedule.");
     return total + Math.round(expected * item.quantity * deliveries);
   }, 0);
-  const hasMilk = items.some((item) => item.product_key === "milk");
-  const bottleCharge = hasMilk && bottleChoice === "new" ? NEW_BOTTLE_CHARGE * 100 : 0;
+  const milkBottles = items
+    .filter((item) => item.product_key === "milk")
+    .reduce((total, item) => total + item.quantity, 0);
+  const bottleCharge =
+    milkBottles > 0 && bottleChoice === "new"
+      ? Math.round(milkBottles * NEW_BOTTLE_CHARGE * 100)
+      : 0;
   return { bottleCharge, itemsTotal, total: itemsTotal + bottleCharge };
 }

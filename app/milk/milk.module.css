@@ -6,6 +6,9 @@
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   width: min(100%, 1180px);
   min-height: 82px;
   display: flex;
@@ -14,6 +17,9 @@
   gap: 24px;
   margin: 0 auto;
   border-bottom: 1px solid #e7e6e2;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .brand {
@@ -53,6 +59,19 @@
   display: flex;
   align-items: center;
   gap: 20px;
+}
+
+.cartLink {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  border: 1px solid #191919;
+  border-radius: 4px;
+  color: #fff;
+  background: #191919;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .headerActions > span {
@@ -493,6 +512,16 @@
   border: 1px solid #d2d0c9;
   border-radius: 5px;
   background: #fff;
+}
+
+.extraImage {
+  width: 100%;
+  aspect-ratio: 1.35;
+  display: block;
+  margin-bottom: 14px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #f4f3f0;
 }
 
 .productMarker {
@@ -1050,6 +1079,19 @@
   }
 
   .headerActions > span {
+    display: none;
+  }
+
+  .headerActions {
+    gap: 8px;
+  }
+
+  .cartLink {
+    min-height: 38px;
+    padding: 0 14px;
+  }
+
+  .back {
     display: none;
   }
 

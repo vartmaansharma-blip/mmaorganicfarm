@@ -11,6 +11,7 @@ import {
 } from "@/lib/milk-plan";
 import {
   calculateOrderPricing,
+  NEW_BOTTLE_CHARGE,
   type BottleChoice,
 } from "@/lib/order-pricing";
 import { saveDeliveryDetails } from "./actions";
@@ -166,7 +167,9 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                 ) : null}
                 {pricing.bottleCharge > 0 ? (
                   <div>
-                    <dt>New glass bottle</dt>
+                    <dt>
+                      New glass bottles ({pricing.bottleCharge / NEW_BOTTLE_CHARGE})
+                    </dt>
                     <dd>₹{pricing.bottleCharge}</dd>
                   </div>
                 ) : null}
@@ -180,7 +183,6 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
         </div>
 
         <form className={styles.form} action={saveDeliveryDetails}>
-          <input name="bottle" type="hidden" value={bottleChoice} />
           <input name="extras" type="hidden" value={params.extras ?? ""} />
           <input name="milk" type="hidden" value={params.milk ?? "1"} />
           <input name="purchase" type="hidden" value={purchase} />
@@ -229,6 +231,41 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
               Add a landmark only when it helps the delivery team find you.
             </span>
           </label>
+
+          {milkLitres > 0 ? (
+            <fieldset className={styles.bottleChoice}>
+              <legend>Bottle for this delivery</legend>
+              <p>Choose after confirming where the order will be delivered.</p>
+              <div>
+                <label>
+                  <input
+                    defaultChecked={bottleChoice === "return"}
+                    name="bottle"
+                    type="radio"
+                    value="return"
+                  />
+                  <span>
+                    <strong>I will return a bottle</strong>
+                    <small>Milk remains ₹62 per litre.</small>
+                  </span>
+                </label>
+                <label>
+                  <input
+                    defaultChecked={bottleChoice === "new"}
+                    name="bottle"
+                    type="radio"
+                    value="new"
+                  />
+                  <span>
+                    <strong>I need a new glass bottle</strong>
+                    <small>₹10 is added for each bottle delivered.</small>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+          ) : (
+            <input name="bottle" type="hidden" value="none" />
+          )}
 
           <button type="submit">
             Save &amp; review order <span>→</span>
