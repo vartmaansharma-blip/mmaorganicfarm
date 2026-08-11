@@ -111,6 +111,18 @@ const shopifySchemaUrl = new URL(
   "../supabase/shopify_commerce.sql",
   import.meta.url,
 );
+const capacitySchemaUrl = new URL(
+  "../supabase/production_capacity.sql",
+  import.meta.url,
+);
+const capacityPageUrl = new URL(
+  "../app/farm/capacity/page.tsx",
+  import.meta.url,
+);
+const capacityLibraryUrl = new URL(
+  "../lib/production-capacity.ts",
+  import.meta.url,
+);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -267,6 +279,28 @@ test("hands commerce to Shopify without replacing the delivery calendar", async 
   assert.match(schema, /commerce_provider/);
   assert.match(schema, /provider in \('razorpay', 'shopify'\)/);
   assert.match(calendar, /buildDeliveryCalendar/);
+});
+
+test("accepts orders only when daily production capacity is available", async () => {
+  const [checkout, webhook, capacity, capacityPage, capacityLibrary] =
+    await Promise.all([
+      readFile(shopifyCheckoutUrl, "utf8"),
+      readFile(shopifyWebhookUrl, "utf8"),
+      readFile(capacitySchemaUrl, "utf8"),
+      readFile(capacityPageUrl, "utf8"),
+      readFile(capacityLibraryUrl, "utf8"),
+    ]);
+
+  assert.match(checkout, /reserveOrderCapacity/);
+  assert.match(checkout, /releaseOrderCapacity/);
+  assert.match(webhook, /consumeOrderCapacity/);
+  assert.match(capacity, /for update/);
+  assert.match(capacity, /Milk capacity is full/);
+  assert.match(capacity, /order_capacity_reservations/);
+  assert.match(capacity, /status = 'active'/);
+  assert.match(capacityPage, /Next seven days/);
+  assert.match(capacityPage, /In checkout/);
+  assert.match(capacityLibrary, /p_hold_hours: 24/);
 });
 
 test("provides Google and email account creation without delivery friction", async () => {

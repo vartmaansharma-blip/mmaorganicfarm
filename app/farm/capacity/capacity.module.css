@@ -1,0 +1,262 @@
+.page {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 28px 18px 56px;
+}
+
+.header {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.eyebrow,
+.sectionHeading p {
+  color: #72716e;
+  font-size: 11px;
+  font-weight: 720;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  font-size: clamp(32px, 7vw, 54px);
+  line-height: 1.02;
+  margin: 0;
+}
+
+.header p:not(.eyebrow) {
+  color: #65645f;
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 12px 0 0;
+  max-width: 590px;
+}
+
+.header > a {
+  border: 1px solid #191919;
+  color: #191919;
+  font-size: 13px;
+  font-weight: 680;
+  padding: 11px 14px;
+  text-decoration: none;
+}
+
+.summary {
+  background: #f6cb4f;
+  display: grid;
+  gap: 24px;
+  margin-top: 28px;
+  padding: 22px;
+}
+
+.summary span,
+.summary label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+}
+
+.summary strong {
+  display: block;
+  font-size: 34px;
+}
+
+.summary p {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 8px 0 0;
+  max-width: 540px;
+}
+
+.summary form > div {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.summary input,
+.overrideForm input {
+  background: #fff;
+  border: 1px solid #8f7d42;
+  border-radius: 0;
+  font: inherit;
+  font-size: 14px;
+  min-width: 0;
+  padding: 11px 12px;
+}
+
+.summary button,
+.overrideForm button {
+  background: #191919;
+  border: 1px solid #191919;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 11px 14px;
+}
+
+.week,
+.override {
+  margin-top: 42px;
+}
+
+.sectionHeading {
+  border-bottom: 1px solid #e8e7e3;
+  padding-bottom: 14px;
+}
+
+.sectionHeading h2 {
+  font-size: 23px;
+  margin: 0;
+}
+
+.dayList {
+  border-bottom: 1px solid #e8e7e3;
+}
+
+.day {
+  padding: 18px 0;
+}
+
+.day + .day {
+  border-top: 1px solid #e8e7e3;
+}
+
+.dayTitle {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.dayTitle strong {
+  font-size: 14px;
+}
+
+.dayTitle span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.day dl {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 15px 0 12px;
+}
+
+.day dl div {
+  min-width: 0;
+}
+
+.day dt {
+  color: #73726e;
+  font-size: 10px;
+  margin-bottom: 3px;
+}
+
+.day dd {
+  font-size: 12px;
+  font-weight: 650;
+  margin: 0;
+}
+
+.meter {
+  background: #eeeeeb;
+  height: 5px;
+  overflow: hidden;
+}
+
+.meter span {
+  background: #1f704b;
+  display: block;
+  height: 100%;
+}
+
+.overrideForm {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.overrideForm label {
+  color: #4f4e4b;
+  display: grid;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 6px;
+  text-transform: uppercase;
+}
+
+.overrideList {
+  border-top: 1px solid #e8e7e3;
+  margin-top: 24px;
+}
+
+.overrideList > div {
+  align-items: center;
+  border-bottom: 1px solid #e8e7e3;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 13px 0;
+}
+
+.overrideList span,
+.overrideList strong {
+  font-size: 12px;
+}
+
+.overrideList form {
+  grid-column: 1 / -1;
+}
+
+.overrideList button {
+  background: transparent;
+  border: 0;
+  color: #696864;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+@media (min-width: 720px) {
+  .summary {
+    align-items: end;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.65fr);
+    padding: 30px;
+  }
+
+  .day {
+    align-items: center;
+    display: grid;
+    gap: 22px;
+    grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.2fr) 180px;
+  }
+
+  .day dl {
+    margin: 0;
+  }
+
+  .overrideForm {
+    align-items: end;
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .overrideList > div {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .overrideList form {
+    grid-column: auto;
+  }
+}

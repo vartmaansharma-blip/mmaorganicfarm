@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { createAdminClient, hasSupabaseAdminConfig } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
+  releaseOrderCapacity,
+  reserveOrderCapacity,
+} from "@/lib/production-capacity";
+import {
   createShopifyCart,
   hasShopifyStorefrontConfig,
   shopifyVariantId,
@@ -52,7 +56,11 @@ export async function POST(request: Request) {
     );
   }
 
+  let capacityReserved = false;
   try {
+    await reserveOrderCapacity(order.id);
+    capacityReserved = true;
+
     const lines = (order.order_items ?? []).map((item) => {
       const scheduledDays = item.scheduled_days ?? [];
       const deliveries =
@@ -121,6 +129,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ checkoutUrl: cart.checkoutUrl });
   } catch (error) {
+    if (capacityReserved) await releaseOrderCapacity(order.id);
     console.error("Unable to create Shopify checkout", error);
     return NextResponse.json(
       {
@@ -129,7 +138,12 @@ export async function POST(request: Request) {
             ? error.message
             : "Shopify checkout could not be prepared.",
       },
-      { status: 502 },
+      {
+        status:
+          error instanceof Error && error.message.includes("capacity is full")
+            ? 409
+            : 502,
+      },
     );
   }
 }

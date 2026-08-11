@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient, hasSupabaseAdminConfig } from "@/lib/supabase/admin";
 import { hasShopifyWebhookConfig, shopifyWebhookSecret } from "@/lib/shopify";
+import { consumeOrderCapacity } from "@/lib/production-capacity";
 
 export const runtime = "nodejs";
 
@@ -103,6 +104,8 @@ export async function POST(request: Request) {
         })
         .eq("id", savedOrder.id);
       if (orderError) throw new Error("Shopify order could not be confirmed.");
+
+      await consumeOrderCapacity(savedOrder.id);
 
       if (savedOrder.delivery_plan_id) {
         const { error: planError } = await admin
