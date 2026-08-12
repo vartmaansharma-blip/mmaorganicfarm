@@ -6,13 +6,6 @@ type ShopifyCartLine = {
   quantity: number;
 };
 
-type ShopifyCartCreateResponse = {
-  cartCreate?: {
-    cart?: { checkoutUrl: string; id: string } | null;
-    userErrors?: Array<{ message: string }>;
-  };
-};
-
 const variantEnvironmentKeys = {
   ghee: "SHOPIFY_VARIANT_GHEE",
   milk: "SHOPIFY_VARIANT_MILK",
@@ -21,7 +14,7 @@ const variantEnvironmentKeys = {
 
 export type ShopifyProductKey = keyof typeof variantEnvironmentKeys;
 
-const requiredStorefrontKeys: readonly string[] = [
+const requiredCheckoutKeys: readonly string[] = [
   "SHOPIFY_STORE_DOMAIN",
   variantEnvironmentKeys.milk,
   variantEnvironmentKeys.paneer,
@@ -37,14 +30,12 @@ function shopifyDomain() {
   return value.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
-function shopifyApiVersion() {
-  return process.env.SHOPIFY_STOREFRONT_API_VERSION?.trim() || "2026-07";
-}
-
-function variantGid(value: string) {
-  return value.startsWith("gid://")
-    ? value
-    : `gid://shopify/ProductVariant/${value}`;
+function numericVariantId(value: string) {
+  const id = value.replace(/^gid:\/\/shopify\/ProductVariant\//, "");
+  if (!/^\d+$/.test(id)) {
+    throw new Error("A Shopify product variant ID is invalid.");
+  }
+  return id;
 }
 
 export function hasShopifyStorefrontConfig() {
@@ -52,7 +43,7 @@ export function hasShopifyStorefrontConfig() {
 }
 
 export function shopifyMissingConfiguration() {
-  return requiredStorefrontKeys.filter((key) => {
+  return requiredCheckoutKeys.filter((key) => {
     if (key === "SHOPIFY_STORE_DOMAIN") return !shopifyDomain();
     return !process.env[key]?.trim();
   });
@@ -68,7 +59,7 @@ export function shopifyVariantId(productKey: ShopifyProductKey) {
   if (!value) {
     throw new Error(`Shopify product variant is not configured for ${productKey}.`);
   }
-  return variantGid(value);
+  return numericVariantId(value);
 }
 
 export function shopifyWebhookSecret() {
@@ -80,7 +71,6 @@ export function shopifyWebhookSecret() {
 export async function createShopifyCart({
   attributes,
   buyer,
-  buyerIp,
   lines,
 }: {
   attributes: Array<{ key: string; value: string }>;
@@ -89,72 +79,29 @@ export async function createShopifyCart({
   lines: ShopifyCartLine[];
 }) {
   const domain = shopifyDomain();
-  const publicToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN?.trim();
-  const privateToken =
-    process.env.SHOPIFY_STOREFRONT_PRIVATE_ACCESS_TOKEN?.trim();
-  if (!domain) throw new Error("Shopify Storefront API is not configured.");
+  if (!domain) throw new Error("Shopify checkout is not configured.");
+  if (!lines.length) throw new Error("The order has no products to check out.");
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+  const cartLines = lines
+    .map((line) => {
+      const quantity = Math.round(line.quantity);
+      if (quantity < 1) throw new Error("The order has an invalid quantity.");
+      return `${numericVariantId(line.merchandiseId)}:${quantity}`;
+    })
+    .join(",");
+
+  const checkoutUrl = new URL(`https://${domain}/cart/${cartLines}`);
+  for (const attribute of attributes) {
+    checkoutUrl.searchParams.set(`attributes[${attribute.key}]`, attribute.value);
+  }
+  if (buyer.email) checkoutUrl.searchParams.set("checkout[email]", buyer.email);
+  if (buyer.phone) checkoutUrl.searchParams.set("attributes[delivery_phone]", buyer.phone);
+
+  const internalOrderId =
+    attributes.find((attribute) => attribute.key === "mma_order_id")?.value ??
+    "order";
+  return {
+    checkoutUrl: checkoutUrl.toString(),
+    id: `permalink:${internalOrderId}`,
   };
-  if (privateToken) {
-    headers["Shopify-Storefront-Private-Token"] = privateToken;
-    if (buyerIp) headers["Shopify-Storefront-Buyer-IP"] = buyerIp;
-  } else if (publicToken) {
-    headers["X-Shopify-Storefront-Access-Token"] = publicToken;
-  }
-
-  const query = `
-    mutation CreateMmaCart($input: CartInput!) {
-      cartCreate(input: $input) {
-        cart { id checkoutUrl }
-        userErrors { message }
-      }
-    }
-  `;
-  const response = await fetch(
-    `https://${domain}/api/${shopifyApiVersion()}/graphql.json`,
-    {
-      body: JSON.stringify({
-        query,
-        variables: {
-          input: {
-            attributes,
-            buyerIdentity: {
-              countryCode: "IN",
-              ...(buyer.email ? { email: buyer.email } : {}),
-              ...(buyer.phone ? { phone: buyer.phone } : {}),
-            },
-            lines,
-          },
-        },
-      }),
-      cache: "no-store",
-      headers,
-      method: "POST",
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(`Shopify cart request failed with status ${response.status}.`);
-  }
-
-  const result = (await response.json()) as {
-    data?: ShopifyCartCreateResponse;
-    errors?: Array<{ message: string }>;
-  };
-  const error =
-    result.errors?.[0]?.message ??
-    result.data?.cartCreate?.userErrors?.[0]?.message;
-  const cart = result.data?.cartCreate?.cart;
-  if (error || !cart) {
-    throw new Error(error || "Shopify did not create a checkout cart.");
-  }
-
-  const checkoutUrl = new URL(cart.checkoutUrl);
-  if (checkoutUrl.protocol !== "https:") {
-    throw new Error("Shopify returned an invalid checkout URL.");
-  }
-
-  return { checkoutUrl: checkoutUrl.toString(), id: cart.id };
 }
