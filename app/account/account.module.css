@@ -42,6 +42,21 @@
   margin: clamp(44px, 7vh, 72px) auto 0;
 }
 
+.notice {
+  background: #eef7f0;
+  border: 1px solid #bad7c1;
+  color: #244c30;
+  font-size: 13px;
+  margin: 0 0 24px;
+  padding: 11px 13px;
+}
+
+.noticeError {
+  background: #fff1ef;
+  border-color: #e2b8b0;
+  color: #7d2b21;
+}
+
 .pageHeading {
   display: flex;
   align-items: flex-end;
@@ -372,6 +387,122 @@
   color: #787774;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.cancelRequest {
+  border-top: 1px solid #ededeb;
+  margin-top: 22px;
+  padding-top: 18px;
+}
+
+.cancelRequest summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.cancelRequest > p,
+.activityHeading p {
+  color: #787774;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cancelRequest form,
+.cancelRequest label {
+  display: grid;
+  gap: 8px;
+}
+
+.cancelRequest form {
+  margin-top: 14px;
+}
+
+.cancelRequest label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cancelRequest textarea {
+  border: 1px solid #d3d3d1;
+  border-radius: 4px;
+  font: inherit;
+  padding: 10px;
+  resize: vertical;
+}
+
+.cancelRequest button,
+.activityHeading button {
+  background: #fff;
+  border: 1px solid #d3d3d1;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 9px 12px;
+  width: fit-content;
+}
+
+.activitySection,
+.requestSection {
+  border-top: 1px solid #ededeb;
+  margin-top: 44px;
+  padding-top: 30px;
+}
+
+.activityHeading {
+  align-items: flex-start;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.activityHeading h2,
+.requestSection h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.activityHeading p {
+  margin: 5px 0 16px;
+}
+
+.activityList article,
+.requestSection article {
+  align-items: flex-start;
+  border-top: 1px solid #ededeb;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 14px 0;
+}
+
+.activityList article > div,
+.requestSection article > div {
+  display: grid;
+  gap: 4px;
+}
+
+.activityList strong,
+.requestSection strong {
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.activityList span,
+.requestSection span,
+.requestSection p,
+.activityList time {
+  color: #787774;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.activityList .unread {
+  border-left: 3px solid #2383e2;
+  padding-left: 12px;
 }
 
 .accountFooter {

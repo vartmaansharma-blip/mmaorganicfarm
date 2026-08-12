@@ -5,67 +5,67 @@ const orderPath = "/milk";
 const whatsappContact =
   "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%20have%20a%20question%20about%20fresh%20milk%20delivery.";
 
-const orderLoopText = "ORDER NOW • FRESH MILK • ";
+const orderLoopText = "START PLAN • FRESH MILK • ";
 const orderLoopLetters = Array.from(orderLoopText);
 
 const facts = [
   ["₹62", "per litre"],
-  ["Glass", "bottle delivery"],
-  ["Fresh", "from farm"],
+  ["Your days", "your schedule"],
+  ["30", "deliveries per plan"],
 ];
 
 const trust = [
   {
     number: "01",
     title: "20 years operating",
-    copy: "A long-running farm operation built around daily dairy care and consistency.",
+    copy: "Two decades of producing and delivering dairy for local families.",
   },
   {
     number: "02",
     title: "500+ families served",
-    copy: "Milk delivery for households that trust the farm as part of their morning routine.",
+    copy: "A daily routine already trusted in hundreds of Jamshedpur homes.",
   },
   {
     number: "03",
     title: "1,000+ L every day",
-    copy: "Daily production capacity for fresh milk delivery across Jamshedpur homes.",
+    copy: "Real daily production behind every scheduled milk delivery.",
   },
 ];
 
 const features = [
   {
     number: "01",
-    title: "Fresh from farm",
-    copy: "Dairy that feels close to its source, not anonymous or mass-market.",
+    title: "Choose your routine",
+    copy: "Select the days and milk quantity that fit your household.",
   },
   {
     number: "02",
-    title: "Glass bottle feel",
-    copy: "A more premium daily experience than plastic-packaged milk.",
+    title: "Change a delivery",
+    copy: "Skip a day when needed; that paid delivery moves to the end of your plan.",
   },
   {
     number: "03",
-    title: "Easy first order",
-    copy: "Sign in, add your phone and address, then continue personally with the farm.",
+    title: "Delivered in glass",
+    copy: "Choose your bottle option before reviewing the complete plan.",
   },
 ];
 
 const officialPoints = [
   {
-    label: "Official ordering",
-    copy: "WhatsApp and call links go directly to M'ma Organic Farm.",
+    label: "Choose your week",
+    copy: "Select delivery days and set the litres you need on each day.",
   },
   {
-    label: "Current milk price",
-    copy: "Milk is listed clearly at ₹62 per litre.",
+    label: "Choose your bottle",
+    copy: "Pick the bottle arrangement that works for your household.",
   },
   {
-    label: "Delivery area",
-    copy: "Built for fresh milk delivery to Jamshedpur homes.",
+    label: "Add your details",
+    copy: "Sign in once and add the phone number and address needed for delivery.",
   },
   {
-    label: "Simple direct order",
-    copy: "Message the farm first, then confirm your milk delivery personally.",
+    label: "Review your plan",
+    copy: "See the schedule and total clearly before you continue.",
   },
 ];
 
@@ -164,26 +164,24 @@ export default async function Home() {
           <div className="hero-copy">
             <div className="hero-brand-lockup" aria-label="M'ma Organic Farm">
               <img src="/mma-logo.png" alt="" aria-hidden="true" />
-              <span>M&apos;ma Organic Farm</span>
+              <span><strong>M&apos;ma</strong><small>Organic Farm</small></span>
             </div>
-            <p className="eyebrow">Official farm milk page · ₹62 per litre</p>
-            <h1>Fresh farm milk, delivered daily in Jamshedpur.</h1>
+            <p className="eyebrow">A milk routine built around your home</p>
+            <h1>Dairy should always be fresh from the farm.</h1>
             <p className="hero-intro">
-              Low fat, rich texture, fresh from farm and delivered directly home
-              in a glass bottle. A cleaner daily milk routine from M&apos;ma
-              Organic Farm.
+              Choose your delivery days, set the litres your family needs, and
+              receive fresh milk at home in a glass bottle.
             </p>
             <div className="hero-actions">
               <a className="button button-dark" href={orderPath}>
-                Shop now <span>↗</span>
+                Shop Now <span>↗</span>
               </a>
               <a className="button button-light" href="#milk">
-                Explore the milk <span>↓</span>
+                About Us <span>↓</span>
               </a>
             </div>
             <p className="hero-reassurance">
-              Sign in, share your delivery details, then speak directly with
-              the farm.
+              From ₹62 per litre. Review your complete schedule before continuing.
             </p>
           </div>
 
@@ -218,21 +216,21 @@ export default async function Home() {
         <div className="ticker" aria-label="M'ma Organic Farm ordering summary">
           <div>
             <span>
-              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ ORDER DIRECT ON WHATSAPP ✦
+              M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ BUILD YOUR MILK PLAN ✦
             </span>
             <span>
-              OFFICIAL M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ ORDER DIRECT ON WHATSAPP ✦
+              M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ BUILD YOUR MILK PLAN ✦
             </span>
           </div>
         </div>
 
         <section className="milk-section section" id="milk">
           <div className="section-heading">
-            <p className="eyebrow">The everyday bottle</p>
+            <p className="eyebrow">Fresh milk, without the daily decision</p>
             <h2>
-              One good thing,
+              Plan it once.
               <br />
-              every morning.
+              Wake up to fresh.
             </h2>
           </div>
 
@@ -247,7 +245,7 @@ export default async function Home() {
 
             <div className="milk-details">
               <p className="large-copy">
-                Farm-fresh milk. Rich texture. Clear price.
+                Your week. Your quantity. Fresh milk from the farm.
               </p>
               <div className="feature-list">
                 {features.map((item) => (
@@ -259,7 +257,7 @@ export default async function Home() {
                 ))}
               </div>
               <a className="button button-yellow" href={orderPath}>
-                Order milk <span>↗</span>
+                Build my weekly plan <span>↗</span>
               </a>
             </div>
           </div>
@@ -301,17 +299,17 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="official-section section" aria-label="Official ordering details">
+        <section className="official-section section" aria-label="How to start a milk plan">
           <div className="section-heading official-heading">
-            <p className="eyebrow">Official details</p>
+            <p className="eyebrow">Start in four clear steps</p>
             <h2>
-              Clear enough
+              From first click
               <br />
-              to order.
+              to planned delivery.
             </h2>
             <p>
-              A professional landing page should answer the basic buying
-              questions without making the customer search.
+              Build a milk routine around your household instead of placing the
+              same order again every morning.
             </p>
           </div>
 
@@ -353,16 +351,16 @@ export default async function Home() {
         </section>
 
         <section className="closing-section">
-          <p className="eyebrow">Start with one bottle</p>
+          <p className="eyebrow">Ready for a better milk routine?</p>
           <h2>
-            Try tomorrow&apos;s milk
+            Build your 30-delivery
             <br />
-            {" "}the simple way.
+            {" "}milk plan today.
           </h2>
-          <p>Fresh from farm. Glass bottle. ₹62 per litre. Jamshedpur homes.</p>
+          <p>Choose your days, adjust the litres, and skip a delivery when life changes.</p>
           <div className="closing-actions">
             <a className="button button-dark" href={orderPath}>
-              Shop now <span>↗</span>
+              Start my milk plan <span>↗</span>
             </a>
             <a className="button button-light" href="tel:+919818804419">
               Call to order <span>↗</span>

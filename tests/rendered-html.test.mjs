@@ -73,6 +73,18 @@ const paidOneTimeDeliveriesSchemaUrl = new URL(
   import.meta.url,
 );
 const farmDashboardActionsUrl = new URL("../app/farm/actions.ts", import.meta.url);
+const operationsSchemaUrl = new URL(
+  "../supabase/operations_completion.sql",
+  import.meta.url,
+);
+const farmCancellationsUrl = new URL(
+  "../app/farm/cancellations/page.tsx",
+  import.meta.url,
+);
+const farmPaymentsUrl = new URL(
+  "../app/farm/payments/page.tsx",
+  import.meta.url,
+);
 const pricingPageUrl = new URL("../app/pricing/page.tsx", import.meta.url);
 const shippingPageUrl = new URL("../app/shipping/page.tsx", import.meta.url);
 const contactPageUrl = new URL("../app/contact/page.tsx", import.meta.url);
@@ -194,19 +206,19 @@ test("uses stable profile and home navigation labels", async () => {
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
 
-  assert.match(page, /Fresh farm milk, delivered daily in Jamshedpur/);
+  assert.match(page, /Dairy should always be fresh from the farm/);
   assert.match(page, /hero-brand-lockup/);
   assert.match(page, /order-orbit/);
-  assert.match(page, /ORDER NOW/);
+  assert.match(page, /START PLAN/);
   assert.match(page, /₹62 per litre/);
   assert.match(page, /919818804419/);
   assert.match(page, /20 years operating/);
   assert.match(page, /500\+ families/);
   assert.match(page, /1,000 L\+/);
-  assert.match(page, /Official ordering/);
-  assert.match(page, /Current milk price/);
-  assert.match(page, /Delivery area/);
-  assert.match(page, /Glass bottle/);
+  assert.match(page, /Choose your week/);
+  assert.match(page, /Choose your bottle/);
+  assert.match(page, /Review your plan/);
+  assert.match(page, /glass bottle/i);
   assert.doesNotMatch(page, /Comparison metrics/);
   assert.doesNotMatch(page, /Bone-supporting nutrition/);
   assert.doesNotMatch(page, /Why people believe it/);
@@ -281,7 +293,7 @@ test("hands commerce to Shopify without replacing the delivery calendar", async 
   assert.match(status, /configured: storefront && webhook && database/);
   assert.doesNotMatch(status, /process\.env/);
   assert.match(button, /Continue to pay/);
-  assert.match(review, /Your delivery calendar stays with/);
+  assert.match(review, /Your order and delivery calendar stay with/);
   assert.match(schema, /commerce_provider/);
   assert.match(schema, /provider in \('razorpay', 'shopify'\)/);
   assert.match(calendar, /buildDeliveryCalendar/);
@@ -358,7 +370,7 @@ test("styles the official details section responsively", async () => {
   assert.match(styles, /bottle-orbit-mobile/);
   assert.match(styles, /bottle-shadow-mobile/);
   assert.match(styles, /grid-column: 1/);
-  assert.match(styles, /object-fit: contain/);
+  assert.match(styles, /object-fit: cover/);
   assert.doesNotMatch(styles, /\.benefit-bar-section/);
   assert.doesNotMatch(styles, /\.benefit-track/);
   assert.doesNotMatch(styles, /\.proof-section/);
@@ -576,7 +588,7 @@ test("presents the product builder as a visible farm shop", async () => {
 });
 
 test("provides persistent mobile-first farm delivery operations", async () => {
-  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, oneTimeSchema, styles] = await Promise.all([
+  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, oneTimeSchema, operationsSchema, cancellations, payments, styles] = await Promise.all([
     readFile(farmDashboardUrl, "utf8"),
     readFile(farmDashboardActionsUrl, "utf8"),
     readFile(farmLocationsUrl, "utf8"),
@@ -584,6 +596,9 @@ test("provides persistent mobile-first farm delivery operations", async () => {
     readFile(farmSchemaUrl, "utf8"),
     readFile(dailyDeliveriesSchemaUrl, "utf8"),
     readFile(paidOneTimeDeliveriesSchemaUrl, "utf8"),
+    readFile(operationsSchemaUrl, "utf8"),
+    readFile(farmCancellationsUrl, "utf8"),
+    readFile(farmPaymentsUrl, "utf8"),
     readFile(new URL("../app/farm/farm.module.css", import.meta.url), "utf8"),
   ]);
 
@@ -594,7 +609,8 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(dashboard, /Open map/);
   assert.match(dashboard, /google\.com\/maps\/search/);
   assert.match(dashboard, /Pending plans are excluded/);
-  assert.match(dashboard, /Work remaining/);
+  assert.match(dashboard, /Delivery balance/);
+  assert.match(dashboard, /updateDeliveryStatus/);
   assert.match(dashboardActions, /generate_daily_deliveries/);
   assert.match(dashboardActions, /nextDeliveryDateInIndia/);
   assert.match(locations, /Delivery locations/);
@@ -624,6 +640,12 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(oneTimeSchema, /orders\.start_date = p_delivery_date/);
   assert.match(oneTimeSchema, /items\.frequency = 'once'/);
   assert.match(oneTimeSchema, /daily_deliveries_source_check/);
+  assert.match(operationsSchema, /update_daily_delivery_status/);
+  assert.match(operationsSchema, /delivered_deliveries \+ 1/);
+  assert.match(operationsSchema, /customer_notifications/);
+  assert.match(operationsSchema, /cancellation_requests/);
+  assert.match(cancellations, /Cancellation requests/);
+  assert.match(payments, /Verified payment records/);
   assert.match(dashboard, /Bottle ·/);
   assert.match(styles, /\.headerActions/);
   assert.match(styles, /width: 100%/);
@@ -653,7 +675,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /name="schedule"/);
   assert.match(orderPage, /name="start"/);
   assert.match(orderPage, /Weekly milk schedule/);
-  assert.match(orderPage, /First 7-day estimate/);
+  assert.match(orderPage, /Selected weekly routine/);
   assert.match(orderPage, /calculateOrderPricing/);
   assert.match(orderPage, /Save &amp; review order/);
   assert.doesNotMatch(orderPage, /Delivery city/);

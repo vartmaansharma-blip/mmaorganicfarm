@@ -32,3 +32,39 @@ export async function generateTomorrowDeliverySheet() {
     )}`,
   );
 }
+
+const DELIVERY_STATUSES = new Set([
+  "ready",
+  "out_for_delivery",
+  "delivered",
+  "failed",
+  "cancelled",
+]);
+
+export async function updateDeliveryStatus(formData: FormData) {
+  const { role, supabase } = await requireFarmStaff("/farm");
+
+  if (!canManageLocations(role)) {
+    redirect("/farm?error=Manager+access+is+required+to+update+a+delivery.");
+  }
+
+  const deliveryId = String(formData.get("deliveryId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!deliveryId || !DELIVERY_STATUSES.has(status)) {
+    redirect("/farm?error=Choose+a+valid+delivery+status.");
+  }
+
+  const { error } = await supabase.rpc("update_daily_delivery_status", {
+    p_delivery_id: deliveryId,
+    p_status: status,
+  });
+
+  if (error) {
+    console.error("Unable to update delivery status", error.message);
+    redirect(`/farm?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/farm");
+  revalidatePath("/account");
+  redirect(`/farm?message=${encodeURIComponent(`Delivery marked ${status.replaceAll("_", " ")}.`)}`);
+}

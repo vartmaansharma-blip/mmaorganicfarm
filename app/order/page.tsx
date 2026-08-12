@@ -160,7 +160,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                   </div>
                 ) : null}
                 <div className={styles.priceTotal}>
-                  <dt>{purchase === "plan" ? "First 7-day estimate" : "Order total"}</dt>
+                  <dt>{purchase === "plan" ? "Selected weekly routine" : "Order total"}</dt>
                   <dd>₹{pricing.total}</dd>
                 </div>
               </dl>

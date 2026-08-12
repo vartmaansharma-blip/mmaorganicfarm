@@ -327,9 +327,20 @@ a {
 
 .hero-brand-lockup span {
   max-width: 12ch;
-  font-size: clamp(18px, 2vw, 28px);
-  font-weight: 900;
-  line-height: 1;
+  display: grid;
+  gap: 2px;
+  line-height: 1.05;
+}
+
+.hero-brand-lockup strong {
+  font-size: clamp(20px, 2vw, 29px);
+  font-weight: 800;
+}
+
+.hero-brand-lockup small {
+  color: rgba(20, 20, 20, 0.72);
+  font-size: clamp(12px, 1.2vw, 16px);
+  font-weight: 600;
 }
 
 .eyebrow {
@@ -507,16 +518,10 @@ h1 {
 @keyframes bottle-mobile-turn {
   0%,
   100% {
-    transform: rotateY(-22deg) rotateZ(-2deg) translateY(5px) scale(0.95);
-  }
-  25% {
-    transform: rotateY(0deg) rotateZ(0deg) translateY(-7px) scale(0.99);
+    transform: rotateZ(-0.75deg) translateY(4px) scale(0.985);
   }
   50% {
-    transform: rotateY(22deg) rotateZ(2deg) translateY(-14px) scale(1.02);
-  }
-  75% {
-    transform: rotateY(0deg) rotateZ(0deg) translateY(-7px) scale(0.99);
+    transform: rotateZ(0.75deg) translateY(-8px) scale(1);
   }
 }
 
@@ -1099,14 +1104,14 @@ h1 {
   .topbar {
     top: 0;
     align-items: center;
-    padding: 12px 14px 0 18px;
+    padding: 14px 18px 0 20px;
     font-size: 10px;
   }
 
   .order-orbit {
-    --order-radius: -26px;
-    width: 70px;
-    height: 70px;
+    --order-radius: -23px;
+    width: 62px;
+    height: 62px;
   }
 
   .order-orbit::before {
@@ -1132,30 +1137,42 @@ h1 {
     height: auto;
     max-height: none;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
     align-content: start;
-    padding: 54px 0 22px;
+    padding: 72px 0 28px;
   }
 
   .hero-copy {
-    width: 100%;
-    max-width: 100vw;
-    min-width: 0;
-    padding: 34px 20px 0;
+    display: contents;
   }
 
   .hero-brand-lockup {
-    gap: 12px;
-    margin-bottom: 18px;
-    padding: 8px 12px 8px 8px;
+    order: 1;
+    width: calc(100% - 40px);
+    gap: 10px;
+    margin: 14px 20px 26px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .hero-brand-lockup img {
-    width: 86px;
+    width: 62px;
   }
 
   .hero-brand-lockup span {
-    font-size: 18px;
+    max-width: 13ch;
+    line-height: 1.05;
+  }
+
+  .hero-brand-lockup strong {
+    font-size: 21px;
+  }
+
+  .hero-brand-lockup small {
+    font-size: 13px;
   }
 
   h1 {
@@ -1164,44 +1181,69 @@ h1 {
   }
 
   .hero-copy h1 {
-    width: calc(100vw - 40px);
-    max-width: 100%;
-    font-size: 44px;
+    order: 3;
+    width: calc(100% - 40px);
+    max-width: 13ch;
+    margin: 0 20px;
+    font-size: 35px;
+    line-height: 1.01;
     overflow-wrap: break-word;
+    text-wrap: balance;
   }
 
   .hero-intro {
-    width: calc(100vw - 40px);
-    max-width: 38ch;
-    margin-top: 18px;
-    font-size: 14px;
-    line-height: 1.5;
+    order: 6;
+    width: auto;
+    max-width: 34ch;
+    margin: 24px 20px 0;
+    font-size: 16px;
+    line-height: 1.48;
   }
 
   .hero-reassurance {
-    width: calc(100vw - 40px);
+    order: 7;
+    width: auto;
+    max-width: 34ch;
+    margin: 14px 20px 0;
     font-size: 12px;
   }
 
   .hero-copy .eyebrow {
-    margin-bottom: 13px;
+    order: 2;
+    margin: 0 20px 14px;
+    font-size: 10px;
+    line-height: 1.35;
   }
 
   .hero-actions {
-    width: calc(100vw - 40px);
+    order: 4;
+    width: calc(100% - 40px);
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-    margin-top: 20px;
+    margin: 22px 20px 0;
   }
 
   .hero-actions .button {
+    position: relative;
     width: 100%;
     min-width: 0;
-    min-height: 46px;
+    min-height: 48px;
+    justify-content: center;
     gap: 9px;
-    padding: 0 12px;
+    padding: 0 18px;
     font-size: 13px;
+  }
+
+  .hero-actions .button span {
+    position: absolute;
+    right: 18px;
+  }
+
+  .hero-actions .button-light {
+    padding-inline: 18px;
+    border-color: var(--ink);
+    background: rgba(255, 255, 255, 0.58);
   }
 
   .closing-actions .button {
@@ -1236,12 +1278,14 @@ h1 {
   }
 
   .bottle-stage {
+    order: 5;
     grid-column: 1;
     grid-row: auto;
-    width: 100%;
+    width: min(calc(100% - 32px), 360px);
     height: auto;
-    min-height: 340px;
-    margin: 18px 0 0;
+    aspect-ratio: 1 / 1.08;
+    min-height: 0;
+    margin: 20px 16px 0;
     align-self: stretch;
     justify-self: center;
     perspective: 1100px;
@@ -1249,10 +1293,11 @@ h1 {
   }
 
   .bottle-stage img {
-    width: min(76%, 340px);
-    height: 350px;
-    object-fit: contain;
-    border-radius: 8px;
+    width: min(78%, 440px);
+    height: 88%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 48% 48% 18% 18% / 12% 12% 8% 8%;
     animation: bottle-mobile-turn 5.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
     transform-origin: 50% 58%;
     backface-visibility: visible;
@@ -1278,11 +1323,12 @@ h1 {
   }
 
   .hero-facts {
+    order: 8;
     position: static;
     grid-column: 1;
     grid-template-columns: repeat(3, 1fr);
     gap: 7px;
-    margin: 16px 18px 0;
+    margin: 28px 18px 0;
   }
 
   .hero-facts strong {

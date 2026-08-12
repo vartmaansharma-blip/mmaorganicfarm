@@ -24,9 +24,8 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
           <Link href="/farm">Overview</Link>
           <Link href="/farm/capacity">Capacity</Link>
           <Link href="/farm/locations">Locations</Link>
-          <span aria-disabled="true">Deliveries <small>Next</small></span>
-          <span aria-disabled="true">Customers <small>Next</small></span>
-          <span aria-disabled="true">Payments <small>Next</small></span>
+          <Link href="/farm/cancellations">Requests</Link>
+          <Link href="/farm/payments">Payments</Link>
         </nav>
 
         <div className={styles.staff}>
@@ -42,6 +41,8 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
         <Link href="/farm">Overview</Link>
         <Link href="/farm/capacity">Capacity</Link>
         <Link href="/farm/locations">Locations</Link>
+        <Link href="/farm/cancellations">Requests</Link>
+        <Link href="/farm/payments">Payments</Link>
       </nav>
     </div>
   );

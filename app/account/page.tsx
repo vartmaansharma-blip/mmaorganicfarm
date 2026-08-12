@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "./actions";
+import { markNotificationsRead, requestPlanCancellation, signOut } from "./actions";
 import styles from "./account.module.css";
 
 export const metadata: Metadata = {
@@ -15,7 +15,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string }>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -39,6 +44,20 @@ export default async function AccountPage() {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  const [{ data: notifications }, { data: cancellationRequests }] = await Promise.all([
+    supabase
+      .from("customer_notifications")
+      .select("id, title, message, read_at, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("cancellation_requests")
+      .select("id, plan_id, status, reason, resolution_note, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
 
   const name = profile?.full_name ?? user.user_metadata.full_name ?? "Customer";
   const email = profile?.email ?? user.email ?? "";
@@ -118,6 +137,8 @@ export default async function AccountPage() {
       </header>
 
       <section className={styles.content}>
+        {params.message ? <p className={styles.notice}>{params.message}</p> : null}
+        {params.error ? <p className={`${styles.notice} ${styles.noticeError}`}>{params.error}</p> : null}
         <div className={styles.pageHeading}>
           <div>
             <p className={styles.eyebrow}>
@@ -265,6 +286,46 @@ export default async function AccountPage() {
                 Edit normal week
               </Link>
             </div>
+            <details className={styles.cancelRequest}>
+              <summary>Request plan cancellation</summary>
+              <p>The farm reviews the request against preparation and dispatch status. Paid milk is not automatically refunded.</p>
+              <form action={requestPlanCancellation}>
+                <input name="planId" type="hidden" value={deliveryPlan.id} />
+                <label>
+                  Reason
+                  <textarea name="reason" required minLength={3} rows={3} />
+                </label>
+                <button type="submit">Send request</button>
+              </form>
+            </details>
+          </section>
+        ) : null}
+
+        {(notifications?.length ?? 0) > 0 ? (
+          <section className={styles.activitySection} aria-labelledby="activity-heading">
+            <div className={styles.activityHeading}>
+              <div><h2 id="activity-heading">Updates</h2><p>Payment and delivery activity from the farm.</p></div>
+              {notifications?.some((item) => !item.read_at) ? (
+                <form action={markNotificationsRead}><button type="submit">Mark all read</button></form>
+              ) : null}
+            </div>
+            <div className={styles.activityList}>
+              {notifications?.map((item) => (
+                <article className={!item.read_at ? styles.unread : undefined} key={item.id}>
+                  <div><strong>{item.title}</strong><span>{item.message}</span></div>
+                  <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</time>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {(cancellationRequests?.length ?? 0) > 0 ? (
+          <section className={styles.requestSection} aria-labelledby="request-heading">
+            <h2 id="request-heading">Cancellation requests</h2>
+            {cancellationRequests?.map((request) => (
+              <article key={request.id}><div><strong>{request.status.replaceAll("_", " ")}</strong><span>{request.reason}</span></div>{request.resolution_note ? <p>{request.resolution_note}</p> : null}</article>
+            ))}
           </section>
         ) : null}
 

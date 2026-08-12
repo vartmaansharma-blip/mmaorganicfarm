@@ -14,6 +14,15 @@ export async function recordCapturedPayment(payment: Payment) {
   if (updateError) throw new Error("Order could not be marked paid.");
   await consumeOrderCapacity(order.id);
   if (order.delivery_plan_id) { const { error: planError } = await admin.from("delivery_plans").update({ status: "active", updated_at: paidAt }).eq("id", order.delivery_plan_id).eq("user_id", order.user_id).eq("status", "pending_confirmation"); if (planError) throw new Error("Plan could not be activated."); }
+  await admin.from("customer_notifications").insert({
+    kind: "payment_confirmed",
+    message: order.delivery_plan_id
+      ? "Your payment is confirmed and your delivery plan is active."
+      : "Your payment is confirmed and your farm order is accepted.",
+    order_id: order.id,
+    title: "Payment confirmed",
+    user_id: order.user_id,
+  });
 }
 export async function recordAuthorizedPayment(input: Payment) {
   const admin = createAdminClient();

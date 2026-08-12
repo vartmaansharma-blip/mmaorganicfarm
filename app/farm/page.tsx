@@ -6,7 +6,7 @@ import {
   productName,
 } from "@/lib/delivery-calendar";
 import { requireFarmStaff } from "@/lib/farm-dashboard";
-import { generateTomorrowDeliverySheet } from "./actions";
+import { generateTomorrowDeliverySheet, updateDeliveryStatus } from "./actions";
 import styles from "./farm.module.css";
 
 export const metadata: Metadata = {
@@ -356,6 +356,26 @@ export default async function FarmDashboardPage({
                                 </span>
                               ) : null}
                               <small>{stop.status.replaceAll("_", " ")}</small>
+                              {stop.status !== "delivered" && stop.status !== "cancelled" ? (
+                                <form className={styles.statusForm} action={updateDeliveryStatus}>
+                                  <input name="deliveryId" type="hidden" value={stop.id} />
+                                  {stop.status === "planned" ? (
+                                    <button name="status" value="ready">Ready</button>
+                                  ) : null}
+                                  {stop.status === "ready" ? (
+                                    <button name="status" value="out_for_delivery">Send out</button>
+                                  ) : null}
+                                  {["ready", "out_for_delivery"].includes(stop.status) ? (
+                                    <button className={styles.completeButton} name="status" value="delivered">Delivered</button>
+                                  ) : null}
+                                  {["ready", "out_for_delivery"].includes(stop.status) ? (
+                                    <button name="status" value="failed">Failed</button>
+                                  ) : null}
+                                  {["planned", "ready", "failed"].includes(stop.status) ? (
+                                    <button name="status" value="cancelled">Cancel stop</button>
+                                  ) : null}
+                                </form>
+                              ) : null}
                             </div>
                           </li>
                         ))}
@@ -377,17 +397,8 @@ export default async function FarmDashboardPage({
       </section>
 
       <section className={styles.remaining} aria-labelledby="remaining-title">
-        <div>
-          <p className={styles.sectionLabel}>Work remaining</p>
-          <h2 id="remaining-title">Next connected stages</h2>
-        </div>
-        <ol>
-          <li><span>01</span>Verified payment activates the selected plan</li>
-          <li><span>02</span>Assign each route to a delivery driver</li>
-          <li><span>03</span>Driver marks out for delivery, delivered, or failed</li>
-          <li><span>04</span>Use one milk credit only after successful delivery</li>
-          <li><span>05</span>Send customer confirmations and exceptions</li>
-        </ol>
+        <div><p className={styles.sectionLabel}>Operations rule</p><h2 id="remaining-title">Delivery balance</h2></div>
+        <p>Only a successful milk delivery uses one plan credit. Failed and cancelled stops keep the customer&apos;s balance unchanged.</p>
       </section>
     </main>
   );

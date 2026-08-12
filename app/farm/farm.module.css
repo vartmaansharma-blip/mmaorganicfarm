@@ -282,6 +282,31 @@
   line-height: 1.45;
 }
 
+.statusForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-start;
+  margin-top: 7px;
+}
+
+.statusForm button {
+  background: #fff;
+  border: 1px solid #c9c8c4;
+  color: #292929;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 680;
+  padding: 6px 8px;
+}
+
+.statusForm .completeButton {
+  background: #191919;
+  border-color: #191919;
+  color: #fff;
+}
+
 .stopItems small {
   color: #787773;
   font-size: 9px;
@@ -344,6 +369,13 @@
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.remaining > p {
+  color: #55544f;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
 }
 
 .remaining li {
@@ -417,5 +449,9 @@
     grid-column: 3;
     margin-top: 0;
     text-align: right;
+  }
+
+  .statusForm {
+    justify-content: flex-end;
   }
 }
