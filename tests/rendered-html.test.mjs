@@ -261,10 +261,11 @@ test("hands commerce to Shopify without replacing the delivery calendar", async 
       readFile(deliveryCalendarUrl, "utf8"),
     ]);
 
-  assert.match(shopify, /cartCreate/);
+  assert.match(shopify, /\/cart\/\$\{cartLines\}/);
   assert.match(shopify, /checkoutUrl/);
-  assert.match(shopify, /X-Shopify-Storefront-Access-Token/);
-  assert.match(shopify, /Shopify-Storefront-Private-Token/);
+  assert.match(shopify, /attributes\[\$\{attribute\.key\}\]/);
+  assert.match(shopify, /checkout\[email\]/);
+  assert.doesNotMatch(shopify, /STOREFRONT_ACCESS_TOKEN/);
   assert.match(shopify, /shopifyMissingConfiguration/);
   assert.match(shopify, /isShopifyProductKey/);
   assert.doesNotMatch(shopify, /SHOPIFY_VARIANT_GLASS_BOTTLE/);
