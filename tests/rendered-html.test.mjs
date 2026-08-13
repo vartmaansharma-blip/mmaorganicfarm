@@ -653,11 +653,12 @@ test("provides persistent mobile-first farm delivery operations", async () => {
 });
 
 test("collects delivery details only when a customer starts an order", async () => {
-  const [page, signIn, callback, orderPage, orderActions, milkPlan, deliveryPlanSchema] = await Promise.all([
+  const [page, signIn, callback, orderPage, orderStyles, orderActions, milkPlan, deliveryPlanSchema] = await Promise.all([
     readFile(pageUrl, "utf8"),
     readFile(signInUrl, "utf8"),
     readFile(authCallbackUrl, "utf8"),
     readFile(orderPageUrl, "utf8"),
+    readFile(new URL("../app/order/order.module.css", import.meta.url), "utf8"),
     readFile(orderActionsUrl, "utf8"),
     readFile(milkPlanUrl, "utf8"),
     readFile(deliveryPlanSchemaUrl, "utf8"),
@@ -679,6 +680,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /Selected weekly routine/);
   assert.match(orderPage, /calculateOrderPricing/);
   assert.match(orderPage, /Save &amp; review order/);
+  assert.match(orderStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(orderPage, /Delivery city/);
   assert.doesNotMatch(orderPage, /delivery time|payment method/i);
   assert.match(orderActions, /customer_profiles/);

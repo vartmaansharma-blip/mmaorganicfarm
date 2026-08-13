@@ -1100,7 +1100,7 @@
   }
 
   .visual {
-    min-height: 430px;
+    min-height: 330px;
   }
 
   .visual::after {
@@ -1118,7 +1118,7 @@
   }
 
   .visual img {
-    object-position: 56% center;
+    object-position: 54% 48%;
   }
 
   .productCopy {
@@ -1261,7 +1261,7 @@
 
 @media (max-width: 390px) {
   .visual {
-    min-height: 390px;
+    min-height: 310px;
   }
 
   .productCopy h1 {

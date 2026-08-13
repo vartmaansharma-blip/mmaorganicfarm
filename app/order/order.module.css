@@ -430,9 +430,29 @@
   }
 
   .steps {
-    align-items: flex-start;
-    gap: 6px;
-    font-size: 11px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 32px;
+    font-size: 10px;
+  }
+
+  .steps span {
+    min-width: 0;
+    display: grid;
+    gap: 7px;
+    padding-top: 9px;
+    border-top: 2px solid #e7e6e2;
+    line-height: 1.25;
+  }
+
+  .steps span:not(:last-child)::after {
+    display: none;
+  }
+
+  .steps .complete,
+  .steps .active {
+    border-color: #191919;
   }
 
   .orderSummary li {
