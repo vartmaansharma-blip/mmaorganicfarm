@@ -170,7 +170,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
 
         <form className={styles.form} action={saveDeliveryDetails}>
           <input name="extras" type="hidden" value={params.extras ?? ""} />
-          <input name="milk" type="hidden" value={params.milk ?? "1"} />
+          <input name="milk" type="hidden" value={params.milk ?? "0"} />
           <input name="purchase" type="hidden" value={purchase} />
           <input name="schedule" type="hidden" value={params.schedule ?? ""} />
           <input name="start" type="hidden" value={params.start ?? ""} />

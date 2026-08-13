@@ -11,7 +11,7 @@ export default function TermsPage() {
     <PublicInformationLayout
       eyebrow="Terms and conditions"
       title="Simple terms for daily delivery."
-      intro="These terms explain how orders, schedules, payments, and farm delivery work. Last updated 9 August 2026."
+      intro="These terms explain how orders, schedules, payments, and farm delivery work. Last updated 13 August 2026."
     >
       <section>
         <h2>Using this website</h2>

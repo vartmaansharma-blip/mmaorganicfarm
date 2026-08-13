@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <PublicInformationLayout
       eyebrow="Privacy policy"
       title="Only the details delivery needs."
-      intro="This policy explains what information M'ma Organic Farm collects and why. Last updated 9 August 2026."
+      intro="This policy explains what information M'ma Organic Farm collects and why. Last updated 13 August 2026."
     >
       <section>
         <h2>Information collected</h2>

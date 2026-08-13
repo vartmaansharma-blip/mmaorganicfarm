@@ -672,6 +672,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /Added to this farm order/);
   assert.match(orderPage, /name="extras"/);
   assert.match(orderPage, /name="milk"/);
+  assert.match(orderPage, /params\.milk \?\? "0"/);
   assert.match(orderPage, /name="schedule"/);
   assert.match(orderPage, /name="start"/);
   assert.match(orderPage, /Weekly milk schedule/);

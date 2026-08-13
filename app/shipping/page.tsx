@@ -15,7 +15,7 @@ export default function ShippingPage() {
     >
       <section>
         <h2>Where we deliver</h2>
-        <p>Delivery is currently available in selected areas of Jamshedpur, Jharkhand. Entering an address does not guarantee service until the farm confirms availability.</p>
+        <p>Delivery is currently available in selected areas of Jamshedpur, Jharkhand. Availability is checked during ordering, and a successfully paid and accepted order is scheduled automatically.</p>
       </section>
       <section>
         <h2>When delivery starts</h2>

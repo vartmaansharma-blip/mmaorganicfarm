@@ -57,8 +57,9 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [{ url: "/mma-logo.png", type: "image/png" }],
+    shortcut: "/mma-logo.png",
+    apple: "/mma-logo.png",
   },
 };
 

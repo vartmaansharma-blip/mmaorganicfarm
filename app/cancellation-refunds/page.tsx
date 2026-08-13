@@ -11,7 +11,7 @@ export default function CancellationRefundsPage() {
     <PublicInformationLayout
       eyebrow="Cancellations and refunds"
       title="Fair rules for fresh products."
-      intro="Milk and farm products are prepared against a delivery schedule. Contact the farm as early as possible when a plan needs to change. Last updated 9 August 2026."
+      intro="Milk and farm products are prepared against a delivery schedule. Contact the farm as early as possible when a plan needs to change. Last updated 13 August 2026."
     >
       <section>
         <h2>Before preparation</h2>

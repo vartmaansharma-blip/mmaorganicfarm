@@ -27,7 +27,7 @@ export default function ContactPage() {
       </section>
       <section>
         <h2>Service area</h2>
-        <p>Jamshedpur, Jharkhand, India. Delivery availability is confirmed before an order is accepted.</p>
+        <p>Jamshedpur, Jharkhand, India. Delivery availability is checked during ordering before payment is accepted.</p>
       </section>
       <section>
         <h2>Support</h2>
