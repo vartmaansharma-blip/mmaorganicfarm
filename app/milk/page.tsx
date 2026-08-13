@@ -116,9 +116,6 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
         </Link>
         <div className={styles.headerActions}>
           <span>3 products</span>
-          <Link className={styles.cartLink} href="#build-order">
-            Cart
-          </Link>
           <Link className={styles.back} href="/#milk">
             Back to farm
           </Link>
@@ -160,18 +157,6 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
           </dl>
         </div>
       </section>
-
-      <nav className={styles.collectionStrip} aria-label="Farm shop collection">
-        <a href="#build-order">
-          <span>01</span><strong>Fresh milk</strong><small>₹62 / litre</small>
-        </a>
-        {FARM_PRODUCTS.map((product, index) => (
-          <a href="#farm-add-ons-title" key={product.id}>
-            <span>0{index + 2}</span><strong>{product.name}</strong>
-            <small>₹{product.price} / {product.unit}</small>
-          </a>
-        ))}
-      </nav>
 
       <MilkPlanBuilder
         initialExtras={savedExtras}

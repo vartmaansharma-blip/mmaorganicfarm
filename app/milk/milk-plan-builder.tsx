@@ -83,7 +83,9 @@ export function MilkPlanBuilder({
     initialStartDate >= minimumStartDate
       ? initialStartDate
       : minimumStartDate;
-  const [mode, setMode] = useState<PurchaseMode>("plan");
+  const [mode, setMode] = useState<PurchaseMode | null>(
+    isEditing ? "plan" : null,
+  );
   const [onceQuantity, setOnceQuantity] = useState(1);
   const [schedule, setSchedule] = useState(initialSchedule);
   const [startDate, setStartDate] = useState(firstAvailableStartDate);
@@ -103,7 +105,8 @@ export function MilkPlanBuilder({
   );
 
   const weeklyLitres = schedule.reduce((total, litres) => total + litres, 0);
-  const selectedMilkLitres = mode === "once" ? onceQuantity : weeklyLitres;
+  const selectedMilkLitres =
+    mode === "once" ? onceQuantity : mode === "plan" ? weeklyLitres : 0;
   const hasMilk = selectedMilkLitres > 0;
   const selectedExtras = FARM_PRODUCTS.flatMap((product) => {
     const selection = extras[product.id];
@@ -140,12 +143,11 @@ export function MilkPlanBuilder({
   );
   const hasPlanItems = weeklyLitres > 0 || selectedExtras.length > 0;
   const basketItems = (hasMilk ? 1 : 0) + selectedExtras.length;
-  const basketTotal =
-    mode === "once"
+  const basketTotal = mode
+    ? mode === "once"
       ? oncePricing.total
-      : weeklyEstimate +
-        weeklyExtrasTotal +
-        firstDeliveryExtrasTotal;
+      : weeklyEstimate + weeklyExtrasTotal + firstDeliveryExtrasTotal
+    : 0;
 
   function updateSchedule(index: number, delta: number) {
     setSchedule((current) =>
@@ -275,11 +277,6 @@ export function MilkPlanBuilder({
             ? "Edit your weekly milk plan."
             : "One delivery. More from the farm."}
         </h2>
-        <div className={styles.basketStatus} aria-live="polite">
-          <span>Current basket</span>
-          <strong>{basketItems} {basketItems === 1 ? "product" : "products"}</strong>
-          <small>₹{basketTotal} estimated</small>
-        </div>
       </div>
 
       {isEditing ? (
@@ -295,7 +292,7 @@ export function MilkPlanBuilder({
             aria-pressed={mode === "once"}
             onClick={() => chooseMode("once")}
           >
-            Order once
+            One-time order
           </button>
           <button
             className={mode === "plan" ? styles.modeActive : undefined}
@@ -303,10 +300,140 @@ export function MilkPlanBuilder({
             aria-pressed={mode === "plan"}
             onClick={() => chooseMode("plan")}
           >
-            Build a weekly plan
+            Scheduled plan
           </button>
         </div>
       )}
+
+      {mode ? (
+        <section className={styles.extras} aria-labelledby="farm-add-ons-title">
+          <div className={styles.extrasHeading}>
+            <div>
+              <p className={styles.stepLabel}>Choose your products</p>
+              <h3 id="farm-add-ons-title">Fresh from M&apos;ma Organic Farm</h3>
+            </div>
+            <p>
+              Choose any combination. Regular rates are included in your total.
+            </p>
+          </div>
+
+          <div className={styles.extraGrid}>
+            {FARM_PRODUCTS.map((product) => {
+              const selection = extras[product.id];
+
+              return (
+                <article
+                  className={selection ? styles.extraSelected : undefined}
+                  key={product.id}
+                >
+                  {"image" in product ? (
+                    <img
+                      className={styles.extraImage}
+                      src={product.image}
+                      alt={`${product.name}, ${product.unit}`}
+                    />
+                  ) : null}
+                  <div className={styles.productMarker}>
+                    <span>0{FARM_PRODUCTS.indexOf(product) + 2}</span>
+                    <small>Dairy</small>
+                  </div>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(selection)}
+                      onChange={() => toggleExtra(product.id)}
+                    />
+                    <span>
+                      <strong>{product.name}</strong>
+                      <small>
+                        {product.unit} · ₹{product.price}
+                      </small>
+                    </span>
+                    <b>{selection ? "Remove" : "Add +"}</b>
+                  </label>
+
+                  {selection ? (
+                    <div className={styles.extraControls}>
+                      <div
+                        className={styles.extraQuantity}
+                        aria-label={`${product.name} quantity`}
+                      >
+                        <button
+                          type="button"
+                          aria-label={`Reduce ${product.name} quantity`}
+                          disabled={selection.quantity === 1}
+                          onClick={() => updateExtraQuantity(product.id, -1)}
+                        >
+                          −
+                        </button>
+                        <strong>{selection.quantity}</strong>
+                        <button
+                          type="button"
+                          aria-label={`Increase ${product.name} quantity`}
+                          disabled={selection.quantity === 5}
+                          onClick={() => updateExtraQuantity(product.id, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {mode === "plan" ? (
+                        <>
+                          <div
+                            className={styles.extraFrequency}
+                            aria-label={`${product.name} schedule`}
+                          >
+                            <button
+                              type="button"
+                              aria-pressed={selection.frequency === "once"}
+                              onClick={() =>
+                                setExtraFrequency(product.id, "once")
+                              }
+                            >
+                              First delivery
+                            </button>
+                            <button
+                              type="button"
+                              aria-pressed={selection.frequency === "weekly"}
+                              onClick={() =>
+                                setExtraFrequency(product.id, "weekly")
+                              }
+                            >
+                              Every week
+                            </button>
+                          </div>
+
+                          {selection.frequency === "weekly" ? (
+                            <div className={styles.extraDays}>
+                              <span>Choose delivery days</span>
+                              <div>
+                                {MILK_PLAN_DAYS.map((day, index) => (
+                                  <button
+                                    type="button"
+                                    key={day.label}
+                                    aria-pressed={selection.days.includes(
+                                      index + 1,
+                                    )}
+                                    onClick={() =>
+                                      toggleExtraDay(product.id, index + 1)
+                                    }
+                                  >
+                                    {day.short}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {mode === "plan" && !isEditing ? (
         <section
@@ -334,126 +461,6 @@ export function MilkPlanBuilder({
           </div>
         </section>
       ) : null}
-
-      <section className={styles.extras} aria-labelledby="farm-add-ons-title">
-        <div className={styles.extrasHeading}>
-          <div>
-            <p className={styles.stepLabel}>Add to the same order</p>
-            <h3 id="farm-add-ons-title">More from M&apos;ma Organic Farm</h3>
-          </div>
-          <p>Choose any combination. Regular rates are included in your total.</p>
-        </div>
-
-        <div className={styles.extraGrid}>
-          {FARM_PRODUCTS.map((product) => {
-            const selection = extras[product.id];
-
-            return (
-              <article
-                className={selection ? styles.extraSelected : undefined}
-                key={product.id}
-              >
-                {"image" in product ? (
-                  <img
-                    className={styles.extraImage}
-                    src={product.image}
-                    alt={`${product.name}, ${product.unit}`}
-                  />
-                ) : null}
-                <div className={styles.productMarker}>
-                  <span>0{FARM_PRODUCTS.indexOf(product) + 2}</span>
-                  <small>Dairy</small>
-                </div>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(selection)}
-                    onChange={() => toggleExtra(product.id)}
-                  />
-                  <span>
-                    <strong>{product.name}</strong>
-                    <small>
-                      {product.unit} · ₹{product.price}
-                    </small>
-                  </span>
-                  <b>{selection ? "Added" : "Add +"}</b>
-                </label>
-
-                {selection ? (
-                  <div className={styles.extraControls}>
-                    <div
-                      className={styles.extraQuantity}
-                      aria-label={`${product.name} quantity`}
-                    >
-                      <button
-                        type="button"
-                        aria-label={`Reduce ${product.name} quantity`}
-                        disabled={selection.quantity === 1}
-                        onClick={() => updateExtraQuantity(product.id, -1)}
-                      >
-                        −
-                      </button>
-                      <strong>{selection.quantity}</strong>
-                      <button
-                        type="button"
-                        aria-label={`Increase ${product.name} quantity`}
-                        disabled={selection.quantity === 5}
-                        onClick={() => updateExtraQuantity(product.id, 1)}
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    {mode === "plan" ? (
-                      <>
-                        <div
-                          className={styles.extraFrequency}
-                          aria-label={`${product.name} schedule`}
-                        >
-                          <button
-                            type="button"
-                            aria-pressed={selection.frequency === "once"}
-                            onClick={() => setExtraFrequency(product.id, "once")}
-                          >
-                            First delivery
-                          </button>
-                          <button
-                            type="button"
-                            aria-pressed={selection.frequency === "weekly"}
-                            onClick={() => setExtraFrequency(product.id, "weekly")}
-                          >
-                            Every week
-                          </button>
-                        </div>
-
-                        {selection.frequency === "weekly" ? (
-                          <div className={styles.extraDays}>
-                            <span>Choose delivery days</span>
-                            <div>
-                              {MILK_PLAN_DAYS.map((day, index) => (
-                                <button
-                                  type="button"
-                                  key={day.label}
-                                  aria-pressed={selection.days.includes(index + 1)}
-                                  onClick={() =>
-                                    toggleExtraDay(product.id, index + 1)
-                                  }
-                                >
-                                  {day.short}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-                      </>
-                    ) : null}
-                  </div>
-                ) : null}
-              </article>
-            );
-          })}
-        </div>
-      </section>
 
       {mode === "once" ? (
         <div className={styles.onceLayout}>
@@ -509,7 +516,7 @@ export function MilkPlanBuilder({
             )}
           </div>
         </div>
-      ) : (
+      ) : mode === "plan" ? (
         <div className={styles.planLayout}>
           <div className={styles.schedulePanel}>
             <div className={styles.panelHeading}>
@@ -675,7 +682,21 @@ export function MilkPlanBuilder({
             </p>
           </aside>
         </div>
-      )}
+      ) : null}
+
+      <a
+        className={styles.basketStatus}
+        href={mode ? "#farm-add-ons-title" : "#choose-order-title"}
+        aria-live="polite"
+      >
+        <span>Basket</span>
+        <strong>
+          {mode
+            ? `${basketItems} ${basketItems === 1 ? "product" : "products"}`
+            : "One-time or scheduled"}
+        </strong>
+        <small>{mode ? `₹${basketTotal} estimated` : "Start here ↑"}</small>
+      </a>
     </section>
   );
 }

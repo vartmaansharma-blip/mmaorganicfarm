@@ -505,8 +505,10 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(page, /weekly_delivery_items/);
   assert.match(page, /initialSchedule=\{savedSchedule\}/);
   assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk"\)/);
-  assert.match(builder, /Order once/);
-  assert.match(builder, /Build a weekly plan/);
+  assert.match(builder, /One-time order/);
+  assert.match(builder, /Scheduled plan/);
+  assert.match(builder, /useState<PurchaseMode \| null>/);
+  assert.match(builder, /\{mode \? \(/);
   assert.match(builder, /Two recommended schedules/);
   assert.match(builder, /Everyday family/);
   assert.match(builder, /Lighter four-day/);
@@ -543,7 +545,8 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(order, /I will return a bottle/);
   assert.match(order, /New\s+bottle ordering will be added later/);
   assert.doesNotMatch(order, /I need a new glass bottle/);
-  assert.match(builder, /More from M&apos;ma Organic Farm/);
+  assert.match(builder, /Fresh from M&apos;ma Organic Farm/);
+  assert.match(builder, /selection \? "Remove" : "Add \+"/);
   assert.match(builder, /First delivery/);
   assert.match(builder, /Every week/);
   assert.match(builder, /Choose delivery days/);
@@ -580,11 +583,11 @@ test("presents the product builder as a visible farm shop", async () => {
 
   assert.match(page, /Farm shop/);
   assert.match(page, /Build your farm basket/);
-  assert.match(page, /collectionStrip/);
-  assert.match(builder, /Current basket/);
+  assert.doesNotMatch(page, /collectionStrip/);
+  assert.match(builder, /<span>Basket<\/span>/);
   assert.match(builder, /productMarker/);
-  assert.match(styles, /scroll-snap-type: x mandatory/);
-  assert.match(styles, /position: sticky/);
+  assert.match(styles, /position: fixed/);
+  assert.match(styles, /left: 50%/);
 });
 
 test("provides persistent mobile-first farm delivery operations", async () => {

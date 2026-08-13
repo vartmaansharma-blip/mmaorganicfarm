@@ -1,6 +1,6 @@
 .page {
   min-height: 100svh;
-  padding: 0 24px 80px;
+  padding: 0 24px 132px;
   color: #191919;
   background: #fff;
 }
@@ -59,19 +59,6 @@
   display: flex;
   align-items: center;
   gap: 20px;
-}
-
-.cartLink {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 16px;
-  border: 1px solid #191919;
-  border-radius: 4px;
-  color: #fff;
-  background: #191919;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .headerActions > span {
@@ -163,57 +150,6 @@
   line-height: 0.98;
 }
 
-.collectionStrip {
-  width: min(100%, 1180px);
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  margin: 0 auto;
-  border-right: 1px solid #deddd8;
-  border-bottom: 1px solid #deddd8;
-}
-
-.collectionStrip a {
-  min-width: 0;
-  min-height: 112px;
-  display: flex;
-  flex-direction: column;
-  padding: 18px;
-  border-left: 1px solid #deddd8;
-  background: #fff;
-  transition: background 160ms ease, color 160ms ease;
-}
-
-.collectionStrip a:hover,
-.collectionStrip a:focus-visible {
-  color: #fff;
-  background: #214d3a;
-}
-
-.collectionStrip span,
-.collectionStrip small {
-  color: #77746d;
-  font-size: 9px;
-}
-
-.collectionStrip a:hover span,
-.collectionStrip a:hover small,
-.collectionStrip a:focus-visible span,
-.collectionStrip a:focus-visible small {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.collectionStrip strong {
-  margin-top: 14px;
-  overflow: hidden;
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.collectionStrip small {
-  margin-top: auto;
-}
-
 .price {
   margin: 28px 0 0;
   color: #224f3b;
@@ -265,25 +201,35 @@
 .builder {
   width: min(100%, 1180px);
   margin: 0 auto;
-  padding-top: 72px;
+  padding-top: 42px;
 }
 
 .builderHeading {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr) 220px;
+  grid-template-columns: 180px minmax(0, 1fr);
   gap: 40px;
   align-items: start;
 }
 
 .basketStatus {
+  position: fixed;
+  right: auto;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 40;
+  width: min(calc(100% - 32px), 560px);
+  min-height: 66px;
   display: grid;
-  gap: 5px;
-  align-self: start;
-  padding: 16px 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 24px;
+  align-items: center;
+  padding: 12px 18px;
   border: 1px solid #191919;
-  border-radius: 4px;
+  border-radius: 6px;
   color: #fff;
   background: #191919;
+  box-shadow: 0 14px 34px rgba(20, 20, 20, 0.24);
+  transform: translateX(-50%);
 }
 
 .basketStatus span,
@@ -293,12 +239,20 @@
 }
 
 .basketStatus span {
+  grid-column: 1 / -1;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .basketStatus strong {
+  overflow: hidden;
   font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.basketStatus small {
+  text-align: right;
 }
 
 .builderHeading h2 {
@@ -1039,11 +993,6 @@
     grid-template-columns: 160px minmax(0, 1fr);
   }
 
-  .basketStatus {
-    grid-column: 2;
-    width: min(100%, 260px);
-  }
-
   .editingNote {
     margin-left: 0;
   }
@@ -1067,7 +1016,7 @@
 
 @media (max-width: 720px) {
   .page {
-    padding: 0 16px 48px;
+    padding: 0 16px 112px;
   }
 
   .header {
@@ -1084,11 +1033,6 @@
 
   .headerActions {
     gap: 8px;
-  }
-
-  .cartLink {
-    min-height: 38px;
-    padding: 0 14px;
   }
 
   .back {
@@ -1129,19 +1073,8 @@
     font-size: 42px;
   }
 
-  .collectionStrip {
-    grid-template-columns: repeat(5, minmax(150px, 1fr));
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-  }
-
-  .collectionStrip a {
-    min-height: 104px;
-    scroll-snap-align: start;
-  }
-
   .builder {
-    padding-top: 48px;
+    padding-top: 34px;
   }
 
   .builderHeading {
@@ -1150,13 +1083,10 @@
   }
 
   .basketStatus {
-    position: sticky;
-    top: 8px;
-    z-index: 6;
-    grid-column: auto;
-    width: 100%;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: calc(100% - 24px);
+    min-height: 62px;
+    padding: 10px 14px;
   }
 
   .basketStatus span {
