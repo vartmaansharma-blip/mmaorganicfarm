@@ -513,14 +513,15 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /Everyday family/);
   assert.match(builder, /Lighter four-day/);
   assert.match(builder, /Edit your weekly milk plan/);
-  assert.match(builder, /Review updated plan/);
+  assert.match(builder, /Make any changes, then continue/);
   assert.match(builder, /Undo changes/);
   assert.match(builder, /Weekly quantity/);
   assert.match(builder, /Start date/);
   assert.match(builder, /Earliest delivery is tomorrow/);
   assert.match(builder, /min=\{minimumStartDate\}/);
   assert.match(builder, /nextDeliveryDateInIndia/);
-  assert.match(builder, /Review milk plan/);
+  assert.match(builder, /Continue to delivery details/);
+  assert.doesNotMatch(builder, /Review milk plan|Review updated plan/);
   assert.match(builder, /weeklyLitres/);
   assert.match(builder, /calculateOrderPricing/);
   assert.match(pricing, /MILK_PRICE_PER_LITRE = 62/);
@@ -534,7 +535,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /STEP = 1/);
   assert.match(builder, /useState\(1\)/);
   assert.match(builder, /Math\.max\(0/);
-  assert.match(builder, /Choose 0 L for an add-ons-only delivery/);
+  assert.match(builder, /Milk can stay at 0 L/);
   assert.match(builder, /onceQuantity > 0 \|\| selectedExtras\.length > 0/);
   assert.match(builder, /Select milk or an add-on/);
   assert.doesNotMatch(builder, /STEP = 0\.5/);
@@ -545,7 +546,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(order, /I will return a bottle/);
   assert.match(order, /New\s+bottle ordering will be added later/);
   assert.doesNotMatch(order, /I need a new glass bottle/);
-  assert.match(builder, /Fresh from M&apos;ma Organic Farm/);
+  assert.match(builder, /Choose what comes home/);
   assert.match(builder, /selection \? "Remove" : "Add \+"/);
   assert.match(builder, /First delivery/);
   assert.match(builder, /Every week/);
@@ -584,7 +585,10 @@ test("presents the product builder as a visible farm shop", async () => {
   assert.match(page, /Farm shop/);
   assert.match(page, /Build your farm basket/);
   assert.doesNotMatch(page, /collectionStrip/);
-  assert.match(builder, /<span>Basket<\/span>/);
+  assert.match(builder, /<span>Quantity<\/span>/);
+  assert.match(builder, /farm-bottle\.png/);
+  assert.match(builder, /Fresh milk/);
+  assert.match(builder, /extraUnits/);
   assert.match(builder, /productMarker/);
   assert.match(styles, /position: fixed/);
   assert.match(styles, /left: 50%/);

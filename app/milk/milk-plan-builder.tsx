@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -89,7 +90,6 @@ export function MilkPlanBuilder({
   const [onceQuantity, setOnceQuantity] = useState(1);
   const [schedule, setSchedule] = useState(initialSchedule);
   const [startDate, setStartDate] = useState(firstAvailableStartDate);
-  const [reviewed, setReviewed] = useState(false);
   const [extras, setExtras] = useState<ExtraScheduleState>(() =>
     initialExtras.reduce(
       (result, extra) => ({
@@ -142,7 +142,10 @@ export function MilkPlanBuilder({
     (extra) => extra.frequency === "weekly" && extra.days.length === 0,
   );
   const hasPlanItems = weeklyLitres > 0 || selectedExtras.length > 0;
-  const basketItems = (hasMilk ? 1 : 0) + selectedExtras.length;
+  const extraUnits = selectedExtras.reduce(
+    (total, product) => total + product.quantity,
+    0,
+  );
   const basketTotal = mode
     ? mode === "once"
       ? oncePricing.total
@@ -157,7 +160,6 @@ export function MilkPlanBuilder({
           : litres,
       ) as WeeklyMilkSchedule,
     );
-    setReviewed(false);
   }
 
   function updateOnceQuantity(delta: number) {
@@ -168,7 +170,6 @@ export function MilkPlanBuilder({
 
   function chooseMode(nextMode: PurchaseMode) {
     setMode(nextMode);
-    setReviewed(false);
   }
 
   function toggleExtra(id: FarmProductId) {
@@ -178,7 +179,6 @@ export function MilkPlanBuilder({
         ? null
         : { days: [], frequency: "once", quantity: 1 },
     }));
-    setReviewed(false);
   }
 
   function setExtraFrequency(
@@ -201,7 +201,6 @@ export function MilkPlanBuilder({
         },
       };
     });
-    setReviewed(false);
   }
 
   function updateExtraQuantity(id: FarmProductId, delta: number) {
@@ -217,7 +216,6 @@ export function MilkPlanBuilder({
           }
         : current;
     });
-    setReviewed(false);
   }
 
   function toggleExtraDay(id: FarmProductId, day: number) {
@@ -229,7 +227,6 @@ export function MilkPlanBuilder({
         : [...selection.days, day].sort((a, b) => a - b);
       return { ...current, [id]: { ...selection, days } };
     });
-    setReviewed(false);
   }
 
   function applyRecommendedSchedule(
@@ -238,7 +235,6 @@ export function MilkPlanBuilder({
   ) {
     setSchedule([...milk] as WeeklyMilkSchedule);
     setExtras({ ...emptyExtras, ...recommendedExtras });
-    setReviewed(false);
   }
 
   function orderHref(purchase: PurchaseMode) {
@@ -281,8 +277,7 @@ export function MilkPlanBuilder({
 
       {isEditing ? (
         <p className={styles.editingNote}>
-          Your saved schedule is loaded below. Review any changes before
-          continuing.
+          Your saved schedule is loaded below. Make any changes, then continue.
         </p>
       ) : (
         <div className={styles.modeSwitch} aria-label="Purchase type">
@@ -309,15 +304,66 @@ export function MilkPlanBuilder({
         <section className={styles.extras} aria-labelledby="farm-add-ons-title">
           <div className={styles.extrasHeading}>
             <div>
-              <p className={styles.stepLabel}>Choose your products</p>
-              <h3 id="farm-add-ons-title">Fresh from M&apos;ma Organic Farm</h3>
+              <p className={styles.stepLabel}>Farm shop</p>
+              <h3 id="farm-add-ons-title">Choose what comes home.</h3>
             </div>
             <p>
-              Choose any combination. Regular rates are included in your total.
+              Fresh dairy from our farm. Add any combination to this delivery.
             </p>
           </div>
 
           <div className={styles.extraGrid}>
+            <article className={hasMilk ? styles.extraSelected : undefined}>
+              <div className={styles.productMedia}>
+                <Image
+                  src="/farm-bottle.png"
+                  alt="M'ma Organic Farm fresh milk bottle"
+                  fill
+                  sizes="(max-width: 720px) 100vw, 33vw"
+                />
+                <span>Fresh daily</span>
+              </div>
+              <div className={styles.productMarker}>
+                <span>01</span>
+                <small>Milk</small>
+              </div>
+              <div className={styles.productIdentity}>
+                <span>
+                  <strong>Fresh milk</strong>
+                  <small>1 litre · ₹62</small>
+                </span>
+                <b>{hasMilk ? "Selected" : "Add below"}</b>
+              </div>
+              {mode === "once" ? (
+                <div
+                  className={styles.extraQuantity}
+                  aria-label="Fresh milk quantity"
+                >
+                  <button
+                    type="button"
+                    aria-label="Reduce fresh milk quantity"
+                    disabled={onceQuantity === 0}
+                    onClick={() => updateOnceQuantity(-STEP)}
+                  >
+                    −
+                  </button>
+                  <strong>{formatLitres(onceQuantity)}</strong>
+                  <button
+                    type="button"
+                    aria-label="Increase fresh milk quantity"
+                    disabled={onceQuantity >= MAX_LITRES}
+                    onClick={() => updateOnceQuantity(STEP)}
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <a className={styles.configureLink} href="#weekly-quantity">
+                  Set weekly quantity <span>↓</span>
+                </a>
+              )}
+            </article>
+
             {FARM_PRODUCTS.map((product) => {
               const selection = extras[product.id];
 
@@ -326,13 +372,23 @@ export function MilkPlanBuilder({
                   className={selection ? styles.extraSelected : undefined}
                   key={product.id}
                 >
-                  {"image" in product ? (
-                    <img
-                      className={styles.extraImage}
-                      src={product.image}
-                      alt={`${product.name}, ${product.unit}`}
-                    />
-                  ) : null}
+                  <div className={styles.productMedia}>
+                    {"image" in product ? (
+                      <Image
+                        src={product.image}
+                        alt={`${product.name}, ${product.unit}`}
+                        fill
+                        sizes="(max-width: 720px) 100vw, 33vw"
+                      />
+                    ) : (
+                      <div className={styles.productPlaceholder}>
+                        <small>Fresh</small>
+                        <strong>Paneer</strong>
+                        <span>500 g</span>
+                      </div>
+                    )}
+                    <span>Farm made</span>
+                  </div>
                   <div className={styles.productMarker}>
                     <span>0{FARM_PRODUCTS.indexOf(product) + 2}</span>
                     <small>Dairy</small>
@@ -465,31 +521,12 @@ export function MilkPlanBuilder({
       {mode === "once" ? (
         <div className={styles.onceLayout}>
           <div className={styles.onceCopy}>
-            <p className={styles.stepLabel}>Tomorrow&apos;s bottle</p>
-            <h3>How much milk do you need?</h3>
-            <p>Choose 0 L for an add-ons-only delivery.</p>
+            <p className={styles.stepLabel}>Your order</p>
+            <h3>Ready for delivery details?</h3>
+            <p>Milk can stay at 0 L when you only want paneer or ghee.</p>
           </div>
 
           <div className={styles.onceAction}>
-            <div className={styles.largeStepper} aria-label="One-time milk quantity">
-              <button
-                type="button"
-                aria-label="Reduce one-time quantity"
-                disabled={onceQuantity === 0}
-                onClick={() => updateOnceQuantity(-STEP)}
-              >
-                −
-              </button>
-              <strong>{formatLitres(onceQuantity)}</strong>
-              <button
-                type="button"
-                aria-label="Increase one-time quantity"
-                disabled={onceQuantity >= MAX_LITRES}
-                onClick={() => updateOnceQuantity(STEP)}
-              >
-                +
-              </button>
-            </div>
             <div className={styles.totalLine}>
               <span>Order total</span>
               <strong>
@@ -518,7 +555,7 @@ export function MilkPlanBuilder({
         </div>
       ) : mode === "plan" ? (
         <div className={styles.planLayout}>
-          <div className={styles.schedulePanel}>
+          <div className={styles.schedulePanel} id="weekly-quantity">
             <div className={styles.panelHeading}>
               <div>
                 <p className={styles.stepLabel}>01 · Weekly quantity</p>
@@ -543,7 +580,6 @@ export function MilkPlanBuilder({
                       { ...emptyExtras },
                     ),
                   );
-                  setReviewed(false);
                 }}
               >
                 {isEditing ? "Undo changes" : "Reset week"}
@@ -594,7 +630,6 @@ export function MilkPlanBuilder({
                   value={startDate}
                   onInput={(event) => {
                     setStartDate(event.currentTarget.value);
-                    setReviewed(false);
                   }}
                 />
               </label>
@@ -651,14 +686,7 @@ export function MilkPlanBuilder({
               </div>
             </dl>
 
-            {reviewed ? (
-              <div className={styles.reviewed} role="status">
-                <strong>Plan ready to continue</strong>
-                <p>Your weekly schedule is complete.</p>
-              </div>
-            ) : null}
-
-            {reviewed ? (
+            {hasPlanItems && startDate && !hasIncompleteExtra ? (
               <Link
                 className={styles.primaryAction}
                 href={orderHref("plan")}
@@ -669,10 +697,9 @@ export function MilkPlanBuilder({
               <button
                 className={styles.primaryAction}
                 type="button"
-                disabled={!hasPlanItems || !startDate || hasIncompleteExtra}
-                onClick={() => setReviewed(true)}
+                disabled
               >
-                {isEditing ? "Review updated plan" : "Review milk plan"}{" "}
+                Complete schedule to continue
                 <span>→</span>
               </button>
             )}
@@ -689,10 +716,19 @@ export function MilkPlanBuilder({
         href={mode ? "#farm-add-ons-title" : "#choose-order-title"}
         aria-live="polite"
       >
-        <span>Basket</span>
+        <span>Quantity</span>
         <strong>
           {mode
-            ? `${basketItems} ${basketItems === 1 ? "product" : "products"}`
+            ? [
+                selectedMilkLitres > 0
+                  ? `${formatLitres(selectedMilkLitres)} milk`
+                  : null,
+                extraUnits > 0
+                  ? `${extraUnits} add-on${extraUnits === 1 ? "" : "s"}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "Nothing selected"
             : "One-time or scheduled"}
         </strong>
         <small>{mode ? `₹${basketTotal} estimated` : "Start here ↑"}</small>
