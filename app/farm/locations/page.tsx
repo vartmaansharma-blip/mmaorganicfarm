@@ -8,6 +8,7 @@ import {
   assignCustomerLocation,
   createArea,
   createRoute,
+  importCustomerProfiles,
 } from "./actions";
 import styles from "./locations.module.css";
 
@@ -20,8 +21,13 @@ function normalizedLocation(value: string | null) {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-export default async function LocationsPage() {
+type LocationsPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function LocationsPage({ searchParams }: LocationsPageProps) {
   const { role, supabase } = await requireFarmStaff("/farm/locations");
+  const parameters = await searchParams;
   const [areasResult, routesResult, profilesResult] = await Promise.all([
     supabase
       .from("delivery_areas")
@@ -36,7 +42,7 @@ export default async function LocationsPage() {
     supabase
       .from("customer_profiles")
       .select(
-        "user_id, full_name, phone, address_line, locality, postal_code, delivery_area_id, delivery_route_id, route_stop_order",
+        "user_id, full_name, email, phone, address_line, locality, landmark, postal_code, delivery_area_id, delivery_route_id, route_stop_order",
       )
       .order("full_name"),
   ]);
@@ -82,6 +88,44 @@ export default async function LocationsPage() {
         <div><strong>{profiles.length}</strong><span>Customers</span></div>
         <div><strong>{unassignedCount}</strong><span>Unassigned</span></div>
       </section>
+
+      {canManage ? (
+        <section className={styles.importPanel} aria-labelledby="import-title">
+          <div className={styles.sectionHeading}>
+            <p>Customer file</p>
+            <h2 id="import-title">Update profiles from CSV</h2>
+          </div>
+          <div className={styles.importCopy}>
+            <p>
+              Export the customer list, edit contact or delivery fields, then
+              upload the same file. Existing accounts are matched by email or
+              phone; new login accounts are never created automatically.
+            </p>
+            <a href="/farm/exports/customers">Download current customer file</a>
+          </div>
+          <form action={importCustomerProfiles} className={styles.importForm}>
+            <label htmlFor="customer-file">Customer CSV</label>
+            <input
+              accept=".csv,text/csv"
+              id="customer-file"
+              name="customerFile"
+              required
+              type="file"
+            />
+            <button type="submit">Import customer file</button>
+          </form>
+          {parameters.importError ? (
+            <p className={styles.importError} role="alert">
+              {String(parameters.importError)}
+            </p>
+          ) : parameters.imported !== undefined ? (
+            <p className={styles.importSuccess} role="status">
+              Updated {String(parameters.imported)} customer
+              {String(parameters.imported) === "1" ? "" : "s"}. Skipped {String(parameters.skipped ?? 0)}.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {canManage ? (
         <section className={styles.setup} aria-labelledby="setup-title">
@@ -141,6 +185,7 @@ export default async function LocationsPage() {
                   </span>
                   <div>
                     <strong>{profile.full_name ?? "Customer"}</strong>
+                    <span>{profile.email ?? "No email saved"}</span>
                     <span>{profile.phone ?? "No phone saved"}</span>
                     <small>
                       {[profile.address_line, profile.postal_code]
@@ -192,6 +237,34 @@ export default async function LocationsPage() {
                           name="address"
                           placeholder="House, street, area and landmark"
                           rows={2}
+                        />
+                      </label>
+                      <label>
+                        <span>Locality</span>
+                        <input
+                          defaultValue={profile.locality ?? ""}
+                          maxLength={120}
+                          name="locality"
+                          placeholder="Bistupur"
+                        />
+                      </label>
+                      <label>
+                        <span>Landmark</span>
+                        <input
+                          defaultValue={profile.landmark ?? ""}
+                          maxLength={180}
+                          name="landmark"
+                          placeholder="Near the main road"
+                        />
+                      </label>
+                      <label>
+                        <span>Postal code</span>
+                        <input
+                          defaultValue={profile.postal_code ?? ""}
+                          inputMode="numeric"
+                          maxLength={6}
+                          name="postalCode"
+                          placeholder="831001"
                         />
                       </label>
                     </div>

@@ -71,6 +71,9 @@ export async function GET() {
       "Phone",
       "Email",
       "Address",
+      "Locality",
+      "Landmark",
+      "Postal code",
       "Area",
       "Route",
       "Stop order",
@@ -80,14 +83,6 @@ export async function GET() {
     ],
     ...(profilesResult.data ?? []).map((profile) => {
       const plan = latestPlanByUser.get(profile.user_id);
-      const address = [
-        profile.address_line,
-        profile.locality,
-        profile.landmark,
-        profile.postal_code,
-      ]
-        .filter(Boolean)
-        .join(", ");
       const remaining = plan
         ? Math.max(
             0,
@@ -100,13 +95,16 @@ export async function GET() {
         profile.full_name ?? "Customer",
         profile.phone,
         profile.email,
-        address,
+        profile.address_line,
+        profile.locality,
+        profile.landmark,
+        profile.postal_code,
         profile.delivery_area_id
           ? areaById.get(profile.delivery_area_id)
-          : "Unassigned",
+          : "",
         profile.delivery_route_id
           ? routeById.get(profile.delivery_route_id)
-          : "Unassigned",
+          : "",
         profile.route_stop_order,
         plan?.status ?? "No plan",
         plan?.start_date ?? "",

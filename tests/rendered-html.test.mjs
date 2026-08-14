@@ -55,6 +55,7 @@ const calendarStylesUrl = new URL(
 const sidebarUrl = new URL("../app/components/landing-sidebar.tsx", import.meta.url);
 const whatsappIconUrl = new URL("../public/whatsapp.svg", import.meta.url);
 const farmDashboardUrl = new URL("../app/farm/page.tsx", import.meta.url);
+const farmLayoutUrl = new URL("../app/farm/layout.tsx", import.meta.url);
 const farmLocationsUrl = new URL(
   "../app/farm/locations/page.tsx",
   import.meta.url,
@@ -141,6 +142,10 @@ const capacityProductsUrl = new URL(
 );
 const capacityLibraryUrl = new URL(
   "../lib/production-capacity.ts",
+  import.meta.url,
+);
+const customerImportUrl = new URL(
+  "../lib/customer-import.ts",
   import.meta.url,
 );
 
@@ -726,6 +731,28 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(sheet, /Customer information is provided only for completing farm deliveries/);
   assert.match(sheetStyles, /@media print/);
   assert.match(shellStyles, /@media print/);
+});
+
+test("lets managers safely update existing customers from CSV", async () => {
+  const [locations, actions, customerImport, farmLayout] = await Promise.all([
+    readFile(farmLocationsUrl, "utf8"),
+    readFile(farmActionsUrl, "utf8"),
+    readFile(customerImportUrl, "utf8"),
+    readFile(farmLayoutUrl, "utf8"),
+  ]);
+
+  assert.match(locations, /Update profiles from CSV/);
+  assert.match(locations, /Download current customer file/);
+  assert.match(locations, /new login accounts are never created automatically/);
+  assert.match(actions, /importCustomerProfiles/);
+  assert.match(actions, /profileByEmail/);
+  assert.match(actions, /profileByPhone/);
+  assert.match(actions, /256_000/);
+  assert.match(actions, /The customer profile was not updated/);
+  assert.match(locations, /Postal code/);
+  assert.match(customerImport, /The CSV contains an unclosed quote/);
+  assert.match(customerImport, /Import no more than 200 customers/);
+  assert.doesNotMatch(farmLayout, /requireFarmStaff\(\)/);
 });
 
 test("collects delivery details only when a customer starts an order", async () => {

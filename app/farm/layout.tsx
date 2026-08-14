@@ -1,13 +1,24 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { requireFarmStaff } from "@/lib/farm-dashboard";
+import { createClient } from "@/lib/supabase/server";
 import styles from "./farm-shell.module.css";
 
 export const dynamic = "force-dynamic";
 
 export default async function FarmLayout({ children }: { children: ReactNode }) {
-  const { role } = await requireFarmStaff();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: staff } = user
+    ? await supabase
+        .from("farm_staff")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .maybeSingle()
+    : { data: null };
 
   return (
     <div className={styles.shell}>
@@ -30,7 +41,7 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
 
         <div className={styles.staff}>
           <span>Signed in as</span>
-          <strong>{role}</strong>
+          <strong>{staff?.role ?? "Farm staff"}</strong>
           <Link href="/account">Customer profile</Link>
         </div>
       </aside>
