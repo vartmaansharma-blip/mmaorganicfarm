@@ -796,6 +796,10 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(sheet, /Customer information is provided only for completing farm deliveries/);
   assert.doesNotMatch(sheet, /7-day milk plan/);
   assert.match(farmLayout, /href="\/farm\/delivery-sheet">Driver/);
+  assert.match(farmLayout, /driverView/);
+  assert.match(farmLayout, />My route</);
+  assert.match(farmLayout, /driverMobileNav/);
+  assert.match(dashboard, /requireFarmManager/);
   assert.match(sheetStyles, /@media print/);
   assert.match(shellStyles, /@media print/);
 });

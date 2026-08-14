@@ -13,7 +13,7 @@ import {
 } from "@/lib/delivery-calendar";
 import {
   canManageLocations,
-  requireFarmStaff,
+  requireFarmManager,
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -54,7 +54,7 @@ export default async function CapacityPage({
     ? requestedProduct
     : "milk";
   const selectedProduct = capacityProduct(selectedKey);
-  const { role, supabase } = await requireFarmStaff(
+  const { role, supabase } = await requireFarmManager(
     `/farm/capacity?product=${selectedKey}`,
   );
   const admin = createAdminClient();

@@ -33,6 +33,16 @@ export function canManageLocations(role: FarmStaffRole) {
   return role === "admin" || role === "manager";
 }
 
+export async function requireFarmManager(next = "/farm") {
+  const context = await requireFarmStaff(next);
+
+  if (!canManageLocations(context.role)) {
+    redirect("/farm/delivery-sheet");
+  }
+
+  return context;
+}
+
 export function areaSlug(value: string) {
   return value
     .trim()

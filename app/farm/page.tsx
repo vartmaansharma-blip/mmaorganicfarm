@@ -13,7 +13,7 @@ import {
 import { resolveDeliveryArea } from "@/lib/delivery-area";
 import {
   canManageLocations,
-  requireFarmStaff,
+  requireFarmManager,
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateTomorrowDeliverySheet, updateDeliveryStatus } from "./actions";
@@ -110,7 +110,7 @@ export default async function FarmDashboardPage({
 }: {
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
-  const { role, supabase } = await requireFarmStaff();
+  const { role, supabase } = await requireFarmManager();
   const admin = createAdminClient();
   const deliveryDate = nextDeliveryDateInIndia();
   const today = todayInIndia();

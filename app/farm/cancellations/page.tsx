@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireFarmStaff } from "@/lib/farm-dashboard";
+import { requireFarmManager } from "@/lib/farm-dashboard";
 import { resolveCancellationRequest } from "./actions";
 import styles from "../operations-list.module.css";
 
 export const metadata: Metadata = { title: "Cancellation requests", robots: { index: false, follow: false } };
 
 export default async function CancellationRequestsPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
-  const { supabase } = await requireFarmStaff("/farm/cancellations");
+  const { supabase } = await requireFarmManager("/farm/cancellations");
   const params = await searchParams;
   const { data, error } = await supabase.from("cancellation_requests").select("id,user_id,order_id,plan_id,reason,status,resolution_note,created_at").order("created_at", { ascending: false });
   if (error) throw error;

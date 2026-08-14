@@ -3,7 +3,7 @@ import Link from "next/link";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
 import {
   canManageLocations,
-  requireFarmStaff,
+  requireFarmManager,
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MILK_PLAN_DAYS } from "@/lib/milk-plan";
@@ -130,7 +130,7 @@ type LocationsPageProps = {
 };
 
 export default async function LocationsPage({ searchParams }: LocationsPageProps) {
-  const { role, supabase } = await requireFarmStaff("/farm/locations");
+  const { role, supabase } = await requireFarmManager("/farm/locations");
   const admin = createAdminClient();
   const parameters = await searchParams;
   const [areasResult, profilesResult, plansResult, ordersResult, paymentsResult] =

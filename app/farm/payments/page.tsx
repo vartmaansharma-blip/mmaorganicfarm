@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
-import { requireFarmStaff } from "@/lib/farm-dashboard";
+import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import styles from "../operations-list.module.css";
 
 export const metadata: Metadata = { title: "Farm payments", robots: { index: false, follow: false } };
 
 export default async function FarmPaymentsPage({ searchParams }: { searchParams: Promise<{ mode?: string }> }) {
-  await requireFarmStaff("/farm/payments");
+  await requireFarmManager("/farm/payments");
   const admin = createAdminClient();
   const mode = (await searchParams).mode === "test" ? "test" : "live";
   const isTest = mode === "test";

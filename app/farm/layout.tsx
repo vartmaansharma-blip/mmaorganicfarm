@@ -19,11 +19,13 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
         .eq("active", true)
         .maybeSingle()
     : { data: null };
+  const driverView = staff?.role === "driver";
+  const farmHome = driverView ? "/farm/delivery-sheet" : "/farm";
 
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <Link className={styles.brand} href="/farm">
+        <Link className={styles.brand} href={farmHome}>
           <Image src="/mma-logo.png" alt="" width={44} height={38} />
           <span>
             <strong>M&apos;ma Farm</strong>
@@ -32,12 +34,18 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
         </Link>
 
         <nav className={styles.nav} aria-label="Farm operations">
-          <Link href="/farm">Deliveries</Link>
-          <Link href="/farm/delivery-sheet">Driver</Link>
-          <Link href="/farm/locations">Customers</Link>
-          <Link href="/farm/capacity">Capacity</Link>
-          <Link href="/farm/payments">Payments</Link>
-          <Link href="/farm/cancellations">Requests</Link>
+          {driverView ? (
+            <Link href="/farm/delivery-sheet">My route</Link>
+          ) : (
+            <>
+              <Link href="/farm">Deliveries</Link>
+              <Link href="/farm/delivery-sheet">Driver</Link>
+              <Link href="/farm/locations">Customers</Link>
+              <Link href="/farm/capacity">Capacity</Link>
+              <Link href="/farm/payments">Payments</Link>
+              <Link href="/farm/cancellations">Requests</Link>
+            </>
+          )}
         </nav>
 
         <div className={styles.staff}>
@@ -49,13 +57,22 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
 
       <div className={styles.workspace}>{children}</div>
 
-      <nav className={styles.mobileNav} aria-label="Farm operations">
-        <Link href="/farm">Deliveries</Link>
-        <Link href="/farm/delivery-sheet">Driver</Link>
-        <Link href="/farm/locations">Customers</Link>
-        <Link href="/farm/capacity">Capacity</Link>
-        <Link href="/farm/payments">Payments</Link>
-        <Link href="/farm/cancellations">Requests</Link>
+      <nav
+        className={`${styles.mobileNav} ${driverView ? styles.driverMobileNav : ""}`}
+        aria-label="Farm operations"
+      >
+        {driverView ? (
+          <Link href="/farm/delivery-sheet">My route</Link>
+        ) : (
+          <>
+            <Link href="/farm">Deliveries</Link>
+            <Link href="/farm/delivery-sheet">Driver</Link>
+            <Link href="/farm/locations">Customers</Link>
+            <Link href="/farm/capacity">Capacity</Link>
+            <Link href="/farm/payments">Payments</Link>
+            <Link href="/farm/cancellations">Requests</Link>
+          </>
+        )}
       </nav>
     </div>
   );
