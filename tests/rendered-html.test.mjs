@@ -659,9 +659,16 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(dashboard, /updateDeliveryStatus/);
   assert.match(dashboardActions, /generate_daily_deliveries/);
   assert.match(dashboardActions, /nextDeliveryDateInIndia/);
-  assert.match(locations, /Delivery locations/);
-  assert.match(locations, /Assignment queue/);
-  assert.match(locations, /Unassigned area/);
+  assert.match(locations, /Farm customers/);
+  assert.match(locations, /Profiles and orders/);
+  assert.match(locations, /No area assigned/);
+  assert.match(locations, /delivery_plans/);
+  assert.match(locations, /order_items/);
+  assert.match(locations, /payments/);
+  assert.match(locations, /Current order/);
+  assert.match(locations, /Deliveries/);
+  assert.match(locations, /Edit customer/);
+  assert.match(locations, /<details className=\{styles\.editDetails\}>/);
   assert.match(actions, /assignCustomerLocation/);
   assert.match(actions, /route\.area_id/);
   assert.match(schema, /create table if not exists public\.farm_staff/);
@@ -713,7 +720,7 @@ test("provides protected customer and daily delivery exports", async () => {
 
   assert.match(dashboard, /Print delivery sheet/);
   assert.match(dashboard, /Export customers/);
-  assert.match(locations, /Suggested:/);
+  assert.match(locations, /Suggested area:/);
   assert.match(locations, /name="fullName"/);
   assert.match(locations, /name="phone"/);
   assert.match(locations, /name="address"/);
@@ -743,7 +750,7 @@ test("lets managers safely update existing customers from CSV", async () => {
 
   assert.match(locations, /Update profiles from CSV/);
   assert.match(locations, /Download current customer file/);
-  assert.match(locations, /new login accounts are never created automatically/);
+  assert.match(locations, /new login accounts are never created automatically/i);
   assert.match(actions, /importCustomerProfiles/);
   assert.match(actions, /profileByEmail/);
   assert.match(actions, /profileByPhone/);
