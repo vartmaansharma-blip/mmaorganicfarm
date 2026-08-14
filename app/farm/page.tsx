@@ -8,6 +8,7 @@ import {
   formatCalendarDate,
   nextDeliveryDateInIndia,
   productName,
+  todayInIndia,
 } from "@/lib/delivery-calendar";
 import { resolveDeliveryArea } from "@/lib/delivery-area";
 import {
@@ -59,6 +60,17 @@ type DailyDeliveryRow = {
   status: string;
 };
 
+type TodayDeliveryRow = {
+  address_snapshot: string | null;
+  assigned_driver_id: string | null;
+  bottle_return_required: boolean;
+  bottle_returned: boolean;
+  customer_name: string;
+  delivery_confirmed: boolean;
+  id: string;
+  status: string;
+};
+
 type Stop = {
   address: string;
   bottleChoice: "new" | "none" | "return";
@@ -101,6 +113,7 @@ export default async function FarmDashboardPage({
   const { role, supabase } = await requireFarmStaff();
   const admin = createAdminClient();
   const deliveryDate = nextDeliveryDateInIndia();
+  const today = todayInIndia();
   const params = await searchParams;
 
   const [
@@ -109,6 +122,7 @@ export default async function FarmDashboardPage({
     plansResult,
     pausesResult,
     deliveriesResult,
+    todayDeliveriesResult,
   ] = await Promise.all([
     supabase
       .from("customer_profiles")
@@ -117,6 +131,7 @@ export default async function FarmDashboardPage({
     supabase
       .from("delivery_plans")
       .select("id, status")
+      .eq("is_test", false)
       .in("status", ["pending_confirmation", "active", "paused"]),
     supabase
       .from("delivery_pauses")
@@ -126,7 +141,15 @@ export default async function FarmDashboardPage({
       .select(
         "id, status, generated_at, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, route_stop_order, daily_delivery_items(product_key, quantity, unit)",
       )
-      .eq("delivery_date", deliveryDate),
+      .eq("delivery_date", deliveryDate)
+      .eq("is_test", false),
+    supabase
+      .from("daily_deliveries")
+      .select(
+        "id, status, customer_name, address_snapshot, assigned_driver_id, delivery_confirmed, bottle_return_required, bottle_returned",
+      )
+      .eq("delivery_date", today)
+      .eq("is_test", false),
   ]);
 
   const databaseError = [
@@ -135,6 +158,7 @@ export default async function FarmDashboardPage({
     plansResult.error,
     pausesResult.error,
     deliveriesResult.error,
+    todayDeliveriesResult.error,
   ].find(Boolean);
 
   if (databaseError) throw databaseError;
@@ -166,6 +190,7 @@ export default async function FarmDashboardPage({
   const plans = (plansResult.data ?? []) as PlanRow[];
   const pauses = (pausesResult.data ?? []) as PauseRow[];
   const deliveries = (deliveriesResult.data ?? []) as DailyDeliveryRow[];
+  const todayDeliveries = (todayDeliveriesResult.data ?? []) as TodayDeliveryRow[];
   const deliveryAreas = areasResult.data ?? [];
   const areaGroups = new Map<string, AreaGroup>();
   const totals = new Map<string, number>();
@@ -247,6 +272,20 @@ export default async function FarmDashboardPage({
     .map((delivery) => delivery.generated_at)
     .sort()
     .at(-1);
+  const todayDelivered = todayDeliveries.filter(
+    (stop) => stop.delivery_confirmed || stop.status === "delivered",
+  );
+  const todayUnfulfilled = todayDeliveries.filter(
+    (stop) =>
+      !stop.delivery_confirmed &&
+      !["delivered", "cancelled"].includes(stop.status),
+  );
+  const todayBottlesDue = todayDeliveries.filter(
+    (stop) => stop.bottle_return_required && !stop.bottle_returned,
+  );
+  const todayUnassigned = todayDeliveries.filter(
+    (stop) => !stop.assigned_driver_id,
+  );
 
   return (
     <main className={styles.page}>
@@ -276,9 +315,6 @@ export default async function FarmDashboardPage({
               Export customers
             </a>
           ) : null}
-          <Link className={styles.locationLink} href="/farm/locations">
-            View customers
-          </Link>
         </div>
       </header>
 
@@ -288,6 +324,47 @@ export default async function FarmDashboardPage({
       {params.error ? (
         <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
       ) : null}
+
+      <section className={styles.fieldReport} aria-labelledby="field-report-title">
+        <div className={styles.sectionHeading}>
+          <div>
+            <p className={styles.sectionLabel}>Live from today&apos;s route</p>
+            <h2 id="field-report-title">Doorstep report</h2>
+          </div>
+          <Link href={`/farm/delivery-sheet?date=${today}`}>Open Driver tab</Link>
+        </div>
+        <div className={styles.fieldMetrics}>
+          <article><strong>{todayDelivered.length}</strong><span>Delivered</span></article>
+          <article><strong>{todayUnfulfilled.length}</strong><span>Not fulfilled</span></article>
+          <article><strong>{todayBottlesDue.length}</strong><span>Bottles outstanding</span></article>
+          <article><strong>{todayUnassigned.length}</strong><span>Without driver</span></article>
+        </div>
+        {todayUnfulfilled.length || todayBottlesDue.length || todayUnassigned.length ? (
+          <div className={styles.fieldExceptions}>
+            {todayUnfulfilled.map((stop) => (
+              <span key={`delivery-${stop.id}`}>
+                <strong>Not delivered:</strong> {stop.customer_name} · {stop.address_snapshot ?? "address missing"}
+              </span>
+            ))}
+            {todayBottlesDue.map((stop) => (
+              <span key={`bottle-${stop.id}`}>
+                <strong>Bottle due:</strong> {stop.customer_name}
+              </span>
+            ))}
+            {todayUnassigned.map((stop) => (
+              <span key={`driver-${stop.id}`}>
+                <strong>No driver:</strong> {stop.customer_name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className={styles.fieldClear}>
+            {todayDeliveries.length
+              ? "All of today’s stops and bottle returns are complete."
+              : "No delivery sheet has been generated for today."}
+          </p>
+        )}
+      </section>
 
       <section className={styles.sheetStatus} aria-label="Daily sheet status">
         <div>

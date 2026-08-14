@@ -453,6 +453,45 @@
   margin: 0;
 }
 
+.weeklyPlan {
+  border-top: 1px solid #e4e3df;
+  display: grid;
+  gap: 9px;
+  padding-top: 12px;
+}
+
+.weeklyPlanTitle {
+  color: #65645f;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.weeklyPlan > div {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(48px, 1fr));
+  overflow-x: auto;
+}
+
+.weeklyPlan > div > span {
+  border: 1px solid #e1e0dc;
+  display: grid;
+  gap: 4px;
+  margin-right: -1px;
+  min-width: 48px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.weeklyPlan small {
+  color: #777671;
+  font-size: 10px;
+}
+
+.weeklyPlan strong {
+  font-size: 12px;
+}
+
 .editDetails {
   border-top: 1px solid #e2e1dd;
   padding-top: 12px;
@@ -516,6 +555,24 @@
 .orderHistory article small {
   color: #787774;
   font-size: 11px;
+}
+
+.orderHistory .testLabel {
+  color: #8a4d00;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.modeForm button {
+  background: #fff;
+  border: 1px solid #c7c6c1;
+  color: #343330;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 720;
+  padding: 7px 8px;
+  white-space: nowrap;
 }
 
 .editDetails > summary {

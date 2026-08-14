@@ -1,15 +1,22 @@
 import { canManageLocations, requireFarmStaff } from "@/lib/farm-dashboard";
 import { createCsv, exportDateStamp } from "@/lib/farm-export";
+import { MILK_PLAN_DAYS } from "@/lib/milk-plan";
 
 export const runtime = "nodejs";
 
 type PlanRow = {
   delivered_deliveries: number;
+  is_test: boolean;
   purchased_deliveries: number;
   start_date: string;
   status: string;
   updated_at: string;
   user_id: string;
+  weekly_delivery_items: Array<{
+    day_of_week: number;
+    product_key: string;
+    quantity: number;
+  }>;
 };
 
 export async function GET() {
@@ -34,7 +41,7 @@ export async function GET() {
       supabase
         .from("delivery_plans")
         .select(
-          "user_id, status, start_date, purchased_deliveries, delivered_deliveries, updated_at",
+          "user_id, status, is_test, start_date, purchased_deliveries, delivered_deliveries, updated_at, weekly_delivery_items(day_of_week, product_key, quantity)",
         )
         .order("updated_at", { ascending: false }),
     ]);
@@ -78,8 +85,10 @@ export async function GET() {
       "Route",
       "Stop order",
       "Plan status",
+      "Mode",
       "Plan start",
       "Deliveries remaining",
+      ...MILK_PLAN_DAYS.map((day) => `${day.label} milk (L)`),
     ],
     ...(profilesResult.data ?? []).map((profile) => {
       const plan = latestPlanByUser.get(profile.user_id);
@@ -90,6 +99,11 @@ export async function GET() {
               Number(plan.delivered_deliveries),
           )
         : "";
+      const milkByDay = new Map(
+        (plan?.weekly_delivery_items ?? [])
+          .filter((item) => item.product_key === "milk")
+          .map((item) => [Number(item.day_of_week), Number(item.quantity)]),
+      );
 
       return [
         profile.full_name ?? "Customer",
@@ -107,8 +121,10 @@ export async function GET() {
           : "",
         profile.route_stop_order,
         plan?.status ?? "No plan",
+        plan ? (plan.is_test ? "Test" : "Live") : "",
         plan?.start_date ?? "",
         remaining,
+        ...MILK_PLAN_DAYS.map((_, index) => milkByDay.get(index + 1) ?? 0),
       ];
     }),
   ];

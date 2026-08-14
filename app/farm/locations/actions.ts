@@ -159,6 +159,76 @@ export async function deleteCustomerProfile(formData: FormData) {
   redirect("/farm/locations?message=Customer+profile+deleted.");
 }
 
+export async function setOrderMode(formData: FormData) {
+  const { role } = await requireFarmStaff("/farm/locations");
+  if (role !== "admin") {
+    redirect("/farm/locations?error=Only+an+admin+can+change+an+order+mode.");
+  }
+
+  const orderId = textValue(formData, "orderId");
+  const mode = textValue(formData, "mode");
+  if (!orderId || !["live", "test"].includes(mode)) {
+    redirect("/farm/locations?error=Choose+a+valid+order+mode.");
+  }
+
+  const admin = createAdminClient();
+  const { data: order, error: orderError } = await admin
+    .from("orders")
+    .select("id, delivery_plan_id, purchase_mode, status")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (orderError) throw orderError;
+  if (!order) redirect("/farm/locations?error=Order+not+found.");
+
+  const isTest = mode === "test";
+  const { error: updateOrderError } = await admin
+    .from("orders")
+    .update({ is_test: isTest, updated_at: new Date().toISOString() })
+    .eq("id", orderId);
+  if (updateOrderError) throw updateOrderError;
+
+  const { error: paymentError } = await admin
+    .from("payments")
+    .update({ is_test: isTest })
+    .eq("order_id", orderId);
+  if (paymentError) throw paymentError;
+
+  if (order.delivery_plan_id) {
+    const planStatus = isTest
+      ? "cancelled"
+      : order.status === "paid"
+        ? "active"
+        : "pending_confirmation";
+    const { error: planError } = await admin
+      .from("delivery_plans")
+      .update({
+        is_test: isTest,
+        status: planStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", order.delivery_plan_id);
+    if (planError) throw planError;
+
+    const { error: deliveryError } = await admin
+      .from("daily_deliveries")
+      .update({
+        is_test: isTest,
+        ...(isTest ? { status: "cancelled" } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("plan_id", order.delivery_plan_id)
+      .in("status", ["planned", "ready", "out_for_delivery"]);
+    if (deliveryError) throw deliveryError;
+  }
+
+  revalidatePath("/account");
+  revalidatePath("/farm");
+  revalidatePath("/farm/delivery-sheet");
+  revalidatePath("/farm/locations");
+  revalidatePath("/farm/payments");
+  redirect(`/farm/locations?message=Order+labelled+${mode}.`);
+}
+
 export async function importCustomerProfiles(formData: FormData) {
   const { supabase } = await requireLocationManager();
   const upload = formData.get("customerFile");

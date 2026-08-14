@@ -6,11 +6,13 @@ import {
   requireFarmStaff,
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import {
   assignCustomerLocation,
   createArea,
   deleteCustomerProfile,
   importCustomerProfiles,
+  setOrderMode,
 } from "./actions";
 import styles from "./locations.module.css";
 
@@ -32,6 +34,7 @@ type PlanRow = {
   created_at: string;
   delivered_deliveries: number;
   id: string;
+  is_test: boolean;
   purchased_deliveries: number;
   scheduled_delivery_items: DeliveryItem[];
   start_date: string;
@@ -56,6 +59,7 @@ type OrderRow = {
   created_at: string;
   delivery_plan_id: string | null;
   id: string;
+  is_test: boolean;
   milk_litres: number | string;
   order_items: OrderItem[];
   paid_total_paise: number | null;
@@ -69,6 +73,7 @@ type OrderRow = {
 type PaymentRow = {
   amount_paise: number;
   created_at: string;
+  is_test: boolean;
   order_id: string;
   paid_at: string | null;
   status: string;
@@ -105,6 +110,14 @@ function quantityLabel(quantity: number | string, unit: string) {
   return `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
 }
 
+function weeklyMilkByDay(plan: PlanRow | undefined) {
+  return new Map(
+    (plan?.weekly_delivery_items ?? [])
+      .filter((item) => item.product_key === "milk")
+      .map((item) => [Number(item.day_of_week), Number(item.quantity)]),
+  );
+}
+
 function planLabel(order: OrderRow | undefined) {
   if (!order) return "No order yet";
   if (order.purchase_mode === "plan") return "Scheduled delivery plan";
@@ -136,18 +149,18 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
       admin
         .from("delivery_plans")
         .select(
-          "id, user_id, status, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, created_at, updated_at, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit)",
+          "id, user_id, status, is_test, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, created_at, updated_at, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit)",
         )
         .order("updated_at", { ascending: false }),
       admin
         .from("orders")
         .select(
-          "id, user_id, delivery_plan_id, purchase_mode, status, milk_litres, bottle_choice, total_paise, paid_total_paise, start_date, created_at, order_items(product_key, product_name, quantity, unit, frequency, scheduled_days, delivery_date)",
+          "id, user_id, delivery_plan_id, purchase_mode, status, is_test, milk_litres, bottle_choice, total_paise, paid_total_paise, start_date, created_at, order_items(product_key, product_name, quantity, unit, frequency, scheduled_days, delivery_date)",
         )
         .order("created_at", { ascending: false }),
       admin
         .from("payments")
-        .select("order_id, status, amount_paise, paid_at, created_at")
+        .select("order_id, status, is_test, amount_paise, paid_at, created_at")
         .order("created_at", { ascending: false }),
     ]);
 
@@ -186,6 +199,8 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
     const current = latestPlanByUser.get(plan.user_id);
     if (
       !current ||
+      (!plan.is_test && current.is_test) ||
+      plan.is_test === current.is_test &&
       (planPriority.get(plan.status) ?? 0) > (planPriority.get(current.status) ?? 0)
     ) {
       latestPlanByUser.set(plan.user_id, plan);
@@ -199,6 +214,8 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
     const current = latestOrderByUser.get(order.user_id);
     if (
       !current ||
+      (!order.is_test && current.is_test) ||
+      order.is_test === current.is_test &&
       (orderPriority.get(order.status) ?? 0) > (orderPriority.get(current.status) ?? 0)
     ) {
       latestOrderByUser.set(order.user_id, order);
@@ -212,8 +229,8 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
 
   const canManage = canManageLocations(role);
   const canDelete = role === "admin";
-  const activePlanCount = plans.filter((plan) => plan.status === "active").length;
-  const paidOrderCount = orders.filter((order) => order.status === "paid").length;
+  const activePlanCount = plans.filter((plan) => !plan.is_test && plan.status === "active").length;
+  const paidOrderCount = orders.filter((order) => !order.is_test && order.status === "paid").length;
   const missingAddressCount = profiles.filter((profile) => !profile.address_line).length;
 
   return (
@@ -310,6 +327,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
               const remainingDeliveries = plan
                 ? Math.max(0, Number(plan.purchased_deliveries) - Number(plan.delivered_deliveries))
                 : null;
+              const weeklyMilk = weeklyMilkByDay(plan);
               const orderAmount = order
                 ? order.paid_total_paise ?? payment?.amount_paise ?? order.total_paise
                 : null;
@@ -354,7 +372,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                         <h3>{planLabel(order)}</h3>
                       </div>
                       <span className={`${styles.status} ${order?.status === "paid" ? styles.statusPaid : ""}`}>
-                        {order ? titleCase(order.status) : "No order"}
+                        {order ? `${order.is_test ? "Test · " : ""}${titleCase(order.status)}` : "No order"}
                       </span>
                     </div>
 
@@ -388,6 +406,23 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                         <div><dt>Bottle</dt><dd>{order.bottle_choice === "new" ? "New glass bottle" : order.bottle_choice === "return" ? "Returnable bottle" : "Not required"}</dd></div>
                       </dl>
                     ) : null}
+
+                    {plan ? (
+                      <div className={styles.weeklyPlan}>
+                        <span className={styles.weeklyPlanTitle}>Seven-day milk schedule</span>
+                        <div>
+                          {MILK_PLAN_DAYS.map((day, index) => {
+                            const quantity = weeklyMilk.get(index + 1) ?? 0;
+                            return (
+                              <span key={day.short}>
+                                <small>{day.short}</small>
+                                <strong>{quantity > 0 ? `${quantity} L` : "—"}</strong>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
                   </section>
 
                   {customerOrders.length ? (
@@ -413,7 +448,17 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                                 )}
                               </b>
                               <small>{titleCase(historicOrder.status)}</small>
+                              {historicOrder.is_test ? <small className={styles.testLabel}>Test order</small> : null}
                             </span>
+                            {canDelete ? (
+                              <form action={setOrderMode} className={styles.modeForm}>
+                                <input name="orderId" type="hidden" value={historicOrder.id} />
+                                <input name="mode" type="hidden" value={historicOrder.is_test ? "live" : "test"} />
+                                <button type="submit">
+                                  Mark {historicOrder.is_test ? "live" : "test"}
+                                </button>
+                              </form>
+                            ) : null}
                           </article>
                         ))}
                       </div>

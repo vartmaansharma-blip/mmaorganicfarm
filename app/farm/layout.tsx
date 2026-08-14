@@ -33,6 +33,7 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
 
         <nav className={styles.nav} aria-label="Farm operations">
           <Link href="/farm">Deliveries</Link>
+          <Link href="/farm/delivery-sheet">Driver</Link>
           <Link href="/farm/locations">Customers</Link>
           <Link href="/farm/capacity">Capacity</Link>
           <Link href="/farm/payments">Payments</Link>
@@ -50,6 +51,7 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
 
       <nav className={styles.mobileNav} aria-label="Farm operations">
         <Link href="/farm">Deliveries</Link>
+        <Link href="/farm/delivery-sheet">Driver</Link>
         <Link href="/farm/locations">Customers</Link>
         <Link href="/farm/capacity">Capacity</Link>
         <Link href="/farm/payments">Payments</Link>

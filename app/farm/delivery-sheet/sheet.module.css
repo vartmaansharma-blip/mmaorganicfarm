@@ -2,7 +2,7 @@
   color: #191919;
   margin: 0 auto;
   max-width: 1180px;
-  padding: 28px 18px 60px;
+  padding: 28px 18px 92px;
 }
 
 .header {
@@ -49,22 +49,43 @@
 
 .actions a,
 .printButton,
-.filters button {
+.filters button,
+.assignForm button,
+.doorstepForm button {
   background: #fff;
   border: 1px solid #191919;
+  border-radius: 4px;
   color: #191919;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
   font-weight: 680;
+  min-height: 42px;
   padding: 10px 12px;
   text-align: center;
   text-decoration: none;
 }
 
-.printButton {
+.printButton,
+.doorstepForm button {
   background: #191919;
   color: #fff;
+}
+
+.notice {
+  background: #eef7f0;
+  border: 1px solid #b8d5bf;
+  color: #244c30;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 16px 0 0;
+  padding: 11px 13px;
+}
+
+.error {
+  background: #fff1ef;
+  border-color: #e2b8b0;
+  color: #7d2b21;
 }
 
 .filters {
@@ -75,22 +96,27 @@
   padding: 14px;
 }
 
-.filters label {
+.filters label,
+.assignForm label,
+.noteField {
   display: grid;
   gap: 6px;
 }
 
-.filters span {
+.filters span,
+.noteField span {
   font-size: 11px;
   font-weight: 680;
 }
 
 .filters input,
-.filters select {
+.filters select,
+.assignForm select,
+.noteField input {
   appearance: none;
   background: #fff;
   border: 1px solid #d8d7d3;
-  border-radius: 0;
+  border-radius: 4px;
   color: #191919;
   font: inherit;
   font-size: 13px;
@@ -101,15 +127,21 @@
 
 .summary {
   border-bottom: 1px solid #deddd9;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  padding: 20px 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 10px 0;
 }
 
 .summary div {
+  border-bottom: 1px solid #ecebe7;
   display: grid;
   gap: 3px;
+  padding: 12px 8px 12px 0;
+}
+
+.summary div:nth-child(even) {
+  border-left: 1px solid #ecebe7;
+  padding-left: 14px;
 }
 
 .summary strong {
@@ -157,83 +189,179 @@
   border-top: 1px solid #cfceca;
 }
 
-.route h3 {
+.routeHeader {
+  align-items: flex-start;
   background: #f7f7f5;
   border-bottom: 1px solid #deddd9;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.routeHeader > div {
+  display: grid;
+  gap: 3px;
+}
+
+.routeHeader h3 {
+  font-size: 15px;
+}
+
+.routeHeader span,
+.routeHeader small {
+  color: #65645f;
+  font-size: 10px;
+}
+
+.assignForm {
+  display: grid;
+  gap: 7px;
+}
+
+.stopList {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stopCard {
+  display: grid;
+  gap: 16px;
+  padding: 18px 14px;
+}
+
+.stopCard + .stopCard {
+  border-top: 1px solid #e8e7e3;
+}
+
+.stopTop {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.stopNumber {
+  align-items: center;
+  background: #191919;
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
   font-size: 12px;
-  padding: 9px 12px;
+  font-weight: 750;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
 }
 
-.route table {
-  border-collapse: collapse;
-  font-size: 12px;
-  table-layout: fixed;
-  width: 100%;
-}
-
-.route th,
-.route td {
-  border-bottom: 1px solid #e8e7e3;
-  padding: 9px 7px;
-  text-align: left;
-  vertical-align: top;
-}
-
-.route th:first-child,
-.route td:first-child {
-  text-align: center;
-  width: 42px;
-}
-
-.route th:last-child,
-.route td:last-child {
-  text-align: center;
-  width: 48px;
-}
-
-.route td strong,
-.route td span,
-.route td small,
-.route td a {
-  display: block;
-  line-height: 1.45;
-}
-
-.route td span,
-.route td small {
-  color: #5f5e5a;
-  margin-top: 2px;
-}
-
-.phoneLink,
-.mapLink {
-  color: #191919;
-  margin-top: 5px;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-}
-
-.phoneLink {
+.status {
+  background: #f0efec;
+  border-radius: 999px;
+  color: #595854;
+  font-size: 10px;
   font-weight: 700;
+  padding: 5px 8px;
+  text-transform: uppercase;
 }
 
-.mapLink {
+.statusDone {
+  background: #e7f4e9;
+  color: #245a31;
+}
+
+.customer,
+.items {
+  display: grid;
+  gap: 5px;
+}
+
+.customer > strong {
+  font-size: 18px;
+}
+
+.customer a,
+.customer span,
+.items span {
+  color: #565551;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.customer a {
+  color: #191919;
   font-weight: 650;
+  text-underline-offset: 3px;
 }
 
 .mapLink small {
   color: #62615d;
-  font-weight: 600;
+  display: block;
+  font-size: 10px;
   margin-top: 3px;
 }
 
 .missing {
   color: #a1271d;
-  margin-top: 6px;
 }
 
-.checkCell {
-  font-size: 18px;
+.items {
+  background: #f7f7f5;
+  padding: 12px;
+}
+
+.items span {
+  color: #191919;
+  font-weight: 620;
+}
+
+.doorstepForm {
+  background: #fffbee;
+  border: 1px solid #dec87f;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.doorstepForm > p {
+  font-size: 11px;
+  font-weight: 760;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.checkLabel {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d8d7d3;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  min-height: 46px;
+  padding: 10px 12px;
+}
+
+.checkLabel input {
+  accent-color: #191919;
+  height: 20px;
+  margin: 0;
+  width: 20px;
+}
+
+.checkLabel span {
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.notRequired {
+  color: #777570;
+  font-size: 11px;
+  margin: 0;
+}
+
+.noteField input {
+  background: #fff;
 }
 
 .empty {
@@ -243,7 +371,8 @@
 }
 
 .empty p,
-.footer {
+.footer,
+.allClear {
   color: #6d6c68;
   font-size: 11px;
   line-height: 1.5;
@@ -253,10 +382,102 @@
   margin: 6px 0 0;
 }
 
+.endReport {
+  border: 1px solid #191919;
+  margin-top: 32px;
+}
+
+.endReport > header {
+  align-items: flex-start;
+  background: #191919;
+  color: #fff;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.endReport header p,
+.endReport header h2 {
+  margin: 0;
+}
+
+.endReport header p {
+  color: #c9c8c4;
+  font-size: 9px;
+  font-weight: 720;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.endReport header h2 {
+  font-size: 18px;
+}
+
+.endReport header > span {
+  color: #f6cb4f;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.reportMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reportMetrics article {
+  border-bottom: 1px solid #deddd9;
+  display: grid;
+  gap: 3px;
+  padding: 14px;
+}
+
+.reportMetrics article:nth-child(even) {
+  border-left: 1px solid #deddd9;
+}
+
+.reportMetrics strong {
+  font-size: 24px;
+}
+
+.reportMetrics span {
+  color: #666561;
+  font-size: 10px;
+}
+
+.exceptionList {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.exceptionList span {
+  background: #f7f7f5;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 9px 10px;
+}
+
+.allClear {
+  margin: 0;
+  padding: 18px;
+}
+
 .footer {
   border-top: 1px solid #deddd9;
   margin-top: 28px;
   padding-top: 12px;
+}
+
+.srOnly {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 @media (min-width: 700px) {
@@ -273,13 +494,68 @@
     grid-template-columns: minmax(180px, 0.7fr) minmax(220px, 1fr) auto;
   }
 
-  .route table {
-    font-size: 13px;
+  .summary {
+    display: flex;
+    gap: 0;
   }
 
-  .route th,
-  .route td {
-    padding: 10px 12px;
+  .summary div,
+  .summary div:nth-child(even) {
+    border-bottom: 0;
+    border-left: 1px solid #ecebe7;
+    min-width: 120px;
+    padding: 12px 20px;
+  }
+
+  .summary div:first-child {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .routeHeader {
+    align-items: center;
+    grid-template-columns: minmax(180px, 1fr) minmax(320px, auto);
+    padding: 12px 16px;
+  }
+
+  .assignForm {
+    align-items: center;
+    grid-template-columns: minmax(180px, 1fr) auto;
+  }
+
+  .stopCard {
+    gap: 18px;
+    grid-template-columns: 54px minmax(190px, 1fr) minmax(180px, 0.8fr) minmax(280px, 1.2fr);
+    padding: 18px 16px;
+  }
+
+  .stopTop {
+    align-items: flex-start;
+    display: grid;
+    gap: 10px;
+    justify-items: start;
+  }
+
+  .status {
+    max-width: 54px;
+    overflow-wrap: anywhere;
+  }
+
+  .doorstepForm {
+    align-self: start;
+  }
+
+  .reportMetrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .reportMetrics article,
+  .reportMetrics article:nth-child(even) {
+    border-left: 1px solid #deddd9;
+  }
+
+  .reportMetrics article:first-child {
+    border-left: 0;
   }
 }
 
@@ -290,11 +566,16 @@
   }
 
   .actions,
-  .filters {
+  .filters,
+  .assignForm,
+  .doorstepForm,
+  .notice {
     display: none;
   }
 
-  .area {
+  .area,
+  .stopCard,
+  .endReport {
     break-inside: avoid;
   }
 
@@ -303,16 +584,11 @@
     margin-top: 18px;
   }
 
+  .stopCard {
+    grid-template-columns: 44px 1fr 1fr;
+  }
+
   .footer {
     margin-top: 18px;
-  }
-
-  .phoneLink,
-  .mapLink {
-    text-decoration: none;
-  }
-
-  .mapLink small {
-    display: none;
   }
 }

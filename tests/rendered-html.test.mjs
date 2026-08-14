@@ -152,6 +152,22 @@ const customerImportUrl = new URL(
   "../lib/customer-import.ts",
   import.meta.url,
 );
+const testOrderModeSchemaUrl = new URL(
+  "../supabase/test_order_mode.sql",
+  import.meta.url,
+);
+const driverDeliverySchemaUrl = new URL(
+  "../supabase/driver_delivery_workflow.sql",
+  import.meta.url,
+);
+const driverDeliverySecuritySchemaUrl = new URL(
+  "../supabase/driver_delivery_workflow_security.sql",
+  import.meta.url,
+);
+const deliverySheetActionsUrl = new URL(
+  "../app/farm/delivery-sheet/actions.ts",
+  import.meta.url,
+);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -644,7 +660,7 @@ test("presents the product builder as a visible farm shop", async () => {
 });
 
 test("provides persistent mobile-first farm delivery operations", async () => {
-  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, oneTimeSchema, operationsSchema, cancellations, payments, styles] = await Promise.all([
+  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, oneTimeSchema, operationsSchema, cancellations, payments, testModeSchema, driverDeliverySchema, driverDeliverySecuritySchema, styles] = await Promise.all([
     readFile(farmDashboardUrl, "utf8"),
     readFile(farmDashboardActionsUrl, "utf8"),
     readFile(farmLocationsUrl, "utf8"),
@@ -655,6 +671,9 @@ test("provides persistent mobile-first farm delivery operations", async () => {
     readFile(operationsSchemaUrl, "utf8"),
     readFile(farmCancellationsUrl, "utf8"),
     readFile(farmPaymentsUrl, "utf8"),
+    readFile(testOrderModeSchemaUrl, "utf8"),
+    readFile(driverDeliverySchemaUrl, "utf8"),
+    readFile(driverDeliverySecuritySchemaUrl, "utf8"),
     readFile(new URL("../app/farm/farm.module.css", import.meta.url), "utf8"),
   ]);
 
@@ -679,10 +698,13 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(locations, /Current order/);
   assert.match(locations, /Deliveries/);
   assert.match(locations, /Edit customer/);
+  assert.match(locations, /Seven-day milk schedule/);
+  assert.match(locations, /Test order/);
   assert.match(locations, /<details className=\{styles\.editDetails\}>/);
   assert.doesNotMatch(locations, /New route/);
   assert.doesNotMatch(locations, /Stop order/);
   assert.match(actions, /assignCustomerLocation/);
+  assert.match(actions, /setOrderMode/);
   assert.match(actions, /delivery_route_id: null/);
   assert.match(schema, /create table if not exists public\.farm_staff/);
   assert.match(schema, /create table if not exists public\.delivery_areas/);
@@ -712,6 +734,18 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(operationsSchema, /cancellation_requests/);
   assert.match(cancellations, /Cancellation requests/);
   assert.match(payments, /Verified payment records/);
+  assert.match(payments, /mode === "test"/);
+  assert.match(testModeSchema, /add column if not exists is_test/);
+  assert.match(driverDeliverySchema, /create table if not exists public\.route_driver_assignments/);
+  assert.match(driverDeliverySchema, /create or replace function public\.record_delivery_stop/);
+  assert.match(driverDeliverySchema, /assigned_driver_id = \(select auth\.uid\(\)\)/);
+  assert.match(driverDeliverySchema, /bottle_returned/);
+  assert.match(driverDeliverySecuritySchema, /create schema if not exists private/);
+  assert.match(driverDeliverySecuritySchema, /private\.record_delivery_stop_impl/);
+  assert.match(driverDeliverySecuritySchema, /public\.record_delivery_stop/);
+  assert.match(driverDeliverySecuritySchema, /security invoker/);
+  assert.match(dashboard, /Doorstep report/);
+  assert.match(dashboard, /Bottles outstanding/);
   assert.match(dashboard, /Bottle ·/);
   assert.match(styles, /\.headerActions/);
   assert.match(styles, /width: 100%/);
@@ -719,14 +753,16 @@ test("provides persistent mobile-first farm delivery operations", async () => {
 });
 
 test("provides protected customer and daily delivery exports", async () => {
-  const [dashboard, locations, locationActions, customerExport, csv, sheet, sheetStyles, shellStyles] =
+  const [dashboard, farmLayout, locations, locationActions, customerExport, csv, sheet, sheetActions, sheetStyles, shellStyles] =
     await Promise.all([
       readFile(farmDashboardUrl, "utf8"),
+      readFile(new URL("../app/farm/layout.tsx", import.meta.url), "utf8"),
       readFile(farmLocationsUrl, "utf8"),
       readFile(farmActionsUrl, "utf8"),
       readFile(new URL("../app/farm/exports/customers/route.ts", import.meta.url), "utf8"),
       readFile(new URL("../lib/farm-export.ts", import.meta.url), "utf8"),
       readFile(new URL("../app/farm/delivery-sheet/page.tsx", import.meta.url), "utf8"),
+      readFile(deliverySheetActionsUrl, "utf8"),
       readFile(new URL("../app/farm/delivery-sheet/sheet.module.css", import.meta.url), "utf8"),
       readFile(new URL("../app/farm/farm-shell.module.css", import.meta.url), "utf8"),
     ]);
@@ -744,11 +780,22 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(customerExport, /canManageLocations/);
   assert.match(customerExport, /Content-Disposition/);
   assert.match(customerExport, /Deliveries remaining/);
+  assert.match(customerExport, /day\.label.*milk \(L\)/);
+  assert.match(customerExport, /Mode/);
   assert.match(csv, /\^\[=\+\\-@\]/);
-  assert.match(sheet, /Daily delivery sheet/);
+  assert.match(sheet, /Delivery routes/);
   assert.match(sheet, /PrintSheetButton/);
   assert.match(sheet, /All areas/);
+  assert.match(sheet, /At the doorstep/);
+  assert.match(sheet, /Delivery completed/);
+  assert.match(sheet, /Bottle returned/);
+  assert.match(sheet, /End-of-day control/);
+  assert.match(sheet, /Bottles still with customers/);
+  assert.match(sheetActions, /assignRouteDriver/);
+  assert.match(sheetActions, /record_delivery_stop/);
   assert.match(sheet, /Customer information is provided only for completing farm deliveries/);
+  assert.doesNotMatch(sheet, /7-day milk plan/);
+  assert.match(farmLayout, /href="\/farm\/delivery-sheet">Driver/);
   assert.match(sheetStyles, /@media print/);
   assert.match(shellStyles, /@media print/);
 });

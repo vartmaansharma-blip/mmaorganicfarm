@@ -60,7 +60,7 @@
   border-top: 1px solid var(--farm-line);
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   left: 0;
   padding: 10px 12px max(10px, env(safe-area-inset-bottom));
   position: fixed;
