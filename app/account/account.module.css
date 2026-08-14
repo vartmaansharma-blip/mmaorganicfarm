@@ -310,6 +310,74 @@
   line-height: 1.35;
 }
 
+.upcomingSchedule {
+  margin-top: 28px;
+}
+
+.upcomingHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.upcomingHeading h3,
+.upcomingHeading p {
+  margin: 0;
+}
+
+.upcomingHeading h3 {
+  font-size: 18px;
+}
+
+.upcomingHeading p {
+  margin-top: 5px;
+  color: #787774;
+  font-size: 13px;
+}
+
+.upcomingHeading > a {
+  color: #2383e2;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.upcomingGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.upcomingGrid > a {
+  min-width: 0;
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border: 1px solid #deddd8;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.upcomingGrid time,
+.upcomingGrid small {
+  color: #787774;
+  font-size: 10px;
+}
+
+.upcomingGrid strong {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.upcomingGrid small {
+  margin-top: auto;
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+
 .planWeek {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -574,6 +642,16 @@
   }
 
   .planSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .upcomingHeading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .upcomingGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

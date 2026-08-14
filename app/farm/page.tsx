@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  CAPACITY_PRODUCTS,
+  formatCapacityQuantity,
+} from "@/lib/capacity-products";
+import {
   formatCalendarDate,
   nextDeliveryDateInIndia,
   productName,
 } from "@/lib/delivery-calendar";
-import { requireFarmStaff } from "@/lib/farm-dashboard";
+import {
+  canManageLocations,
+  requireFarmStaff,
+} from "@/lib/farm-dashboard";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { generateTomorrowDeliverySheet, updateDeliveryStatus } from "./actions";
 import styles from "./farm.module.css";
 
@@ -71,6 +79,14 @@ type AreaGroup = {
   routes: Map<string, RouteGroup>;
 };
 
+type CapacitySnapshot = {
+  active_plan_quantity: number | string;
+  available_quantity: number | string;
+  capacity_limit: number | string;
+  checkout_holds_quantity: number | string;
+  paid_once_quantity: number | string;
+};
+
 function formatQuantity(item: DailyItemRow) {
   const quantity = Number(item.quantity);
   if (/^1\s/.test(item.unit)) return `${quantity} × ${item.unit}`;
@@ -86,7 +102,8 @@ export default async function FarmDashboardPage({
 }: {
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
-  const { supabase } = await requireFarmStaff();
+  const { role, supabase } = await requireFarmStaff();
+  const admin = createAdminClient();
   const deliveryDate = nextDeliveryDateInIndia();
   const params = await searchParams;
 
@@ -130,6 +147,29 @@ export default async function FarmDashboardPage({
   ].find(Boolean);
 
   if (databaseError) throw databaseError;
+
+  const capacityResults = await Promise.all(
+    CAPACITY_PRODUCTS.map((product) =>
+      admin.rpc("product_capacity_snapshot", {
+        p_days: 1,
+        p_product_key: product.id,
+        p_start_date: deliveryDate,
+      }),
+    ),
+  );
+  const capacityError = capacityResults.find((result) => result.error)?.error;
+  const capacityMigrationPending = Boolean(
+    capacityError?.message.includes("product_capacity_snapshot"),
+  );
+  if (capacityError && !capacityMigrationPending) throw capacityError;
+  const capacityByProduct = new Map(
+    CAPACITY_PRODUCTS.map((product, index) => [
+      product.id,
+      capacityMigrationPending
+        ? null
+        : (((capacityResults[index].data ?? [])[0] ?? null) as CapacitySnapshot | null),
+    ]),
+  );
 
   const profiles = (profilesResult.data ?? []) as ProfileRow[];
   const plans = (plansResult.data ?? []) as PlanRow[];
@@ -238,6 +278,20 @@ export default async function FarmDashboardPage({
               Generate tomorrow&apos;s sheet
             </button>
           </form>
+          <Link
+            className={styles.locationLink}
+            href={`/farm/delivery-sheet?date=${deliveryDate}`}
+          >
+            Print delivery sheet
+          </Link>
+          {canManageLocations(role) ? (
+            <a
+              className={styles.locationLink}
+              href="/farm/exports/customers"
+            >
+              Export customers
+            </a>
+          ) : null}
           <Link className={styles.locationLink} href="/farm/locations">
             Manage locations
           </Link>
@@ -280,6 +334,67 @@ export default async function FarmDashboardPage({
           <span>Needs location</span>
           <strong>{unassignedCount}</strong>
         </article>
+      </section>
+
+      <section className={styles.capacity} aria-labelledby="capacity-title">
+        <div className={styles.sectionHeading}>
+          <div>
+            <p className={styles.sectionLabel}>After accepted orders</p>
+            <h2 id="capacity-title">Tomorrow&apos;s remaining capacity</h2>
+          </div>
+          <Link href="/farm/capacity">Manage limits</Link>
+        </div>
+        {capacityMigrationPending ? (
+          <p className={styles.capacityPending}>
+            Multi-product capacity is in preview. Limits become editable after the
+            database update is approved.
+          </p>
+        ) : null}
+        <div className={styles.capacityList}>
+          {CAPACITY_PRODUCTS.map((product) => {
+            const snapshot = capacityByProduct.get(product.id);
+            const accepted = snapshot
+              ? Number(snapshot.active_plan_quantity) +
+                Number(snapshot.paid_once_quantity)
+              : 0;
+            const checkout = snapshot
+              ? Number(snapshot.checkout_holds_quantity)
+              : 0;
+            return (
+              <article key={product.id}>
+                <div>
+                  <span>{product.name}</span>
+                  <strong>
+                    {formatCapacityQuantity(snapshot?.available_quantity ?? 0)}{" "}
+                    {product.shortUnit}
+                  </strong>
+                  <small>remaining</small>
+                </div>
+                <dl>
+                  <div>
+                    <dt>Limit</dt>
+                    <dd>
+                      {formatCapacityQuantity(snapshot?.capacity_limit ?? 0)}{" "}
+                      {product.shortUnit}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Accepted</dt>
+                    <dd>
+                      {formatCapacityQuantity(accepted)} {product.shortUnit}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Checkout</dt>
+                    <dd>
+                      {formatCapacityQuantity(checkout)} {product.shortUnit}
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            );
+          })}
+        </div>
       </section>
 
       {productTotals.length ? (

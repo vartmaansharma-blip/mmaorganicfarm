@@ -10,9 +10,9 @@ export async function reserveOrderCapacity(orderId: string) {
 
   if (error) {
     throw new Error(
-      error.message.includes("Milk capacity is full")
+      error.message.includes("capacity is full")
         ? error.message
-        : "We could not confirm milk availability. Please try again.",
+        : "We could not confirm product availability. Please try again.",
     );
   }
 
@@ -24,7 +24,7 @@ export async function consumeOrderCapacity(orderId: string) {
   const { error } = await admin.rpc("consume_order_capacity", {
     p_order_id: orderId,
   });
-  if (error) throw new Error("Reserved milk capacity could not be confirmed.");
+  if (error) throw new Error("Reserved product capacity could not be confirmed.");
 }
 
 export async function releaseOrderCapacity(orderId: string) {

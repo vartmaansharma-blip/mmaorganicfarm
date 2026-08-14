@@ -162,3 +162,19 @@
     display: none;
   }
 }
+
+@media print {
+  .sidebar,
+  .mobileNav {
+    display: none;
+  }
+
+  .shell {
+    display: block;
+    min-height: auto;
+  }
+
+  .workspace {
+    padding: 0;
+  }
+}

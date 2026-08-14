@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+function normalizedLocation(value: string | null) {
+  return (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 export default async function LocationsPage() {
   const { role, supabase } = await requireFarmStaff("/farm/locations");
   const [areasResult, routesResult, profilesResult] = await Promise.all([
@@ -32,7 +36,7 @@ export default async function LocationsPage() {
     supabase
       .from("customer_profiles")
       .select(
-        "user_id, full_name, phone, address_line, postal_code, delivery_area_id, delivery_route_id, route_stop_order",
+        "user_id, full_name, phone, address_line, locality, postal_code, delivery_area_id, delivery_route_id, route_stop_order",
       )
       .order("full_name"),
   ]);
@@ -64,7 +68,12 @@ export default async function LocationsPage() {
             Create areas as the farm expands, then place each customer on a route.
           </p>
         </div>
-        <Link href="/farm">Back to overview</Link>
+        <div className={styles.headerActions}>
+          {canManage ? (
+            <a href="/farm/exports/customers">Export customers</a>
+          ) : null}
+          <Link href="/farm">Back to overview</Link>
+        </div>
       </header>
 
       <section className={styles.summary} aria-label="Location summary">
@@ -112,8 +121,20 @@ export default async function LocationsPage() {
 
         {profiles.length ? (
           <div className={styles.customerList}>
-            {profiles.map((profile) => (
-              <article className={styles.customer} key={profile.user_id}>
+            {profiles.map((profile) => {
+              const addressForSuggestion = normalizedLocation(
+                [profile.address_line, profile.locality]
+                  .filter(Boolean)
+                  .join(" "),
+              );
+              const suggestedArea = !profile.delivery_area_id
+                ? areas.find((area) =>
+                    addressForSuggestion.includes(normalizedLocation(area.name)),
+                  )
+                : null;
+
+              return (
+                <article className={styles.customer} key={profile.user_id}>
                 <div className={styles.customerIdentity}>
                   <span className={styles.initial} aria-hidden="true">
                     {(profile.full_name ?? "C").charAt(0).toUpperCase()}
@@ -132,44 +153,97 @@ export default async function LocationsPage() {
                 <div className={styles.currentAssignment}>
                   <span>{profile.delivery_area_id ? areaById.get(profile.delivery_area_id) : "Unassigned area"}</span>
                   <span>{profile.delivery_route_id ? routeById.get(profile.delivery_route_id) : "No route"}</span>
+                  {suggestedArea ? (
+                    <span className={styles.suggestion}>
+                      Suggested: {suggestedArea.name}
+                    </span>
+                  ) : null}
                 </div>
 
                 {canManage ? (
                   <form action={assignCustomerLocation} className={styles.assignmentForm}>
                     <input name="userId" type="hidden" value={profile.user_id} />
-                    <select name="areaId" defaultValue={profile.delivery_area_id ?? ""}>
-                      <option value="">Unassigned area</option>
-                      {areas.map((area) => (
-                        <option value={area.id} key={area.id}>{area.name}</option>
-                      ))}
-                    </select>
-                    <select name="routeId" defaultValue={profile.delivery_route_id ?? ""}>
-                      <option value="">No route</option>
-                      {areas.map((area) => (
-                        <optgroup label={area.name} key={area.id}>
-                          {routes
-                            .filter((route) => route.area_id === area.id)
-                            .map((route) => (
-                              <option value={route.id} key={route.id}>
-                                {route.name}{route.code ? ` · ${route.code}` : ""}
-                              </option>
-                            ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                    <input
-                      aria-label="Stop order"
-                      defaultValue={profile.route_stop_order ?? ""}
-                      min="1"
-                      name="stopOrder"
-                      placeholder="Stop"
-                      type="number"
-                    />
-                    <button type="submit">Save</button>
+                    <div className={styles.detailFields}>
+                      <label>
+                        <span>Customer name</span>
+                        <input
+                          defaultValue={profile.full_name ?? "Customer"}
+                          maxLength={120}
+                          name="fullName"
+                          required
+                        />
+                      </label>
+                      <label>
+                        <span>Phone</span>
+                        <input
+                          defaultValue={profile.phone?.replace(/^\+91/, "") ?? ""}
+                          inputMode="numeric"
+                          maxLength={10}
+                          name="phone"
+                          placeholder="98765 43210"
+                          type="tel"
+                        />
+                      </label>
+                      <label className={styles.addressField}>
+                        <span>Delivery address</span>
+                        <textarea
+                          defaultValue={profile.address_line ?? ""}
+                          maxLength={500}
+                          name="address"
+                          placeholder="House, street, area and landmark"
+                          rows={2}
+                        />
+                      </label>
+                    </div>
+                    <div className={styles.routeFields}>
+                      <label>
+                        <span>Area</span>
+                        <select
+                          name="areaId"
+                          defaultValue={
+                            profile.delivery_area_id ?? suggestedArea?.id ?? ""
+                          }
+                        >
+                          <option value="">Unassigned area</option>
+                          {areas.map((area) => (
+                            <option value={area.id} key={area.id}>{area.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Route</span>
+                        <select name="routeId" defaultValue={profile.delivery_route_id ?? ""}>
+                          <option value="">No route</option>
+                          {areas.map((area) => (
+                            <optgroup label={area.name} key={area.id}>
+                              {routes
+                                .filter((route) => route.area_id === area.id)
+                                .map((route) => (
+                                  <option value={route.id} key={route.id}>
+                                    {route.name}{route.code ? ` · ${route.code}` : ""}
+                                  </option>
+                                ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Stop order</span>
+                        <input
+                          defaultValue={profile.route_stop_order ?? ""}
+                          min="1"
+                          name="stopOrder"
+                          placeholder="Stop"
+                          type="number"
+                        />
+                      </label>
+                      <button type="submit">Save customer</button>
+                    </div>
                   </form>
                 ) : null}
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className={styles.empty}>No signed-in customers yet.</div>

@@ -156,6 +156,77 @@
   padding: 22px;
 }
 
+.capacity {
+  margin-top: 34px;
+}
+
+.capacity .sectionHeading {
+  align-items: center;
+}
+
+.capacity .sectionHeading a {
+  color: #191919;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.capacityPending {
+  background: #f7f7f5;
+  border-left: 3px solid #191919;
+  color: #5e5d59;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 16px 0 0;
+  padding: 10px 12px;
+}
+
+.capacityList {
+  border-bottom: 1px solid #deddd9;
+}
+
+.capacityList article {
+  display: grid;
+  gap: 14px;
+  padding: 18px 0;
+}
+
+.capacityList article + article {
+  border-top: 1px solid #deddd9;
+}
+
+.capacityList article > div {
+  display: grid;
+  gap: 3px;
+}
+
+.capacityList article > div span,
+.capacityList article > div small,
+.capacityList dt {
+  color: #6f6e6a;
+  font-size: 10px;
+}
+
+.capacityList article > div strong {
+  font-size: 26px;
+}
+
+.capacityList dl {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.capacityList dt {
+  margin-bottom: 3px;
+}
+
+.capacityList dd {
+  font-size: 11px;
+  font-weight: 680;
+  margin: 0;
+}
+
 .production h2,
 .routeSection h2,
 .remaining h2 {
@@ -418,6 +489,24 @@
 
   .metrics article + article {
     border-left: 1px solid #e8e7e3;
+  }
+
+  .capacityList {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .capacityList article {
+    padding: 22px 20px;
+  }
+
+  .capacityList article:first-child {
+    padding-left: 0;
+  }
+
+  .capacityList article + article {
+    border-left: 1px solid #deddd9;
+    border-top: 0;
   }
 
   .metrics strong {

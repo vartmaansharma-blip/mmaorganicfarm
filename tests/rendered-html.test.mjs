@@ -127,8 +127,16 @@ const capacitySchemaUrl = new URL(
   "../supabase/production_capacity.sql",
   import.meta.url,
 );
+const multiProductCapacityUrl = new URL(
+  "../supabase/multi_product_capacity.sql",
+  import.meta.url,
+);
 const capacityPageUrl = new URL(
   "../app/farm/capacity/page.tsx",
+  import.meta.url,
+);
+const capacityProductsUrl = new URL(
+  "../lib/capacity-products.ts",
   import.meta.url,
 );
 const capacityLibraryUrl = new URL(
@@ -300,12 +308,22 @@ test("hands commerce to Shopify without replacing the delivery calendar", async 
 });
 
 test("accepts orders only when daily production capacity is available", async () => {
-  const [checkout, webhook, capacity, capacityPage, capacityLibrary] =
+  const [
+    checkout,
+    webhook,
+    capacity,
+    multiProductCapacity,
+    capacityPage,
+    capacityProducts,
+    capacityLibrary,
+  ] =
     await Promise.all([
       readFile(shopifyCheckoutUrl, "utf8"),
       readFile(shopifyWebhookUrl, "utf8"),
       readFile(capacitySchemaUrl, "utf8"),
+      readFile(multiProductCapacityUrl, "utf8"),
       readFile(capacityPageUrl, "utf8"),
+      readFile(capacityProductsUrl, "utf8"),
       readFile(capacityLibraryUrl, "utf8"),
     ]);
 
@@ -318,6 +336,16 @@ test("accepts orders only when daily production capacity is available", async ()
   assert.match(capacity, /status = 'active'/);
   assert.match(capacityPage, /Next seven days/);
   assert.match(capacityPage, /In checkout/);
+  assert.match(capacityPage, /product_capacity_snapshot/);
+  assert.match(capacityProducts, /"paneer"/);
+  assert.match(capacityProducts, /"ghee"/);
+  assert.match(multiProductCapacity, /'milk', 'paneer', 'ghee'/);
+  assert.match(multiProductCapacity, /plan_product_quantity/);
+  assert.match(multiProductCapacity, /scheduled_delivery_items/);
+  assert.match(multiProductCapacity, /paid_order\.status = 'paid'/);
+  assert.match(multiProductCapacity, /reservation\.status = 'pending'/);
+  assert.match(multiProductCapacity, /for update/);
+  assert.match(multiProductCapacity, /capacity is full/);
   assert.match(capacityLibrary, /p_hold_hours: 24/);
 });
 
@@ -416,6 +444,12 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /Saved weekly milk schedule/);
   assert.match(accountPage, /Scheduled add-ons/);
   assert.match(accountPage, /scheduled_delivery_items/);
+  assert.match(accountPage, /delivery_exceptions/);
+  assert.match(accountPage, /delivery_pauses/);
+  assert.match(accountPage, /buildDeliveryCalendar/);
+  assert.match(accountPage, /Next 7 days/);
+  assert.match(accountPage, /One-day quantity changes and skips appear here/);
+  assert.match(accountPage, /Milk skipped/);
   assert.match(accountPage, /remainingDeliveries/);
   assert.match(accountPage, /href="\/calendar"/);
   assert.match(accountPage, /Open delivery calendar/);
@@ -657,6 +691,41 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(styles, /\.headerActions/);
   assert.match(styles, /width: 100%/);
   assert.match(styles, /@media \(min-width: 700px\)/);
+});
+
+test("provides protected customer and daily delivery exports", async () => {
+  const [dashboard, locations, locationActions, customerExport, csv, sheet, sheetStyles, shellStyles] =
+    await Promise.all([
+      readFile(farmDashboardUrl, "utf8"),
+      readFile(farmLocationsUrl, "utf8"),
+      readFile(farmActionsUrl, "utf8"),
+      readFile(new URL("../app/farm/exports/customers/route.ts", import.meta.url), "utf8"),
+      readFile(new URL("../lib/farm-export.ts", import.meta.url), "utf8"),
+      readFile(new URL("../app/farm/delivery-sheet/page.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/farm/delivery-sheet/sheet.module.css", import.meta.url), "utf8"),
+      readFile(new URL("../app/farm/farm-shell.module.css", import.meta.url), "utf8"),
+    ]);
+
+  assert.match(dashboard, /Print delivery sheet/);
+  assert.match(dashboard, /Export customers/);
+  assert.match(locations, /Suggested:/);
+  assert.match(locations, /name="fullName"/);
+  assert.match(locations, /name="phone"/);
+  assert.match(locations, /name="address"/);
+  assert.match(locationActions, /full_name: fullName/);
+  assert.match(locationActions, /phone: phone \? `\+91\$\{phone\}` : null/);
+  assert.match(locationActions, /address_line: address \|\| null/);
+  assert.match(customerExport, /requireFarmStaff/);
+  assert.match(customerExport, /canManageLocations/);
+  assert.match(customerExport, /Content-Disposition/);
+  assert.match(customerExport, /Deliveries remaining/);
+  assert.match(csv, /\^\[=\+\\-@\]/);
+  assert.match(sheet, /Daily delivery sheet/);
+  assert.match(sheet, /PrintSheetButton/);
+  assert.match(sheet, /All areas/);
+  assert.match(sheet, /Customer information is provided only for completing farm deliveries/);
+  assert.match(sheetStyles, /@media print/);
+  assert.match(shellStyles, /@media print/);
 });
 
 test("collects delivery details only when a customer starts an order", async () => {

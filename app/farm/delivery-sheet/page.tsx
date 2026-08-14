@@ -1,0 +1,234 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import {
+  formatCalendarDate,
+  nextDeliveryDateInIndia,
+  productName,
+} from "@/lib/delivery-calendar";
+import { requireFarmStaff } from "@/lib/farm-dashboard";
+import { PrintSheetButton } from "./print-button";
+import styles from "./sheet.module.css";
+
+export const metadata: Metadata = {
+  title: "Daily delivery sheet",
+  robots: { index: false, follow: false },
+};
+
+type DeliveryRow = {
+  address_snapshot: string | null;
+  bottle_choice: "new" | "none" | "return";
+  customer_name: string;
+  daily_delivery_items: Array<{
+    product_key: string;
+    quantity: number;
+    unit: string;
+  }>;
+  delivery_area_id: string | null;
+  delivery_route_id: string | null;
+  id: string;
+  phone_snapshot: string | null;
+  route_stop_order: number | null;
+  status: string;
+};
+
+function validDate(value: string | undefined) {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+function quantityLabel(item: DeliveryRow["daily_delivery_items"][number]) {
+  const quantity = Number(item.quantity);
+  return /^1\s/.test(item.unit)
+    ? `${quantity} × ${item.unit}`
+    : `${quantity} ${item.unit}${quantity === 1 ? "" : "s"}`;
+}
+
+export default async function DeliverySheetPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ area?: string; date?: string }>;
+}) {
+  const { supabase } = await requireFarmStaff("/farm/delivery-sheet");
+  const params = await searchParams;
+  const deliveryDate = validDate(params.date) ?? nextDeliveryDateInIndia();
+  const selectedArea = params.area ?? "";
+
+  let deliveriesQuery = supabase
+    .from("daily_deliveries")
+    .select(
+      "id, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, route_stop_order, daily_delivery_items(product_key, quantity, unit)",
+    )
+    .eq("delivery_date", deliveryDate);
+  if (selectedArea) {
+    deliveriesQuery = deliveriesQuery.eq("delivery_area_id", selectedArea);
+  }
+
+  const [deliveriesResult, areasResult, routesResult] = await Promise.all([
+    deliveriesQuery,
+    supabase
+      .from("delivery_areas")
+      .select("id, name, active, sort_order")
+      .order("sort_order")
+      .order("name"),
+    supabase
+      .from("delivery_routes")
+      .select("id, area_id, name, code, active, sort_order")
+      .order("sort_order")
+      .order("name"),
+  ]);
+
+  const databaseError = [
+    deliveriesResult.error,
+    areasResult.error,
+    routesResult.error,
+  ].find(Boolean);
+  if (databaseError) throw databaseError;
+
+  const deliveries = (deliveriesResult.data ?? []) as DeliveryRow[];
+  const areaById = new Map(
+    (areasResult.data ?? []).map((area) => [area.id, area.name]),
+  );
+  const routeById = new Map(
+    (routesResult.data ?? []).map((route) => [route.id, route.name]),
+  );
+  const grouped = new Map<string, Map<string, DeliveryRow[]>>();
+  const totals = new Map<string, number>();
+
+  deliveries.forEach((delivery) => {
+    const areaName = delivery.delivery_area_id
+      ? areaById.get(delivery.delivery_area_id) ?? "Unknown area"
+      : "Unassigned area";
+    const routeName = delivery.delivery_route_id
+      ? routeById.get(delivery.delivery_route_id) ?? "Unknown route"
+      : "Route not assigned";
+    const areaRoutes = grouped.get(areaName) ?? new Map<string, DeliveryRow[]>();
+    const routeStops = areaRoutes.get(routeName) ?? [];
+    routeStops.push(delivery);
+    areaRoutes.set(routeName, routeStops);
+    grouped.set(areaName, areaRoutes);
+
+    (delivery.daily_delivery_items ?? []).forEach((item) => {
+      totals.set(
+        item.product_key,
+        (totals.get(item.product_key) ?? 0) + Number(item.quantity),
+      );
+    });
+  });
+
+  const areas = [...grouped.entries()]
+    .map(([name, routes]) => ({
+      name,
+      routes: [...routes.entries()].map(([routeName, stops]) => ({
+        name: routeName,
+        stops: stops.sort(
+          (a, b) => (a.route_stop_order ?? 9999) - (b.route_stop_order ?? 9999),
+        ),
+      })),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <p>M&apos;ma Organic Farm</p>
+          <h1>Daily delivery sheet</h1>
+          <span>{formatCalendarDate(deliveryDate)}</span>
+        </div>
+        <div className={styles.actions}>
+          <PrintSheetButton />
+          <Link href="/farm">Back to dashboard</Link>
+        </div>
+      </header>
+
+      <form action="/farm/delivery-sheet" className={styles.filters} method="get">
+        <label>
+          <span>Delivery date</span>
+          <input defaultValue={deliveryDate} name="date" type="date" />
+        </label>
+        <label>
+          <span>Area</span>
+          <select defaultValue={selectedArea} name="area">
+            <option value="">All areas</option>
+            {(areasResult.data ?? []).map((area) => (
+              <option key={area.id} value={area.id}>
+                {area.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit">Apply</button>
+      </form>
+
+      <section className={styles.summary} aria-label="Delivery totals">
+        <div><strong>{deliveries.length}</strong><span>Customer stops</span></div>
+        {[...totals.entries()].map(([key, quantity]) => (
+          <div key={key}>
+            <strong>{quantity}</strong>
+            <span>{productName(key)}</span>
+          </div>
+        ))}
+      </section>
+
+      {areas.length ? (
+        <div className={styles.areaList}>
+          {areas.map((area) => (
+            <section className={styles.area} key={area.name}>
+              <header>
+                <h2>{area.name}</h2>
+                <span>
+                  {area.routes.reduce((sum, route) => sum + route.stops.length, 0)} stops
+                </span>
+              </header>
+              {area.routes.map((route) => (
+                <div className={styles.route} key={route.name}>
+                  <h3>{route.name}</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Stop</th><th>Customer</th><th>Delivery</th><th>Check</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {route.stops.map((stop, index) => (
+                        <tr key={stop.id}>
+                          <td>{stop.route_stop_order ?? index + 1}</td>
+                          <td>
+                            <strong>{stop.customer_name}</strong>
+                            <span>{stop.phone_snapshot ?? "No phone"}</span>
+                            <small>{stop.address_snapshot ?? "No address"}</small>
+                          </td>
+                          <td>
+                            {(stop.daily_delivery_items ?? []).map((item) => (
+                              <span key={item.product_key}>
+                                {productName(item.product_key)} · {quantityLabel(item)}
+                              </span>
+                            ))}
+                            {stop.bottle_choice !== "none" ? (
+                              <span>
+                                Bottle · {stop.bottle_choice === "new" ? "Take new" : "Collect return"}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className={styles.checkCell}>□</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+      ) : (
+        <section className={styles.empty}>
+          <strong>No delivery sheet for this date.</strong>
+          <p>Generate the daily sheet from the farm dashboard first.</p>
+        </section>
+      )}
+
+      <footer className={styles.footer}>
+        Customer information is provided only for completing farm deliveries.
+      </footer>
+    </main>
+  );
+}

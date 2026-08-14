@@ -52,6 +52,54 @@
   padding: 22px;
 }
 
+.productTabs {
+  border-bottom: 1px solid #deddd9;
+  border-top: 1px solid #deddd9;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 28px;
+}
+
+.productTabs a {
+  color: #6b6a66;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px 8px;
+  text-decoration: none;
+}
+
+.productTabs a + a {
+  border-left: 1px solid #deddd9;
+}
+
+.productTabs span {
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productTabs strong {
+  color: #191919;
+  font-size: 16px;
+}
+
+.productTabs .activeTab {
+  background: #f6cb4f;
+  color: #191919;
+}
+
+.migrationNotice {
+  background: #f7f7f5;
+  border-left: 3px solid #191919;
+  color: #55544f;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+}
+
 .summary span,
 .summary label {
   display: block;
@@ -71,6 +119,13 @@
   line-height: 1.5;
   margin: 8px 0 0;
   max-width: 540px;
+}
+
+.summary .setupNotice {
+  border-left: 2px solid #191919;
+  font-weight: 700;
+  margin-top: 14px;
+  padding-left: 9px;
 }
 
 .summary form > div {
@@ -230,6 +285,18 @@
 }
 
 @media (min-width: 720px) {
+  .productTabs a {
+    padding: 17px 18px;
+  }
+
+  .productTabs span {
+    font-size: 12px;
+  }
+
+  .productTabs strong {
+    font-size: 20px;
+  }
+
   .summary {
     align-items: end;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 0.65fr);

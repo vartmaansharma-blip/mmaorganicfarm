@@ -105,8 +105,6 @@ export async function POST(request: Request) {
         .eq("id", savedOrder.id);
       if (orderError) throw new Error("Shopify order could not be confirmed.");
 
-      await consumeOrderCapacity(savedOrder.id);
-
       if (savedOrder.delivery_plan_id) {
         const { error: planError } = await admin
           .from("delivery_plans")
@@ -116,6 +114,9 @@ export async function POST(request: Request) {
           .eq("status", "pending_confirmation");
         if (planError) throw new Error("Paid delivery plan could not be activated.");
       }
+
+      // Keep the checkout hold until the paid plan is visible to capacity checks.
+      await consumeOrderCapacity(savedOrder.id);
     }
   }
 

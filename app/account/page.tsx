@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { buildDeliveryCalendar, productName } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +38,7 @@ export default async function AccountPage({
   const { data: deliveryPlan } = await supabase
     .from("delivery_plans")
     .select(
-      "id, status, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit)",
+      "id, status, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
@@ -123,6 +124,16 @@ export default async function AccountPage({
     0,
     purchasedDeliveries - deliveredDeliveries,
   );
+  const upcomingDeliveries = deliveryPlan
+    ? buildDeliveryCalendar({
+        days: 7,
+        exceptions: deliveryPlan.delivery_exceptions ?? [],
+        pauses: deliveryPlan.delivery_pauses ?? [],
+        scheduledItems: deliveryPlan.scheduled_delivery_items ?? [],
+        startDate: deliveryPlan.start_date,
+        weeklyItems: deliveryPlan.weekly_delivery_items ?? [],
+      })
+    : [];
 
   return (
     <main className={styles.page}>
@@ -244,6 +255,57 @@ export default async function AccountPage({
                 </dd>
               </div>
             </dl>
+
+            <section
+              className={styles.upcomingSchedule}
+              aria-labelledby="upcoming-deliveries-heading"
+            >
+              <div className={styles.upcomingHeading}>
+                <div>
+                  <h3 id="upcoming-deliveries-heading">Next 7 days</h3>
+                  <p>One-day quantity changes and skips appear here.</p>
+                </div>
+                <Link href="/calendar">Change a date</Link>
+              </div>
+              <div className={styles.upcomingGrid}>
+                {upcomingDeliveries.map((day) => {
+                  const milk = day.items.find(
+                    (item) => item.productKey === "milk",
+                  );
+                  const addOns = day.items.filter(
+                    (item) => item.productKey !== "milk",
+                  );
+                  const milkSkipped = day.skippedProductKeys.includes("milk");
+
+                  return (
+                    <Link
+                      href={`/calendar?date=${day.date}`}
+                      key={day.date}
+                    >
+                      <time dateTime={day.date}>{day.dayLabel}</time>
+                      <strong>
+                        {day.paused
+                          ? "Paused"
+                          : milkSkipped
+                            ? "Milk skipped"
+                            : milk
+                              ? `${milk.quantity} L milk`
+                              : "No milk"}
+                      </strong>
+                      <small>
+                        {addOns.length
+                          ? addOns
+                              .map((item) => productName(item.productKey))
+                              .join(" · ")
+                          : day.paused
+                            ? "No delivery"
+                            : "Open date"}
+                      </small>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
 
             <div className={styles.planWeek} aria-label="Saved weekly milk schedule">
               {MILK_PLAN_DAYS.map((day, index) => {

@@ -12,8 +12,9 @@ export async function recordCapturedPayment(payment: Payment) {
   if (paymentError) throw new Error("Payment record could not be saved.");
   const { error: updateError } = await admin.from("orders").update({ status: "paid", updated_at: paidAt }).eq("id", order.id);
   if (updateError) throw new Error("Order could not be marked paid.");
-  await consumeOrderCapacity(order.id);
   if (order.delivery_plan_id) { const { error: planError } = await admin.from("delivery_plans").update({ status: "active", updated_at: paidAt }).eq("id", order.delivery_plan_id).eq("user_id", order.user_id).eq("status", "pending_confirmation"); if (planError) throw new Error("Plan could not be activated."); }
+  // Keep the checkout hold until the paid plan is visible to capacity checks.
+  await consumeOrderCapacity(order.id);
   await admin.from("customer_notifications").insert({
     kind: "payment_confirmed",
     message: order.delivery_plan_id

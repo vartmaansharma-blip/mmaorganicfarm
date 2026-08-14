@@ -11,6 +11,13 @@ function textValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function normalizePhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 12 && digits.startsWith("91")
+    ? digits.slice(2)
+    : digits;
+}
+
 async function requireLocationManager() {
   const context = await requireFarmStaff("/farm/locations");
   if (!canManageLocations(context.role)) {
@@ -55,6 +62,9 @@ export async function createRoute(formData: FormData) {
 export async function assignCustomerLocation(formData: FormData) {
   const { supabase } = await requireLocationManager();
   const userId = textValue(formData, "userId");
+  const fullName = textValue(formData, "fullName");
+  const phone = normalizePhone(textValue(formData, "phone"));
+  const address = textValue(formData, "address");
   let areaId = textValue(formData, "areaId") || null;
   const routeId = textValue(formData, "routeId") || null;
   const rawStopOrder = Number(textValue(formData, "stopOrder"));
@@ -62,6 +72,15 @@ export async function assignCustomerLocation(formData: FormData) {
     Number.isInteger(rawStopOrder) && rawStopOrder > 0 ? rawStopOrder : null;
 
   if (!userId) throw new Error("Customer is required.");
+  if (fullName.length < 2 || fullName.length > 120) {
+    throw new Error("Enter the customer's name.");
+  }
+  if (phone && phone.length !== 10) {
+    throw new Error("Enter a valid 10-digit phone number.");
+  }
+  if (address && (address.length < 8 || address.length > 500)) {
+    throw new Error("Enter a complete delivery address.");
+  }
 
   if (routeId) {
     const { data: route, error: routeError } = await supabase
@@ -76,8 +95,11 @@ export async function assignCustomerLocation(formData: FormData) {
   const { error } = await supabase
     .from("customer_profiles")
     .update({
+      address_line: address || null,
       delivery_area_id: areaId,
       delivery_route_id: routeId,
+      full_name: fullName,
+      phone: phone ? `+91${phone}` : null,
       route_stop_order: stopOrder,
       updated_at: new Date().toISOString(),
     })
