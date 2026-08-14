@@ -19,7 +19,7 @@ export default async function FarmPaymentsPage() {
   const capturedTotal = captured.reduce((sum, payment) => sum + Number(payment.amount_paise), 0);
 
   return <main className={styles.page}>
-    <header><div><p>Finance</p><h1>Payments</h1><span>Verified payment records saved by the website.</span></div><Link href="/farm">Back to overview</Link></header>
+    <header><div><p>Finance</p><h1>Payments</h1><span>Verified payment records saved by the website.</span></div><Link href="/farm">Back to deliveries</Link></header>
     <section className={styles.metrics}><article><span>Captured</span><strong>{captured.length}</strong></article><article><span>Value</span><strong>{formatCheckoutAmount(capturedTotal)}</strong></article><article><span>Pending</span><strong>{pendingOrders?.length ?? 0}</strong></article></section>
     <section className={styles.list}>
       {(payments ?? []).length ? payments?.map((payment) => <article key={payment.id}>

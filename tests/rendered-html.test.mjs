@@ -136,6 +136,10 @@ const capacityPageUrl = new URL(
   "../app/farm/capacity/page.tsx",
   import.meta.url,
 );
+const capacityActionsUrl = new URL(
+  "../app/farm/capacity/actions.ts",
+  import.meta.url,
+);
 const capacityProductsUrl = new URL(
   "../lib/capacity-products.ts",
   import.meta.url,
@@ -319,6 +323,7 @@ test("accepts orders only when daily production capacity is available", async ()
     capacity,
     multiProductCapacity,
     capacityPage,
+    capacityActions,
     capacityProducts,
     capacityLibrary,
   ] =
@@ -328,6 +333,7 @@ test("accepts orders only when daily production capacity is available", async ()
       readFile(capacitySchemaUrl, "utf8"),
       readFile(multiProductCapacityUrl, "utf8"),
       readFile(capacityPageUrl, "utf8"),
+      readFile(capacityActionsUrl, "utf8"),
       readFile(capacityProductsUrl, "utf8"),
       readFile(capacityLibraryUrl, "utf8"),
     ]);
@@ -342,6 +348,10 @@ test("accepts orders only when daily production capacity is available", async ()
   assert.match(capacityPage, /Next seven days/);
   assert.match(capacityPage, /In checkout/);
   assert.match(capacityPage, /product_capacity_snapshot/);
+  assert.match(capacityPage, /Tomorrow uses a one-day limit/);
+  assert.match(capacityActions, /createAdminClient/);
+  assert.match(capacityActions, /requireCapacityManager/);
+  assert.match(capacityActions, /admin\s*\.from\("production_capacity"\)/);
   assert.match(capacityProducts, /"paneer"/);
   assert.match(capacityProducts, /"ghee"/);
   assert.match(multiProductCapacity, /'milk', 'paneer', 'ghee'/);
@@ -649,7 +659,8 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   ]);
 
   assert.match(dashboard, /Tomorrow&apos;s delivery plan/);
-  assert.match(dashboard, /Date → area → route → customer/);
+  assert.match(dashboard, /Area → customer/);
+  assert.match(dashboard, /Delivery stops/);
   assert.match(dashboard, /Generate tomorrow&apos;s sheet/);
   assert.match(dashboard, /daily_deliveries/);
   assert.match(dashboard, /Open map/);
@@ -669,8 +680,10 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(locations, /Deliveries/);
   assert.match(locations, /Edit customer/);
   assert.match(locations, /<details className=\{styles\.editDetails\}>/);
+  assert.doesNotMatch(locations, /New route/);
+  assert.doesNotMatch(locations, /Stop order/);
   assert.match(actions, /assignCustomerLocation/);
-  assert.match(actions, /route\.area_id/);
+  assert.match(actions, /delivery_route_id: null/);
   assert.match(schema, /create table if not exists public\.farm_staff/);
   assert.match(schema, /create table if not exists public\.delivery_areas/);
   assert.match(schema, /create table if not exists public\.delivery_routes/);

@@ -32,28 +32,28 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
         </Link>
 
         <nav className={styles.nav} aria-label="Farm operations">
-          <Link href="/farm">Overview</Link>
+          <Link href="/farm">Deliveries</Link>
+          <Link href="/farm/locations">Customers</Link>
           <Link href="/farm/capacity">Capacity</Link>
-          <Link href="/farm/locations">Locations</Link>
-          <Link href="/farm/cancellations">Requests</Link>
           <Link href="/farm/payments">Payments</Link>
+          <Link href="/farm/cancellations">Requests</Link>
         </nav>
 
         <div className={styles.staff}>
           <span>Signed in as</span>
           <strong>{staff?.role ?? "Farm staff"}</strong>
-          <Link href="/account">Customer profile</Link>
+          <Link href="/">Back to website</Link>
         </div>
       </aside>
 
       <div className={styles.workspace}>{children}</div>
 
       <nav className={styles.mobileNav} aria-label="Farm operations">
-        <Link href="/farm">Overview</Link>
+        <Link href="/farm">Deliveries</Link>
+        <Link href="/farm/locations">Customers</Link>
         <Link href="/farm/capacity">Capacity</Link>
-        <Link href="/farm/locations">Locations</Link>
-        <Link href="/farm/cancellations">Requests</Link>
         <Link href="/farm/payments">Payments</Link>
+        <Link href="/farm/cancellations">Requests</Link>
       </nav>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   isCapacityProductId,
 } from "@/lib/capacity-products";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function capacityValue(formData: FormData) {
   const productKey = String(formData.get("productKey") ?? "");
@@ -39,9 +40,10 @@ async function requireCapacityManager() {
 }
 
 export async function updateDefaultCapacity(formData: FormData) {
-  const { supabase, user } = await requireCapacityManager();
+  const { user } = await requireCapacityManager();
+  const admin = createAdminClient();
   const { dailyLimit, productKey } = capacityValue(formData);
-  const { error } = await supabase
+  const { error } = await admin
     .from("production_capacity")
     .upsert({
       daily_limit: dailyLimit,
@@ -55,7 +57,8 @@ export async function updateDefaultCapacity(formData: FormData) {
 }
 
 export async function saveCapacityOverride(formData: FormData) {
-  const { supabase, user } = await requireCapacityManager();
+  const { user } = await requireCapacityManager();
+  const admin = createAdminClient();
   const deliveryDate = String(formData.get("deliveryDate") ?? "");
   const { dailyLimit, productKey } = capacityValue(formData);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) {
@@ -65,7 +68,7 @@ export async function saveCapacityOverride(formData: FormData) {
     throw new Error("Capacity can only be changed for future deliveries.");
   }
 
-  const { error } = await supabase.from("production_capacity_overrides").upsert(
+  const { error } = await admin.from("production_capacity_overrides").upsert(
     {
       daily_limit: dailyLimit,
       delivery_date: deliveryDate,
@@ -81,13 +84,14 @@ export async function saveCapacityOverride(formData: FormData) {
 }
 
 export async function removeCapacityOverride(formData: FormData) {
-  const { supabase } = await requireCapacityManager();
+  await requireCapacityManager();
+  const admin = createAdminClient();
   const deliveryDate = String(formData.get("deliveryDate") ?? "");
   const productKey = String(formData.get("productKey") ?? "");
   if (!isCapacityProductId(productKey)) {
     throw new Error("Choose a valid farm product.");
   }
-  const { error } = await supabase
+  const { error } = await admin
     .from("production_capacity_overrides")
     .delete()
     .eq("product_key", productKey)

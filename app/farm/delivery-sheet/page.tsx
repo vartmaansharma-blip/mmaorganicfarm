@@ -62,49 +62,32 @@ export default async function DeliverySheetPage({
     deliveriesQuery = deliveriesQuery.eq("delivery_area_id", selectedArea);
   }
 
-  const [deliveriesResult, areasResult, routesResult] = await Promise.all([
+  const [deliveriesResult, areasResult] = await Promise.all([
     deliveriesQuery,
     supabase
       .from("delivery_areas")
       .select("id, name, active, sort_order")
       .order("sort_order")
       .order("name"),
-    supabase
-      .from("delivery_routes")
-      .select("id, area_id, name, code, active, sort_order")
-      .order("sort_order")
-      .order("name"),
   ]);
 
-  const databaseError = [
-    deliveriesResult.error,
-    areasResult.error,
-    routesResult.error,
-  ].find(Boolean);
+  const databaseError = [deliveriesResult.error, areasResult.error].find(Boolean);
   if (databaseError) throw databaseError;
 
   const deliveries = (deliveriesResult.data ?? []) as DeliveryRow[];
   const areaById = new Map(
     (areasResult.data ?? []).map((area) => [area.id, area.name]),
   );
-  const routeById = new Map(
-    (routesResult.data ?? []).map((route) => [route.id, route.name]),
-  );
-  const grouped = new Map<string, Map<string, DeliveryRow[]>>();
+  const grouped = new Map<string, DeliveryRow[]>();
   const totals = new Map<string, number>();
 
   deliveries.forEach((delivery) => {
     const areaName = delivery.delivery_area_id
       ? areaById.get(delivery.delivery_area_id) ?? "Unknown area"
       : "Unassigned area";
-    const routeName = delivery.delivery_route_id
-      ? routeById.get(delivery.delivery_route_id) ?? "Unknown route"
-      : "Route not assigned";
-    const areaRoutes = grouped.get(areaName) ?? new Map<string, DeliveryRow[]>();
-    const routeStops = areaRoutes.get(routeName) ?? [];
-    routeStops.push(delivery);
-    areaRoutes.set(routeName, routeStops);
-    grouped.set(areaName, areaRoutes);
+    const areaStops = grouped.get(areaName) ?? [];
+    areaStops.push(delivery);
+    grouped.set(areaName, areaStops);
 
     (delivery.daily_delivery_items ?? []).forEach((item) => {
       totals.set(
@@ -115,14 +98,11 @@ export default async function DeliverySheetPage({
   });
 
   const areas = [...grouped.entries()]
-    .map(([name, routes]) => ({
+    .map(([name, stops]) => ({
       name,
-      routes: [...routes.entries()].map(([routeName, stops]) => ({
-        name: routeName,
-        stops: stops.sort(
-          (a, b) => (a.route_stop_order ?? 9999) - (b.route_stop_order ?? 9999),
-        ),
-      })),
+      stops: stops.sort(
+        (a, b) => (a.route_stop_order ?? 9999) - (b.route_stop_order ?? 9999),
+      ),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -176,12 +156,10 @@ export default async function DeliverySheetPage({
               <header>
                 <h2>{area.name}</h2>
                 <span>
-                  {area.routes.reduce((sum, route) => sum + route.stops.length, 0)} stops
+                  {area.stops.length} stops
                 </span>
               </header>
-              {area.routes.map((route) => (
-                <div className={styles.route} key={route.name}>
-                  <h3>{route.name}</h3>
+                <div className={styles.route}>
                   <table>
                     <thead>
                       <tr>
@@ -189,7 +167,7 @@ export default async function DeliverySheetPage({
                       </tr>
                     </thead>
                     <tbody>
-                      {route.stops.map((stop, index) => (
+                      {area.stops.map((stop, index) => (
                         <tr key={stop.id}>
                           <td>{stop.route_stop_order ?? index + 1}</td>
                           <td>
@@ -215,7 +193,6 @@ export default async function DeliverySheetPage({
                     </tbody>
                   </table>
                 </div>
-              ))}
             </section>
           ))}
         </div>

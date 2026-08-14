@@ -13,7 +13,7 @@ export default async function CancellationRequestsPage({ searchParams }: { searc
   if (error) throw error;
 
   return <main className={styles.page}>
-    <header><div><p>Customer care</p><h1>Cancellation requests</h1><span>Review requests before preparation or dispatch.</span></div><Link href="/farm">Back to overview</Link></header>
+    <header><div><p>Customer care</p><h1>Cancellation requests</h1><span>Review requests before preparation or dispatch.</span></div><Link href="/farm">Back to deliveries</Link></header>
     {params.message ? <p className={styles.notice}>{params.message}</p> : null}
     {params.error ? <p className={`${styles.notice} ${styles.error}`}>{params.error}</p> : null}
     <section className={styles.list}>

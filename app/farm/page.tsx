@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 };
 
 type ProfileRow = {
+  address_line: string | null;
   delivery_area_id: string | null;
-  delivery_route_id: string | null;
 };
 
 type PlanRow = {
@@ -69,14 +69,9 @@ type Stop = {
   stopOrder: number | null;
 };
 
-type RouteGroup = {
-  name: string;
-  stops: Stop[];
-};
-
 type AreaGroup = {
   name: string;
-  routes: Map<string, RouteGroup>;
+  stops: Stop[];
 };
 
 type CapacitySnapshot = {
@@ -110,18 +105,14 @@ export default async function FarmDashboardPage({
   const [
     profilesResult,
     areasResult,
-    routesResult,
     plansResult,
     pausesResult,
     deliveriesResult,
   ] = await Promise.all([
     supabase
       .from("customer_profiles")
-      .select("delivery_area_id, delivery_route_id"),
+      .select("address_line, delivery_area_id"),
     supabase.from("delivery_areas").select("id, name, active, sort_order"),
-    supabase
-      .from("delivery_routes")
-      .select("id, area_id, name, code, active, sort_order"),
     supabase
       .from("delivery_plans")
       .select("id, status")
@@ -140,7 +131,6 @@ export default async function FarmDashboardPage({
   const databaseError = [
     profilesResult.error,
     areasResult.error,
-    routesResult.error,
     plansResult.error,
     pausesResult.error,
     deliveriesResult.error,
@@ -178,9 +168,6 @@ export default async function FarmDashboardPage({
   const areaById = new Map(
     (areasResult.data ?? []).map((area) => [area.id, area]),
   );
-  const routeById = new Map(
-    (routesResult.data ?? []).map((route) => [route.id, route]),
-  );
   const areaGroups = new Map<string, AreaGroup>();
   const totals = new Map<string, number>();
 
@@ -188,21 +175,13 @@ export default async function FarmDashboardPage({
     const area = delivery.delivery_area_id
       ? areaById.get(delivery.delivery_area_id)
       : null;
-    const route = delivery.delivery_route_id
-      ? routeById.get(delivery.delivery_route_id)
-      : null;
     const areaKey = area?.id ?? "unassigned";
-    const routeKey = route?.id ?? `${areaKey}-unassigned`;
     const areaGroup: AreaGroup = areaGroups.get(areaKey) ?? {
       name: area?.name ?? "Unassigned area",
-      routes: new Map<string, RouteGroup>(),
-    };
-    const routeGroup: RouteGroup = areaGroup.routes.get(routeKey) ?? {
-      name: route?.name ?? "Route not assigned",
       stops: [],
     };
 
-    routeGroup.stops.push({
+    areaGroup.stops.push({
       address: delivery.address_snapshot ?? "",
       bottleChoice: delivery.bottle_choice,
       id: delivery.id,
@@ -212,7 +191,6 @@ export default async function FarmDashboardPage({
       status: delivery.status,
       stopOrder: delivery.route_stop_order,
     });
-    areaGroup.routes.set(routeKey, routeGroup);
     areaGroups.set(areaKey, areaGroup);
 
     (delivery.daily_delivery_items ?? []).forEach((item) => {
@@ -226,12 +204,9 @@ export default async function FarmDashboardPage({
   const groups = [...areaGroups.values()]
     .map((area) => ({
       ...area,
-      routes: [...area.routes.values()].map((route) => ({
-        ...route,
-        stops: route.stops.sort(
-          (a, b) => (a.stopOrder ?? 9999) - (b.stopOrder ?? 9999),
-        ),
-      })),
+      stops: area.stops.sort(
+        (a, b) => (a.stopOrder ?? 9999) - (b.stopOrder ?? 9999),
+      ),
     }))
     .sort((a, b) => {
       if (a.name === "Unassigned area") return 1;
@@ -242,7 +217,7 @@ export default async function FarmDashboardPage({
     (plan) => plan.status === "pending_confirmation",
   ).length;
   const unassignedCount = profiles.filter(
-    (profile) => !profile.delivery_area_id || !profile.delivery_route_id,
+    (profile) => !profile.address_line,
   ).length;
   const pausedTomorrow = plans.filter(
     (plan) =>
@@ -293,7 +268,7 @@ export default async function FarmDashboardPage({
             </a>
           ) : null}
           <Link className={styles.locationLink} href="/farm/locations">
-            Manage locations
+            View customers
           </Link>
         </div>
       </header>
@@ -331,7 +306,7 @@ export default async function FarmDashboardPage({
           <strong>{pendingCount}</strong>
         </article>
         <article>
-          <span>Needs location</span>
+          <span>Needs address</span>
           <strong>{unassignedCount}</strong>
         </article>
       </section>
@@ -416,8 +391,8 @@ export default async function FarmDashboardPage({
       <section className={styles.routeSection} aria-labelledby="routes-title">
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.sectionLabel}>Date → area → route → customer</p>
-            <h2 id="routes-title">Delivery routes</h2>
+            <p className={styles.sectionLabel}>Area → customer</p>
+            <h2 id="routes-title">Delivery stops</h2>
           </div>
           <span>{deliveries.length} stops</span>
         </div>
@@ -429,15 +404,13 @@ export default async function FarmDashboardPage({
                 <header>
                   <h3>{area.name}</h3>
                   <span>
-                    {area.routes.reduce((sum, route) => sum + route.stops.length, 0)} stops
+                    {area.stops.length} stops
                   </span>
                 </header>
                 <div className={styles.routeList}>
-                  {area.routes.map((route) => (
-                    <section className={styles.route} key={route.name}>
-                      <h4>{route.name}</h4>
+                    <section className={styles.route}>
                       <ol>
-                        {route.stops.map((stop, index) => (
+                        {area.stops.map((stop, index) => (
                           <li key={stop.id}>
                             <span className={styles.stopNumber}>
                               {stop.stopOrder ?? index + 1}
@@ -496,7 +469,6 @@ export default async function FarmDashboardPage({
                         ))}
                       </ol>
                     </section>
-                  ))}
                 </div>
               </article>
             ))}

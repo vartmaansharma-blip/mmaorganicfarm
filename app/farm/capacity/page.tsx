@@ -109,6 +109,8 @@ export default async function CapacityPage({
       }))
     : ((snapshotResult.data ?? []) as CapacityDay[]);
   const overrides = overridesResult.data ?? [];
+  const tomorrowLimit = Number(days[0]?.capacity_limit ?? defaultLimit);
+  const tomorrowUsesOverride = tomorrowLimit !== defaultLimit;
 
   return (
     <main className={styles.page}>
@@ -121,7 +123,7 @@ export default async function CapacityPage({
             checkouts are subtracted from each day.
           </p>
         </div>
-        <Link href="/farm">Back to overview</Link>
+        <Link href="/farm">Back to deliveries</Link>
       </header>
 
       <nav className={styles.productTabs} aria-label="Capacity product">
@@ -163,6 +165,13 @@ export default async function CapacityPage({
           {defaultLimit === 0 ? (
             <p className={styles.setupNotice}>
               Set a limit before this product can be accepted online.
+            </p>
+          ) : null}
+          {tomorrowUsesOverride ? (
+            <p className={styles.overrideNotice}>
+              Tomorrow uses a one-day limit of {formatCapacityQuantity(tomorrowLimit)}{" "}
+              {selectedProduct.shortUnit}. The normal daily limit remains{" "}
+              {formatCapacityQuantity(defaultLimit)} {selectedProduct.shortUnit}.
             </p>
           ) : null}
         </div>

@@ -9,7 +9,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   assignCustomerLocation,
   createArea,
-  createRoute,
   importCustomerProfiles,
 } from "./actions";
 import styles from "./locations.module.css";
@@ -118,16 +117,11 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const { role, supabase } = await requireFarmStaff("/farm/locations");
   const admin = createAdminClient();
   const parameters = await searchParams;
-  const [areasResult, routesResult, profilesResult, plansResult, ordersResult, paymentsResult] =
+  const [areasResult, profilesResult, plansResult, ordersResult, paymentsResult] =
     await Promise.all([
       supabase
         .from("delivery_areas")
         .select("id, name, active, sort_order")
-        .order("sort_order")
-        .order("name"),
-      supabase
-        .from("delivery_routes")
-        .select("id, area_id, name, code, active, sort_order")
         .order("sort_order")
         .order("name"),
       supabase
@@ -156,7 +150,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
 
   const databaseError = [
     areasResult.error,
-    routesResult.error,
     profilesResult.error,
     plansResult.error,
     ordersResult.error,
@@ -165,13 +158,11 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   if (databaseError) throw databaseError;
 
   const areas = areasResult.data ?? [];
-  const routes = routesResult.data ?? [];
   const profiles = profilesResult.data ?? [];
   const plans = (plansResult.data ?? []) as PlanRow[];
   const orders = (ordersResult.data ?? []) as OrderRow[];
   const payments = (paymentsResult.data ?? []) as PaymentRow[];
   const areaById = new Map(areas.map((area) => [area.id, area.name]));
-  const routeById = new Map(routes.map((route) => [route.id, route.name]));
   const latestPlanByUser = new Map<string, PlanRow>();
   const latestOrderByUser = new Map<string, OrderRow>();
   const latestPaymentByOrder = new Map<string, PaymentRow>();
@@ -226,7 +217,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
         </div>
         <div className={styles.headerActions}>
           {canManage ? <a href="/farm/exports/customers">Export customers</a> : null}
-          <Link href="/farm">Back to overview</Link>
+          <Link href="/farm">Back to deliveries</Link>
         </div>
       </header>
 
@@ -239,7 +230,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
 
       {canManage ? (
         <details className={styles.tools}>
-          <summary>Customer files, areas, and routes</summary>
+          <summary>Customer file and delivery areas</summary>
           <div className={styles.toolsBody}>
             <section className={styles.importPanel} aria-labelledby="import-title">
               <div className={styles.sectionHeading}>
@@ -270,26 +261,14 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
 
             <section className={styles.setup} aria-labelledby="setup-title">
               <div className={styles.sectionHeading}>
-                <p>Optional delivery setup</p>
-                <h2 id="setup-title">Areas and routes</h2>
+                <p>Delivery grouping</p>
+                <h2 id="setup-title">Delivery areas</h2>
               </div>
               <form action={createArea}>
                 <label htmlFor="area-name">New delivery area</label>
                 <div className={styles.inlineFields}>
                   <input id="area-name" name="name" placeholder="Bistupur" required />
                   <button type="submit">Add area</button>
-                </div>
-              </form>
-              <form action={createRoute}>
-                <label htmlFor="route-name">New route</label>
-                <select id="route-area" name="areaId" required defaultValue="">
-                  <option disabled value="">Choose area</option>
-                  {areas.map((area) => <option value={area.id} key={area.id}>{area.name}</option>)}
-                </select>
-                <div className={styles.inlineFields}>
-                  <input id="route-name" name="name" placeholder="Morning route" required />
-                  <input aria-label="Route code" name="code" placeholder="BIS-01" />
-                  <button type="submit" disabled={!areas.length}>Add route</button>
                 </div>
               </form>
             </section>
@@ -345,7 +324,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                     </small>
                     <div className={styles.currentAssignment}>
                       {profile.delivery_area_id ? <span>{areaById.get(profile.delivery_area_id)}</span> : null}
-                      {profile.delivery_route_id ? <span>{routeById.get(profile.delivery_route_id)}</span> : null}
                       {suggestedArea ? <span className={styles.suggestion}>Suggested area: {suggestedArea.name}</span> : null}
                     </div>
                   </div>
@@ -414,20 +392,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                               {areas.map((area) => <option value={area.id} key={area.id}>{area.name}</option>)}
                             </select>
                           </label>
-                          <label>
-                            <span>Route (optional)</span>
-                            <select name="routeId" defaultValue={profile.delivery_route_id ?? ""}>
-                              <option value="">No route assigned</option>
-                              {areas.map((area) => (
-                                <optgroup label={area.name} key={area.id}>
-                                  {routes.filter((route) => route.area_id === area.id).map((route) => (
-                                    <option value={route.id} key={route.id}>{route.name}{route.code ? ` · ${route.code}` : ""}</option>
-                                  ))}
-                                </optgroup>
-                              ))}
-                            </select>
-                          </label>
-                          <label><span>Stop order (optional)</span><input defaultValue={profile.route_stop_order ?? ""} min="1" name="stopOrder" placeholder="Stop" type="number" /></label>
                           <button type="submit">Save customer</button>
                         </div>
                       </form>

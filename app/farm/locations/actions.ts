@@ -48,26 +48,9 @@ export async function createArea(formData: FormData) {
 
   if (name.length < 2 || !slug) throw new Error("Enter a valid area name.");
 
-  const { error } = await supabase.from("delivery_areas").insert({ name, slug });
-  if (error) throw error;
-
-  revalidatePath("/farm");
-  revalidatePath("/farm/locations");
-}
-
-export async function createRoute(formData: FormData) {
-  const { supabase } = await requireLocationManager();
-  const areaId = textValue(formData, "areaId");
-  const name = textValue(formData, "name");
-  const code = textValue(formData, "code").toUpperCase();
-
-  if (!areaId || name.length < 2) throw new Error("Choose an area and name the route.");
-
-  const { error } = await supabase.from("delivery_routes").insert({
-    area_id: areaId,
-    code: code || null,
-    name,
-  });
+  const { error } = await supabase
+    .from("delivery_areas")
+    .upsert({ active: true, name, slug }, { onConflict: "slug" });
   if (error) throw error;
 
   revalidatePath("/farm");
@@ -83,11 +66,7 @@ export async function assignCustomerLocation(formData: FormData) {
   const locality = textValue(formData, "locality");
   const landmark = textValue(formData, "landmark");
   const postalCode = textValue(formData, "postalCode");
-  let areaId = textValue(formData, "areaId") || null;
-  const routeId = textValue(formData, "routeId") || null;
-  const rawStopOrder = Number(textValue(formData, "stopOrder"));
-  const stopOrder =
-    Number.isInteger(rawStopOrder) && rawStopOrder > 0 ? rawStopOrder : null;
+  const areaId = textValue(formData, "areaId") || null;
 
   if (!userId) throw new Error("Customer is required.");
   if (fullName.length < 2 || fullName.length > 120) {
@@ -107,28 +86,18 @@ export async function assignCustomerLocation(formData: FormData) {
     throw new Error("Enter a valid 6-digit postal code.");
   }
 
-  if (routeId) {
-    const { data: route, error: routeError } = await supabase
-      .from("delivery_routes")
-      .select("area_id")
-      .eq("id", routeId)
-      .single();
-    if (routeError) throw routeError;
-    areaId = route.area_id;
-  }
-
   const { data, error } = await supabase
     .from("customer_profiles")
     .update({
       address_line: address || null,
       delivery_area_id: areaId,
-      delivery_route_id: routeId,
+      delivery_route_id: null,
       full_name: fullName,
       landmark: landmark || null,
       locality: locality || null,
       phone: phone ? `+91${phone}` : null,
       postal_code: postalCode || null,
-      route_stop_order: stopOrder,
+      route_stop_order: null,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)
