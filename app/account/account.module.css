@@ -573,6 +573,68 @@
   padding-left: 12px;
 }
 
+.ordersSection {
+  margin-top: 44px;
+}
+
+.orderHistory {
+  border-top: 1px solid #e6e5e1;
+}
+
+.orderHistory details {
+  border-bottom: 1px solid #e6e5e1;
+}
+
+.orderHistory summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  list-style: none;
+  padding: 18px 0;
+}
+
+.orderHistory summary::-webkit-details-marker {
+  display: none;
+}
+
+.orderHistory summary > span {
+  display: grid;
+  gap: 3px;
+}
+
+.orderHistory summary > span:last-child {
+  text-align: right;
+}
+
+.orderHistory summary strong,
+.orderHistory summary b {
+  color: #1f1f1d;
+  font-size: 15px;
+}
+
+.orderHistory summary small,
+.orderHistory details > div > small {
+  color: #787774;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.orderHistory details > div {
+  background: #f7f7f5;
+  margin-bottom: 14px;
+  padding: 14px;
+}
+
+.orderHistory details p {
+  align-items: center;
+  display: flex;
+  font-size: 13px;
+  justify-content: space-between;
+  margin: 0 0 8px;
+}
+
 .accountFooter {
   display: flex;
   align-items: center;

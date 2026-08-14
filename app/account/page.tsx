@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { formatCheckoutAmount } from "@/lib/checkout-display";
 import { buildDeliveryCalendar, productName } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
@@ -45,7 +46,11 @@ export default async function AccountPage({
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const [{ data: notifications }, { data: cancellationRequests }] = await Promise.all([
+  const [
+    { data: notifications },
+    { data: cancellationRequests },
+    { data: orders },
+  ] = await Promise.all([
     supabase
       .from("customer_notifications")
       .select("id, title, message, read_at, created_at")
@@ -58,6 +63,14 @@ export default async function AccountPage({
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("orders")
+      .select(
+        "id, status, purchase_mode, total_paise, paid_total_paise, start_date, created_at, order_items(id, product_name, quantity, unit)",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   const name = profile?.full_name ?? user.user_metadata.full_name ?? "Customer";
@@ -360,6 +373,61 @@ export default async function AccountPage({
                 <button type="submit">Send request</button>
               </form>
             </details>
+          </section>
+        ) : null}
+
+        {(orders?.length ?? 0) > 0 ? (
+          <section className={styles.ordersSection} aria-labelledby="orders-heading">
+            <div className={styles.sectionHeading}>
+              <h2 id="orders-heading">Order history</h2>
+              <p>Every order remains attached to this customer profile.</p>
+            </div>
+            <div className={styles.orderHistory}>
+              {orders?.map((order, index) => (
+                <details key={order.id} open={index === 0}>
+                  <summary>
+                    <span>
+                      <strong>
+                        {order.purchase_mode === "plan"
+                          ? "30-delivery plan"
+                          : order.purchase_mode === "adjustment"
+                            ? "Milk quantity change"
+                            : "One-time order"}
+                      </strong>
+                      <small>
+                        {new Date(order.created_at).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </small>
+                    </span>
+                    <span>
+                      <b>
+                        {formatCheckoutAmount(
+                          order.paid_total_paise ?? order.total_paise,
+                        )}
+                      </b>
+                      <small>{order.status.replaceAll("_", " ")}</small>
+                    </span>
+                  </summary>
+                  <div>
+                    {(order.order_items ?? []).map((item) => (
+                      <p key={item.id}>
+                        <span>{item.product_name}</span>
+                        <b>
+                          {Number(item.quantity)} {item.unit}
+                        </b>
+                      </p>
+                    ))}
+                    <small>
+                      Order MMA-{order.id.slice(0, 8).toUpperCase()} · Delivery {" "}
+                      {formatPlanStartDate(order.start_date)}
+                    </small>
+                  </div>
+                </details>
+              ))}
+            </div>
           </section>
         ) : null}
 

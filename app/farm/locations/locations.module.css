@@ -443,6 +443,66 @@
   padding-top: 12px;
 }
 
+.orderHistory {
+  border-top: 1px solid #e2e1dd;
+  grid-column: 1 / -1;
+  padding-top: 12px;
+}
+
+.orderHistory > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+  list-style: none;
+}
+
+.orderHistory > summary::-webkit-details-marker {
+  display: none;
+}
+
+.orderHistory > summary span {
+  align-items: center;
+  background: #f1f1ef;
+  border-radius: 3px;
+  display: inline-flex;
+  font-size: 11px;
+  height: 22px;
+  justify-content: center;
+  min-width: 22px;
+}
+
+.orderHistory > div {
+  display: grid;
+  gap: 1px;
+  margin-top: 12px;
+}
+
+.orderHistory article {
+  align-items: center;
+  background: #f7f7f5;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.orderHistory article > span {
+  display: grid;
+  gap: 2px;
+}
+
+.orderHistory article > span:last-child {
+  text-align: right;
+}
+
+.orderHistory article small {
+  color: #787774;
+  font-size: 11px;
+}
+
 .editDetails > summary {
   background: #fff;
   border: 1px solid #cfcfca;

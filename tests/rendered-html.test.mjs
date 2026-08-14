@@ -589,12 +589,12 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /Select milk or an add-on/);
   assert.doesNotMatch(builder, /STEP = 0\.5/);
   assert.doesNotMatch(builder, /Choose one bottle option/);
-  assert.match(builder, /Return bottle/);
-  assert.match(builder, /New\s+bottle ordering will be added later/);
+  assert.match(builder, /returnable or new glass bottles/);
+  assert.match(builder, /30-delivery total/);
   assert.match(order, /Bottle for this delivery/);
   assert.match(order, /I will return a bottle/);
-  assert.match(order, /New\s+bottle ordering will be added later/);
-  assert.doesNotMatch(order, /I need a new glass bottle/);
+  assert.match(order, /I need new bottles/);
+  assert.match(order, /₹72 per litre including ₹10 per glass bottle/);
   assert.match(builder, /Choose what comes home/);
   assert.match(builder, /selection \? "Remove" : "Add \+"/);
   assert.match(builder, /First delivery/);
@@ -800,7 +800,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /name="schedule"/);
   assert.match(orderPage, /name="start"/);
   assert.match(orderPage, /Weekly milk schedule/);
-  assert.match(orderPage, /Selected weekly routine/);
+  assert.match(orderPage, /30-delivery plan total/);
   assert.match(orderPage, /calculateOrderPricing/);
   assert.match(orderPage, /Save &amp; review order/);
   assert.match(orderStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);

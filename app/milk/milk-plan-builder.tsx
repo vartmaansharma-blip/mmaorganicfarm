@@ -17,7 +17,10 @@ import {
   type WeeklyMilkSchedule,
 } from "@/lib/milk-plan";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
-import { calculateOrderPricing } from "@/lib/order-pricing";
+import {
+  calculateOrderPricing,
+  calculatePlanPricing,
+} from "@/lib/order-pricing";
 import styles from "./milk.module.css";
 
 const MAX_LITRES = 5;
@@ -121,14 +124,20 @@ export function MilkPlanBuilder({
       frequency: "once",
     })),
   });
-  const planPricing = calculateOrderPricing({
+  const weeklyPricing = calculateOrderPricing({
     bottleChoice: hasMilk ? "return" : "none",
     milkLitres: weeklyLitres,
     products: selectedExtras,
   });
-  const weeklyEstimate = planPricing.milkTotal;
-  const weeklyExtrasTotal = planPricing.recurringAddOnsTotal;
-  const firstDeliveryExtrasTotal = planPricing.oneTimeAddOnsTotal;
+  const planPricing = calculatePlanPricing({
+    bottleChoice: hasMilk ? "return" : "none",
+    products: selectedExtras,
+    schedule,
+    startDate,
+  });
+  const weeklyEstimate = weeklyPricing.milkTotal;
+  const weeklyExtrasTotal = weeklyPricing.recurringAddOnsTotal;
+  const firstDeliveryExtrasTotal = weeklyPricing.oneTimeAddOnsTotal;
   const scheduledDays = new Set(
     schedule.flatMap((litres, index) => (litres > 0 ? [index + 1] : [])),
   );
@@ -141,7 +150,7 @@ export function MilkPlanBuilder({
   const hasIncompleteExtra = selectedExtras.some(
     (extra) => extra.frequency === "weekly" && extra.days.length === 0,
   );
-  const hasPlanItems = weeklyLitres > 0 || selectedExtras.length > 0;
+  const hasPlanItems = weeklyLitres > 0;
   const extraUnits = selectedExtras.reduce(
     (total, product) => total + product.quantity,
     0,
@@ -149,7 +158,7 @@ export function MilkPlanBuilder({
   const basketTotal = mode
     ? mode === "once"
       ? oncePricing.total
-      : weeklyEstimate + weeklyExtrasTotal + firstDeliveryExtrasTotal
+      : planPricing.total
     : 0;
 
   function updateSchedule(index: number, delta: number) {
@@ -652,6 +661,10 @@ export function MilkPlanBuilder({
                 <dd>₹{weeklyEstimate + weeklyExtrasTotal}</dd>
               </div>
               <div>
+                <dt>30-delivery total</dt>
+                <dd>₹{planPricing.total}</dd>
+              </div>
+              <div>
                 <dt>Glass bottle</dt>
                 <dd>Return bottle</dd>
               </div>
@@ -704,8 +717,8 @@ export function MilkPlanBuilder({
               </button>
             )}
             <p className={styles.summaryNote}>
-              The current online milk price uses the return-bottle option. New
-              bottle ordering will be added later.
+              Choose returnable or new glass bottles on the delivery-details
+              page before the final review.
             </p>
           </aside>
         </div>

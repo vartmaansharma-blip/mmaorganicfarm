@@ -58,7 +58,7 @@ type OrderRow = {
   milk_litres: number | string;
   order_items: OrderItem[];
   paid_total_paise: number | null;
-  purchase_mode: "once" | "plan";
+  purchase_mode: "adjustment" | "once" | "plan";
   start_date: string;
   status: string;
   total_paise: number;
@@ -106,7 +106,9 @@ function quantityLabel(quantity: number | string, unit: string) {
 
 function planLabel(order: OrderRow | undefined) {
   if (!order) return "No order yet";
-  return order.purchase_mode === "plan" ? "Scheduled delivery plan" : "One-time order";
+  if (order.purchase_mode === "plan") return "Scheduled delivery plan";
+  if (order.purchase_mode === "adjustment") return "Milk quantity change";
+  return "One-time order";
 }
 
 type LocationsPageProps = {
@@ -165,6 +167,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const areaById = new Map(areas.map((area) => [area.id, area.name]));
   const latestPlanByUser = new Map<string, PlanRow>();
   const latestOrderByUser = new Map<string, OrderRow>();
+  const ordersByUser = new Map<string, OrderRow[]>();
   const latestPaymentByOrder = new Map<string, PaymentRow>();
   const planPriority = new Map([
     ["active", 4],
@@ -188,6 +191,10 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
     }
   });
   orders.forEach((order) => {
+    ordersByUser.set(order.user_id, [
+      ...(ordersByUser.get(order.user_id) ?? []),
+      order,
+    ]);
     const current = latestOrderByUser.get(order.user_id);
     if (
       !current ||
@@ -287,6 +294,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
             {profiles.map((profile) => {
               const plan = latestPlanByUser.get(profile.user_id);
               const order = latestOrderByUser.get(profile.user_id);
+              const customerOrders = ordersByUser.get(profile.user_id) ?? [];
               const payment = order ? latestPaymentByOrder.get(order.id) : undefined;
               const remainingDeliveries = plan
                 ? Math.max(0, Number(plan.purchased_deliveries) - Number(plan.delivered_deliveries))
@@ -370,6 +378,36 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                       </dl>
                     ) : null}
                   </section>
+
+                  {customerOrders.length ? (
+                    <details className={styles.orderHistory}>
+                      <summary>
+                        Order history <span>{customerOrders.length}</span>
+                      </summary>
+                      <div>
+                        {customerOrders.map((historicOrder) => (
+                          <article key={historicOrder.id}>
+                            <span>
+                              <strong>{planLabel(historicOrder)}</strong>
+                              <small>
+                                {formatDate(historicOrder.created_at)} · MMA-
+                                {historicOrder.id.slice(0, 8).toUpperCase()}
+                              </small>
+                            </span>
+                            <span>
+                              <b>
+                                {formatCheckoutAmount(
+                                  historicOrder.paid_total_paise ??
+                                    historicOrder.total_paise,
+                                )}
+                              </b>
+                              <small>{titleCase(historicOrder.status)}</small>
+                            </span>
+                          </article>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
 
                   {canManage ? (
                     <details className={styles.editDetails}>

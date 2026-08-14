@@ -11,6 +11,7 @@ import {
 } from "@/lib/milk-plan";
 import {
   calculateOrderPricing,
+  calculatePlanPricing,
   type BottleChoice,
 } from "@/lib/order-pricing";
 import { saveDeliveryDetails } from "./actions";
@@ -65,15 +66,24 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
   const parsedMilk = Number(params.milk ?? "0");
   const milkLitres = Number.isFinite(parsedMilk) ? Math.max(0, parsedMilk) : 0;
   const bottleChoice: BottleChoice =
-    milkLitres === 0 ? "none" : "return";
-  const pricing = calculateOrderPricing({
-    bottleChoice,
-    milkLitres:
-      purchase === "plan" && planSchedule
-        ? planSchedule.reduce((total, litres) => total + litres, 0)
-        : milkLitres,
-    products: selectedProducts,
-  });
+    milkLitres === 0
+      ? "none"
+      : params.bottle === "new"
+        ? "new"
+        : "return";
+  const pricing =
+    purchase === "plan" && planSchedule
+      ? calculatePlanPricing({
+          bottleChoice,
+          products: selectedProducts,
+          schedule: planSchedule,
+          startDate: params.start ?? "",
+        })
+      : calculateOrderPricing({
+          bottleChoice,
+          milkLitres,
+          products: selectedProducts,
+        });
   const hasOrder = milkLitres > 0 || selectedProducts.length > 0;
 
   return (
@@ -160,7 +170,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                   </div>
                 ) : null}
                 <div className={styles.priceTotal}>
-                  <dt>{purchase === "plan" ? "Selected weekly routine" : "Order total"}</dt>
+                  <dt>{purchase === "plan" ? "30-delivery plan total" : "Order total"}</dt>
                   <dd>₹{pricing.total}</dd>
                 </div>
               </dl>
@@ -221,11 +231,11 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           {milkLitres > 0 ? (
             <fieldset className={styles.bottleChoice}>
               <legend>Bottle for this delivery</legend>
-              <p>The current online milk price uses the return-bottle option.</p>
+              <p>Choose your bottle option before reviewing payment.</p>
               <div>
                 <label>
                   <input
-                    defaultChecked
+                    defaultChecked={bottleChoice === "return"}
                     name="bottle"
                     type="radio"
                     value="return"
@@ -235,8 +245,20 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                     <small>Milk remains ₹62 per litre.</small>
                   </span>
                 </label>
+                <label>
+                  <input
+                    defaultChecked={bottleChoice === "new"}
+                    name="bottle"
+                    type="radio"
+                    value="new"
+                  />
+                  <span>
+                    <strong>I need new bottles</strong>
+                    <small>₹72 per litre including ₹10 per glass bottle.</small>
+                  </span>
+                </label>
               </div>
-              <p>New bottle ordering will be added later.</p>
+              <p>Your exact total is shown on the payment review page.</p>
             </fieldset>
           ) : (
             <input name="bottle" type="hidden" value="none" />
