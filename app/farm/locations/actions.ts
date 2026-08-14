@@ -8,6 +8,7 @@ import {
   requireFarmStaff,
 } from "@/lib/farm-dashboard";
 import { parseCustomerImport } from "@/lib/customer-import";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function textValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -108,6 +109,54 @@ export async function assignCustomerLocation(formData: FormData) {
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
+}
+
+export async function deleteCustomerProfile(formData: FormData) {
+  const { role } = await requireFarmStaff("/farm/locations");
+  if (role !== "admin") {
+    redirect("/farm/locations?error=Only+an+admin+can+delete+a+customer+profile.");
+  }
+
+  const userId = textValue(formData, "userId");
+  const confirmed = textValue(formData, "confirmDelete") === "yes";
+  if (!userId || !confirmed) {
+    redirect("/farm/locations?error=Confirm+the+profile+deletion+first.");
+  }
+
+  const admin = createAdminClient();
+  const [planResult, orderResult] = await Promise.all([
+    admin
+      .from("delivery_plans")
+      .select("id")
+      .eq("user_id", userId)
+      .in("status", ["pending_confirmation", "active", "paused"])
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("orders")
+      .select("id")
+      .eq("user_id", userId)
+      .in("status", ["draft", "pending_payment"])
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const lookupError = planResult.error ?? orderResult.error;
+  if (lookupError) throw lookupError;
+  if (planResult.data || orderResult.data) {
+    redirect(
+      "/farm/locations?error=Cancel+the+active+plan+or+unfinished+order+before+deleting+this+profile.",
+    );
+  }
+
+  const { error } = await admin
+    .from("customer_profiles")
+    .delete()
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  revalidatePath("/farm");
+  revalidatePath("/farm/locations");
+  redirect("/farm/locations?message=Customer+profile+deleted.");
 }
 
 export async function importCustomerProfiles(formData: FormData) {

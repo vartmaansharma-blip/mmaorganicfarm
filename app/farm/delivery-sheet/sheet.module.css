@@ -136,7 +136,7 @@
   background: #f6cb4f;
   display: flex;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 
 .area h2,
@@ -145,7 +145,8 @@
 }
 
 .area h2 {
-  font-size: 17px;
+  font-size: 20px;
+  text-transform: uppercase;
 }
 
 .area > header span {
@@ -165,7 +166,7 @@
 
 .route table {
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 12px;
   table-layout: fixed;
   width: 100%;
 }
@@ -192,7 +193,8 @@
 
 .route td strong,
 .route td span,
-.route td small {
+.route td small,
+.route td a {
   display: block;
   line-height: 1.45;
 }
@@ -201,6 +203,33 @@
 .route td small {
   color: #5f5e5a;
   margin-top: 2px;
+}
+
+.phoneLink,
+.mapLink {
+  color: #191919;
+  margin-top: 5px;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.phoneLink {
+  font-weight: 700;
+}
+
+.mapLink {
+  font-weight: 650;
+}
+
+.mapLink small {
+  color: #62615d;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.missing {
+  color: #a1271d;
+  margin-top: 6px;
 }
 
 .checkCell {
@@ -245,7 +274,7 @@
   }
 
   .route table {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .route th,
@@ -276,5 +305,14 @@
 
   .footer {
     margin-top: 18px;
+  }
+
+  .phoneLink,
+  .mapLink {
+    text-decoration: none;
+  }
+
+  .mapLink small {
+    display: none;
   }
 }

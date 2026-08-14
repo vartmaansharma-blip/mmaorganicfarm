@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   assignCustomerLocation,
   createArea,
+  deleteCustomerProfile,
   importCustomerProfiles,
 } from "./actions";
 import styles from "./locations.module.css";
@@ -210,6 +211,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   });
 
   const canManage = canManageLocations(role);
+  const canDelete = role === "admin";
   const activePlanCount = plans.filter((plan) => plan.status === "active").length;
   const paidOrderCount = orders.filter((order) => order.status === "paid").length;
   const missingAddressCount = profiles.filter((profile) => !profile.address_line).length;
@@ -227,6 +229,15 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
           <Link href="/farm">Back to deliveries</Link>
         </div>
       </header>
+
+      {parameters.message ? (
+        <p className={styles.notice}>{String(parameters.message)}</p>
+      ) : null}
+      {parameters.error ? (
+        <p className={`${styles.notice} ${styles.error}`} role="alert">
+          {String(parameters.error)}
+        </p>
+      ) : null}
 
       <section className={styles.summary} aria-label="Customer summary">
         <div><strong>{profiles.length}</strong><span>Customers</span></div>
@@ -433,6 +444,22 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                           <button type="submit">Save customer</button>
                         </div>
                       </form>
+                      {canDelete ? (
+                        <form action={deleteCustomerProfile} className={styles.dangerZone}>
+                          <input name="userId" type="hidden" value={profile.user_id} />
+                          <div>
+                            <strong>Delete customer profile</strong>
+                            <p>
+                              Removes the farm profile and delivery details. Payment records remain saved.
+                            </p>
+                          </div>
+                          <label>
+                            <input name="confirmDelete" required type="checkbox" value="yes" />
+                            <span>I understand this profile will be removed.</span>
+                          </label>
+                          <button type="submit">Delete profile</button>
+                        </form>
+                      ) : null}
                     </details>
                   ) : null}
                 </article>

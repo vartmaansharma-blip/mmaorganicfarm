@@ -9,6 +9,7 @@ import {
   nextDeliveryDateInIndia,
   productName,
 } from "@/lib/delivery-calendar";
+import { resolveDeliveryArea } from "@/lib/delivery-area";
 import {
   canManageLocations,
   requireFarmStaff,
@@ -165,16 +166,16 @@ export default async function FarmDashboardPage({
   const plans = (plansResult.data ?? []) as PlanRow[];
   const pauses = (pausesResult.data ?? []) as PauseRow[];
   const deliveries = (deliveriesResult.data ?? []) as DailyDeliveryRow[];
-  const areaById = new Map(
-    (areasResult.data ?? []).map((area) => [area.id, area]),
-  );
+  const deliveryAreas = areasResult.data ?? [];
   const areaGroups = new Map<string, AreaGroup>();
   const totals = new Map<string, number>();
 
   deliveries.forEach((delivery) => {
-    const area = delivery.delivery_area_id
-      ? areaById.get(delivery.delivery_area_id)
-      : null;
+    const area = resolveDeliveryArea(
+      delivery.delivery_area_id,
+      delivery.address_snapshot,
+      deliveryAreas,
+    );
     const areaKey = area?.id ?? "unassigned";
     const areaGroup: AreaGroup = areaGroups.get(areaKey) ?? {
       name: area?.name ?? "Unassigned area",
@@ -205,7 +206,15 @@ export default async function FarmDashboardPage({
     .map((area) => ({
       ...area,
       stops: area.stops.sort(
-        (a, b) => (a.stopOrder ?? 9999) - (b.stopOrder ?? 9999),
+        (a, b) => {
+          const savedOrder =
+            (a.stopOrder ?? Number.MAX_SAFE_INTEGER) -
+            (b.stopOrder ?? Number.MAX_SAFE_INTEGER);
+          if (savedOrder !== 0) return savedOrder;
+          return a.address.localeCompare(b.address, "en-IN", {
+            sensitivity: "base",
+          });
+        },
       ),
     }))
     .sort((a, b) => {

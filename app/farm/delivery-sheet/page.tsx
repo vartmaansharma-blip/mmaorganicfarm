@@ -5,6 +5,7 @@ import {
   nextDeliveryDateInIndia,
   productName,
 } from "@/lib/delivery-calendar";
+import { resolveDeliveryArea } from "@/lib/delivery-area";
 import { requireFarmStaff } from "@/lib/farm-dashboard";
 import { PrintSheetButton } from "./print-button";
 import styles from "./sheet.module.css";
@@ -42,6 +43,14 @@ function quantityLabel(item: DeliveryRow["daily_delivery_items"][number]) {
     : `${quantity} ${item.unit}${quantity === 1 ? "" : "s"}`;
 }
 
+function mapsUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+function phoneUrl(phone: string) {
+  return `tel:${phone.replace(/[^+\d]/g, "")}`;
+}
+
 export default async function DeliverySheetPage({
   searchParams,
 }: {
@@ -52,15 +61,12 @@ export default async function DeliverySheetPage({
   const deliveryDate = validDate(params.date) ?? nextDeliveryDateInIndia();
   const selectedArea = params.area ?? "";
 
-  let deliveriesQuery = supabase
+  const deliveriesQuery = supabase
     .from("daily_deliveries")
     .select(
       "id, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, route_stop_order, daily_delivery_items(product_key, quantity, unit)",
     )
     .eq("delivery_date", deliveryDate);
-  if (selectedArea) {
-    deliveriesQuery = deliveriesQuery.eq("delivery_area_id", selectedArea);
-  }
 
   const [deliveriesResult, areasResult] = await Promise.all([
     deliveriesQuery,
@@ -74,17 +80,26 @@ export default async function DeliverySheetPage({
   const databaseError = [deliveriesResult.error, areasResult.error].find(Boolean);
   if (databaseError) throw databaseError;
 
-  const deliveries = (deliveriesResult.data ?? []) as DeliveryRow[];
-  const areaById = new Map(
-    (areasResult.data ?? []).map((area) => [area.id, area.name]),
+  const deliveryAreas = areasResult.data ?? [];
+  const deliveries = ((deliveriesResult.data ?? []) as DeliveryRow[]).filter(
+    (delivery) =>
+      !selectedArea ||
+      resolveDeliveryArea(
+        delivery.delivery_area_id,
+        delivery.address_snapshot,
+        deliveryAreas,
+      )?.id === selectedArea,
   );
   const grouped = new Map<string, DeliveryRow[]>();
   const totals = new Map<string, number>();
 
   deliveries.forEach((delivery) => {
-    const areaName = delivery.delivery_area_id
-      ? areaById.get(delivery.delivery_area_id) ?? "Unknown area"
-      : "Unassigned area";
+    const areaName =
+      resolveDeliveryArea(
+        delivery.delivery_area_id,
+        delivery.address_snapshot,
+        deliveryAreas,
+      )?.name ?? "Address needs checking";
     const areaStops = grouped.get(areaName) ?? [];
     areaStops.push(delivery);
     grouped.set(areaName, areaStops);
@@ -101,7 +116,19 @@ export default async function DeliverySheetPage({
     .map(([name, stops]) => ({
       name,
       stops: stops.sort(
-        (a, b) => (a.route_stop_order ?? 9999) - (b.route_stop_order ?? 9999),
+        (a, b) => {
+          const savedOrder =
+            (a.route_stop_order ?? Number.MAX_SAFE_INTEGER) -
+            (b.route_stop_order ?? Number.MAX_SAFE_INTEGER);
+          if (savedOrder !== 0) return savedOrder;
+
+          const addressOrder = (a.address_snapshot ?? "").localeCompare(
+            b.address_snapshot ?? "",
+            "en-IN",
+            { sensitivity: "base" },
+          );
+          return addressOrder || a.customer_name.localeCompare(b.customer_name);
+        },
       ),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -129,7 +156,7 @@ export default async function DeliverySheetPage({
           <span>Area</span>
           <select defaultValue={selectedArea} name="area">
             <option value="">All areas</option>
-            {(areasResult.data ?? []).map((area) => (
+            {deliveryAreas.map((area) => (
               <option key={area.id} value={area.id}>
                 {area.name}
               </option>
@@ -163,17 +190,35 @@ export default async function DeliverySheetPage({
                   <table>
                     <thead>
                       <tr>
-                        <th>Stop</th><th>Customer</th><th>Delivery</th><th>Check</th>
+                        <th>Stop</th><th>Where to go</th><th>What to deliver</th><th>Done</th>
                       </tr>
                     </thead>
                     <tbody>
                       {area.stops.map((stop, index) => (
                         <tr key={stop.id}>
-                          <td>{stop.route_stop_order ?? index + 1}</td>
+                          <td><strong>{index + 1}</strong></td>
                           <td>
                             <strong>{stop.customer_name}</strong>
-                            <span>{stop.phone_snapshot ?? "No phone"}</span>
-                            <small>{stop.address_snapshot ?? "No address"}</small>
+                            {stop.phone_snapshot ? (
+                              <a className={styles.phoneLink} href={phoneUrl(stop.phone_snapshot)}>
+                                Call {stop.phone_snapshot}
+                              </a>
+                            ) : (
+                              <span>No phone saved</span>
+                            )}
+                            {stop.address_snapshot ? (
+                              <a
+                                className={styles.mapLink}
+                                href={mapsUrl(stop.address_snapshot)}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                {stop.address_snapshot}
+                                <small>Open in Maps ↗</small>
+                              </a>
+                            ) : (
+                              <strong className={styles.missing}>ADDRESS MISSING</strong>
+                            )}
                           </td>
                           <td>
                             {(stop.daily_delivery_items ?? []).map((item) => (

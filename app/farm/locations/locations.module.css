@@ -52,6 +52,21 @@
   text-decoration: none;
 }
 
+.notice {
+  background: #eef7ef;
+  border: 1px solid #b8d5bc;
+  color: #245a2e;
+  font-size: 13px;
+  margin: 22px 0 0;
+  padding: 12px 14px;
+}
+
+.error {
+  background: #fff0ee;
+  border-color: #e0b4ae;
+  color: #8d2118;
+}
+
 .summary {
   border-bottom: 1px solid #e6e5e1;
   border-top: 1px solid #e6e5e1;
@@ -511,6 +526,46 @@
 
 .assignmentForm {
   margin-top: 14px;
+}
+
+.dangerZone {
+  align-items: flex-start;
+  border-top: 1px solid #e4c0bc;
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.dangerZone p {
+  color: #6a5c59;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 4px 0 0;
+}
+
+.dangerZone label {
+  align-items: center;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.dangerZone input {
+  height: 17px;
+  width: 17px;
+}
+
+.dangerZone button {
+  background: #fff;
+  border: 1px solid #b42318;
+  color: #9b2118;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  justify-self: start;
+  padding: 10px 12px;
 }
 
 .empty {
