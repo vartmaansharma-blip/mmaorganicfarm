@@ -309,31 +309,26 @@ a {
 .hero-brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 30px;
-  padding: 10px 16px 10px 10px;
-  border: 1px solid rgba(20, 20, 20, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.52);
-  box-shadow: 0 18px 44px rgba(30, 24, 10, 0.12);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  gap: 18px;
+  margin-bottom: 34px;
 }
 
 .hero-brand-lockup img {
-  width: clamp(86px, 9vw, 128px);
+  width: clamp(104px, 10vw, 144px);
   height: auto;
+  filter: drop-shadow(0 12px 18px rgba(38, 28, 4, 0.14));
 }
 
 .hero-brand-lockup span {
-  max-width: 12ch;
   display: grid;
   gap: 2px;
+  padding-left: 18px;
+  border-left: 2px solid rgba(20, 20, 20, 0.72);
   line-height: 1.05;
 }
 
 .hero-brand-lockup strong {
-  font-size: clamp(20px, 2vw, 29px);
+  font-size: clamp(25px, 2.3vw, 34px);
   font-weight: 800;
 }
 
@@ -1148,8 +1143,8 @@ h1 {
   .hero-brand-lockup {
     order: 1;
     width: calc(100% - 40px);
-    gap: 10px;
-    margin: 14px 20px 26px;
+    gap: 12px;
+    margin: 14px 20px 30px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -1159,16 +1154,17 @@ h1 {
   }
 
   .hero-brand-lockup img {
-    width: 62px;
+    width: 78px;
   }
 
   .hero-brand-lockup span {
-    max-width: 13ch;
+    padding-left: 12px;
+    border-left-width: 1px;
     line-height: 1.05;
   }
 
   .hero-brand-lockup strong {
-    font-size: 21px;
+    font-size: 23px;
   }
 
   .hero-brand-lockup small {
