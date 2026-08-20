@@ -216,8 +216,11 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
   const plans = (plansResult.data ?? []) as PlanRow[];
   const deliveries = (deliveriesResult.data ?? []) as DeliveryRow[];
   const capacityDays = capacityResult.error ? [] : (capacityResult.data ?? []) as CapacityDay[];
-  const liveOrders = orders.filter((order) => !order.is_test);
   const livePayments = payments.filter((payment) => !payment.is_test);
+  const paidOrders = orders.filter((order) => !order.is_test && order.status === "paid");
+  const pendingCheckouts = orders.filter(
+    (order) => !order.is_test && ["draft", "pending_payment", "payment_failed"].includes(order.status),
+  );
   const activePlan = plans.find((plan) => !plan.is_test && plan.status === "active") ??
     plans.find((plan) => !plan.is_test && ["paused", "pending_confirmation"].includes(plan.status));
   const area = areas.find((candidate) => candidate.id === profile.delivery_area_id);
@@ -231,8 +234,8 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
     Number(order.paid_total_paise ?? 0),
     order.status === "paid" ? Number(order.total_paise) : 0,
   );
-  const lifetimePaid = liveOrders.reduce((sum, order) => sum + receivedForOrder(order), 0);
-  const totalOutstanding = liveOrders.reduce(
+  const lifetimePaid = paidOrders.reduce((sum, order) => sum + receivedForOrder(order), 0);
+  const pendingCheckoutValue = pendingCheckouts.reduce(
     (sum, order) => sum + Math.max(0, Number(order.total_paise) - receivedForOrder(order)),
     0,
   );
@@ -258,12 +261,12 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
   const remainingDeliveries = activePlan
     ? Math.max(0, Number(activePlan.purchased_deliveries) - Number(activePlan.delivered_deliveries))
     : 0;
-  const accountState = totalOutstanding > 0
-    ? "Payment attention"
+  const accountState = pendingCheckouts.length > 0
+    ? "Payment follow-up"
     : activePlan?.status === "active"
       ? "Active customer"
-      : liveOrders.length
-        ? "No active plan"
+      : paidOrders.length
+        ? "Paid customer"
         : "New customer";
   const canManage = canManageLocations(role);
   const canDelete = role === "admin";
@@ -279,14 +282,14 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
         <div className={styles.identity}>
           <span className={styles.avatar} aria-hidden="true">{(profile.full_name ?? "C").charAt(0).toUpperCase()}</span>
           <div>
-            <span className={styles.eyebrow}>Customer workspace</span>
+            <span className={styles.eyebrow}>Customer account</span>
             <h1>{profile.full_name ?? "Customer"}</h1>
-            <p>{profile.phone ?? profile.email ?? "Contact information required"}</p>
+            <p>{profile.phone ?? profile.email ?? "Contact information required"} <b data-state={accountState}>{accountState}</b></p>
           </div>
         </div>
         <div className={styles.heroActions}>
-          {profile.phone ? <a aria-label="Call customer" href={`tel:${profile.phone}`} title="Call customer">☎</a> : null}
-          <a aria-label="Record a new order" className={styles.primaryAction} href="#new-order" title="Record a new order">＋</a>
+          {profile.phone ? <a href={`tel:${profile.phone}`}>Call customer</a> : null}
+          <a className={styles.primaryAction} href="#new-order">Start checkout</a>
         </div>
       </header>
 
@@ -295,18 +298,25 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
 
       <nav className={styles.tabs} aria-label="Customer sections">
         <a href="#overview">Overview</a>
-        <a href="#orders">Orders <span>{orders.length}</span></a>
-        <a href="#payments">Payments <span>{payments.length}</span></a>
+        <a href="#orders">Paid orders <span>{paidOrders.length}</span></a>
+        {pendingCheckouts.length ? <a href="#checkouts">Payment follow-up <span>{pendingCheckouts.length}</span></a> : null}
+        <a href="#payments">Payments <span>{livePayments.length}</span></a>
         <a href="#deliveries">Deliveries <span>{deliveries.length}</span></a>
-        <a href="#profile">Profile & route</a>
+        <a href="#profile">Customer details</a>
       </nav>
 
       <section className={styles.metrics} id="overview" aria-label="Customer overview">
-        <article><span>Account status</span><strong>{accountState}</strong><small>{activePlan ? `${titleCase(activePlan.status)} plan` : "No active delivery plan"}</small></article>
+        <article><span>Paid orders</span><strong>{paidOrders.length}</strong><small>Completed live purchases only</small></article>
+        <article><span>Lifetime paid</span><strong>{formatCheckoutAmount(lifetimePaid)}</strong><small>From paid live orders</small></article>
         <article><span>Next delivery</span><strong>{nextDeliveryLabel}</strong><small>{nextDelivery ? titleCase(nextDelivery.status) : scheduledNextQuantity > 0 ? `${quantityLabel(scheduledNextQuantity, "L")} planned` : "No quantity due"}</small></article>
-        <article><span>Lifetime paid</span><strong>{formatCheckoutAmount(lifetimePaid)}</strong><small>{liveOrders.length} live order{liveOrders.length === 1 ? "" : "s"}</small></article>
-        <article data-attention={totalOutstanding > 0}><span>Balance due</span><strong>{formatCheckoutAmount(totalOutstanding)}</strong><small>{totalOutstanding > 0 ? "Follow up before confirming capacity" : "Account is clear"}</small></article>
+        <article><span>Plan balance</span><strong>{remainingDeliveries}</strong><small>{activePlan ? `${activePlan.delivered_deliveries} of ${activePlan.purchased_deliveries} delivered` : "No active delivery plan"}</small></article>
       </section>
+
+      {pendingCheckouts.length ? <section className={styles.followUp} aria-label="Payment follow-up">
+        <div><span>Operator attention</span><strong>{pendingCheckouts.length} checkout{pendingCheckouts.length === 1 ? "" : "s"} awaiting payment</strong><small>These are not included in paid-order totals or order history.</small></div>
+        <div><strong>{formatCheckoutAmount(pendingCheckoutValue)}</strong><small>Still to be collected</small></div>
+        <a href="#checkouts">Review checkouts</a>
+      </section> : null}
 
       <section className={styles.splitGrid}>
         <article className={styles.card}>
@@ -342,38 +352,53 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
       </section>
 
       <section className={styles.section} id="orders">
-        <div className={styles.sectionHeading}><div><span>Commercial history</span><h2>Orders</h2></div><a aria-label="Record a new order" href="#new-order" title="Record a new order">＋</a></div>
-        {orders.length ? <details className={styles.disclosure}>
-          <summary><span><strong>View order history</strong><small>{orders.length} records · newest first</small></span><b aria-hidden="true">⌄</b></summary>
+        <div className={styles.sectionHeading}><div><span>Commercial history</span><h2>Paid orders</h2><p>Only successfully paid live purchases are counted as orders.</p></div><a href="#new-order">Start checkout</a></div>
+        {paidOrders.length ? <details className={styles.disclosure} open>
+          <summary><span><strong>Paid order history</strong><small>{paidOrders.length} order{paidOrders.length === 1 ? "" : "s"} · newest first</small></span><b aria-hidden="true">⌄</b></summary>
           <div className={styles.recordList}>
-          {orders.map((order) => {
-            const received = order.is_test ? 0 : receivedForOrder(order);
-            const balance = Math.max(0, Number(order.total_paise) - received);
+          {paidOrders.map((order) => {
+            const received = receivedForOrder(order);
             return <article key={order.id}>
               <div className={styles.recordTop}>
                 <div><strong>{orderName(order)}</strong><small>MMA-{order.id.slice(0, 8).toUpperCase()} · {formatDate(order.created_at)}</small></div>
-                <b data-state={order.status}>{order.is_test ? "Test · " : ""}{titleCase(order.status)}</b>
+                <b data-state={order.status}>Paid</b>
               </div>
               <div className={styles.itemList}>{order.order_items?.map((item, index) => <span key={`${order.id}-${item.product_key}-${index}`}><strong>{productName(item.product_key, item.product_name)}</strong><small>{quantityLabel(item.quantity, item.unit)} · {item.frequency === "weekly" ? "Scheduled" : "One time"}</small></span>)}</div>
-              <dl className={styles.orderMoney}><div><dt>Total</dt><dd>{formatCheckoutAmount(order.total_paise)}</dd></div><div><dt>Received</dt><dd>{formatCheckoutAmount(received)}</dd></div><div><dt>Due</dt><dd>{formatCheckoutAmount(balance)}</dd></div><div><dt>Starts</dt><dd>{formatDate(order.start_date)}</dd></div></dl>
-              {canDelete ? <form action={setOrderMode} className={styles.inlineForm}><input name="orderId" type="hidden" value={order.id} /><input name="userId" type="hidden" value={userId} /><input name="returnTo" type="hidden" value={returnTo} /><input name="mode" type="hidden" value={order.is_test ? "live" : "test"} /><button type="submit">Mark as {order.is_test ? "live" : "test"}</button></form> : null}
+              <dl className={styles.orderMoney}><div><dt>Total</dt><dd>{formatCheckoutAmount(order.total_paise)}</dd></div><div><dt>Received</dt><dd>{formatCheckoutAmount(received)}</dd></div><div><dt>Purchase</dt><dd>{titleCase(order.purchase_mode)}</dd></div><div><dt>Starts</dt><dd>{formatDate(order.start_date)}</dd></div></dl>
+              {canDelete ? <form action={setOrderMode} className={styles.inlineForm}><input name="orderId" type="hidden" value={order.id} /><input name="userId" type="hidden" value={userId} /><input name="returnTo" type="hidden" value={returnTo} /><input name="mode" type="hidden" value="test" /><button type="submit">Move to test records</button></form> : null}
             </article>;
           })}
           </div>
-        </details> : <div className={styles.empty}>No orders recorded for this customer.</div>}
+        </details> : <div className={styles.empty}><strong>No paid orders yet</strong><span>A checkout appears here only after payment succeeds.</span></div>}
       </section>
+
+      {pendingCheckouts.length ? <section className={styles.section} id="checkouts">
+        <div className={styles.sectionHeading}><div><span>Operator queue</span><h2>Payment follow-up</h2><p>Drafts and payment attempts stay separate from paid orders.</p></div><Link href={`/farm/payments?customer=${userId}`}>Open payments</Link></div>
+        <div className={styles.checkoutList}>
+          {pendingCheckouts.map((checkout) => {
+            const received = receivedForOrder(checkout);
+            const remaining = Math.max(0, Number(checkout.total_paise) - received);
+            return <article key={checkout.id}>
+              <div><strong>{orderName(checkout)}</strong><small>Checkout MMA-{checkout.id.slice(0, 8).toUpperCase()} · {formatDate(checkout.created_at)}</small></div>
+              <b data-state={checkout.status}>{titleCase(checkout.status)}</b>
+              <dl><div><dt>Checkout value</dt><dd>{formatCheckoutAmount(checkout.total_paise)}</dd></div><div><dt>Still to collect</dt><dd>{formatCheckoutAmount(remaining)}</dd></div></dl>
+              {canDelete ? <form action={setOrderMode} className={styles.inlineForm}><input name="orderId" type="hidden" value={checkout.id} /><input name="userId" type="hidden" value={userId} /><input name="returnTo" type="hidden" value={returnTo} /><input name="mode" type="hidden" value="test" /><button type="submit">Move to test records</button></form> : null}
+            </article>;
+          })}
+        </div>
+      </section> : null}
 
       <section className={styles.section} id="payments">
         <div className={styles.sectionHeading}><div><span>Finance ledger</span><h2>Payments</h2></div><Link href={`/farm/payments?customer=${userId}`}>Open finance view</Link></div>
-        {payments.length ? <details className={styles.disclosure}>
-          <summary><span><strong>View payment ledger</strong><small>{payments.length} transactions · newest first</small></span><b aria-hidden="true">⌄</b></summary>
+        {livePayments.length ? <details className={styles.disclosure}>
+          <summary><span><strong>View payment ledger</strong><small>{livePayments.length} live transaction{livePayments.length === 1 ? "" : "s"} · newest first</small></span><b aria-hidden="true">⌄</b></summary>
           <div className={styles.paymentTable} role="table" aria-label="Customer payments">
           <div className={styles.tableHeader} role="row"><span>Date</span><span>Order</span><span>Reference</span><span>Status</span><span>Amount</span></div>
-          {payments.map((payment) => <div className={styles.tableRow} role="row" key={payment.id}>
+          {livePayments.map((payment) => <div className={styles.tableRow} role="row" key={payment.id}>
             <span data-label="Date">{formatDateTime(payment.paid_at ?? payment.created_at)}</span>
             <span data-label="Order">MMA-{payment.order_id.slice(0, 8).toUpperCase()}</span>
             <span data-label="Reference">{payment.provider_payment_id ?? titleCase(payment.provider)}</span>
-            <span data-label="Status"><b data-state={payment.status}>{payment.is_test ? "Test · " : ""}{titleCase(payment.status)}</b></span>
+            <span data-label="Status"><b data-state={payment.status}>{titleCase(payment.status)}</b></span>
             <strong data-label="Amount">{formatCheckoutAmount(payment.amount_paise)}</strong>
           </div>)}
           </div>
@@ -395,7 +420,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
       </section>
 
       {canManage ? <section className={styles.section} id="profile">
-        <div className={styles.sectionHeading}><div><span>Customer master record</span><h2>Profile & route</h2></div></div>
+        <div className={styles.sectionHeading}><div><span>Customer record</span><h2>Contact and delivery details</h2><p>Keep the information needed for billing, routing, and fulfilment in one place.</p></div></div>
         <div className={styles.profileBlock}>
           <div className={styles.profileSnapshot}>
             <span><small>Contact</small><strong>{profile.phone ?? "No phone"}</strong><em>{profile.email ?? "No email"}</em></span>
@@ -404,7 +429,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
             <span><small>Instructions</small><strong>{profile.delivery_instructions || "No special instructions"}</strong></span>
           </div>
           <details className={styles.profileEditor}>
-            <summary aria-label="Edit customer profile" title="Edit customer profile"><span aria-hidden="true">✎</span></summary>
+            <summary>Edit customer</summary>
             <form action={assignCustomerLocation} className={styles.profileForm}>
               <input name="userId" type="hidden" value={userId} />
               <input name="returnTo" type="hidden" value={returnTo} />
@@ -421,13 +446,13 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
               <label className={styles.wideField}><span>Delivery instructions</span><textarea defaultValue={profile.delivery_instructions ?? ""} maxLength={500} name="deliveryInstructions" placeholder="Gate, floor, preferred handover point…" rows={2} /></label>
               <div className={styles.formActions}><p>Choosing a route automatically keeps the customer in that route&apos;s area.</p><button type="submit">Save changes</button></div>
             </form>
-            {canDelete ? <details className={styles.dangerZone}><summary aria-label="Administrative controls" title="Administrative controls">•••</summary><form action={deleteCustomerProfile}><input name="userId" type="hidden" value={userId} /><div><strong>Delete customer profile</strong><p>Payment and historical order records remain retained.</p></div><label><input name="confirmDelete" required type="checkbox" value="yes" /> I understand this removes the active profile.</label><button type="submit">Delete profile</button></form></details> : null}
+            {canDelete ? <details className={styles.dangerZone}><summary>More account actions</summary><form action={deleteCustomerProfile}><input name="userId" type="hidden" value={userId} /><div><strong>Delete customer profile</strong><p>Payment and historical order records remain retained.</p></div><label><input name="confirmDelete" required type="checkbox" value="yes" /> I understand this removes the active profile.</label><button type="submit">Delete profile</button></form></details> : null}
           </details>
         </div>
       </section> : null}
 
       {canManage ? <section className={styles.section} id="new-order">
-        <div className={styles.sectionHeading}><div><span>Operator checkout</span><h2>Record a new order</h2></div></div>
+        <div className={styles.sectionHeading}><div><span>Operator checkout</span><h2>Start a customer checkout</h2><p>This becomes an order only after payment is confirmed.</p></div></div>
         <ManualOrderForm capacityDays={capacityDays} customerName={profile.full_name ?? "Customer"} minimumStartDate={nextDeliveryDate} profileReady={Boolean(profile.phone && profile.address_line)} returnTo={returnTo} userId={userId} />
       </section> : null}
     </main>

@@ -74,10 +74,6 @@ function normalizedLocation(value: string | null) {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function titleCase(value: string) {
-  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
 function litreLabel(quantity: number | string) {
   const value = Number(quantity);
   return `${Number.isInteger(value) ? value : value.toFixed(1)} L`;
@@ -181,17 +177,13 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const areaById = new Map(areas.map((area) => [area.id, area.name]));
   const routeById = new Map(routes.map((route) => [route.id, route]));
   const latestPlanByUser = new Map<string, PlanRow>();
-  const latestOrderByUser = new Map<string, OrderRow>();
+  const latestPaidOrderByUser = new Map<string, OrderRow>();
+  const pendingCheckoutByUser = new Map<string, OrderRow>();
+  const paidOrderCountByUser = new Map<string, number>();
   const planPriority = new Map([
     ["active", 4],
     ["paused", 3],
     ["pending_confirmation", 2],
-    ["cancelled", 1],
-  ]);
-  const orderPriority = new Map([
-    ["paid", 4],
-    ["pending_payment", 3],
-    ["draft", 2],
     ["cancelled", 1],
   ]);
   plans.forEach((plan) => {
@@ -206,22 +198,21 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
     }
   });
   orders.forEach((order) => {
-    const current = latestOrderByUser.get(order.user_id);
-    if (
-      !current ||
-      (!order.is_test && current.is_test) ||
-      order.is_test === current.is_test &&
-      (orderPriority.get(order.status) ?? 0) > (orderPriority.get(current.status) ?? 0)
-    ) {
-      latestOrderByUser.set(order.user_id, order);
+    if (order.is_test) return;
+    if (order.status === "paid") {
+      paidOrderCountByUser.set(order.user_id, (paidOrderCountByUser.get(order.user_id) ?? 0) + 1);
+      if (!latestPaidOrderByUser.has(order.user_id)) latestPaidOrderByUser.set(order.user_id, order);
+    }
+    if (["draft", "pending_payment", "payment_failed"].includes(order.status) && !pendingCheckoutByUser.has(order.user_id)) {
+      pendingCheckoutByUser.set(order.user_id, order);
     }
   });
 
   const canManage = canManageLocations(role);
   const activePlanCount = plans.filter((plan) => !plan.is_test && plan.status === "active").length;
   const missingAddressCount = profiles.filter((profile) => !profile.address_line).length;
-  const pendingOrderCount = orders.filter(
-    (order) => !order.is_test && ["draft", "pending_payment"].includes(order.status),
+  const pendingCheckoutCount = orders.filter(
+    (order) => !order.is_test && ["draft", "pending_payment", "payment_failed"].includes(order.status),
   ).length;
   const todayCapacity = capacityValues(capacityDays[0]);
   const tomorrowCapacity = capacityValues(capacityDays[1]);
@@ -240,7 +231,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const normalizedSearch = normalizedLocation(searchQuery);
   const filteredProfiles = profiles.filter((profile) => {
     const plan = latestPlanByUser.get(profile.user_id);
-    const order = latestOrderByUser.get(profile.user_id);
+    const pendingCheckout = pendingCheckoutByUser.get(profile.user_id);
     const matchesSearch = !normalizedSearch || normalizedLocation([
       profile.full_name,
       profile.phone,
@@ -253,7 +244,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
       : filter === "missing"
         ? !profile.phone || !profile.address_line
         : filter === "pending"
-          ? order?.status === "pending_payment" || order?.status === "draft"
+          ? Boolean(pendingCheckout)
           : true;
     return matchesSearch && matchesFilter;
   });
@@ -305,7 +296,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
           </small>
           {tomorrowCapacity.held > 0 ? <em>{litreLabel(tomorrowCapacity.held)} temporarily held in checkout</em> : null}
         </article>
-        <article className={styles.statCard}><strong>{pendingOrderCount}</strong><span>Orders needing payment</span><small>Pending and draft live orders</small></article>
+        <article className={styles.statCard}><strong>{pendingCheckoutCount}</strong><span>Checkouts needing payment</span><small>Not included in paid-order totals</small></article>
         <article className={styles.statCard}><strong>{profiles.length}</strong><span>Customers</span><small>{activePlanCount} active plans</small></article>
       </section>
 
@@ -318,7 +309,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
           <Link href="/farm/capacity?product=milk">Open capacity control</Link>
         </div>
         <div className={styles.attentionList}>
-          <Link href="/farm/locations?filter=pending"><strong>{pendingOrderCount}</strong><span>Orders awaiting payment</span><small>Confirm payment before capacity is committed.</small></Link>
+          <Link href="/farm/locations?filter=pending"><strong>{pendingCheckoutCount}</strong><span>Payment follow-ups</span><small>Confirm payment before counting these as orders.</small></Link>
           <Link href="/farm/locations?filter=missing"><strong>{missingAddressCount}</strong><span>Profiles missing an address</span><small>Complete these before routing a delivery.</small></Link>
           <Link href="/farm/capacity?product=milk"><strong>{capacityRiskCount}</strong><span>Capacity-risk days</span><small>At least 95% committed or held in the next seven days.</small></Link>
         </div>
@@ -379,7 +370,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
         <div className={styles.directoryHeading}>
           <div className={styles.sectionHeading}>
             <p>Customer directory</p>
-            <h2 id="customers-title">Profiles and orders</h2>
+            <h2 id="customers-title">Profiles and paid orders</h2>
           </div>
           <span>{filteredProfiles.length} shown</span>
         </div>
@@ -395,7 +386,9 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
           <div className={styles.customerList}>
             {filteredProfiles.map((profile) => {
               const plan = latestPlanByUser.get(profile.user_id);
-              const order = latestOrderByUser.get(profile.user_id);
+              const order = latestPaidOrderByUser.get(profile.user_id);
+              const pendingCheckout = pendingCheckoutByUser.get(profile.user_id);
+              const paidOrderCount = paidOrderCountByUser.get(profile.user_id) ?? 0;
               const weeklyMilk = weeklyMilkByDay(plan);
               const addressForSuggestion = normalizedLocation(
                 [profile.address_line, profile.locality].filter(Boolean).join(" "),
@@ -427,13 +420,13 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                       <strong>{profile.locality || areaById.get(profile.delivery_area_id ?? "") || "Not assigned"}</strong>
                     </span>
                     <span className={styles.customerQuickFact}>
-                      <small>Current order</small>
-                      <strong>{order ? titleCase(order.status) : "No order"}</strong>
+                      <small>Paid orders</small>
+                      <strong>{paidOrderCount}</strong>
                     </span>
                     <span className={styles.customerStatus}>
                       <small>Next delivery</small>
                       <strong>{nextMilkQuantity > 0 ? `${litreLabel(nextMilkQuantity)} · ${plan && plan.status !== "active" ? "after payment" : formatCalendarDate(nextDeliveryDate)}` : "Not scheduled tomorrow"}</strong>
-                      <b data-state={order?.status ?? "none"}>{order ? `${order.is_test ? "Test · " : ""}${titleCase(order.status)}` : "No order"}</b>
+                      <b data-state={pendingCheckout?.status ?? plan?.status ?? "none"}>{pendingCheckout ? "Payment follow-up" : plan?.status === "active" ? "Active plan" : paidOrderCount ? "Paid customer" : "New customer"}</b>
                     </span>
                     <span className={styles.chevron} aria-hidden="true" />
                   </summary>
