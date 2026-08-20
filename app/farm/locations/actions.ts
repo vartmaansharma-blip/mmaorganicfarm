@@ -26,6 +26,10 @@ import {
   PLAN_DELIVERY_COUNT,
   type BottleChoice,
 } from "@/lib/order-pricing";
+import {
+  releaseOrderCapacity,
+  reserveOrderCapacity,
+} from "@/lib/production-capacity";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function textValue(formData: FormData, key: string) {
@@ -194,6 +198,7 @@ export async function createArea(formData: FormData) {
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
+  revalidatePath("/farm/routes");
 }
 
 export async function assignCustomerLocation(formData: FormData) {
@@ -316,11 +321,23 @@ export async function recordCustomerOrder(formData: FormData) {
   const earliestStart = nextDeliveryDateInIndia();
   const products = manualProducts(formData);
   const onceMilk = Number(formData.get("milkLitres") ?? 0);
+  const paymentConfirmed = textValue(formData, "paymentConfirmed") === "yes";
+  const requestedPaymentMethod = textValue(formData, "paymentMethod");
+  const paymentMethod = ["cash", "upi", "bank_transfer", "other"].includes(requestedPaymentMethod)
+    ? requestedPaymentMethod
+    : "";
+  const paymentReference = textValue(formData, "paymentReference");
   const schedule = MILK_PLAN_DAYS.map((_, index) =>
     Number(formData.get(`milkDay${index + 1}`) ?? 0),
   ) as WeeklyMilkSchedule;
 
   if (!userId) redirectWithMessage("/farm/locations", "error", "Choose a customer.");
+  if (!paymentConfirmed || !paymentMethod) {
+    redirectWithMessage(returnTo, "error", "Confirm the received payment and choose how it was paid.");
+  }
+  if (paymentReference.length > 120) {
+    redirectWithMessage(returnTo, "error", "The payment reference is too long.");
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || startDate < earliestStart) {
     redirectWithMessage(returnTo, "error", "Choose a valid delivery start date.");
   }
@@ -458,10 +475,37 @@ export async function recordCustomerOrder(formData: FormData) {
     throw itemsError;
   }
 
+  try {
+    await reserveOrderCapacity(order.id);
+  } catch (error) {
+    await admin.from("orders").delete().eq("id", order.id);
+    if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
+    redirectWithMessage(
+      returnTo,
+      "error",
+      error instanceof Error ? error.message : "The order exceeds available farm capacity.",
+    );
+  }
+
+  const manualReference = paymentReference || `MANUAL-${order.id.toUpperCase()}`;
+  const { error: paymentError } = await admin.rpc("capture_farm_order_payment", {
+    p_order_id: order.id,
+    p_payment_method: paymentMethod,
+    p_payment_reference: manualReference,
+  });
+  if (paymentError) {
+    await releaseOrderCapacity(order.id);
+    await admin.from("orders").delete().eq("id", order.id);
+    if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
+    throw paymentError;
+  }
+
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
+  revalidatePath("/farm/routes");
+  revalidatePath("/farm/payments");
   revalidatePath(`/farm/customers/${userId}`);
-  redirectWithMessage(returnTo, "message", "Order recorded. Payment is pending.");
+  redirectWithMessage(returnTo, "message", "Paid order recorded and schedule activated.");
 }
 
 export async function deleteCustomerProfile(formData: FormData) {

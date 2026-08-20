@@ -119,8 +119,8 @@ export default async function CapacityPage({
           <p className={styles.eyebrow}>Order control</p>
           <h1>Production capacity</h1>
           <p>
-            New orders are accepted only after future commitments and active
-            checkouts are subtracted from each day.
+            New orders are accepted only after paid commitments and temporary
+            online reservations are subtracted from each day.
           </p>
         </div>
         <Link href="/farm">Back to deliveries</Link>
@@ -159,8 +159,8 @@ export default async function CapacityPage({
             {formatCapacityQuantity(defaultLimit)} {selectedProduct.shortUnit}
           </strong>
           <p>
-            This is the online quantity available before accepted plans,
-            one-time orders, and unpaid checkout holds are deducted.
+            This is the quantity available before paid plans, paid one-time
+            orders, and short-lived online reservations are deducted.
           </p>
           {defaultLimit === 0 ? (
             <p className={styles.setupNotice}>
@@ -198,7 +198,7 @@ export default async function CapacityPage({
       <section className={styles.week} aria-labelledby="week-title">
         <div className={styles.sectionHeading}>
           <p>Next seven days · {selectedProduct.name}</p>
-          <h2 id="week-title">Remaining before payment</h2>
+          <h2 id="week-title">Available to accept</h2>
         </div>
         <div className={styles.dayList}>
           {days.map((day) => {
@@ -229,7 +229,7 @@ export default async function CapacityPage({
                     </dd>
                   </div>
                   <div>
-                    <dt>In checkout</dt>
+                    <dt>Temporarily reserved</dt>
                     <dd>
                       {formatCapacityQuantity(checkout)} {selectedProduct.shortUnit}
                     </dd>

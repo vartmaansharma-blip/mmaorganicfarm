@@ -171,16 +171,22 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
       .from("orders")
       .select("id, delivery_plan_id, purchase_mode, status, is_test, bottle_choice, total_paise, paid_total_paise, start_date, created_at, order_items(product_key, product_name, quantity, unit, frequency)")
       .eq("user_id", userId)
+      .eq("is_test", false)
+      .eq("status", "paid")
       .order("created_at", { ascending: false }),
     admin
       .from("payments")
       .select("id, order_id, status, is_test, amount_paise, provider, provider_payment_id, paid_at, created_at")
       .eq("user_id", userId)
+      .eq("is_test", false)
+      .eq("status", "captured")
       .order("created_at", { ascending: false }),
     admin
       .from("delivery_plans")
       .select("id, status, is_test, start_date, purchased_deliveries, delivered_deliveries, updated_at, weekly_delivery_items(day_of_week, product_key, quantity)")
       .eq("user_id", userId)
+      .eq("is_test", false)
+      .in("status", ["active", "paused"])
       .order("updated_at", { ascending: false }),
     supabase
       .from("daily_deliveries")
@@ -216,13 +222,10 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
   const plans = (plansResult.data ?? []) as PlanRow[];
   const deliveries = (deliveriesResult.data ?? []) as DeliveryRow[];
   const capacityDays = capacityResult.error ? [] : (capacityResult.data ?? []) as CapacityDay[];
-  const livePayments = payments.filter((payment) => !payment.is_test);
-  const paidOrders = orders.filter((order) => !order.is_test && order.status === "paid");
-  const pendingCheckouts = orders.filter(
-    (order) => !order.is_test && ["draft", "pending_payment", "payment_failed"].includes(order.status),
-  );
-  const activePlan = plans.find((plan) => !plan.is_test && plan.status === "active") ??
-    plans.find((plan) => !plan.is_test && ["paused", "pending_confirmation"].includes(plan.status));
+  const livePayments = payments;
+  const paidOrders = orders;
+  const activePlan = plans.find((plan) => plan.status === "active") ??
+    plans.find((plan) => plan.status === "paused");
   const area = areas.find((candidate) => candidate.id === profile.delivery_area_id);
   const route = routes.find((candidate) => candidate.id === profile.delivery_route_id);
   const paymentTotals = new Map<string, number>();
@@ -235,10 +238,6 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
     order.status === "paid" ? Number(order.total_paise) : 0,
   );
   const lifetimePaid = paidOrders.reduce((sum, order) => sum + receivedForOrder(order), 0);
-  const pendingCheckoutValue = pendingCheckouts.reduce(
-    (sum, order) => sum + Math.max(0, Number(order.total_paise) - receivedForOrder(order)),
-    0,
-  );
   const completedDeliveries = deliveries.filter((delivery) => delivery.status === "delivered").length;
   const failedDeliveries = deliveries.filter((delivery) => delivery.status === "failed").length;
   const upcomingDeliveries = deliveries
@@ -261,9 +260,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
   const remainingDeliveries = activePlan
     ? Math.max(0, Number(activePlan.purchased_deliveries) - Number(activePlan.delivered_deliveries))
     : 0;
-  const accountState = pendingCheckouts.length > 0
-    ? "Payment follow-up"
-    : activePlan?.status === "active"
+  const accountState = activePlan?.status === "active"
       ? "Active customer"
       : paidOrders.length
         ? "Paid customer"
@@ -289,7 +286,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
         </div>
         <div className={styles.heroActions}>
           {profile.phone ? <a href={`tel:${profile.phone}`}>Call customer</a> : null}
-          <a className={styles.primaryAction} href="#new-order">Start checkout</a>
+          <a className={styles.primaryAction} href="#new-order">Record paid order</a>
         </div>
       </header>
 
@@ -299,7 +296,6 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
       <nav className={styles.tabs} aria-label="Customer sections">
         <a href="#overview">Overview</a>
         <a href="#orders">Paid orders <span>{paidOrders.length}</span></a>
-        {pendingCheckouts.length ? <a href="#checkouts">Payment follow-up <span>{pendingCheckouts.length}</span></a> : null}
         <a href="#payments">Payments <span>{livePayments.length}</span></a>
         <a href="#deliveries">Deliveries <span>{deliveries.length}</span></a>
         <a href="#profile">Customer details</a>
@@ -309,14 +305,8 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
         <article><span>Paid orders</span><strong>{paidOrders.length}</strong><small>Completed live purchases only</small></article>
         <article><span>Lifetime paid</span><strong>{formatCheckoutAmount(lifetimePaid)}</strong><small>From paid live orders</small></article>
         <article><span>Next delivery</span><strong>{nextDeliveryLabel}</strong><small>{nextDelivery ? titleCase(nextDelivery.status) : scheduledNextQuantity > 0 ? `${quantityLabel(scheduledNextQuantity, "L")} planned` : "No quantity due"}</small></article>
-        <article><span>Plan balance</span><strong>{remainingDeliveries}</strong><small>{activePlan ? `${activePlan.delivered_deliveries} of ${activePlan.purchased_deliveries} delivered` : "No active delivery plan"}</small></article>
+        <article><span>Delivery route</span><strong>{route?.name ?? "Needs route"}</strong><small>{profile.route_stop_order ? `Stop ${profile.route_stop_order}` : area?.name ?? "Assign from Routes"}</small></article>
       </section>
-
-      {pendingCheckouts.length ? <section className={styles.followUp} aria-label="Payment follow-up">
-        <div><span>Operator attention</span><strong>{pendingCheckouts.length} checkout{pendingCheckouts.length === 1 ? "" : "s"} awaiting payment</strong><small>These are not included in paid-order totals or order history.</small></div>
-        <div><strong>{formatCheckoutAmount(pendingCheckoutValue)}</strong><small>Still to be collected</small></div>
-        <a href="#checkouts">Review checkouts</a>
-      </section> : null}
 
       <section className={styles.splitGrid}>
         <article className={styles.card}>
@@ -352,7 +342,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
       </section>
 
       <section className={styles.section} id="orders">
-        <div className={styles.sectionHeading}><div><span>Commercial history</span><h2>Paid orders</h2><p>Only successfully paid live purchases are counted as orders.</p></div><a href="#new-order">Start checkout</a></div>
+        <div className={styles.sectionHeading}><div><span>Commercial history</span><h2>Paid orders</h2><p>Only confirmed live purchases are counted as orders.</p></div><a href="#new-order">Record paid order</a></div>
         {paidOrders.length ? <details className={styles.disclosure} open>
           <summary><span><strong>Paid order history</strong><small>{paidOrders.length} order{paidOrders.length === 1 ? "" : "s"} · newest first</small></span><b aria-hidden="true">⌄</b></summary>
           <div className={styles.recordList}>
@@ -369,24 +359,8 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
             </article>;
           })}
           </div>
-        </details> : <div className={styles.empty}><strong>No paid orders yet</strong><span>A checkout appears here only after payment succeeds.</span></div>}
+        </details> : <div className={styles.empty}><strong>No paid orders yet</strong><span>A purchase appears here only after payment is confirmed.</span></div>}
       </section>
-
-      {pendingCheckouts.length ? <section className={styles.section} id="checkouts">
-        <div className={styles.sectionHeading}><div><span>Operator queue</span><h2>Payment follow-up</h2><p>Drafts and payment attempts stay separate from paid orders.</p></div><Link href={`/farm/payments?customer=${userId}`}>Open payments</Link></div>
-        <div className={styles.checkoutList}>
-          {pendingCheckouts.map((checkout) => {
-            const received = receivedForOrder(checkout);
-            const remaining = Math.max(0, Number(checkout.total_paise) - received);
-            return <article key={checkout.id}>
-              <div><strong>{orderName(checkout)}</strong><small>Checkout MMA-{checkout.id.slice(0, 8).toUpperCase()} · {formatDate(checkout.created_at)}</small></div>
-              <b data-state={checkout.status}>{titleCase(checkout.status)}</b>
-              <dl><div><dt>Checkout value</dt><dd>{formatCheckoutAmount(checkout.total_paise)}</dd></div><div><dt>Still to collect</dt><dd>{formatCheckoutAmount(remaining)}</dd></div></dl>
-              {canDelete ? <form action={setOrderMode} className={styles.inlineForm}><input name="orderId" type="hidden" value={checkout.id} /><input name="userId" type="hidden" value={userId} /><input name="returnTo" type="hidden" value={returnTo} /><input name="mode" type="hidden" value="test" /><button type="submit">Move to test records</button></form> : null}
-            </article>;
-          })}
-        </div>
-      </section> : null}
 
       <section className={styles.section} id="payments">
         <div className={styles.sectionHeading}><div><span>Finance ledger</span><h2>Payments</h2></div><Link href={`/farm/payments?customer=${userId}`}>Open finance view</Link></div>
@@ -452,7 +426,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
       </section> : null}
 
       {canManage ? <section className={styles.section} id="new-order">
-        <div className={styles.sectionHeading}><div><span>Operator checkout</span><h2>Start a customer checkout</h2><p>This becomes an order only after payment is confirmed.</p></div></div>
+        <div className={styles.sectionHeading}><div><span>Farm-assisted purchase</span><h2>Record a paid customer order</h2><p>Use this only after the farm has received payment from the customer.</p></div></div>
         <ManualOrderForm capacityDays={capacityDays} customerName={profile.full_name ?? "Customer"} minimumStartDate={nextDeliveryDate} profileReady={Boolean(profile.phone && profile.address_line)} returnTo={returnTo} userId={userId} />
       </section> : null}
     </main>

@@ -60,16 +60,18 @@
   border-top: 1px solid var(--farm-line);
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-auto-columns: minmax(76px, 1fr);
+  grid-auto-flow: column;
   left: 0;
   padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+  overflow-x: auto;
   position: fixed;
   right: 0;
   z-index: 20;
 }
 
 .driverMobileNav {
-  grid-template-columns: 1fr;
+  grid-auto-columns: 1fr;
 }
 
 .mobileNav a,

@@ -15,6 +15,7 @@ import {
 } from "@/lib/order-pricing";
 import { recordCustomerOrder } from "./actions";
 import styles from "./locations.module.css";
+import confirmationStyles from "./payment-confirmation.module.css";
 
 type CapacityDay = {
   available_quantity: number | string;
@@ -54,6 +55,7 @@ function OrderEditor({
   const [milkLitres, setMilkLitres] = useState(0);
   const [startDate, setStartDate] = useState(minimumStartDate);
   const [bottleChoice, setBottleChoice] = useState<BottleChoice>("return");
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [productQuantities, setProductQuantities] = useState<Record<string, number>>(
     Object.fromEntries(FARM_PRODUCTS.map((product) => [product.id, 0])),
   );
@@ -95,7 +97,8 @@ function OrderEditor({
     : milkLitres > 0;
   const orderReady = profileReady &&
     (milkSelected || products.length > 0) &&
-    !capacityConflict;
+    !capacityConflict &&
+    paymentConfirmed;
 
   function updateSchedule(index: number, value: string) {
     setSchedule((current) => current.map((quantity, dayIndex) =>
@@ -221,7 +224,7 @@ function OrderEditor({
             <small>Prepared for</small>
             <h4>{customerName}</h4>
           </div>
-          <span>Live · Payment pending</span>
+          <span>Live · Paid order</span>
         </div>
         <dl>
           <div><dt>Order</dt><dd>{purchaseMode === "plan" ? "30-delivery plan" : "One-time order"}</dd></div>
@@ -236,13 +239,13 @@ function OrderEditor({
           <div><dt>Farm products</dt><dd>{products.length ? products.map((product) => `${product.name} × ${product.quantity} · ${formatCheckoutAmount((pricing.productTotals[product.id] ?? 0) * 100)}`).join(", ") : "None"}</dd></div>
           <div><dt>Add-ons total</dt><dd>{formatCheckoutAmount((pricing.oneTimeAddOnsTotal + pricing.recurringAddOnsTotal) * 100)}</dd></div>
           <div><dt>Bottle charge</dt><dd>{formatCheckoutAmount(pricing.bottleCharge * 100)}</dd></div>
-          <div className={styles.previewTotal}><dt>Total due</dt><dd>{formatCheckoutAmount(pricing.total * 100)}</dd></div>
+          <div className={styles.previewTotal}><dt>Payment received</dt><dd>{formatCheckoutAmount(pricing.total * 100)}</dd></div>
         </dl>
 
         <section className={`${styles.capacityCheck} ${capacityConflict ? styles.capacityConflict : ""}`}>
           <div>
             <strong>Capacity impact</strong>
-            <span>{capacityConflict ? "Change the quantity or date" : "Available for this draft"}</span>
+            <span>{capacityConflict ? "Change the quantity or date" : "Available to confirm"}</span>
           </div>
           {capacityImpact.length ? (
             <ul>
@@ -254,7 +257,7 @@ function OrderEditor({
               ))}
             </ul>
           ) : milkSelected ? (
-            <p>The selected date is outside this seven-day preview. Capacity will be checked again before payment.</p>
+            <p>The selected date is outside this seven-day preview. Capacity will be checked before the order is recorded.</p>
           ) : (
             <p>Add milk to see its effect on daily farm capacity.</p>
           )}
@@ -263,9 +266,35 @@ function OrderEditor({
         {!profileReady ? (
           <p className={styles.formWarning}>Save the customer&apos;s phone and address before recording an order.</p>
         ) : null}
+        <div className={styles.orderFields}>
+          <label>
+            <span>Payment method</span>
+            <select name="paymentMethod" required defaultValue="cash">
+              <option value="cash">Cash</option>
+              <option value="upi">UPI</option>
+              <option value="bank_transfer">Bank transfer</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label>
+            <span>Payment reference</span>
+            <input maxLength={120} name="paymentReference" placeholder="Optional receipt or UPI reference" />
+          </label>
+        </div>
+        <label className={confirmationStyles.confirmation}>
+          <input
+            checked={paymentConfirmed}
+            name="paymentConfirmed"
+            onChange={(event) => setPaymentConfirmed(event.target.checked)}
+            required
+            type="checkbox"
+            value="yes"
+          />
+          <span>I confirm the farm received this payment.</span>
+        </label>
         <div className={styles.orderSubmit}>
-          <p>This creates a live order tagged as payment pending. It does not consume confirmed capacity until payment.</p>
-          <button disabled={!orderReady} type="submit">Record order</button>
+          <p>Only record the order after the money has been received. A manager can correct a manual payment later.</p>
+          <button disabled={!orderReady} type="submit">Record paid order</button>
         </div>
       </aside>
     </form>
@@ -280,7 +309,7 @@ export function ManualOrderForm(props: ManualOrderFormProps) {
       className={styles.recordOrder}
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
-      <summary>Record order</summary>
+      <summary>Record paid order</summary>
       {open ? <OrderEditor {...props} /> : null}
     </details>
   );

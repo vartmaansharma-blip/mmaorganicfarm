@@ -12,7 +12,6 @@ import {
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  createArea,
   createCustomerProfile,
   importCustomerProfiles,
 } from "./actions";
@@ -143,12 +142,16 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
         .select(
           "id, user_id, status, is_test, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, created_at, updated_at, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit)",
         )
+        .eq("is_test", false)
+        .in("status", ["active", "paused"])
         .order("updated_at", { ascending: false }),
       admin
         .from("orders")
         .select(
           "id, user_id, delivery_plan_id, purchase_mode, status, is_test, milk_litres, bottle_choice, total_paise, paid_total_paise, start_date, created_at",
         )
+        .eq("is_test", false)
+        .eq("status", "paid")
         .order("created_at", { ascending: false }),
       admin.rpc("product_capacity_snapshot", {
         p_days: 8,
@@ -178,42 +181,31 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const routeById = new Map(routes.map((route) => [route.id, route]));
   const latestPlanByUser = new Map<string, PlanRow>();
   const latestPaidOrderByUser = new Map<string, OrderRow>();
-  const pendingCheckoutByUser = new Map<string, OrderRow>();
   const paidOrderCountByUser = new Map<string, number>();
   const planPriority = new Map([
     ["active", 4],
     ["paused", 3],
-    ["pending_confirmation", 2],
     ["cancelled", 1],
   ]);
   plans.forEach((plan) => {
     const current = latestPlanByUser.get(plan.user_id);
     if (
       !current ||
-      (!plan.is_test && current.is_test) ||
-      plan.is_test === current.is_test &&
       (planPriority.get(plan.status) ?? 0) > (planPriority.get(current.status) ?? 0)
     ) {
       latestPlanByUser.set(plan.user_id, plan);
     }
   });
   orders.forEach((order) => {
-    if (order.is_test) return;
-    if (order.status === "paid") {
-      paidOrderCountByUser.set(order.user_id, (paidOrderCountByUser.get(order.user_id) ?? 0) + 1);
-      if (!latestPaidOrderByUser.has(order.user_id)) latestPaidOrderByUser.set(order.user_id, order);
-    }
-    if (["draft", "pending_payment", "payment_failed"].includes(order.status) && !pendingCheckoutByUser.has(order.user_id)) {
-      pendingCheckoutByUser.set(order.user_id, order);
-    }
+    paidOrderCountByUser.set(order.user_id, (paidOrderCountByUser.get(order.user_id) ?? 0) + 1);
+    if (!latestPaidOrderByUser.has(order.user_id)) latestPaidOrderByUser.set(order.user_id, order);
   });
 
   const canManage = canManageLocations(role);
-  const activePlanCount = plans.filter((plan) => !plan.is_test && plan.status === "active").length;
+  const activePlanCount = plans.filter((plan) => plan.status === "active").length;
   const missingAddressCount = profiles.filter((profile) => !profile.address_line).length;
-  const pendingCheckoutCount = orders.filter(
-    (order) => !order.is_test && ["draft", "pending_payment", "payment_failed"].includes(order.status),
-  ).length;
+  const activeCustomerIds = new Set(plans.filter((plan) => plan.status === "active").map((plan) => plan.user_id));
+  const unroutedCount = profiles.filter((profile) => activeCustomerIds.has(profile.user_id) && !profile.delivery_route_id).length;
   const todayCapacity = capacityValues(capacityDays[0]);
   const tomorrowCapacity = capacityValues(capacityDays[1]);
   const capacityRiskCount = capacityDays.slice(0, 7).filter((day) => {
@@ -231,7 +223,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const normalizedSearch = normalizedLocation(searchQuery);
   const filteredProfiles = profiles.filter((profile) => {
     const plan = latestPlanByUser.get(profile.user_id);
-    const pendingCheckout = pendingCheckoutByUser.get(profile.user_id);
     const matchesSearch = !normalizedSearch || normalizedLocation([
       profile.full_name,
       profile.phone,
@@ -243,8 +234,8 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
       ? plan?.status === "active" && !plan.is_test
       : filter === "missing"
         ? !profile.phone || !profile.address_line
-        : filter === "pending"
-          ? Boolean(pendingCheckout)
+        : filter === "unrouted"
+          ? activeCustomerIds.has(profile.user_id) && !profile.delivery_route_id
           : true;
     return matchesSearch && matchesFilter;
   });
@@ -262,7 +253,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
           {canManage ? <a className={styles.primaryAction} href="#add-customer">Add customer</a> : null}
           {canManage ? <a href="#import-customers">Import file</a> : null}
           {canManage ? <a href="/farm/exports/customers">Export</a> : null}
-          <Link href="/farm">Back to deliveries</Link>
+          <Link href="/farm/routes">Routes</Link>
         </div>
       </header>
 
@@ -284,7 +275,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
               ? `${litreLabel(todayCapacity.confirmed)} confirmed of ${litreLabel(todayCapacity.limit)} · ${litreLabel(todayCapacity.remaining)} available`
               : "Capacity data needs setup"}
           </small>
-          {todayCapacity.held > 0 ? <em>{litreLabel(todayCapacity.held)} temporarily held in checkout</em> : null}
+          {todayCapacity.held > 0 ? <em>{litreLabel(todayCapacity.held)} temporarily reserved online</em> : null}
         </article>
         <article className={styles.meterCard}>
           <div><strong>{tomorrowCapacity.percentage}%</strong><span>Tomorrow&apos;s milk capacity</span></div>
@@ -294,9 +285,9 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
               ? `${litreLabel(tomorrowCapacity.confirmed)} confirmed of ${litreLabel(tomorrowCapacity.limit)} · ${litreLabel(tomorrowCapacity.remaining)} available`
               : "Capacity data needs setup"}
           </small>
-          {tomorrowCapacity.held > 0 ? <em>{litreLabel(tomorrowCapacity.held)} temporarily held in checkout</em> : null}
+          {tomorrowCapacity.held > 0 ? <em>{litreLabel(tomorrowCapacity.held)} temporarily reserved online</em> : null}
         </article>
-        <article className={styles.statCard}><strong>{pendingCheckoutCount}</strong><span>Checkouts needing payment</span><small>Not included in paid-order totals</small></article>
+        <article className={styles.statCard}><strong>{unroutedCount}</strong><span>Customers needing a route</span><small>Active paid schedules only</small></article>
         <article className={styles.statCard}><strong>{profiles.length}</strong><span>Customers</span><small>{activePlanCount} active plans</small></article>
       </section>
 
@@ -309,7 +300,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
           <Link href="/farm/capacity?product=milk">Open capacity control</Link>
         </div>
         <div className={styles.attentionList}>
-          <Link href="/farm/locations?filter=pending"><strong>{pendingCheckoutCount}</strong><span>Payment follow-ups</span><small>Confirm payment before counting these as orders.</small></Link>
+          <Link href="/farm/routes"><strong>{unroutedCount}</strong><span>Customers needing a route</span><small>Review only exceptions the automatic rules could not match.</small></Link>
           <Link href="/farm/locations?filter=missing"><strong>{missingAddressCount}</strong><span>Profiles missing an address</span><small>Complete these before routing a delivery.</small></Link>
           <Link href="/farm/capacity?product=milk"><strong>{capacityRiskCount}</strong><span>Capacity-risk days</span><small>At least 95% committed or held in the next seven days.</small></Link>
         </div>
@@ -353,16 +344,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
             </div>
           </details>
 
-          <details className={styles.actionPanel}>
-            <summary><span>Delivery areas</span><small>Manage automatic grouping</small></summary>
-            <form action={createArea} className={styles.areaForm}>
-              <label htmlFor="area-name">New area</label>
-              <div className={styles.inlineFields}>
-                <input id="area-name" name="name" placeholder="Bistupur" required />
-                <button type="submit">Add area</button>
-              </div>
-            </form>
-          </details>
         </section>
       ) : null}
 
@@ -377,7 +358,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
 
         <form className={styles.directoryToolbar} method="get">
           <label><span className={styles.visuallyHidden}>Search customers</span><input defaultValue={searchQuery} name="q" placeholder="Search name, phone, address…" type="search" /></label>
-          <label><span className={styles.visuallyHidden}>Filter customers</span><select defaultValue={filter} name="filter"><option value="all">All customers</option><option value="active">Active plans</option><option value="pending">Payment pending</option><option value="missing">Missing details</option></select></label>
+          <label><span className={styles.visuallyHidden}>Filter customers</span><select defaultValue={filter} name="filter"><option value="all">All customers</option><option value="active">Active plans</option><option value="unrouted">Needs route</option><option value="missing">Missing details</option></select></label>
           <button type="submit">Apply</button>
           {searchQuery || filter !== "all" ? <Link href="/farm/locations">Clear</Link> : null}
         </form>
@@ -387,7 +368,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
             {filteredProfiles.map((profile) => {
               const plan = latestPlanByUser.get(profile.user_id);
               const order = latestPaidOrderByUser.get(profile.user_id);
-              const pendingCheckout = pendingCheckoutByUser.get(profile.user_id);
               const paidOrderCount = paidOrderCountByUser.get(profile.user_id) ?? 0;
               const weeklyMilk = weeklyMilkByDay(plan);
               const addressForSuggestion = normalizedLocation(
@@ -425,8 +405,8 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                     </span>
                     <span className={styles.customerStatus}>
                       <small>Next delivery</small>
-                      <strong>{nextMilkQuantity > 0 ? `${litreLabel(nextMilkQuantity)} · ${plan && plan.status !== "active" ? "after payment" : formatCalendarDate(nextDeliveryDate)}` : "Not scheduled tomorrow"}</strong>
-                      <b data-state={pendingCheckout?.status ?? plan?.status ?? "none"}>{pendingCheckout ? "Payment follow-up" : plan?.status === "active" ? "Active plan" : paidOrderCount ? "Paid customer" : "New customer"}</b>
+                      <strong>{nextMilkQuantity > 0 ? `${litreLabel(nextMilkQuantity)} · ${formatCalendarDate(nextDeliveryDate)}` : "Not scheduled tomorrow"}</strong>
+                      <b data-state={plan?.status ?? "none"}>{plan?.status === "active" ? route ? "Active · routed" : "Active · needs route" : paidOrderCount ? "Paid customer" : "New customer"}</b>
                     </span>
                     <span className={styles.chevron} aria-hidden="true" />
                   </summary>

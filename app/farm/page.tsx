@@ -1,578 +1,113 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CAPACITY_PRODUCTS,
-  formatCapacityQuantity,
-} from "@/lib/capacity-products";
-import {
-  formatCalendarDate,
-  nextDeliveryDateInIndia,
-  productName,
-  todayInIndia,
-} from "@/lib/delivery-calendar";
-import { resolveDeliveryArea } from "@/lib/delivery-area";
-import {
-  canManageLocations,
-  requireFarmManager,
-} from "@/lib/farm-dashboard";
+import { CAPACITY_PRODUCTS, formatCapacityQuantity } from "@/lib/capacity-products";
+import { formatCalendarDate, nextDeliveryDateInIndia, productName, todayInIndia } from "@/lib/delivery-calendar";
+import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateTomorrowDeliverySheet, updateDeliveryStatus } from "./actions";
+import { generateTomorrowDeliverySheet } from "./actions";
 import styles from "./farm.module.css";
 
-export const metadata: Metadata = {
-  title: "Farm operations",
-  robots: { index: false, follow: false },
-};
-
-type ProfileRow = {
-  address_line: string | null;
-  delivery_area_id: string | null;
-};
-
-type PlanRow = {
-  id: string;
-  status: string;
-};
-
-type PauseRow = {
-  end_date: string;
-  plan_id: string;
-  start_date: string;
-};
-
-type DailyItemRow = {
-  product_key: string;
-  quantity: number;
-  unit: string;
-};
-
-type DailyDeliveryRow = {
-  address_snapshot: string | null;
-  bottle_choice: "new" | "none" | "return";
-  customer_name: string;
-  daily_delivery_items: DailyItemRow[];
-  delivery_area_id: string | null;
-  delivery_route_id: string | null;
-  generated_at: string;
-  id: string;
-  phone_snapshot: string | null;
-  route_stop_order: number | null;
-  status: string;
-};
-
-type TodayDeliveryRow = {
-  address_snapshot: string | null;
-  assigned_driver_id: string | null;
-  bottle_return_required: boolean;
-  bottle_returned: boolean;
-  customer_name: string;
-  delivery_confirmed: boolean;
-  id: string;
-  status: string;
-};
-
-type Stop = {
-  address: string;
-  bottleChoice: "new" | "none" | "return";
-  id: string;
-  items: DailyItemRow[];
-  name: string;
-  phone: string | null;
-  status: string;
-  stopOrder: number | null;
-};
-
-type AreaGroup = {
-  name: string;
-  stops: Stop[];
-};
+export const metadata: Metadata = { title: "Farm operations", robots: { index: false, follow: false } };
 
 type CapacitySnapshot = {
   active_plan_quantity: number | string;
   available_quantity: number | string;
   capacity_limit: number | string;
-  checkout_holds_quantity: number | string;
   paid_once_quantity: number | string;
 };
 
-function formatQuantity(item: DailyItemRow) {
-  const quantity = Number(item.quantity);
-  if (/^1\s/.test(item.unit)) return `${quantity} × ${item.unit}`;
-  return `${quantity} ${item.unit}${quantity === 1 ? "" : "s"}`;
+type DeliveryRow = {
+  daily_delivery_items: { product_key: string; quantity: number | string }[];
+  delivery_route_id: string | null;
+  generated_at: string;
+  id: string;
+  status: string;
+};
+
+function capacityPercent(snapshot: CapacitySnapshot | null) {
+  const limit = Number(snapshot?.capacity_limit ?? 0);
+  const accepted = Number(snapshot?.active_plan_quantity ?? 0) + Number(snapshot?.paid_once_quantity ?? 0);
+  return limit > 0 ? Math.min(100, Math.round((accepted / limit) * 100)) : 0;
 }
 
-function mapUrl(address: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-}
-
-export default async function FarmDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string; message?: string }>;
-}) {
-  const { role, supabase } = await requireFarmManager();
+export default async function FarmDashboardPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
+  const { supabase } = await requireFarmManager();
   const admin = createAdminClient();
-  const deliveryDate = nextDeliveryDateInIndia();
   const today = todayInIndia();
+  const tomorrow = nextDeliveryDateInIndia();
   const params = await searchParams;
 
-  const [
-    profilesResult,
-    areasResult,
-    plansResult,
-    pausesResult,
-    deliveriesResult,
-    todayDeliveriesResult,
-  ] = await Promise.all([
-    supabase
-      .from("customer_profiles")
-      .select("address_line, delivery_area_id"),
-    supabase.from("delivery_areas").select("id, name, active, sort_order"),
-    supabase
-      .from("delivery_plans")
-      .select("id, status")
-      .eq("is_test", false)
-      .in("status", ["pending_confirmation", "active", "paused"]),
-    supabase
-      .from("delivery_pauses")
-      .select("plan_id, start_date, end_date"),
-    supabase
-      .from("daily_deliveries")
-      .select(
-        "id, status, generated_at, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, route_stop_order, daily_delivery_items(product_key, quantity, unit)",
-      )
-      .eq("delivery_date", deliveryDate)
-      .eq("is_test", false),
-    supabase
-      .from("daily_deliveries")
-      .select(
-        "id, status, customer_name, address_snapshot, assigned_driver_id, delivery_confirmed, bottle_return_required, bottle_returned",
-      )
-      .eq("delivery_date", today)
-      .eq("is_test", false),
+  const [profilesResult, plansResult, tomorrowResult, todayResult, routesResult, assignmentsResult, requestsResult] = await Promise.all([
+    supabase.from("customer_profiles").select("user_id,address_line,delivery_route_id"),
+    supabase.from("delivery_plans").select("user_id").eq("is_test", false).eq("status", "active"),
+    supabase.from("daily_deliveries").select("id,status,generated_at,delivery_route_id,daily_delivery_items(product_key,quantity)").eq("delivery_date", tomorrow).eq("is_test", false),
+    supabase.from("daily_deliveries").select("id,status,delivery_confirmed,bottle_return_required,bottle_returned,assigned_driver_id").eq("delivery_date", today).eq("is_test", false),
+    supabase.from("delivery_routes").select("id,name").eq("active", true),
+    supabase.from("route_driver_assignments").select("route_id,driver_id"),
+    supabase.from("cancellation_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
   ]);
-
-  const databaseError = [
-    profilesResult.error,
-    areasResult.error,
-    plansResult.error,
-    pausesResult.error,
-    deliveriesResult.error,
-    todayDeliveriesResult.error,
-  ].find(Boolean);
-
+  const databaseError = [profilesResult.error, plansResult.error, tomorrowResult.error, todayResult.error, routesResult.error, assignmentsResult.error, requestsResult.error].find(Boolean);
   if (databaseError) throw databaseError;
 
-  const capacityResults = await Promise.all(
-    CAPACITY_PRODUCTS.map((product) =>
-      admin.rpc("product_capacity_snapshot", {
-        p_days: 1,
-        p_product_key: product.id,
-        p_start_date: deliveryDate,
-      }),
-    ),
-  );
-  const capacityError = capacityResults.find((result) => result.error)?.error;
-  const capacityMigrationPending = Boolean(
-    capacityError?.message.includes("product_capacity_snapshot"),
-  );
-  if (capacityError && !capacityMigrationPending) throw capacityError;
-  const capacityByProduct = new Map(
-    CAPACITY_PRODUCTS.map((product, index) => [
-      product.id,
-      capacityMigrationPending
-        ? null
-        : (((capacityResults[index].data ?? [])[0] ?? null) as CapacitySnapshot | null),
-    ]),
-  );
+  const capacityResults = await Promise.all(CAPACITY_PRODUCTS.map((product) => admin.rpc("product_capacity_snapshot", { p_days: 1, p_product_key: product.id, p_start_date: tomorrow })));
+  const capacityByProduct = new Map(CAPACITY_PRODUCTS.map((product, index) => [product.id, capacityResults[index].error ? null : (((capacityResults[index].data ?? [])[0] ?? null) as CapacitySnapshot | null)]));
+  const activeCustomerIds = new Set((plansResult.data ?? []).map((plan) => plan.user_id));
+  const profiles = profilesResult.data ?? [];
+  const tomorrowStops = (tomorrowResult.data ?? []) as DeliveryRow[];
+  const todayStops = todayResult.data ?? [];
+  const unrouted = profiles.filter((profile) => activeCustomerIds.has(profile.user_id) && !profile.delivery_route_id).length;
+  const missingAddress = profiles.filter((profile) => activeCustomerIds.has(profile.user_id) && !profile.address_line).length;
+  const todayOpen = todayStops.filter((stop) => !stop.delivery_confirmed && !["delivered", "cancelled", "failed"].includes(stop.status)).length;
+  const todayBottleReturns = todayStops.filter((stop) => stop.bottle_return_required && !stop.bottle_returned).length;
+  const assignedRouteIds = new Set((assignmentsResult.data ?? []).map((assignment) => assignment.route_id));
+  const routesWithoutDriver = (routesResult.data ?? []).filter((route) => !assignedRouteIds.has(route.id)).length;
+  const generatedAt = tomorrowStops.map((stop) => stop.generated_at).sort().at(-1);
+  const productionTotals = new Map<string, number>();
+  tomorrowStops.forEach((stop) => stop.daily_delivery_items.forEach((item) => productionTotals.set(item.product_key, (productionTotals.get(item.product_key) ?? 0) + Number(item.quantity))));
+  const exceptionCount = unrouted + missingAddress + routesWithoutDriver + (requestsResult.count ?? 0);
 
-  const profiles = (profilesResult.data ?? []) as ProfileRow[];
-  const plans = (plansResult.data ?? []) as PlanRow[];
-  const pauses = (pausesResult.data ?? []) as PauseRow[];
-  const deliveries = (deliveriesResult.data ?? []) as DailyDeliveryRow[];
-  const todayDeliveries = (todayDeliveriesResult.data ?? []) as TodayDeliveryRow[];
-  const deliveryAreas = areasResult.data ?? [];
-  const areaGroups = new Map<string, AreaGroup>();
-  const totals = new Map<string, number>();
+  return <main className={styles.page}>
+    <header className={styles.header}>
+      <div><p>Farm operations</p><h1>Daily control</h1><span>{formatCalendarDate(today)} · show only what needs a decision</span></div>
+      <div className={styles.headerActions}><form action={generateTomorrowDeliverySheet}><button type="submit">Generate tomorrow</button></form><Link href={`/farm/delivery-sheet?date=${today}`}>Run today&apos;s deliveries</Link></div>
+    </header>
 
-  deliveries.forEach((delivery) => {
-    const area = resolveDeliveryArea(
-      delivery.delivery_area_id,
-      delivery.address_snapshot,
-      deliveryAreas,
-    );
-    const areaKey = area?.id ?? "unassigned";
-    const areaGroup: AreaGroup = areaGroups.get(areaKey) ?? {
-      name: area?.name ?? "Unassigned area",
-      stops: [],
-    };
+    {params.message ? <p className={styles.notice}>{params.message}</p> : null}
+    {params.error ? <p className={`${styles.notice} ${styles.error}`}>{params.error}</p> : null}
 
-    areaGroup.stops.push({
-      address: delivery.address_snapshot ?? "",
-      bottleChoice: delivery.bottle_choice,
-      id: delivery.id,
-      items: delivery.daily_delivery_items ?? [],
-      name: delivery.customer_name,
-      phone: delivery.phone_snapshot,
-      status: delivery.status,
-      stopOrder: delivery.route_stop_order,
-    });
-    areaGroups.set(areaKey, areaGroup);
+    <section className={styles.metrics} aria-label="Farm status">
+      <article data-attention={todayOpen > 0}><span>Today still open</span><strong>{todayOpen}</strong><small>delivery stops</small></article>
+      <article><span>Tomorrow prepared</span><strong>{tomorrowStops.length}</strong><small>{generatedAt ? "sheet generated" : "generate when ready"}</small></article>
+      <article data-attention={unrouted > 0}><span>Need a route</span><strong>{unrouted}</strong><small>active customers</small></article>
+      <article data-attention={exceptionCount > 0}><span>Exceptions</span><strong>{exceptionCount}</strong><small>manager decisions</small></article>
+    </section>
 
-    (delivery.daily_delivery_items ?? []).forEach((item) => {
-      totals.set(
-        item.product_key,
-        (totals.get(item.product_key) ?? 0) + Number(item.quantity),
-      );
-    });
-  });
+    <section className={styles.priority}>
+      <div className={styles.sectionHeading}><div><p>Act first</p><h2>Exceptions</h2></div><span>{exceptionCount ? `${exceptionCount} to review` : "Operations ready"}</span></div>
+      <div className={styles.exceptionGrid}>
+        <Link data-attention={todayOpen > 0} href={`/farm/delivery-sheet?date=${today}`}><strong>{todayOpen}</strong><span>Today&apos;s unfinished stops</span><small>Complete, fail, or reschedule each stop.</small></Link>
+        <Link data-attention={todayBottleReturns > 0} href={`/farm/delivery-sheet?date=${today}`}><strong>{todayBottleReturns}</strong><span>Bottles still due</span><small>Record returns from today&apos;s route.</small></Link>
+        <Link data-attention={unrouted + routesWithoutDriver > 0} href="/farm/routes"><strong>{unrouted + routesWithoutDriver}</strong><span>Routing exceptions</span><small>{unrouted} customers · {routesWithoutDriver} routes without drivers</small></Link>
+        <Link data-attention={(requestsResult.count ?? 0) > 0} href="/farm/cancellations"><strong>{requestsResult.count ?? 0}</strong><span>Customer requests</span><small>Approve or reject open requests.</small></Link>
+      </div>
+    </section>
 
-  const groups = [...areaGroups.values()]
-    .map((area) => ({
-      ...area,
-      stops: area.stops.sort(
-        (a, b) => {
-          const savedOrder =
-            (a.stopOrder ?? Number.MAX_SAFE_INTEGER) -
-            (b.stopOrder ?? Number.MAX_SAFE_INTEGER);
-          if (savedOrder !== 0) return savedOrder;
-          return a.address.localeCompare(b.address, "en-IN", {
-            sensitivity: "base",
-          });
-        },
-      ),
-    }))
-    .sort((a, b) => {
-      if (a.name === "Unassigned area") return 1;
-      if (b.name === "Unassigned area") return -1;
-      return a.name.localeCompare(b.name);
-    });
-  const pendingCount = plans.filter(
-    (plan) => plan.status === "pending_confirmation",
-  ).length;
-  const unassignedCount = profiles.filter(
-    (profile) => !profile.address_line,
-  ).length;
-  const pausedTomorrow = plans.filter(
-    (plan) =>
-      plan.status === "active" &&
-      pauses.some(
-        (pause) =>
-          pause.plan_id === plan.id &&
-          deliveryDate >= pause.start_date &&
-          deliveryDate <= pause.end_date,
-      ),
-  ).length;
-  const productTotals = [...totals.entries()].sort(([a], [b]) => {
-    if (a === "milk") return -1;
-    if (b === "milk") return 1;
-    return a.localeCompare(b);
-  });
-  const generatedAt = deliveries
-    .map((delivery) => delivery.generated_at)
-    .sort()
-    .at(-1);
-  const todayDelivered = todayDeliveries.filter(
-    (stop) => stop.delivery_confirmed || stop.status === "delivered",
-  );
-  const todayUnfulfilled = todayDeliveries.filter(
-    (stop) =>
-      !stop.delivery_confirmed &&
-      !["delivered", "cancelled"].includes(stop.status),
-  );
-  const todayBottlesDue = todayDeliveries.filter(
-    (stop) => stop.bottle_return_required && !stop.bottle_returned,
-  );
-  const todayUnassigned = todayDeliveries.filter(
-    (stop) => !stop.assigned_driver_id,
-  );
+    <section className={styles.tomorrow}>
+      <div className={styles.sectionHeading}><div><p>{formatCalendarDate(tomorrow)}</p><h2>Tomorrow&apos;s production and capacity</h2></div><Link href="/farm/capacity">Edit limits</Link></div>
+      <div className={styles.capacityGrid}>
+        {CAPACITY_PRODUCTS.map((product) => {
+          const snapshot = capacityByProduct.get(product.id) ?? null;
+          const accepted = Number(snapshot?.active_plan_quantity ?? 0) + Number(snapshot?.paid_once_quantity ?? 0);
+          const percent = capacityPercent(snapshot);
+          return <article key={product.id}><div><span>{product.name}</span><strong>{formatCapacityQuantity(snapshot?.available_quantity ?? 0)} {product.shortUnit} available</strong></div><meter min={0} max={100} high={95} low={80} optimum={0} value={percent}>{percent}%</meter><small>{formatCapacityQuantity(accepted)} of {formatCapacityQuantity(snapshot?.capacity_limit ?? 0)} {product.shortUnit} committed · {percent}% used</small></article>;
+        })}
+      </div>
+      {productionTotals.size ? <div className={styles.production}><strong>Prepare</strong>{[...productionTotals].map(([key, quantity]) => <span key={key}>{productName(key)} <b>{quantity}</b></span>)}</div> : <p className={styles.empty}>No paid deliveries are prepared for tomorrow yet.</p>}
+    </section>
 
-  return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Farm operations</p>
-          <h1>Tomorrow&apos;s delivery plan</h1>
-          <p className={styles.date}>{formatCalendarDate(deliveryDate)}</p>
-        </div>
-        <div className={styles.headerActions}>
-          <form action={generateTomorrowDeliverySheet}>
-            <button className={styles.generateButton} type="submit">
-              Generate tomorrow&apos;s sheet
-            </button>
-          </form>
-          <Link
-            className={styles.locationLink}
-            href={`/farm/delivery-sheet?date=${deliveryDate}`}
-          >
-            Print delivery sheet
-          </Link>
-          {canManageLocations(role) ? (
-            <a
-              className={styles.locationLink}
-              href="/farm/exports/customers"
-            >
-              Export customers
-            </a>
-          ) : null}
-        </div>
-      </header>
-
-      {params.message ? (
-        <p className={styles.notice}>{params.message}</p>
-      ) : null}
-      {params.error ? (
-        <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
-      ) : null}
-
-      <section className={styles.fieldReport} aria-labelledby="field-report-title">
-        <div className={styles.sectionHeading}>
-          <div>
-            <p className={styles.sectionLabel}>Live from today&apos;s route</p>
-            <h2 id="field-report-title">Doorstep report</h2>
-          </div>
-          <Link href={`/farm/delivery-sheet?date=${today}`}>Open Driver tab</Link>
-        </div>
-        <div className={styles.fieldMetrics}>
-          <article><strong>{todayDelivered.length}</strong><span>Delivered</span></article>
-          <article><strong>{todayUnfulfilled.length}</strong><span>Not fulfilled</span></article>
-          <article><strong>{todayBottlesDue.length}</strong><span>Bottles outstanding</span></article>
-          <article><strong>{todayUnassigned.length}</strong><span>Without driver</span></article>
-        </div>
-        {todayUnfulfilled.length || todayBottlesDue.length || todayUnassigned.length ? (
-          <div className={styles.fieldExceptions}>
-            {todayUnfulfilled.map((stop) => (
-              <span key={`delivery-${stop.id}`}>
-                <strong>Not delivered:</strong> {stop.customer_name} · {stop.address_snapshot ?? "address missing"}
-              </span>
-            ))}
-            {todayBottlesDue.map((stop) => (
-              <span key={`bottle-${stop.id}`}>
-                <strong>Bottle due:</strong> {stop.customer_name}
-              </span>
-            ))}
-            {todayUnassigned.map((stop) => (
-              <span key={`driver-${stop.id}`}>
-                <strong>No driver:</strong> {stop.customer_name}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className={styles.fieldClear}>
-            {todayDeliveries.length
-              ? "All of today’s stops and bottle returns are complete."
-              : "No delivery sheet has been generated for today."}
-          </p>
-        )}
-      </section>
-
-      <section className={styles.sheetStatus} aria-label="Daily sheet status">
-        <div>
-          <strong>{generatedAt ? "Daily sheet ready" : "Daily sheet not generated"}</strong>
-          <span>
-            {generatedAt
-              ? `${deliveries.length} persistent stops saved for tomorrow.`
-              : "Generate after paid plans are active. Pending checkout is never included."}
-          </span>
-        </div>
-        <span>{pausedTomorrow} paused</span>
-      </section>
-
-      <section className={styles.metrics} aria-label="Tomorrow's totals">
-        <article>
-          <span>Customer stops</span>
-          <strong>{deliveries.length}</strong>
-        </article>
-        <article>
-          <span>Milk</span>
-          <strong>{totals.get("milk") ?? 0} L</strong>
-        </article>
-        <article>
-          <span>Pending checkout</span>
-          <strong>{pendingCount}</strong>
-        </article>
-        <article>
-          <span>Needs address</span>
-          <strong>{unassignedCount}</strong>
-        </article>
-      </section>
-
-      <section className={styles.capacity} aria-labelledby="capacity-title">
-        <div className={styles.sectionHeading}>
-          <div>
-            <p className={styles.sectionLabel}>After accepted orders</p>
-            <h2 id="capacity-title">Tomorrow&apos;s remaining capacity</h2>
-          </div>
-          <Link href="/farm/capacity">Manage limits</Link>
-        </div>
-        {capacityMigrationPending ? (
-          <p className={styles.capacityPending}>
-            Multi-product capacity is in preview. Limits become editable after the
-            database update is approved.
-          </p>
-        ) : null}
-        <div className={styles.capacityList}>
-          {CAPACITY_PRODUCTS.map((product) => {
-            const snapshot = capacityByProduct.get(product.id);
-            const accepted = snapshot
-              ? Number(snapshot.active_plan_quantity) +
-                Number(snapshot.paid_once_quantity)
-              : 0;
-            const checkout = snapshot
-              ? Number(snapshot.checkout_holds_quantity)
-              : 0;
-            return (
-              <article key={product.id}>
-                <div>
-                  <span>{product.name}</span>
-                  <strong>
-                    {formatCapacityQuantity(snapshot?.available_quantity ?? 0)}{" "}
-                    {product.shortUnit}
-                  </strong>
-                  <small>remaining</small>
-                </div>
-                <dl>
-                  <div>
-                    <dt>Limit</dt>
-                    <dd>
-                      {formatCapacityQuantity(snapshot?.capacity_limit ?? 0)}{" "}
-                      {product.shortUnit}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Accepted</dt>
-                    <dd>
-                      {formatCapacityQuantity(accepted)} {product.shortUnit}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Checkout</dt>
-                    <dd>
-                      {formatCapacityQuantity(checkout)} {product.shortUnit}
-                    </dd>
-                  </div>
-                </dl>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      {productTotals.length ? (
-        <section className={styles.production} aria-labelledby="production-title">
-          <div>
-            <p className={styles.sectionLabel}>Production list</p>
-            <h2 id="production-title">Prepare for tomorrow</h2>
-          </div>
-          <div className={styles.productTotals}>
-            {productTotals.map(([key, quantity]) => (
-              <span key={key}>
-                <strong>{quantity}</strong> {productName(key)}
-              </span>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className={styles.routeSection} aria-labelledby="routes-title">
-        <div className={styles.sectionHeading}>
-          <div>
-            <p className={styles.sectionLabel}>Area → customer</p>
-            <h2 id="routes-title">Delivery stops</h2>
-          </div>
-          <span>{deliveries.length} stops</span>
-        </div>
-
-        {groups.length ? (
-          <div className={styles.areaList}>
-            {groups.map((area) => (
-              <article className={styles.area} key={area.name}>
-                <header>
-                  <h3>{area.name}</h3>
-                  <span>
-                    {area.stops.length} stops
-                  </span>
-                </header>
-                <div className={styles.routeList}>
-                    <section className={styles.route}>
-                      <ol>
-                        {area.stops.map((stop, index) => (
-                          <li key={stop.id}>
-                            <span className={styles.stopNumber}>
-                              {stop.stopOrder ?? index + 1}
-                            </span>
-                            <div className={styles.stopCopy}>
-                              <strong>{stop.name}</strong>
-                              <span>{stop.address || "Address not saved"}</span>
-                              <small>{stop.phone ?? "No phone saved"}</small>
-                              <div className={styles.stopActions}>
-                                {stop.address ? (
-                                  <a
-                                    href={mapUrl(stop.address)}
-                                    rel="noreferrer"
-                                    target="_blank"
-                                  >
-                                    Open map
-                                  </a>
-                                ) : null}
-                                {stop.phone ? <a href={`tel:${stop.phone}`}>Call</a> : null}
-                              </div>
-                            </div>
-                            <div className={styles.stopItems}>
-                              {stop.items.map((item) => (
-                                <span key={item.product_key}>
-                                  {productName(item.product_key)} · {formatQuantity(item)}
-                                </span>
-                              ))}
-                              {stop.bottleChoice !== "none" ? (
-                                <span>
-                                  Bottle · {stop.bottleChoice === "new" ? "Take new" : "Collect return"}
-                                </span>
-                              ) : null}
-                              <small>{stop.status.replaceAll("_", " ")}</small>
-                              {stop.status !== "delivered" && stop.status !== "cancelled" ? (
-                                <form className={styles.statusForm} action={updateDeliveryStatus}>
-                                  <input name="deliveryId" type="hidden" value={stop.id} />
-                                  {stop.status === "planned" ? (
-                                    <button name="status" value="ready">Ready</button>
-                                  ) : null}
-                                  {stop.status === "ready" ? (
-                                    <button name="status" value="out_for_delivery">Send out</button>
-                                  ) : null}
-                                  {["ready", "out_for_delivery"].includes(stop.status) ? (
-                                    <button className={styles.completeButton} name="status" value="delivered">Delivered</button>
-                                  ) : null}
-                                  {["ready", "out_for_delivery"].includes(stop.status) ? (
-                                    <button name="status" value="failed">Failed</button>
-                                  ) : null}
-                                  {["planned", "ready", "failed"].includes(stop.status) ? (
-                                    <button name="status" value="cancelled">Cancel stop</button>
-                                  ) : null}
-                                </form>
-                              ) : null}
-                            </div>
-                          </li>
-                        ))}
-                      </ol>
-                    </section>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.empty}>
-            <strong>No active deliveries for tomorrow yet.</strong>
-            <p>
-              Generate the sheet after payment activates a plan. Pending plans are excluded.
-            </p>
-          </div>
-        )}
-      </section>
-
-      <section className={styles.remaining} aria-labelledby="remaining-title">
-        <div><p className={styles.sectionLabel}>Operations rule</p><h2 id="remaining-title">Delivery balance</h2></div>
-        <p>Only a successful milk delivery uses one plan credit. Failed and cancelled stops keep the customer&apos;s balance unchanged.</p>
-      </section>
-    </main>
-  );
+    <section className={styles.readiness}>
+      <div><p>Tomorrow&apos;s sheet</p><h2>{generatedAt ? "Prepared" : "Not generated"}</h2><span>{generatedAt ? `${tomorrowStops.length} paid delivery stops are ready.` : "Generate after route and capacity exceptions are resolved."}</span></div>
+      <div className={styles.readinessActions}><Link href="/farm/routes">Check routes</Link><Link href={`/farm/delivery-sheet?date=${tomorrow}`}>Open tomorrow</Link></div>
+    </section>
+  </main>;
 }

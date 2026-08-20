@@ -94,6 +94,15 @@ const farmPaymentsUrl = new URL(
   "../app/farm/payments/page.tsx",
   import.meta.url,
 );
+const farmPaymentActionsUrl = new URL(
+  "../app/farm/payments/actions.ts",
+  import.meta.url,
+);
+const farmRoutesUrl = new URL("../app/farm/routes/page.tsx", import.meta.url);
+const essentialFarmSchemaUrl = new URL(
+  "../supabase/essential_farm_operations.sql",
+  import.meta.url,
+);
 const pricingPageUrl = new URL("../app/pricing/page.tsx", import.meta.url);
 const shippingPageUrl = new URL("../app/shipping/page.tsx", import.meta.url);
 const contactPageUrl = new URL("../app/contact/page.tsx", import.meta.url);
@@ -370,7 +379,7 @@ test("accepts orders only when daily production capacity is available", async ()
   assert.match(capacity, /order_capacity_reservations/);
   assert.match(capacity, /status = 'active'/);
   assert.match(capacityPage, /Next seven days/);
-  assert.match(capacityPage, /In checkout/);
+  assert.match(capacityPage, /Temporarily reserved/);
   assert.match(capacityPage, /product_capacity_snapshot/);
   assert.match(capacityPage, /Tomorrow uses a one-day limit/);
   assert.match(capacityActions, /createAdminClient/);
@@ -668,7 +677,7 @@ test("presents the product builder as a visible farm shop", async () => {
 });
 
 test("provides persistent mobile-first farm delivery operations", async () => {
-  const [dashboard, dashboardActions, locations, customer, actions, schema, dailySchema, oneTimeSchema, operationsSchema, cancellations, payments, testModeSchema, driverDeliverySchema, driverDeliverySecuritySchema, styles] = await Promise.all([
+  const [dashboard, dashboardActions, locations, customer, actions, schema, dailySchema, oneTimeSchema, operationsSchema, cancellations, payments, paymentActions, routes, essentialSchema, testModeSchema, driverDeliverySchema, driverDeliverySecuritySchema, styles] = await Promise.all([
     readFile(farmDashboardUrl, "utf8"),
     readFile(farmDashboardActionsUrl, "utf8"),
     readFile(farmLocationsUrl, "utf8"),
@@ -680,22 +689,22 @@ test("provides persistent mobile-first farm delivery operations", async () => {
     readFile(operationsSchemaUrl, "utf8"),
     readFile(farmCancellationsUrl, "utf8"),
     readFile(farmPaymentsUrl, "utf8"),
+    readFile(farmPaymentActionsUrl, "utf8"),
+    readFile(farmRoutesUrl, "utf8"),
+    readFile(essentialFarmSchemaUrl, "utf8"),
     readFile(testOrderModeSchemaUrl, "utf8"),
     readFile(driverDeliverySchemaUrl, "utf8"),
     readFile(driverDeliverySecuritySchemaUrl, "utf8"),
     readFile(new URL("../app/farm/farm.module.css", import.meta.url), "utf8"),
   ]);
 
-  assert.match(dashboard, /Tomorrow&apos;s delivery plan/);
-  assert.match(dashboard, /Area → customer/);
-  assert.match(dashboard, /Delivery stops/);
-  assert.match(dashboard, /Generate tomorrow&apos;s sheet/);
+  assert.match(dashboard, /Daily control/);
+  assert.match(dashboard, /Act first/);
+  assert.match(dashboard, /Tomorrow&apos;s production and capacity/);
+  assert.match(dashboard, /Generate tomorrow/);
   assert.match(dashboard, /daily_deliveries/);
-  assert.match(dashboard, /Open map/);
-  assert.match(dashboard, /google\.com\/maps\/search/);
-  assert.match(dashboard, /Pending plans are excluded/);
-  assert.match(dashboard, /Delivery balance/);
-  assert.match(dashboard, /updateDeliveryStatus/);
+  assert.match(dashboard, /Routing exceptions/);
+  assert.doesNotMatch(dashboard, /pending_confirmation|Pending checkout/);
   assert.match(dashboardActions, /generate_daily_deliveries/);
   assert.match(dashboardActions, /nextDeliveryDateInIndia/);
   assert.match(locations, /Farm customers/);
@@ -707,7 +716,7 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(customer, /order_items/);
   assert.match(customer, /payments/);
   assert.match(customer, /Seven-day milk schedule|weekSchedule/);
-  assert.match(customer, /!order\.is_test && order\.status === "paid"/);
+  assert.match(customer, /\.eq\("status", "paid"\)/);
   assert.match(customer, /profileEditor/);
   assert.doesNotMatch(locations, /New route/);
   assert.doesNotMatch(locations, /Stop order/);
@@ -740,9 +749,15 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(operationsSchema, /delivered_deliveries \+ 1/);
   assert.match(operationsSchema, /customer_notifications/);
   assert.match(operationsSchema, /cancellation_requests/);
-  assert.match(cancellations, /Cancellation requests/);
-  assert.match(payments, /Verified payment records/);
-  assert.match(payments, /mode === "test"/);
+  assert.match(cancellations, /Open requests/);
+  assert.match(payments, /Confirmed payments/);
+  assert.doesNotMatch(payments, /mode === "test"|pending_payment/);
+  assert.match(payments, /Correct this payment/);
+  assert.match(paymentActions, /reset_manual_payment/);
+  assert.match(routes, /Route a customer when payment activates the schedule/);
+  assert.match(essentialSchema, /private\.assign_customer_route/);
+  assert.match(essentialSchema, /payment_status_changes/);
+  assert.match(essentialSchema, /reset_manual_payment/);
   assert.match(testModeSchema, /add column if not exists is_test/);
   assert.match(driverDeliverySchema, /create table if not exists public\.route_driver_assignments/);
   assert.match(driverDeliverySchema, /create or replace function public\.record_delivery_stop/);
@@ -752,12 +767,11 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(driverDeliverySecuritySchema, /private\.record_delivery_stop_impl/);
   assert.match(driverDeliverySecuritySchema, /public\.record_delivery_stop/);
   assert.match(driverDeliverySecuritySchema, /security invoker/);
-  assert.match(dashboard, /Doorstep report/);
-  assert.match(dashboard, /Bottles outstanding/);
-  assert.match(dashboard, /Bottle ·/);
+  assert.match(dashboard, /Today&apos;s unfinished stops/);
+  assert.match(dashboard, /Bottles still due/);
   assert.match(styles, /\.headerActions/);
-  assert.match(styles, /width: 100%/);
-  assert.match(styles, /@media \(min-width: 700px\)/);
+  assert.match(styles, /capacityGrid/);
+  assert.match(styles, /@media\(min-width:760px\)/);
 });
 
 test("provides protected customer and daily delivery exports", async () => {
@@ -775,8 +789,7 @@ test("provides protected customer and daily delivery exports", async () => {
       readFile(new URL("../app/farm/farm-shell.module.css", import.meta.url), "utf8"),
     ]);
 
-  assert.match(dashboard, /Print delivery sheet/);
-  assert.match(dashboard, /Export customers/);
+  assert.match(dashboard, /Run today&apos;s deliveries/);
   assert.match(locations, /Suggested area:/);
   assert.match(locations, /name="fullName"/);
   assert.match(locations, /name="phone"/);
@@ -803,7 +816,8 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(sheetActions, /record_delivery_stop/);
   assert.match(sheet, /Customer information is provided only for completing farm deliveries/);
   assert.doesNotMatch(sheet, /7-day milk plan/);
-  assert.match(farmLayout, /href="\/farm\/delivery-sheet">Driver/);
+  assert.match(farmLayout, /href="\/farm\/routes">Routes/);
+  assert.match(farmLayout, /href="\/farm\/delivery-sheet">Deliveries/);
   assert.match(farmLayout, /driverView/);
   assert.match(farmLayout, />My route</);
   assert.match(farmLayout, /driverMobileNav/);
@@ -813,13 +827,14 @@ test("provides protected customer and daily delivery exports", async () => {
 });
 
 test("lets managers add, import, and manage customers safely", async () => {
-  const [locations, actions, customerImport, farmLayout, manualOrderForm, customer] = await Promise.all([
+  const [locations, actions, customerImport, farmLayout, manualOrderForm, customer, essentialSchema] = await Promise.all([
     readFile(farmLocationsUrl, "utf8"),
     readFile(farmActionsUrl, "utf8"),
     readFile(customerImportUrl, "utf8"),
     readFile(farmLayoutUrl, "utf8"),
     readFile(manualOrderFormUrl, "utf8"),
     readFile(farmCustomerUrl, "utf8"),
+    readFile(essentialFarmSchemaUrl, "utf8"),
   ]);
 
   assert.match(locations, /Add customer/);
@@ -833,8 +848,8 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(locations, /Next delivery/);
   assert.match(locations, /Open customer workspace/);
   assert.match(locations, /\/farm\/customers\/\$\{profile\.user_id\}/);
-  assert.match(manualOrderForm, /Record order/);
-  assert.match(manualOrderForm, /Live · Payment pending/);
+  assert.match(manualOrderForm, /Record paid order/);
+  assert.match(manualOrderForm, /Live · Paid order/);
   assert.match(manualOrderForm, /Capacity impact/);
   assert.match(manualOrderForm, /calculatePlanPricing/);
   assert.match(manualOrderForm, /disabled=\{!orderReady\}/);
@@ -848,16 +863,20 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(actions, /2_000_000/);
   assert.match(actions, /recordCustomerOrder/);
   assert.match(actions, /status: "pending_payment"/);
+  assert.match(actions, /capture_farm_order_payment/);
+  assert.match(essentialSchema, /provider_order_id/);
+  assert.match(essentialSchema, /status = 'paid'/);
+  assert.match(essentialSchema, /consume_order_capacity/);
   assert.match(actions, /The customer profile was not updated/);
   assert.match(actions, /The selected route does not belong to the selected area/);
   assert.match(actions, /route_stop_order: routeStopOrder/);
   assert.match(locations, /Postal code/);
   assert.match(customer, /Customer account/);
-  assert.match(customer, /const paidOrders = orders\.filter/);
-  assert.match(customer, /order\.status === "paid"/);
-  assert.match(customer, /const pendingCheckouts = orders\.filter/);
-  assert.match(customer, /These are not included in paid-order totals or order history/);
-  assert.match(locations, /Checkouts needing payment/);
+  assert.match(customer, /const paidOrders = orders/);
+  assert.match(customer, /\.eq\("status", "paid"\)/);
+  assert.doesNotMatch(customer, /const pendingCheckouts = orders\.filter/);
+  assert.doesNotMatch(customer, /Payment follow-up/);
+  assert.match(locations, /Customers needing a route/);
   assert.match(customer, /Lifetime paid/);
   assert.match(customer, /Paid order history/);
   assert.match(customer, /View payment ledger/);
