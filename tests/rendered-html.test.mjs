@@ -64,6 +64,10 @@ const farmActionsUrl = new URL(
   "../app/farm/locations/actions.ts",
   import.meta.url,
 );
+const manualOrderFormUrl = new URL(
+  "../app/farm/locations/manual-order-form.tsx",
+  import.meta.url,
+);
 const farmSchemaUrl = new URL("../supabase/farm_dashboard.sql", import.meta.url);
 const dailyDeliveriesSchemaUrl = new URL(
   "../supabase/daily_deliveries.sql",
@@ -805,11 +809,12 @@ test("provides protected customer and daily delivery exports", async () => {
 });
 
 test("lets managers add, import, and manage customers safely", async () => {
-  const [locations, actions, customerImport, farmLayout] = await Promise.all([
+  const [locations, actions, customerImport, farmLayout, manualOrderForm] = await Promise.all([
     readFile(farmLocationsUrl, "utf8"),
     readFile(farmActionsUrl, "utf8"),
     readFile(customerImportUrl, "utf8"),
     readFile(farmLayoutUrl, "utf8"),
+    readFile(manualOrderFormUrl, "utf8"),
   ]);
 
   assert.match(locations, /Add customer/);
@@ -817,7 +822,15 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(locations, /\.xlsx,\.csv/);
   assert.match(locations, /className=\{styles\.customerSummary\}/);
   assert.match(locations, /<meter/);
-  assert.match(locations, /Record order/);
+  assert.match(locations, /Today&apos;s milk capacity/);
+  assert.match(locations, /product_capacity_snapshot/);
+  assert.match(locations, /What needs attention/);
+  assert.match(locations, /Next delivery/);
+  assert.match(manualOrderForm, /Record order/);
+  assert.match(manualOrderForm, /Live · Payment pending/);
+  assert.match(manualOrderForm, /Capacity impact/);
+  assert.match(manualOrderForm, /calculatePlanPricing/);
+  assert.match(manualOrderForm, /disabled=\{!orderReady\}/);
   assert.match(actions, /createCustomerProfile/);
   assert.match(actions, /createManagedCustomer/);
   assert.match(actions, /auth\.admin\.createUser/);

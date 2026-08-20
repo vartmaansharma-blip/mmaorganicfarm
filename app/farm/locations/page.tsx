@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
+import {
+  formatCalendarDate,
+  nextDeliveryDateInIndia,
+  todayInIndia,
+  weekdayFromYmd,
+} from "@/lib/delivery-calendar";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
-import { FARM_PRODUCTS } from "@/lib/farm-products";
 import {
   canManageLocations,
   requireFarmManager,
@@ -15,9 +19,9 @@ import {
   createCustomerProfile,
   deleteCustomerProfile,
   importCustomerProfiles,
-  recordCustomerOrder,
   setOrderMode,
 } from "./actions";
+import { ManualOrderForm } from "./manual-order-form";
 import styles from "./locations.module.css";
 
 export const metadata: Metadata = {
@@ -83,6 +87,15 @@ type PaymentRow = {
   status: string;
 };
 
+type CapacityDay = {
+  active_plan_quantity: number | string;
+  available_quantity: number | string;
+  capacity_limit: number | string;
+  checkout_holds_quantity: number | string;
+  delivery_date: string;
+  paid_once_quantity: number | string;
+};
+
 function normalizedLocation(value: string | null) {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -114,6 +127,27 @@ function quantityLabel(quantity: number | string, unit: string) {
   return `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
 }
 
+function litreLabel(quantity: number | string) {
+  const value = Number(quantity);
+  return `${Number.isInteger(value) ? value : value.toFixed(1)} L`;
+}
+
+function capacityValues(day: CapacityDay | undefined) {
+  const limit = Number(day?.capacity_limit ?? 0);
+  const confirmed = Number(day?.active_plan_quantity ?? 0) +
+    Number(day?.paid_once_quantity ?? 0);
+  const held = Number(day?.checkout_holds_quantity ?? 0);
+  const percentage = limit > 0 ? Math.round((confirmed / limit) * 100) : 0;
+
+  return {
+    confirmed,
+    held,
+    limit,
+    percentage,
+    remaining: Number(day?.available_quantity ?? 0),
+  };
+}
+
 function weeklyMilkByDay(plan: PlanRow | undefined) {
   return new Map(
     (plan?.weekly_delivery_items ?? [])
@@ -137,11 +171,26 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const { role, supabase } = await requireFarmManager("/farm/locations");
   const admin = createAdminClient();
   const parameters = await searchParams;
-  const [areasResult, profilesResult, plansResult, ordersResult, paymentsResult] =
+  const today = todayInIndia();
+  const [
+    areasResult,
+    routesResult,
+    profilesResult,
+    plansResult,
+    ordersResult,
+    paymentsResult,
+    capacityResult,
+  ] =
     await Promise.all([
       supabase
         .from("delivery_areas")
         .select("id, name, active, sort_order")
+        .order("sort_order")
+        .order("name"),
+      supabase
+        .from("delivery_routes")
+        .select("id, area_id, name, code")
+        .eq("active", true)
         .order("sort_order")
         .order("name"),
       supabase
@@ -166,10 +215,16 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
         .from("payments")
         .select("order_id, status, is_test, amount_paise, paid_at, created_at")
         .order("created_at", { ascending: false }),
+      admin.rpc("product_capacity_snapshot", {
+        p_days: 8,
+        p_product_key: "milk",
+        p_start_date: today,
+      }),
     ]);
 
   const databaseError = [
     areasResult.error,
+    routesResult.error,
     profilesResult.error,
     plansResult.error,
     ordersResult.error,
@@ -178,11 +233,20 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   if (databaseError) throw databaseError;
 
   const areas = areasResult.data ?? [];
+  const routes = routesResult.data ?? [];
   const profiles = profilesResult.data ?? [];
   const plans = (plansResult.data ?? []) as PlanRow[];
   const orders = (ordersResult.data ?? []) as OrderRow[];
   const payments = (paymentsResult.data ?? []) as PaymentRow[];
+  const capacityDays = capacityResult.error
+    ? []
+    : ((capacityResult.data ?? []) as CapacityDay[]);
+  const orderCapacityDays = capacityDays.map((day) => ({
+    available_quantity: Number(day.available_quantity),
+    delivery_date: day.delivery_date,
+  }));
   const areaById = new Map(areas.map((area) => [area.id, area.name]));
+  const routeById = new Map(routes.map((route) => [route.id, route]));
   const latestPlanByUser = new Map<string, PlanRow>();
   const latestOrderByUser = new Map<string, OrderRow>();
   const ordersByUser = new Map<string, OrderRow[]>();
@@ -234,17 +298,16 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const canManage = canManageLocations(role);
   const canDelete = role === "admin";
   const activePlanCount = plans.filter((plan) => !plan.is_test && plan.status === "active").length;
-  const paidOrderCount = orders.filter((order) => !order.is_test && order.status === "paid").length;
   const missingAddressCount = profiles.filter((profile) => !profile.address_line).length;
-  const readyProfileCount = profiles.filter(
-    (profile) => profile.full_name && profile.phone && profile.address_line,
+  const pendingOrderCount = orders.filter(
+    (order) => !order.is_test && ["draft", "pending_payment"].includes(order.status),
   ).length;
-  const profileReadiness = profiles.length
-    ? Math.round((readyProfileCount / profiles.length) * 100)
-    : 0;
-  const activePlanCoverage = profiles.length
-    ? Math.round((activePlanCount / profiles.length) * 100)
-    : 0;
+  const todayCapacity = capacityValues(capacityDays[0]);
+  const tomorrowCapacity = capacityValues(capacityDays[1]);
+  const capacityRiskCount = capacityDays.slice(0, 7).filter((day) => {
+    const values = capacityValues(day);
+    return values.limit > 0 && ((values.confirmed + values.held) / values.limit) >= 0.95;
+  }).length;
   const searchQuery = String(
     Array.isArray(parameters.q) ? parameters.q[0] ?? "" : parameters.q ?? "",
   ).trim();
@@ -301,18 +364,43 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
       ) : null}
 
       <section className={styles.summary} aria-label="Customer overview">
-        <article><strong>{profiles.length}</strong><span>Total customers</span></article>
-        <article><strong>{activePlanCount}</strong><span>Active plans</span></article>
         <article className={styles.meterCard}>
-          <div><strong>{profileReadiness}%</strong><span>Profiles ready</span></div>
-          <meter min="0" max="100" value={profileReadiness}>{profileReadiness}%</meter>
-          <small>{missingAddressCount ? `${missingAddressCount} need an address` : "All profiles are complete"}</small>
+          <div><strong>{todayCapacity.percentage}%</strong><span>Today&apos;s milk capacity</span></div>
+          <meter high={95} low={80} min={0} max={100} optimum={0} value={Math.min(todayCapacity.percentage, 100)}>{todayCapacity.percentage}%</meter>
+          <small>
+            {capacityDays.length
+              ? `${litreLabel(todayCapacity.confirmed)} confirmed of ${litreLabel(todayCapacity.limit)} · ${litreLabel(todayCapacity.remaining)} available`
+              : "Capacity data needs setup"}
+          </small>
+          {todayCapacity.held > 0 ? <em>{litreLabel(todayCapacity.held)} temporarily held in checkout</em> : null}
         </article>
         <article className={styles.meterCard}>
-          <div><strong>{activePlanCoverage}%</strong><span>Plan coverage</span></div>
-          <meter min="0" max="100" value={activePlanCoverage}>{activePlanCoverage}%</meter>
-          <small>{paidOrderCount} paid orders recorded</small>
+          <div><strong>{tomorrowCapacity.percentage}%</strong><span>Tomorrow&apos;s milk capacity</span></div>
+          <meter high={95} low={80} min={0} max={100} optimum={0} value={Math.min(tomorrowCapacity.percentage, 100)}>{tomorrowCapacity.percentage}%</meter>
+          <small>
+            {capacityDays.length
+              ? `${litreLabel(tomorrowCapacity.confirmed)} confirmed of ${litreLabel(tomorrowCapacity.limit)} · ${litreLabel(tomorrowCapacity.remaining)} available`
+              : "Capacity data needs setup"}
+          </small>
+          {tomorrowCapacity.held > 0 ? <em>{litreLabel(tomorrowCapacity.held)} temporarily held in checkout</em> : null}
         </article>
+        <article className={styles.statCard}><strong>{pendingOrderCount}</strong><span>Orders needing payment</span><small>Pending and draft live orders</small></article>
+        <article className={styles.statCard}><strong>{profiles.length}</strong><span>Customers</span><small>{activePlanCount} active plans</small></article>
+      </section>
+
+      <section className={styles.attention} aria-labelledby="attention-title">
+        <div className={styles.attentionHeading}>
+          <div>
+            <p className={styles.eyebrow}>Operator queue</p>
+            <h2 id="attention-title">What needs attention</h2>
+          </div>
+          <Link href="/farm/capacity?product=milk">Open capacity control</Link>
+        </div>
+        <div className={styles.attentionList}>
+          <Link href="/farm/locations?filter=pending"><strong>{pendingOrderCount}</strong><span>Orders awaiting payment</span><small>Confirm payment before capacity is committed.</small></Link>
+          <Link href="/farm/locations?filter=missing"><strong>{missingAddressCount}</strong><span>Profiles missing an address</span><small>Complete these before routing a delivery.</small></Link>
+          <Link href="/farm/capacity?product=milk"><strong>{capacityRiskCount}</strong><span>Capacity-risk days</span><small>At least 95% committed or held in the next seven days.</small></Link>
+        </div>
       </section>
 
       {canManage ? (
@@ -393,19 +481,26 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                 ? Math.max(0, Number(plan.purchased_deliveries) - Number(plan.delivered_deliveries))
                 : null;
               const weeklyMilk = weeklyMilkByDay(plan);
-              const orderAmount = order
+              const paidAmount = order?.status === "paid"
                 ? order.paid_total_paise ?? payment?.amount_paise ?? order.total_paise
-                : null;
+                : 0;
+              const balanceDue = order
+                ? Math.max(0, Number(order.total_paise) - Number(paidAmount))
+                : 0;
               const addressForSuggestion = normalizedLocation(
                 [profile.address_line, profile.locality].filter(Boolean).join(" "),
               );
               const suggestedArea = !profile.delivery_area_id
                 ? areas.find((area) => addressForSuggestion.includes(normalizedLocation(area.name)))
                 : null;
-              const planProgress = plan?.purchased_deliveries
-                ? Math.round((Number(plan.delivered_deliveries) / Number(plan.purchased_deliveries)) * 100)
-                : 0;
-              const profileReady = Boolean(profile.phone && profile.address_line);
+              const nextMilkQuantity = plan
+                ? weeklyMilk.get(weekdayFromYmd(nextDeliveryDate)) ?? 0
+                : order?.purchase_mode === "once" && order.start_date === nextDeliveryDate
+                  ? Number(order.milk_litres)
+                  : 0;
+              const route = profile.delivery_route_id
+                ? routeById.get(profile.delivery_route_id)
+                : undefined;
 
               return (
                 <details className={styles.customer} key={profile.user_id}>
@@ -425,16 +520,19 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                       <small>Current order</small>
                       <strong>{order ? titleCase(order.status) : "No order"}</strong>
                     </span>
-                    <span className={styles.customerMeter}>
-                      <span><small>{plan ? "Plan used" : "Profile"}</small><b>{plan ? `${planProgress}%` : profileReady ? "Ready" : "Needs details"}</b></span>
-                      <meter min="0" max="100" value={plan ? planProgress : profileReady ? 100 : 45}>{plan ? planProgress : profileReady ? 100 : 45}%</meter>
+                    <span className={styles.customerStatus}>
+                      <small>Next delivery</small>
+                      <strong>{nextMilkQuantity > 0 ? `${litreLabel(nextMilkQuantity)} · ${plan && plan.status !== "active" ? "after payment" : formatCalendarDate(nextDeliveryDate)}` : "Not scheduled tomorrow"}</strong>
+                      <b data-state={order?.status ?? "none"}>{order ? `${order.is_test ? "Test · " : ""}${titleCase(order.status)}` : "No order"}</b>
                     </span>
                     <span className={styles.chevron} aria-hidden="true" />
                   </summary>
 
                   <div className={styles.customerBody}>
                     <div className={styles.profileContact}>
-                      <span>{profile.email ?? "No email saved"}</span>
+                      <span><small>Phone</small><strong>{profile.phone ?? "No phone saved"}</strong></span>
+                      <span><small>Email</small><strong>{profile.email ?? "No email saved"}</strong></span>
+                      <span><small>Route</small><strong>{route?.name ?? "Not assigned"}{profile.route_stop_order ? ` · Position ${profile.route_stop_order}` : ""}</strong></span>
                     </div>
 
                   <div className={styles.addressSummary}>
@@ -481,8 +579,12 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                       <dl className={styles.orderFacts}>
                         <div><dt>Order</dt><dd>MMA-{order.id.slice(0, 8).toUpperCase()}</dd></div>
                         <div><dt>Delivery starts</dt><dd>{formatDate(order.start_date)}</dd></div>
-                        <div><dt>Amount</dt><dd>{orderAmount === null ? "Not available" : formatCheckoutAmount(orderAmount)}</dd></div>
+                        <div><dt>Order total</dt><dd>{formatCheckoutAmount(order.total_paise)}</dd></div>
+                        <div><dt>Paid</dt><dd>{formatCheckoutAmount(paidAmount)}</dd></div>
+                        <div><dt>Balance due</dt><dd>{formatCheckoutAmount(balanceDue)}</dd></div>
                         <div><dt>Payment</dt><dd>{order.status === "paid" ? `Paid${payment?.paid_at ? ` · ${formatDate(payment.paid_at)}` : ""}` : titleCase(payment?.status ?? order.status)}</dd></div>
+                        <div><dt>Recorded</dt><dd>{formatDate(order.created_at)}</dd></div>
+                        <div><dt>Mode</dt><dd>{order.is_test ? "Test order" : "Live order"}</dd></div>
                         {plan ? (
                           <>
                             <div><dt>Plan</dt><dd>{titleCase(plan.status)}</dd></div>
@@ -595,43 +697,13 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                   ) : null}
 
                   {canManage ? (
-                    <details className={styles.recordOrder}>
-                      <summary>Record order</summary>
-                      <form action={recordCustomerOrder} className={styles.orderForm}>
-                        <input name="userId" type="hidden" value={profile.user_id} />
-                        <fieldset className={styles.orderType}>
-                          <legend>Order type</legend>
-                          <label><input defaultChecked name="purchaseMode" type="radio" value="plan" /><span>30-delivery plan</span></label>
-                          <label><input name="purchaseMode" type="radio" value="once" /><span>One-time order</span></label>
-                        </fieldset>
-
-                        <div className={styles.planOnly}>
-                          <span className={styles.formLabel}>Seven-day milk schedule</span>
-                          <div className={styles.scheduleInputs}>
-                            {MILK_PLAN_DAYS.map((day, index) => (
-                              <label key={day.short}><span>{day.short}</span><input defaultValue="0" inputMode="decimal" max="5" min="0" name={`milkDay${index + 1}`} step="1" type="number" /></label>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className={styles.onceOnly}>
-                          <label><span className={styles.formLabel}>Milk litres</span><input defaultValue="0" inputMode="decimal" max="5" min="0" name="milkLitres" step="1" type="number" /></label>
-                        </div>
-
-                        <div className={styles.orderFields}>
-                          {FARM_PRODUCTS.map((product) => (
-                            <label key={product.id}><span>{product.name}</span><input defaultValue="0" inputMode="numeric" max="5" min="0" name={`${product.id}Quantity`} step="1" type="number" /><small>{product.unit}</small></label>
-                          ))}
-                          <label><span>Delivery starts</span><input defaultValue={nextDeliveryDate} min={nextDeliveryDate} name="startDate" required type="date" /></label>
-                          <label><span>Bottle</span><select defaultValue="return" name="bottleChoice"><option value="return">Customer returns bottle</option><option value="new">New bottle required</option><option value="none">No bottle</option></select></label>
-                        </div>
-
-                        <div className={styles.orderSubmit}>
-                          <p>The order will be saved as payment pending.</p>
-                          <button type="submit">Record order</button>
-                        </div>
-                      </form>
-                    </details>
+                    <ManualOrderForm
+                      capacityDays={orderCapacityDays}
+                      customerName={profile.full_name ?? "Customer"}
+                      minimumStartDate={nextDeliveryDate}
+                      profileReady={Boolean(profile.phone && profile.address_line)}
+                      userId={profile.user_id}
+                    />
                   ) : null}
                   </div>
                 </details>
