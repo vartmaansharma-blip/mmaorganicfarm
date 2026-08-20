@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createArea } from "../locations/actions";
+import { createArea, updateArea } from "../locations/actions";
 import {
   assignRouteDriver,
   createDeliveryRoute,
@@ -30,17 +30,18 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
   const admin = createAdminClient();
   const params = await searchParams;
   const [areasResult, routesResult, assignmentsResult, staffResult, profilesResult, plansResult] = await Promise.all([
-    supabase.from("delivery_areas").select("id,name,active,sort_order").eq("active", true).order("sort_order").order("name"),
+    supabase.from("delivery_areas").select("id,name,active,sort_order").order("active", { ascending: false }).order("sort_order").order("name"),
     supabase.from("delivery_routes").select("id,area_id,name,code,active,match_terms,postal_codes,stop_capacity").eq("active", true).order("sort_order").order("name"),
     supabase.from("route_driver_assignments").select("route_id,driver_id"),
     admin.from("farm_staff").select("user_id,role").eq("active", true).eq("role", "driver"),
-    supabase.from("customer_profiles").select("user_id,delivery_route_id"),
+    supabase.from("customer_profiles").select("user_id,delivery_area_id,delivery_route_id"),
     supabase.from("delivery_plans").select("user_id").eq("status", "active").eq("is_test", false),
   ]);
   const databaseError = [areasResult.error, routesResult.error, assignmentsResult.error, staffResult.error, profilesResult.error, plansResult.error].find(Boolean);
   if (databaseError) throw databaseError;
 
   const areas = areasResult.data ?? [];
+  const activeAreas = areas.filter((area) => area.active);
   const routes = (routesResult.data ?? []) as RouteRow[];
   const assignments = new Map((assignmentsResult.data ?? []).map((item) => [item.route_id, item.driver_id]));
   const drivers = staffResult.data ?? [];
@@ -65,7 +66,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
     {params.error ? <p className={`${styles.notice} ${styles.error}`}>{params.error}</p> : null}
 
     <section className={styles.metrics} aria-label="Routing readiness">
-      <article><strong>{areas.length}</strong><span>Service areas</span></article>
+      <article><strong>{activeAreas.length}</strong><span>Active service areas</span></article>
       <article><strong>{routes.length}</strong><span>Active routes</span></article>
       <article><strong>{assignedRoutes}/{routes.length}</strong><span>Routes with drivers</span></article>
       <article data-attention={unrouted > 0}><strong>{unrouted}</strong><span>Paid customers needing a route</span></article>
@@ -86,15 +87,35 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
       <div className={styles.areaList}>
         {areas.map((area) => {
           const areaRoutes = routes.filter((route) => route.area_id === area.id);
-          return <article className={styles.area} key={area.id}>
-            <header><div><h3>{area.name}</h3><span>{areaRoutes.length ? `${areaRoutes.length} active route${areaRoutes.length === 1 ? "" : "s"}` : "No route configured"}</span></div></header>
+          const areaRouteIds = new Set(areaRoutes.map((route) => route.id));
+          const areaCustomers = profiles.filter((profile) => profile.delivery_area_id === area.id || (profile.delivery_route_id && areaRouteIds.has(profile.delivery_route_id))).length;
+          return <article className={styles.area} data-inactive={!area.active} key={area.id}>
+            <header className={styles.areaHeader}>
+              <div className={styles.areaIdentity}>
+                <span className={styles.status} data-active={area.active}>{area.active ? "Active" : "Inactive"}</span>
+                <h3>{area.name}</h3>
+                <p>{areaRoutes.length} active route{areaRoutes.length === 1 ? "" : "s"} · {areaCustomers} customer{areaCustomers === 1 ? "" : "s"}</p>
+              </div>
+              <details className={styles.areaEditor}>
+                <summary aria-label={`Edit ${area.name}`}>Edit area</summary>
+                <form action={updateArea} className={styles.areaForm}>
+                  <input name="areaId" type="hidden" value={area.id} />
+                  <label>Area name<input defaultValue={area.name} name="name" required /></label>
+                  <label>Display order<input defaultValue={area.sort_order} max={999} min={0} name="sortOrder" required type="number" /></label>
+                  <label className={styles.toggle}><input defaultChecked={area.active} name="active" type="checkbox" /> Available for routing</label>
+                  <p>Deactivation is blocked until its active routes and customers have been moved.</p>
+                  <button type="submit">Save area</button>
+                </form>
+              </details>
+            </header>
             <div className={styles.routes}>
               {areaRoutes.map((route) => <details key={route.id}>
-                <summary><span><strong>{route.name}</strong><small>{route.code || "No code"} · {assignments.has(route.id) ? driverNames.get(assignments.get(route.id)!) ?? "Driver assigned" : "Driver required"}</small></span><b>{(route.match_terms?.length ?? 0) + (route.postal_codes?.length ?? 0)} rules</b></summary>
+                <summary><span><strong>{route.name}</strong><small>{route.code || "No code"} · {assignments.has(route.id) ? driverNames.get(assignments.get(route.id)!) ?? "Driver assigned" : "Driver required"}{areaRoutes.length > 1 && !(route.match_terms?.length || route.postal_codes?.length) ? " · Add routing rules" : ""}</small></span><b>{(route.match_terms?.length ?? 0) + (route.postal_codes?.length ?? 0)} rules</b></summary>
                 <form action={updateDeliveryRoute} className={styles.routeForm}>
-                  <input name="routeId" type="hidden" value={route.id} /><input name="areaId" type="hidden" value={area.id} />
+                  <input name="routeId" type="hidden" value={route.id} />
                   <label>Route name<input defaultValue={route.name} name="name" required /></label>
                   <label>Code<input defaultValue={route.code ?? ""} name="code" /></label>
+                  <label>Service area<select defaultValue={route.area_id} name="areaId" required>{areas.map((areaOption) => <option disabled={!areaOption.active} key={areaOption.id} value={areaOption.id}>{areaOption.name}{areaOption.active ? "" : " (inactive)"}</option>)}</select></label>
                   <label>Daily stop limit<input defaultValue={route.stop_capacity} max={200} min={1} name="stopCapacity" required type="number" /></label>
                   <label className={styles.wide}>Locality or address terms<textarea defaultValue={(route.match_terms ?? []).join(", ")} name="matchTerms" placeholder="Birsanagar Zone 1, Telco Colony" rows={2} /></label>
                   <label className={styles.wide}>Postal codes<input defaultValue={(route.postal_codes ?? []).join(", ")} name="postalCodes" placeholder="831004, 831019" /></label>
@@ -114,7 +135,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
       <button type="submit">Create area</button>
     </form></details>
     <details className={styles.createRoute}><summary>Add delivery route</summary><form action={createDeliveryRoute} className={styles.routeForm}>
-      <label>Service area<select name="areaId" required><option value="">Choose area</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label>
+      <label>Service area<select name="areaId" required><option value="">Choose area</option>{activeAreas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label>
       <label>Route name<input name="name" placeholder="Birsanagar morning route" required /></label>
       <label>Code<input name="code" placeholder="BIR-1" /></label>
       <label>Daily stop limit<input defaultValue={25} max={200} min={1} name="stopCapacity" required type="number" /></label>

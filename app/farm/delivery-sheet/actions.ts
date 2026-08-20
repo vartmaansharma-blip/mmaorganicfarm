@@ -161,8 +161,8 @@ export async function reopenDailyDispatch(formData: FormData) {
 
 export async function recordDeliveryStop(formData: FormData) {
   const { supabase } = await requireFarmStaff("/farm/delivery-sheet");
-  const deliveryId = textValue(formData, "deliveryId");
-  if (!deliveryId) {
+  const deliveryIds = formData.getAll("deliveryId").map(String).filter((value) => /^[0-9a-f-]{36}$/i.test(value));
+  if (!deliveryIds.length || deliveryIds.length > 20) {
     redirect(deliverySheetUrl(formData, "error", "Delivery stop is missing."));
   }
 
@@ -170,10 +170,10 @@ export async function recordDeliveryStop(formData: FormData) {
   const bottleReturned = formData.get("bottleReturned") === "yes";
   const driverNote = textValue(formData, "driverNote");
 
-  const { error } = await supabase.rpc("record_delivery_stop", {
+  const { error } = await supabase.rpc("record_delivery_visit", {
     p_bottle_returned: bottleReturned,
     p_delivery_confirmed: deliveryConfirmed,
-    p_delivery_id: deliveryId,
+    p_delivery_ids: deliveryIds,
     p_driver_note: driverNote || null,
   });
 

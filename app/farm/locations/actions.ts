@@ -189,7 +189,9 @@ export async function createArea(formData: FormData) {
   const name = textValue(formData, "name");
   const slug = areaSlug(name);
 
-  if (name.length < 2 || !slug) throw new Error("Enter a valid area name.");
+  if (name.length < 2 || !slug) {
+    redirectWithMessage("/farm/routes", "error", "Enter a valid area name.");
+  }
 
   const { error } = await supabase
     .from("delivery_areas")
@@ -199,6 +201,55 @@ export async function createArea(formData: FormData) {
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
   revalidatePath("/farm/routes");
+}
+
+export async function updateArea(formData: FormData) {
+  const { supabase } = await requireLocationManager();
+  const areaId = textValue(formData, "areaId");
+  const name = textValue(formData, "name");
+  const slug = areaSlug(name);
+  const sortOrder = Number.parseInt(textValue(formData, "sortOrder"), 10);
+  const active = formData.get("active") === "on";
+
+  if (!areaId) redirectWithMessage("/farm/routes", "error", "Service area is required.");
+  if (name.length < 2 || name.length > 80 || !slug) {
+    redirectWithMessage("/farm/routes", "error", "Enter a valid service area name.");
+  }
+  if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 999) {
+    redirectWithMessage("/farm/routes", "error", "Display order must be between 0 and 999.");
+  }
+
+  if (!active) {
+    const [routesResult, customersResult] = await Promise.all([
+      supabase.from("delivery_routes").select("id", { count: "exact", head: true }).eq("area_id", areaId).eq("active", true),
+      supabase.from("customer_profiles").select("user_id", { count: "exact", head: true }).eq("delivery_area_id", areaId),
+    ]);
+    const countError = routesResult.error ?? customersResult.error;
+    if (countError) redirectWithMessage("/farm/routes", "error", countError.message);
+    const routeCount = routesResult.count ?? 0;
+    const customerCount = customersResult.count ?? 0;
+    if (routeCount || customerCount) {
+      redirectWithMessage(
+        "/farm/routes",
+        "error",
+        `Move ${routeCount} active route${routeCount === 1 ? "" : "s"} and ${customerCount} customer${customerCount === 1 ? "" : "s"} before deactivating ${name}.`,
+      );
+    }
+  }
+
+  const { error } = await supabase.from("delivery_areas").update({
+    active,
+    name,
+    slug,
+    sort_order: sortOrder,
+    updated_at: new Date().toISOString(),
+  }).eq("id", areaId);
+  if (error) redirectWithMessage("/farm/routes", "error", error.message);
+
+  revalidatePath("/farm");
+  revalidatePath("/farm/locations");
+  revalidatePath("/farm/routes");
+  redirectWithMessage("/farm/routes", "message", "Service area updated.");
 }
 
 export async function assignCustomerLocation(formData: FormData) {
@@ -374,6 +425,22 @@ export async function recordCustomerOrder(formData: FormData) {
 
   let deliveryPlanId: string | null = null;
   if (purchaseMode === "plan") {
+    const { data: existingPlan, error: existingPlanError } = await admin
+      .from("delivery_plans")
+      .select("id")
+      .eq("user_id", userId)
+      .in("status", ["pending_confirmation", "active", "paused"])
+      .limit(1)
+      .maybeSingle();
+    if (existingPlanError) throw existingPlanError;
+    if (existingPlan) {
+      redirectWithMessage(
+        returnTo,
+        "error",
+        "This customer already has a current plan. Edit that schedule instead of recording another plan.",
+      );
+    }
+
     const { data: plan, error: planError } = await admin
       .from("delivery_plans")
       .insert({

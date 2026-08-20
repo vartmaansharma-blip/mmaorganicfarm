@@ -40,6 +40,7 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
             <>
               <Link href="/farm">Overview</Link>
               <Link href="/farm/routes">Routes</Link>
+              <Link href="/farm/staff">Staff</Link>
               <Link href="/farm/delivery-sheet">Deliveries</Link>
               <Link href="/farm/locations">Customers</Link>
               <Link href="/farm/capacity">Capacity</Link>
@@ -68,6 +69,7 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
           <>
             <Link href="/farm">Overview</Link>
             <Link href="/farm/routes">Routes</Link>
+            <Link href="/farm/staff">Staff</Link>
             <Link href="/farm/delivery-sheet">Deliveries</Link>
             <Link href="/farm/locations">Customers</Link>
             <Link href="/farm/capacity">Capacity</Link>

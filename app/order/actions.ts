@@ -207,6 +207,20 @@ export async function saveDeliveryDetails(formData: FormData) {
 
   let deliveryPlanId: string | null = null;
   if (purchase === "plan" && weeklySchedule) {
+    const { data: currentPlan, error: currentPlanError } = await supabase
+      .from("delivery_plans")
+      .select("id")
+      .eq("user_id", user.id)
+      .in("status", ["active", "paused"])
+      .limit(1)
+      .maybeSingle();
+    if (currentPlanError) {
+      redirect(orderUrl("error", "We could not check your current plan. Please try again.", purchase, bottle, milk, extras, schedule, start));
+    }
+    if (currentPlan) {
+      redirect(orderUrl("error", "You already have an active milk plan. Edit its schedule from your delivery calendar instead.", purchase, bottle, milk, extras, schedule, start));
+    }
+
     const scheduledAddOns = selectedProducts.flatMap((product) =>
       product.frequency === "weekly"
         ? product.days.map((day) => ({

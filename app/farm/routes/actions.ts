@@ -21,20 +21,20 @@ function routeSettings(formData: FormData) {
   const postalCodes = routeValues(textValue(formData, "postalCodes"));
   const stopCapacity = Number.parseInt(textValue(formData, "stopCapacity"), 10);
 
-  if (!areaId) throw new Error("Choose a service area.");
-  if (name.length < 2 || name.length > 80) throw new Error("Enter a route name.");
-  if (code.length > 24) throw new Error("Keep the route code under 24 characters.");
+  if (!areaId) return { error: "Choose a service area." } as const;
+  if (name.length < 2 || name.length > 80) return { error: "Enter a route name." } as const;
+  if (code.length > 24) return { error: "Keep the route code under 24 characters." } as const;
   if (matchTerms.length > 20 || matchTerms.some((term) => term.length < 2 || term.length > 80)) {
-    throw new Error("Add up to 20 valid locality terms.");
+    return { error: "Add up to 20 valid locality terms." } as const;
   }
   if (postalCodes.length > 20 || postalCodes.some((codeValue) => !/^\d{6}$/.test(codeValue))) {
-    throw new Error("Postal codes must contain six digits.");
+    return { error: "Postal codes must contain six digits." } as const;
   }
   if (!Number.isInteger(stopCapacity) || stopCapacity < 1 || stopCapacity > 200) {
-    throw new Error("Route capacity must be between 1 and 200 stops.");
+    return { error: "Route capacity must be between 1 and 200 stops." } as const;
   }
 
-  return { areaId, code: code || null, matchTerms, name, postalCodes, stopCapacity };
+  return { settings: { areaId, code: code || null, matchTerms, name, postalCodes, stopCapacity } } as const;
 }
 
 async function requireRouteManager() {
@@ -45,7 +45,9 @@ async function requireRouteManager() {
 
 export async function createDeliveryRoute(formData: FormData) {
   const { supabase } = await requireRouteManager();
-  const settings = routeSettings(formData);
+  const parsed = routeSettings(formData);
+  if (parsed.error) redirect(`/farm/routes?error=${encodeURIComponent(parsed.error)}`);
+  const settings = parsed.settings;
   const { error } = await supabase.from("delivery_routes").insert({
     active: true,
     area_id: settings.areaId,
@@ -65,32 +67,42 @@ export async function createDeliveryRoute(formData: FormData) {
 export async function updateDeliveryRoute(formData: FormData) {
   const { supabase } = await requireRouteManager();
   const routeId = textValue(formData, "routeId");
-  const settings = routeSettings(formData);
-  if (!routeId) throw new Error("Route is required.");
+  const parsed = routeSettings(formData);
+  if (parsed.error) redirect(`/farm/routes?error=${encodeURIComponent(parsed.error)}`);
+  if (!routeId) redirect("/farm/routes?error=Route+is+required.");
+  const settings = parsed.settings;
 
-  const { error } = await supabase.from("delivery_routes").update({
-    area_id: settings.areaId,
-    code: settings.code,
-    match_terms: settings.matchTerms,
-    name: settings.name,
-    postal_codes: settings.postalCodes,
-    stop_capacity: settings.stopCapacity,
-    updated_at: new Date().toISOString(),
-  }).eq("id", routeId);
+  const { data: targetArea, error: areaError } = await supabase.from("delivery_areas")
+    .select("id")
+    .eq("id", settings.areaId)
+    .eq("active", true)
+    .maybeSingle();
+  if (areaError) redirect(`/farm/routes?error=${encodeURIComponent(areaError.message)}`);
+  if (!targetArea) redirect("/farm/routes?error=Choose+an+active+service+area.");
+
+  const { error } = await supabase.rpc("update_delivery_route_settings", {
+    p_area_id: settings.areaId,
+    p_code: settings.code,
+    p_match_terms: settings.matchTerms,
+    p_name: settings.name,
+    p_postal_codes: settings.postalCodes,
+    p_route_id: routeId,
+    p_stop_capacity: settings.stopCapacity,
+  });
   if (error) redirect(`/farm/routes?error=${encodeURIComponent(error.message)}`);
 
   await supabase.rpc("assign_unrouted_customers");
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
   revalidatePath("/farm/routes");
-  redirect("/farm/routes?message=Route+rules+updated+and+customers+checked.");
+  redirect("/farm/routes?message=Route+updated+and+customer+areas+synchronized.");
 }
 
 export async function assignRouteDriver(formData: FormData) {
   const { supabase, user } = await requireRouteManager();
   const routeId = textValue(formData, "routeId");
   const driverId = textValue(formData, "driverId");
-  if (!routeId || !driverId) throw new Error("Choose a route and driver.");
+  if (!routeId || !driverId) redirect("/farm/routes?error=Choose+a+route+and+driver.");
 
   const admin = createAdminClient();
   const { data: driver, error: driverError } = await admin.from("farm_staff")

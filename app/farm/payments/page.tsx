@@ -17,6 +17,7 @@ type PaymentRow = {
   payment_method: string | null;
   provider: string;
   provider_payment_id: string | null;
+  status: "captured";
   user_id: string;
 };
 
@@ -31,7 +32,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
   const customerId = /^[0-9a-f-]{36}$/i.test(parameters.customer ?? "") ? parameters.customer! : null;
   let paymentQuery = admin
     .from("payments")
-    .select("id,user_id,order_id,amount_paise,provider,provider_payment_id,payment_method,paid_at,created_at")
+    .select("id,user_id,order_id,amount_paise,provider,provider_payment_id,payment_method,paid_at,created_at,status")
     .eq("is_test", false)
     .eq("status", "captured")
     .order("paid_at", { ascending: false })

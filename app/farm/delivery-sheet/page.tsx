@@ -47,7 +47,10 @@ type DeliveryRow = {
   phone_snapshot: string | null;
   route_stop_order: number | null;
   status: string;
+  user_id: string;
 };
+
+type DeliveryVisit = DeliveryRow & { deliveryIds: string[] };
 
 type RouteRow = {
   area_id: string;
@@ -123,6 +126,40 @@ function routeLoadLabel(stops: DeliveryRow[]) {
     .join(" · ");
 }
 
+function combineCustomerVisits(stops: DeliveryRow[]): DeliveryVisit[] {
+  const grouped = new Map<string, DeliveryRow[]>();
+  stops.forEach((stop) => {
+    const key = [stop.user_id, stop.delivery_route_id ?? "unassigned", stop.address_snapshot ?? ""].join(":");
+    grouped.set(key, [...(grouped.get(key) ?? []), stop]);
+  });
+
+  return [...grouped.values()].map((rows) => {
+    const first = rows[0];
+    const items = new Map<string, DeliveryItem>();
+    rows.forEach((row) => row.daily_delivery_items.forEach((item) => {
+      const current = items.get(item.product_key);
+      items.set(item.product_key, {
+        ...item,
+        quantity: Number(current?.quantity ?? 0) + Number(item.quantity),
+      });
+    }));
+    const delivered = rows.every((row) => row.delivery_confirmed || row.status === "delivered");
+    const cancelled = rows.every((row) => row.status === "cancelled");
+    const failed = rows.some((row) => row.status === "failed");
+    const onRoute = rows.some((row) => row.status === "out_for_delivery");
+    return {
+      ...first,
+      bottle_return_required: rows.some((row) => row.bottle_return_required),
+      bottle_returned: rows.every((row) => !row.bottle_return_required || row.bottle_returned),
+      daily_delivery_items: [...items.values()],
+      delivery_confirmed: delivered,
+      deliveryIds: rows.map((row) => row.id),
+      driver_note: [...new Set(rows.map((row) => row.driver_note).filter(Boolean))].join(" · ") || null,
+      status: delivered ? "delivered" : cancelled ? "cancelled" : failed ? "failed" : onRoute ? "out_for_delivery" : first.status,
+    };
+  });
+}
+
 export default async function DeliverySheetPage({
   searchParams,
 }: {
@@ -143,7 +180,7 @@ export default async function DeliverySheetPage({
   let deliveriesQuery = supabase
     .from("daily_deliveries")
     .select(
-      "id, plan_id, order_id, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)",
+      "id, user_id, plan_id, order_id, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)",
     )
     .eq("delivery_date", deliveryDate)
     .eq("is_test", false);
@@ -293,7 +330,7 @@ export default async function DeliverySheetPage({
       routes: [...routeMap.values()]
         .map((route) => ({
           ...route,
-          stops: route.stops.sort((a, b) => {
+          stops: combineCustomerVisits(route.stops.sort((a, b) => {
             const savedOrder =
               (a.route_stop_order ?? Number.MAX_SAFE_INTEGER) -
               (b.route_stop_order ?? Number.MAX_SAFE_INTEGER);
@@ -303,7 +340,7 @@ export default async function DeliverySheetPage({
               "en-IN",
               { sensitivity: "base" },
             );
-          }),
+          })),
         }))
         .sort((a, b) => {
           if (!a.routeId) return 1;
@@ -313,13 +350,14 @@ export default async function DeliverySheetPage({
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const delivered = deliveries.filter(
+  const visits = combineCustomerVisits(deliveries);
+  const delivered = visits.filter(
     (stop) => stop.delivery_confirmed || stop.status === "delivered",
   );
-  const unfulfilled = deliveries.filter(
+  const unfulfilled = visits.filter(
     (stop) => !stop.delivery_confirmed && !["delivered", "cancelled"].includes(stop.status),
   );
-  const bottlesOutstanding = deliveries.filter(
+  const bottlesOutstanding = visits.filter(
     (stop) => stop.bottle_return_required && !stop.bottle_returned,
   );
   const unassigned = deliveries.filter((stop) => !stop.assigned_driver_id);
@@ -424,7 +462,7 @@ export default async function DeliverySheetPage({
       ) : null}
 
       <section className={styles.summary} aria-label="Delivery totals">
-        <div><strong>{deliveries.length}</strong><span>Stops</span></div>
+        <div><strong>{visits.length}</strong><span>Doorstep visits</span></div>
         <div><strong>{plannedStops}</strong><span>Planned</span></div>
         <div><strong>{oneTimeStops}</strong><span>Paid one-time</span></div>
         <div><strong>{delivered.length}</strong><span>Delivered</span></div>
@@ -516,6 +554,7 @@ export default async function DeliverySheetPage({
 
                         <div className={styles.customer}>
                           <strong>{stop.customer_name}</strong>
+                          {(stop as DeliveryVisit).deliveryIds.length > 1 ? <span>{(stop as DeliveryVisit).deliveryIds.length} paid plans combined into this visit</span> : null}
                           {stop.phone_snapshot ? (
                             <a href={phoneUrl(stop.phone_snapshot)}>Call {stop.phone_snapshot}</a>
                           ) : (
@@ -551,7 +590,7 @@ export default async function DeliverySheetPage({
 
                         {stop.status !== "cancelled" ? (
                           <form action={recordDeliveryStop} className={styles.doorstepForm}>
-                            <input name="deliveryId" type="hidden" value={stop.id} />
+                            {(stop as DeliveryVisit).deliveryIds.map((deliveryId) => <input key={deliveryId} name="deliveryId" type="hidden" value={deliveryId} />)}
                             <input name="deliveryDate" type="hidden" value={deliveryDate} />
                             <input name="area" type="hidden" value={selectedArea} />
                             <p>At the doorstep</p>
@@ -587,7 +626,7 @@ export default async function DeliverySheetPage({
                                 type="text"
                               />
                             </label>
-                            <button type="submit">Save stop</button>
+                            <button type="submit">Save visit</button>
                           </form>
                         ) : null}
                       </li>

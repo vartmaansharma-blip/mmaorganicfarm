@@ -189,6 +189,12 @@ const deliverySheetActionsUrl = new URL(
   "../app/farm/delivery-sheet/actions.ts",
   import.meta.url,
 );
+const operationsHardeningSchemaUrl = new URL(
+  "../supabase/operations_hardening.sql",
+  import.meta.url,
+);
+const farmStaffPageUrl = new URL("../app/farm/staff/page.tsx", import.meta.url);
+const farmStaffActionsUrl = new URL("../app/farm/staff/actions.ts", import.meta.url);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -725,6 +731,8 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.doesNotMatch(locations, /New route/);
   assert.doesNotMatch(locations, /Stop order/);
   assert.match(actions, /assignCustomerLocation/);
+  assert.match(actions, /updateArea/);
+  assert.match(actions, /before deactivating/);
   assert.match(actions, /setOrderMode/);
   assert.match(actions, /delivery_route_id: null/);
   assert.match(schema, /create table if not exists public\.farm_staff/);
@@ -759,6 +767,11 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(payments, /Correct this payment/);
   assert.match(paymentActions, /reset_manual_payment/);
   assert.match(routes, /Route a customer when payment activates the schedule/);
+  assert.match(routes, /Edit area/);
+  assert.match(routes, /Available for routing/);
+  assert.match(routes, /active routes and customers have been moved/);
+  assert.match(routes, /name="sortOrder"/);
+  assert.match(routes, /name="areaId" required/);
   assert.match(essentialSchema, /private\.assign_customer_route/);
   assert.match(essentialSchema, /payment_status_changes/);
   assert.match(essentialSchema, /reset_manual_payment/);
@@ -817,7 +830,7 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(sheet, /End-of-day control/);
   assert.match(sheet, /Bottles still with customers/);
   assert.match(sheetActions, /assignRouteDriver/);
-  assert.match(sheetActions, /record_delivery_stop/);
+  assert.match(sheetActions, /record_delivery_visit/);
   assert.match(sheet, /Customer information is provided only for completing farm deliveries/);
   assert.doesNotMatch(sheet, /7-day milk plan/);
   assert.match(farmLayout, /href="\/farm\/routes">Routes/);
@@ -866,6 +879,41 @@ test("separates permanent route drivers from each day's released dispatch", asyn
   assert.match(dispatchSchema, /assigned_driver_id = \(select auth\.uid\(\)\)/);
   assert.match(dispatchSchema, /enable row level security/);
   assert.doesNotMatch(dispatchSchema, /grant .* to anon/);
+});
+
+test("hardens real farm operations without deleting captured orders", async () => {
+  const [schema, staffPage, staffActions, paymentActions, payments, routes, deliveryActions, deliverySheet, orderActions, locationActions, farmLayout] = await Promise.all([
+    readFile(operationsHardeningSchemaUrl, "utf8"),
+    readFile(farmStaffPageUrl, "utf8"),
+    readFile(farmStaffActionsUrl, "utf8"),
+    readFile(farmPaymentActionsUrl, "utf8"),
+    readFile(farmPaymentsUrl, "utf8"),
+    readFile(new URL("../app/farm/routes/actions.ts", import.meta.url), "utf8"),
+    readFile(deliverySheetActionsUrl, "utf8"),
+    readFile(new URL("../app/farm/delivery-sheet/page.tsx", import.meta.url), "utf8"),
+    readFile(orderActionsUrl, "utf8"),
+    readFile(farmActionsUrl, "utf8"),
+    readFile(farmLayoutUrl, "utf8"),
+  ]);
+
+  assert.match(schema, /prevent_overlapping_delivery_plan/);
+  assert.match(schema, /update_delivery_route_settings/);
+  assert.match(schema, /record_delivery_visit/);
+  assert.doesNotMatch(schema, /refund/i);
+  assert.doesNotMatch(schema, /delete from public\.delivery_plans/);
+  assert.match(staffPage, /Invite a driver securely/);
+  assert.match(staffActions, /inviteUserByEmail/);
+  assert.match(staffActions, /next=\/reset-password/);
+  assert.match(staffActions, /route_driver_assignments/);
+  assert.match(farmLayout, /href="\/farm\/staff">Staff/);
+  assert.doesNotMatch(paymentActions, /refund/i);
+  assert.doesNotMatch(payments, /refund/i);
+  assert.match(routes, /update_delivery_route_settings/);
+  assert.match(deliveryActions, /record_delivery_visit/);
+  assert.match(deliverySheet, /combineCustomerVisits/);
+  assert.match(deliverySheet, /paid plans combined into this visit/);
+  assert.match(orderActions, /already have an active milk plan/);
+  assert.match(locationActions, /already has a current plan/);
 });
 
 test("lets managers add, import, and manage customers safely", async () => {

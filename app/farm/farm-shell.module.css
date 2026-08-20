@@ -1,15 +1,15 @@
 .shell {
-  --farm-ink: #191919;
-  --farm-muted: #696969;
-  --farm-line: #e8e7e3;
-  --farm-soft: #f7f7f5;
-  background: #fff;
+  --farm-ink: #17212b;
+  --farm-muted: #687680;
+  --farm-line: #e0e6e9;
+  --farm-soft: #f6f8f9;
+  background: #fbfcfc;
   color: var(--farm-ink);
   min-height: 100svh;
 }
 
 .sidebar {
-  background: var(--farm-soft);
+  background: #f4f7f7;
   border-bottom: 1px solid var(--farm-line);
   padding: 14px 18px;
 }
@@ -35,7 +35,8 @@
 
 .brand strong {
   font-size: 14px;
-  font-weight: 720;
+  font-weight: 680;
+  letter-spacing: -.01em;
 }
 
 .brand small,
@@ -114,23 +115,23 @@
   .nav a,
   .nav > span {
     align-items: center;
-    border-radius: 5px;
-    color: #404040;
+    border-radius: 7px;
+    color: #3f4d57;
     display: flex;
     font-size: 13px;
-    font-weight: 580;
+    font-weight: 560;
     justify-content: space-between;
     padding: 9px 10px;
     text-decoration: none;
   }
 
   .nav a:hover {
-    background: #ecece9;
-    color: #111;
+    background: #e7efef;
+    color: #0d625c;
   }
 
   .nav > span {
-    color: #9a9a96;
+    color: #94a0a7;
   }
 
   .nav small {
