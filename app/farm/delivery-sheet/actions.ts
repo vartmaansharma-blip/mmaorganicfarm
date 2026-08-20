@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { canManageLocations, requireFarmStaff } from "@/lib/farm-dashboard";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 function textValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -24,7 +23,7 @@ function deliverySheetUrl(formData: FormData, key: "error" | "message", value: s
 }
 
 export async function assignRouteDriver(formData: FormData) {
-  const { role, supabase, user } = await requireFarmStaff("/farm/delivery-sheet");
+  const { role, supabase } = await requireFarmStaff("/farm/delivery-sheet");
   if (!canManageLocations(role)) {
     redirect(deliverySheetUrl(formData, "error", "Manager access is required."));
   }
@@ -36,43 +35,128 @@ export async function assignRouteDriver(formData: FormData) {
     redirect(deliverySheetUrl(formData, "error", "Choose a route and driver."));
   }
 
-  const admin = createAdminClient();
-  const { data: driver, error: driverError } = await admin
-    .from("farm_staff")
-    .select("user_id")
-    .eq("user_id", driverId)
-    .eq("active", true)
-    .maybeSingle();
-  if (driverError) throw driverError;
-  if (!driver) {
-    redirect(deliverySheetUrl(formData, "error", "The selected driver is not active."));
+  const makeDefault = formData.get("makeDefault") === "yes";
+  const { error } = await supabase.rpc("assign_daily_route_driver", {
+    p_delivery_date: deliveryDate,
+    p_driver_id: driverId,
+    p_make_default: makeDefault,
+    p_route_id: routeId,
+  });
+  if (error) {
+    redirect(deliverySheetUrl(formData, "error", error.message));
   }
-
-  const { error: assignmentError } = await supabase
-    .from("route_driver_assignments")
-    .upsert(
-      {
-        driver_id: driverId,
-        route_id: routeId,
-        updated_at: new Date().toISOString(),
-        updated_by: user.id,
-      },
-      { onConflict: "route_id" },
-    );
-  if (assignmentError) throw assignmentError;
-
-  const { error: deliveryError } = await supabase
-    .from("daily_deliveries")
-    .update({ assigned_driver_id: driverId, updated_at: new Date().toISOString() })
-    .eq("delivery_date", deliveryDate)
-    .eq("delivery_route_id", routeId)
-    .eq("is_test", false)
-    .in("status", ["planned", "ready", "out_for_delivery", "failed"]);
-  if (deliveryError) throw deliveryError;
 
   revalidatePath("/farm");
   revalidatePath("/farm/delivery-sheet");
-  redirect(deliverySheetUrl(formData, "message", "Driver assigned to this route."));
+  if (makeDefault) revalidatePath("/farm/routes");
+  redirect(deliverySheetUrl(
+    formData,
+    "message",
+    makeDefault
+      ? "Driver assigned for this date and saved as the route default."
+      : "Replacement driver assigned for this date only.",
+  ));
+}
+
+export async function prepareDailyDispatch(formData: FormData) {
+  const { role, supabase } = await requireFarmStaff("/farm/delivery-sheet");
+  if (!canManageLocations(role)) {
+    redirect(deliverySheetUrl(formData, "error", "Manager access is required."));
+  }
+
+  const deliveryDate = validDate(textValue(formData, "deliveryDate"));
+  if (!deliveryDate) {
+    redirect(deliverySheetUrl(formData, "error", "Choose a valid delivery date."));
+  }
+
+  const { data: startedStops, error: stopsError } = await supabase
+    .from("daily_deliveries")
+    .select("id,status")
+    .eq("delivery_date", deliveryDate)
+    .eq("is_test", false)
+    .in("status", ["out_for_delivery", "delivered", "failed"])
+    .limit(1);
+  if (stopsError) throw stopsError;
+
+  let generated = 0;
+  if (!(startedStops ?? []).length) {
+    const { data, error } = await supabase.rpc("generate_daily_deliveries", {
+      p_delivery_date: deliveryDate,
+    });
+    if (error) {
+      redirect(deliverySheetUrl(formData, "error", error.message));
+    }
+    generated = Number(data ?? 0);
+  }
+
+  const { error: dispatchError } = await supabase.rpc("prepare_daily_dispatch", {
+    p_delivery_date: deliveryDate,
+  });
+  if (dispatchError) {
+    redirect(deliverySheetUrl(formData, "error", dispatchError.message));
+  }
+
+  revalidatePath("/farm");
+  revalidatePath("/farm/delivery-sheet");
+  redirect(deliverySheetUrl(
+    formData,
+    "message",
+    generated
+      ? `${generated} paid delivery stops prepared. Review exceptions before release.`
+      : "Dispatch refreshed. Review exceptions before release.",
+  ));
+}
+
+export async function releaseDailyDispatch(formData: FormData) {
+  const { role, supabase } = await requireFarmStaff("/farm/delivery-sheet");
+  if (!canManageLocations(role)) {
+    redirect(deliverySheetUrl(formData, "error", "Manager access is required."));
+  }
+  const deliveryDate = validDate(textValue(formData, "deliveryDate"));
+  if (!deliveryDate) {
+    redirect(deliverySheetUrl(formData, "error", "Choose a valid delivery date."));
+  }
+
+  const { data, error } = await supabase.rpc("release_daily_dispatch", {
+    p_delivery_date: deliveryDate,
+  });
+  if (error) {
+    redirect(deliverySheetUrl(formData, "error", error.message));
+  }
+
+  revalidatePath("/farm");
+  revalidatePath("/farm/delivery-sheet");
+  redirect(deliverySheetUrl(
+    formData,
+    "message",
+    `${Number(data ?? 0)} stops released to their drivers.`,
+  ));
+}
+
+export async function reopenDailyDispatch(formData: FormData) {
+  const { role, supabase } = await requireFarmStaff("/farm/delivery-sheet");
+  if (!canManageLocations(role)) {
+    redirect(deliverySheetUrl(formData, "error", "Manager access is required."));
+  }
+  const deliveryDate = validDate(textValue(formData, "deliveryDate"));
+  if (!deliveryDate) {
+    redirect(deliverySheetUrl(formData, "error", "Choose a valid delivery date."));
+  }
+
+  const { error } = await supabase.rpc("reopen_daily_dispatch", {
+    p_delivery_date: deliveryDate,
+  });
+  if (error) {
+    redirect(deliverySheetUrl(formData, "error", error.message));
+  }
+
+  revalidatePath("/farm");
+  revalidatePath("/farm/delivery-sheet");
+  redirect(deliverySheetUrl(
+    formData,
+    "message",
+    "Dispatch reopened. Drivers cannot see it until it is released again.",
+  ));
 }
 
 export async function recordDeliveryStop(formData: FormData) {

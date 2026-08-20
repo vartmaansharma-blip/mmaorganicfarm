@@ -8,7 +8,13 @@ import {
 import { resolveDeliveryArea } from "@/lib/delivery-area";
 import { canManageLocations, requireFarmStaff } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assignRouteDriver, recordDeliveryStop } from "./actions";
+import {
+  assignRouteDriver,
+  prepareDailyDispatch,
+  recordDeliveryStop,
+  releaseDailyDispatch,
+  reopenDailyDispatch,
+} from "./actions";
 import { PrintSheetButton } from "./print-button";
 import styles from "./sheet.module.css";
 
@@ -36,6 +42,8 @@ type DeliveryRow = {
   delivery_route_id: string | null;
   driver_note: string | null;
   id: string;
+  order_id: string | null;
+  plan_id: string | null;
   phone_snapshot: string | null;
   route_stop_order: number | null;
   status: string;
@@ -45,6 +53,18 @@ type RouteRow = {
   area_id: string;
   id: string;
   name: string;
+  stop_capacity: number;
+};
+
+type DailyAssignmentRow = {
+  driver_id: string;
+  route_id: string;
+  source: "default" | "override";
+};
+
+type DispatchRow = {
+  released_at: string | null;
+  status: "draft" | "released";
 };
 
 type StaffRow = {
@@ -53,9 +73,11 @@ type StaffRow = {
 };
 
 type RouteGroup = {
+  assignmentSource: "default" | "override";
   assignedDriverId: string | null;
   name: string;
   routeId: string | null;
+  stopCapacity: number;
   stops: DeliveryRow[];
 };
 
@@ -86,6 +108,21 @@ function statusLabel(stop: DeliveryRow) {
   return "Pending";
 }
 
+function routeLoadLabel(stops: DeliveryRow[]) {
+  const routeTotals = new Map<string, number>();
+  stops.forEach((stop) => {
+    (stop.daily_delivery_items ?? []).forEach((item) => {
+      routeTotals.set(
+        item.product_key,
+        (routeTotals.get(item.product_key) ?? 0) + Number(item.quantity),
+      );
+    });
+  });
+  return [...routeTotals]
+    .map(([productKey, quantity]) => `${productName(productKey)} ${quantity}`)
+    .join(" · ");
+}
+
 export default async function DeliverySheetPage({
   searchParams,
 }: {
@@ -106,7 +143,7 @@ export default async function DeliverySheetPage({
   let deliveriesQuery = supabase
     .from("daily_deliveries")
     .select(
-      "id, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)",
+      "id, plan_id, order_id, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)",
     )
     .eq("delivery_date", deliveryDate)
     .eq("is_test", false);
@@ -115,7 +152,7 @@ export default async function DeliverySheetPage({
     deliveriesQuery = deliveriesQuery.eq("assigned_driver_id", user.id);
   }
 
-  const [deliveriesResult, areasResult, routesResult, staffResult, assignmentsResult] =
+  const [deliveriesResult, areasResult, routesResult, staffResult, assignmentsResult, dailyAssignmentsResult, dispatchResult] =
     await Promise.all([
       deliveriesQuery,
       supabase
@@ -125,16 +162,26 @@ export default async function DeliverySheetPage({
         .order("name"),
       supabase
         .from("delivery_routes")
-        .select("id, area_id, name, active, sort_order")
+        .select("id, area_id, name, active, sort_order, stop_capacity")
         .order("sort_order")
         .order("name"),
       admin
         .from("farm_staff")
         .select("user_id, role")
-        .eq("active", true),
+        .eq("active", true)
+        .eq("role", "driver"),
       supabase
         .from("route_driver_assignments")
         .select("route_id, driver_id"),
+      supabase
+        .from("daily_route_assignments")
+        .select("route_id, driver_id, source")
+        .eq("delivery_date", deliveryDate),
+      supabase
+        .from("delivery_dispatches")
+        .select("status, released_at")
+        .eq("delivery_date", deliveryDate)
+        .maybeSingle(),
     ]);
 
   const databaseError = [
@@ -143,6 +190,8 @@ export default async function DeliverySheetPage({
     routesResult.error,
     staffResult.error,
     assignmentsResult.error,
+    dailyAssignmentsResult.error,
+    dispatchResult.error,
   ].find(Boolean);
   if (databaseError) throw databaseError;
 
@@ -172,12 +221,19 @@ export default async function DeliverySheetPage({
   const deliveryAreas = areasResult.data ?? [];
   const routes = (routesResult.data ?? []) as RouteRow[];
   const routeById = new Map(routes.map((route) => [route.id, route]));
-  const assignmentByRoute = new Map(
+  const defaultAssignmentByRoute = new Map(
     (assignmentsResult.data ?? []).map((assignment) => [
       assignment.route_id,
       assignment.driver_id,
     ]),
   );
+  const dailyAssignmentByRoute = new Map(
+    ((dailyAssignmentsResult.data ?? []) as DailyAssignmentRow[]).map((assignment) => [
+      assignment.route_id,
+      assignment,
+    ]),
+  );
+  const dispatch = (dispatchResult.data ?? null) as DispatchRow | null;
   const allDeliveries = (deliveriesResult.data ?? []) as DeliveryRow[];
   const deliveries = allDeliveries.filter(
     (delivery) =>
@@ -203,13 +259,17 @@ export default async function DeliverySheetPage({
       ? routeById.get(delivery.delivery_route_id)
       : null;
     const routeKey = route?.id ?? "unassigned";
+    const dailyAssignment = route ? dailyAssignmentByRoute.get(route.id) : null;
     const areaRoutes = grouped.get(areaName) ?? new Map<string, RouteGroup>();
     const routeGroup: RouteGroup = areaRoutes.get(routeKey) ?? {
+      assignmentSource: dailyAssignment?.source ?? "default",
       assignedDriverId:
+        dailyAssignment?.driver_id ??
         delivery.assigned_driver_id ??
-        (route ? assignmentByRoute.get(route.id) ?? null : null),
+        (route ? defaultAssignmentByRoute.get(route.id) ?? null : null),
       name: route?.name ?? "Route not assigned",
       routeId: route?.id ?? null,
+      stopCapacity: route?.stop_capacity ?? 1,
       stops: [],
     };
     routeGroup.stops.push(delivery);
@@ -263,6 +323,18 @@ export default async function DeliverySheetPage({
     (stop) => stop.bottle_return_required && !stop.bottle_returned,
   );
   const unassigned = deliveries.filter((stop) => !stop.assigned_driver_id);
+  const plannedStops = deliveries.filter((stop) => stop.plan_id).length;
+  const oneTimeStops = deliveries.filter((stop) => stop.order_id).length;
+  const unrouted = deliveries.filter((stop) => !stop.delivery_route_id).length;
+  const missingAddresses = deliveries.filter((stop) => !stop.address_snapshot?.trim()).length;
+  const routeGroups = areas.flatMap((area) => area.routes);
+  const routesWithoutDrivers = routeGroups.filter(
+    (route) => route.routeId && !route.assignedDriverId,
+  ).length;
+  const overloadedRoutes = routeGroups.filter(
+    (route) => route.routeId && route.stops.length > route.stopCapacity,
+  ).length;
+  const releaseBlockers = unrouted + missingAddresses + routesWithoutDrivers;
 
   return (
     <main className={styles.page}>
@@ -304,8 +376,57 @@ export default async function DeliverySheetPage({
         <button type="submit">Apply</button>
       </form>
 
+      {managerView ? (
+        <section className={styles.dispatchControl} data-state={dispatch?.status ?? "unprepared"}>
+          <div>
+            <p>Morning dispatch</p>
+            <h2>
+              {dispatch?.status === "released"
+                ? "Released to drivers"
+                : dispatch?.status === "draft"
+                  ? "Draft ready for review"
+                  : "Not prepared"}
+            </h2>
+            <span>
+              {dispatch?.status === "released"
+                ? "Drivers can now see only the stops assigned to them."
+                : releaseBlockers
+                  ? `${releaseBlockers} blocking ${releaseBlockers === 1 ? "issue" : "issues"} must be resolved before release.`
+                  : overloadedRoutes
+                    ? `${overloadedRoutes} ${overloadedRoutes === 1 ? "route exceeds" : "routes exceed"} the planned stop limit. Review workload before release.`
+                  : "Planned and paid one-time deliveries are combined and ready to check."}
+            </span>
+          </div>
+          <div className={styles.dispatchActions}>
+            {dispatch?.status !== "released" ? (
+              <form action={prepareDailyDispatch}>
+                <input name="deliveryDate" type="hidden" value={deliveryDate} />
+                <input name="area" type="hidden" value={selectedArea} />
+                <button type="submit">{dispatch ? "Refresh dispatch" : "Prepare dispatch"}</button>
+              </form>
+            ) : null}
+            {dispatch?.status === "draft" ? (
+              <form action={releaseDailyDispatch}>
+                <input name="deliveryDate" type="hidden" value={deliveryDate} />
+                <input name="area" type="hidden" value={selectedArea} />
+                <button disabled={releaseBlockers > 0 || deliveries.length === 0} type="submit">Release routes</button>
+              </form>
+            ) : null}
+            {dispatch?.status === "released" ? (
+              <form action={reopenDailyDispatch}>
+                <input name="deliveryDate" type="hidden" value={deliveryDate} />
+                <input name="area" type="hidden" value={selectedArea} />
+                <button className={styles.secondaryButton} type="submit">Reopen dispatch</button>
+              </form>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       <section className={styles.summary} aria-label="Delivery totals">
         <div><strong>{deliveries.length}</strong><span>Stops</span></div>
+        <div><strong>{plannedStops}</strong><span>Planned</span></div>
+        <div><strong>{oneTimeStops}</strong><span>Paid one-time</span></div>
         <div><strong>{delivered.length}</strong><span>Delivered</span></div>
         <div><strong>{unfulfilled.length}</strong><span>Not fulfilled</span></div>
         <div><strong>{bottlesOutstanding.length}</strong><span>Bottles due</span></div>
@@ -328,11 +449,31 @@ export default async function DeliverySheetPage({
               {area.routes.map((route) => (
                 <section className={styles.route} key={route.routeId ?? "unassigned"}>
                   <div className={styles.routeHeader}>
-                    <div>
+                    <div className={styles.routeIdentity}>
                       <h3>{route.name}</h3>
-                      <span>{driverLabel(route.assignedDriverId)}</span>
+                      <span>
+                        {driverLabel(route.assignedDriverId)}
+                        {route.assignedDriverId
+                          ? ` · ${route.assignmentSource === "override" ? "today's replacement" : "route default"}`
+                          : ""}
+                      </span>
+                      {route.routeId ? (
+                        <div className={styles.routeLoad} data-overloaded={route.stops.length > route.stopCapacity}>
+                          <meter
+                            max={route.stopCapacity}
+                            min={0}
+                            value={Math.min(route.stops.length, route.stopCapacity)}
+                          >
+                            {route.stops.length} of {route.stopCapacity} stops
+                          </meter>
+                          <small>
+                            {route.stops.length}/{route.stopCapacity} stops
+                            {routeLoadLabel(route.stops) ? ` · ${routeLoadLabel(route.stops)}` : ""}
+                          </small>
+                        </div>
+                      ) : null}
                     </div>
-                    {managerView && route.routeId ? (
+                    {managerView && route.routeId && dispatch ? (
                       <form action={assignRouteDriver} className={styles.assignForm}>
                         <input name="routeId" type="hidden" value={route.routeId} />
                         <input name="deliveryDate" type="hidden" value={deliveryDate} />
@@ -348,8 +489,15 @@ export default async function DeliverySheetPage({
                             ))}
                           </select>
                         </label>
-                        <button type="submit">Assign route</button>
+                        <label className={styles.defaultDriver}>
+                          <input name="makeDefault" type="checkbox" value="yes" />
+                          <span>Make this the permanent route driver</span>
+                        </label>
+                        <button type="submit">Save today&apos;s driver</button>
                       </form>
+                    ) : null}
+                    {managerView && route.routeId && !dispatch ? (
+                      <small>Prepare the dispatch before assigning today&apos;s driver.</small>
                     ) : null}
                     {managerView && !route.routeId ? (
                       <small>Assign customer routes from Customers before sending a driver.</small>
@@ -455,8 +603,8 @@ export default async function DeliverySheetPage({
           <strong>No assigned deliveries for this date.</strong>
           <p>
             {role === "driver"
-              ? "Ask the farm manager to assign your route."
-              : "Generate the daily sheet from the dashboard first."}
+              ? "The farm manager has not released a route to you for this date."
+              : "Prepare the dispatch to combine planned and paid one-time deliveries."}
           </p>
         </section>
       )}
@@ -467,14 +615,15 @@ export default async function DeliverySheetPage({
             <p>End-of-day control</p>
             <h2 id="end-report-title">What still needs attention</h2>
           </div>
-          <span>{unfulfilled.length + bottlesOutstanding.length + unassigned.length} exceptions</span>
+          <span>{unfulfilled.length + bottlesOutstanding.length + unassigned.length + overloadedRoutes} exceptions</span>
         </header>
         <div className={styles.reportMetrics}>
           <article><strong>{unfulfilled.length}</strong><span>Deliveries not fulfilled</span></article>
           <article><strong>{bottlesOutstanding.length}</strong><span>Bottles still with customers</span></article>
           {managerView ? <article><strong>{unassigned.length}</strong><span>Stops without a driver</span></article> : null}
+          {managerView ? <article><strong>{overloadedRoutes}</strong><span>Routes over stop limit</span></article> : null}
         </div>
-        {unfulfilled.length || bottlesOutstanding.length || (managerView && unassigned.length) ? (
+        {unfulfilled.length || bottlesOutstanding.length || (managerView && (unassigned.length || overloadedRoutes)) ? (
           <div className={styles.exceptionList}>
             {unfulfilled.map((stop) => (
               <span key={`delivery-${stop.id}`}><strong>Delivery:</strong> {stop.customer_name} · {stop.address_snapshot ?? "address missing"}</span>
@@ -484,6 +633,9 @@ export default async function DeliverySheetPage({
             ))}
             {managerView ? unassigned.map((stop) => (
               <span key={`driver-${stop.id}`}><strong>Driver:</strong> {stop.customer_name} · route not assigned</span>
+            )) : null}
+            {managerView ? routeGroups.filter((route) => route.routeId && route.stops.length > route.stopCapacity).map((route) => (
+              <span key={`capacity-${route.routeId}`}><strong>Capacity:</strong> {route.name} · {route.stops.length} stops for a {route.stopCapacity}-stop limit</span>
             )) : null}
           </div>
         ) : (

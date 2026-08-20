@@ -4,7 +4,7 @@ import { CAPACITY_PRODUCTS, formatCapacityQuantity } from "@/lib/capacity-produc
 import { formatCalendarDate, nextDeliveryDateInIndia, productName, todayInIndia } from "@/lib/delivery-calendar";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateTomorrowDeliverySheet } from "./actions";
+import { generateTomorrowDeliverySheet, prepareTodayDeliverySheet } from "./actions";
 import styles from "./farm.module.css";
 
 export const metadata: Metadata = { title: "Farm operations", robots: { index: false, follow: false } };
@@ -37,7 +37,7 @@ export default async function FarmDashboardPage({ searchParams }: { searchParams
   const tomorrow = nextDeliveryDateInIndia();
   const params = await searchParams;
 
-  const [profilesResult, plansResult, tomorrowResult, todayResult, routesResult, assignmentsResult, requestsResult] = await Promise.all([
+  const [profilesResult, plansResult, tomorrowResult, todayResult, routesResult, assignmentsResult, requestsResult, todayDispatchResult] = await Promise.all([
     supabase.from("customer_profiles").select("user_id,address_line,delivery_route_id"),
     supabase.from("delivery_plans").select("user_id").eq("is_test", false).eq("status", "active"),
     supabase.from("daily_deliveries").select("id,status,generated_at,delivery_route_id,daily_delivery_items(product_key,quantity)").eq("delivery_date", tomorrow).eq("is_test", false),
@@ -45,8 +45,9 @@ export default async function FarmDashboardPage({ searchParams }: { searchParams
     supabase.from("delivery_routes").select("id,name").eq("active", true),
     supabase.from("route_driver_assignments").select("route_id,driver_id"),
     supabase.from("cancellation_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
+    supabase.from("delivery_dispatches").select("status").eq("delivery_date", today).maybeSingle(),
   ]);
-  const databaseError = [profilesResult.error, plansResult.error, tomorrowResult.error, todayResult.error, routesResult.error, assignmentsResult.error, requestsResult.error].find(Boolean);
+  const databaseError = [profilesResult.error, plansResult.error, tomorrowResult.error, todayResult.error, routesResult.error, assignmentsResult.error, requestsResult.error, todayDispatchResult.error].find(Boolean);
   if (databaseError) throw databaseError;
 
   const capacityResults = await Promise.all(CAPACITY_PRODUCTS.map((product) => admin.rpc("product_capacity_snapshot", { p_days: 1, p_product_key: product.id, p_start_date: tomorrow })));
@@ -65,11 +66,12 @@ export default async function FarmDashboardPage({ searchParams }: { searchParams
   const productionTotals = new Map<string, number>();
   tomorrowStops.forEach((stop) => stop.daily_delivery_items.forEach((item) => productionTotals.set(item.product_key, (productionTotals.get(item.product_key) ?? 0) + Number(item.quantity))));
   const exceptionCount = unrouted + missingAddress + routesWithoutDriver + (requestsResult.count ?? 0);
+  const todayReleased = todayDispatchResult.data?.status === "released";
 
   return <main className={styles.page}>
     <header className={styles.header}>
       <div><p>Farm operations</p><h1>Daily control</h1><span>{formatCalendarDate(today)} · show only what needs a decision</span></div>
-      <div className={styles.headerActions}><form action={generateTomorrowDeliverySheet}><button type="submit">Generate tomorrow</button></form><Link href={`/farm/delivery-sheet?date=${today}`}>Run today&apos;s deliveries</Link></div>
+      <div className={styles.headerActions}>{todayReleased ? null : <form action={prepareTodayDeliverySheet}><button type="submit">Prepare today</button></form>}<form action={generateTomorrowDeliverySheet}><button type="submit">Generate tomorrow</button></form><Link href={`/farm/delivery-sheet?date=${today}`}>{todayReleased ? "Run released routes" : "Review today"}</Link></div>
     </header>
 
     {params.message ? <p className={styles.notice}>{params.message}</p> : null}

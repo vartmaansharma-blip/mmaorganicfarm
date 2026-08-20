@@ -181,6 +181,10 @@ const driverDeliverySecuritySchemaUrl = new URL(
   "../supabase/driver_delivery_workflow_security.sql",
   import.meta.url,
 );
+const dailyDispatchSchemaUrl = new URL(
+  "../supabase/daily_dispatch.sql",
+  import.meta.url,
+);
 const deliverySheetActionsUrl = new URL(
   "../app/farm/delivery-sheet/actions.ts",
   import.meta.url,
@@ -789,7 +793,7 @@ test("provides protected customer and daily delivery exports", async () => {
       readFile(new URL("../app/farm/farm-shell.module.css", import.meta.url), "utf8"),
     ]);
 
-  assert.match(dashboard, /Run today&apos;s deliveries/);
+  assert.match(dashboard, /Run released routes/);
   assert.match(locations, /Suggested area:/);
   assert.match(locations, /name="fullName"/);
   assert.match(locations, /name="phone"/);
@@ -824,6 +828,44 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(dashboard, /requireFarmManager/);
   assert.match(sheetStyles, /@media print/);
   assert.match(shellStyles, /@media print/);
+});
+
+test("separates permanent route drivers from each day's released dispatch", async () => {
+  const [dashboard, dashboardActions, routes, sheet, sheetActions, dispatchSchema] = await Promise.all([
+    readFile(farmDashboardUrl, "utf8"),
+    readFile(farmDashboardActionsUrl, "utf8"),
+    readFile(farmRoutesUrl, "utf8"),
+    readFile(new URL("../app/farm/delivery-sheet/page.tsx", import.meta.url), "utf8"),
+    readFile(deliverySheetActionsUrl, "utf8"),
+    readFile(dailyDispatchSchemaUrl, "utf8"),
+  ]);
+
+  assert.match(dashboard, /Prepare today/);
+  assert.match(dashboardActions, /prepare_daily_dispatch/);
+  assert.match(routes, /Daily stop limit/);
+  assert.match(sheet, /Morning dispatch/);
+  assert.match(sheet, /Paid one-time/);
+  assert.match(sheet, /Prepare dispatch/);
+  assert.match(sheet, /Release routes/);
+  assert.match(sheet, /Reopen dispatch/);
+  assert.match(sheet, /Make this the permanent route driver/);
+  assert.match(sheet, /<meter/);
+  assert.match(sheetActions, /assign_daily_route_driver/);
+  assert.match(sheetActions, /p_make_default/);
+  assert.match(sheetActions, /release_daily_dispatch/);
+  assert.match(sheetActions, /reopen_daily_dispatch/);
+  assert.match(dispatchSchema, /create table if not exists public\.delivery_dispatches/);
+  assert.match(dispatchSchema, /create table if not exists public\.daily_route_assignments/);
+  assert.match(dispatchSchema, /daily_route_assignments_route_idx/);
+  assert.match(dispatchSchema, /source in \('default', 'override'\)/);
+  assert.match(dispatchSchema, /create or replace function public\.prepare_daily_dispatch/);
+  assert.match(dispatchSchema, /create or replace function public\.assign_daily_route_driver/);
+  assert.match(dispatchSchema, /create or replace function public\.release_daily_dispatch/);
+  assert.match(dispatchSchema, /create or replace function public\.reopen_daily_dispatch/);
+  assert.match(dispatchSchema, /status = 'released'/);
+  assert.match(dispatchSchema, /assigned_driver_id = \(select auth\.uid\(\)\)/);
+  assert.match(dispatchSchema, /enable row level security/);
+  assert.doesNotMatch(dispatchSchema, /grant .* to anon/);
 });
 
 test("lets managers add, import, and manage customers safely", async () => {

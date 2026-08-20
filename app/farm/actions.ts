@@ -2,17 +2,38 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
+import { nextDeliveryDateInIndia, todayInIndia } from "@/lib/delivery-calendar";
 import { canManageLocations, requireFarmStaff } from "@/lib/farm-dashboard";
 
-export async function generateTomorrowDeliverySheet() {
+async function prepareDeliverySheet(deliveryDate: string) {
   const { role, supabase } = await requireFarmStaff("/farm");
 
   if (!canManageLocations(role)) {
     redirect("/farm?error=Manager+access+is+required+to+generate+a+delivery+sheet.");
   }
 
-  const deliveryDate = nextDeliveryDateInIndia();
+  const { data: dispatch, error: dispatchReadError } = await supabase
+    .from("delivery_dispatches")
+    .select("status")
+    .eq("delivery_date", deliveryDate)
+    .maybeSingle();
+  if (dispatchReadError) throw dispatchReadError;
+  if (dispatch?.status === "released") {
+    redirect(`/farm?error=${encodeURIComponent("Reopen the released dispatch before refreshing its delivery sheet.")}`);
+  }
+
+  const { data: startedStops, error: startedError } = await supabase
+    .from("daily_deliveries")
+    .select("id")
+    .eq("delivery_date", deliveryDate)
+    .eq("is_test", false)
+    .in("status", ["out_for_delivery", "delivered", "failed"])
+    .limit(1);
+  if (startedError) throw startedError;
+  if ((startedStops ?? []).length) {
+    redirect(`/farm?error=${encodeURIComponent("The delivery sheet cannot be refreshed after route work has started.")}`);
+  }
+
   const { data, error } = await supabase.rpc("generate_daily_deliveries", {
     p_delivery_date: deliveryDate,
   });
@@ -22,7 +43,16 @@ export async function generateTomorrowDeliverySheet() {
     redirect("/farm?error=The+delivery+sheet+could+not+be+generated.");
   }
 
+  const { error: dispatchError } = await supabase.rpc("prepare_daily_dispatch", {
+    p_delivery_date: deliveryDate,
+  });
+  if (dispatchError) {
+    console.error("Unable to prepare dispatch", dispatchError.message);
+    redirect(`/farm?error=${encodeURIComponent(dispatchError.message)}`);
+  }
+
   revalidatePath("/farm");
+  revalidatePath("/farm/delivery-sheet");
   const count = Number(data ?? 0);
   redirect(
     `/farm?message=${encodeURIComponent(
@@ -31,6 +61,14 @@ export async function generateTomorrowDeliverySheet() {
         : `${count} delivery ${count === 1 ? "stop" : "stops"} prepared for tomorrow.`,
     )}`,
   );
+}
+
+export async function generateTomorrowDeliverySheet() {
+  await prepareDeliverySheet(nextDeliveryDateInIndia());
+}
+
+export async function prepareTodayDeliverySheet() {
+  await prepareDeliverySheet(todayInIndia());
 }
 
 const DELIVERY_STATUSES = new Set([

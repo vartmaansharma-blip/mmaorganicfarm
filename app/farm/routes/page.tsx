@@ -22,6 +22,7 @@ type RouteRow = {
   match_terms: string[];
   name: string;
   postal_codes: string[];
+  stop_capacity: number;
 };
 
 export default async function RoutesPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
@@ -30,7 +31,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
   const params = await searchParams;
   const [areasResult, routesResult, assignmentsResult, staffResult, profilesResult, plansResult] = await Promise.all([
     supabase.from("delivery_areas").select("id,name,active,sort_order").eq("active", true).order("sort_order").order("name"),
-    supabase.from("delivery_routes").select("id,area_id,name,code,active,match_terms,postal_codes").eq("active", true).order("sort_order").order("name"),
+    supabase.from("delivery_routes").select("id,area_id,name,code,active,match_terms,postal_codes,stop_capacity").eq("active", true).order("sort_order").order("name"),
     supabase.from("route_driver_assignments").select("route_id,driver_id"),
     admin.from("farm_staff").select("user_id,role").eq("active", true).eq("role", "driver"),
     supabase.from("customer_profiles").select("user_id,delivery_route_id"),
@@ -94,6 +95,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
                   <input name="routeId" type="hidden" value={route.id} /><input name="areaId" type="hidden" value={area.id} />
                   <label>Route name<input defaultValue={route.name} name="name" required /></label>
                   <label>Code<input defaultValue={route.code ?? ""} name="code" /></label>
+                  <label>Daily stop limit<input defaultValue={route.stop_capacity} max={200} min={1} name="stopCapacity" required type="number" /></label>
                   <label className={styles.wide}>Locality or address terms<textarea defaultValue={(route.match_terms ?? []).join(", ")} name="matchTerms" placeholder="Birsanagar Zone 1, Telco Colony" rows={2} /></label>
                   <label className={styles.wide}>Postal codes<input defaultValue={(route.postal_codes ?? []).join(", ")} name="postalCodes" placeholder="831004, 831019" /></label>
                   <button type="submit">Save routing rules</button>
@@ -115,6 +117,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
       <label>Service area<select name="areaId" required><option value="">Choose area</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label>
       <label>Route name<input name="name" placeholder="Birsanagar morning route" required /></label>
       <label>Code<input name="code" placeholder="BIR-1" /></label>
+      <label>Daily stop limit<input defaultValue={25} max={200} min={1} name="stopCapacity" required type="number" /></label>
       <label className={styles.wide}>Locality or address terms<textarea name="matchTerms" placeholder="Comma-separated terms" rows={2} /></label>
       <label className={styles.wide}>Postal codes<input name="postalCodes" placeholder="831004, 831019" /></label>
       <button type="submit">Create route</button>

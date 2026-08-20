@@ -19,6 +19,7 @@ function routeSettings(formData: FormData) {
   const code = textValue(formData, "code");
   const matchTerms = routeValues(textValue(formData, "matchTerms"));
   const postalCodes = routeValues(textValue(formData, "postalCodes"));
+  const stopCapacity = Number.parseInt(textValue(formData, "stopCapacity"), 10);
 
   if (!areaId) throw new Error("Choose a service area.");
   if (name.length < 2 || name.length > 80) throw new Error("Enter a route name.");
@@ -29,8 +30,11 @@ function routeSettings(formData: FormData) {
   if (postalCodes.length > 20 || postalCodes.some((codeValue) => !/^\d{6}$/.test(codeValue))) {
     throw new Error("Postal codes must contain six digits.");
   }
+  if (!Number.isInteger(stopCapacity) || stopCapacity < 1 || stopCapacity > 200) {
+    throw new Error("Route capacity must be between 1 and 200 stops.");
+  }
 
-  return { areaId, code: code || null, matchTerms, name, postalCodes };
+  return { areaId, code: code || null, matchTerms, name, postalCodes, stopCapacity };
 }
 
 async function requireRouteManager() {
@@ -49,6 +53,7 @@ export async function createDeliveryRoute(formData: FormData) {
     match_terms: settings.matchTerms,
     name: settings.name,
     postal_codes: settings.postalCodes,
+    stop_capacity: settings.stopCapacity,
   });
   if (error) redirect(`/farm/routes?error=${encodeURIComponent(error.message)}`);
 
@@ -69,6 +74,7 @@ export async function updateDeliveryRoute(formData: FormData) {
     match_terms: settings.matchTerms,
     name: settings.name,
     postal_codes: settings.postalCodes,
+    stop_capacity: settings.stopCapacity,
     updated_at: new Date().toISOString(),
   }).eq("id", routeId);
   if (error) redirect(`/farm/routes?error=${encodeURIComponent(error.message)}`);

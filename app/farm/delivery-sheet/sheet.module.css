@@ -51,6 +51,7 @@
 .printButton,
 .filters button,
 .assignForm button,
+.dispatchActions button,
 .doorstepForm button {
   background: #fff;
   border: 1px solid #191919;
@@ -64,6 +65,74 @@
   padding: 10px 12px;
   text-align: center;
   text-decoration: none;
+}
+
+.dispatchControl {
+  align-items: start;
+  background: #fff8df;
+  border: 1px solid #ddc56e;
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 17px;
+}
+
+.dispatchControl[data-state="released"] {
+  background: #eaf5ee;
+  border-color: #a9cfb4;
+}
+
+.dispatchControl p,
+.dispatchControl h2,
+.dispatchControl span {
+  margin: 0;
+}
+
+.dispatchControl p {
+  color: #59625b;
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: .08em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.dispatchControl h2 {
+  font-size: 20px;
+}
+
+.dispatchControl span {
+  color: #5f625e;
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+.dispatchActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dispatchActions form {
+  display: contents;
+}
+
+.dispatchActions button {
+  background: #191919;
+  color: #fff;
+}
+
+.dispatchActions button:disabled {
+  background: #9a9994;
+  border-color: #9a9994;
+  cursor: not-allowed;
+}
+
+.dispatchActions .secondaryButton {
+  background: #fff;
+  color: #191919;
 }
 
 .printButton,
@@ -203,6 +272,10 @@
   gap: 3px;
 }
 
+.routeIdentity {
+  min-width: 0;
+}
+
 .routeHeader h3 {
   font-size: 15px;
 }
@@ -216,6 +289,53 @@
 .assignForm {
   display: grid;
   gap: 7px;
+}
+
+.routeLoad {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  max-width: 420px;
+}
+
+.routeLoad meter {
+  height: 7px;
+  width: 100%;
+}
+
+.routeLoad meter::-webkit-meter-bar {
+  background: #e2e4e1;
+  border: 0;
+  border-radius: 999px;
+  height: 7px;
+}
+
+.routeLoad meter::-webkit-meter-optimum-value {
+  background: #2d8050;
+  border-radius: 999px;
+}
+
+.routeLoad[data-overloaded="true"] small {
+  color: #9b2e22;
+  font-weight: 700;
+}
+
+.defaultDriver {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.defaultDriver input {
+  accent-color: #191919;
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+.defaultDriver span {
+  color: #4f514e;
+  font-size: 10px;
 }
 
 .stopList {
@@ -518,9 +638,19 @@
     padding: 12px 16px;
   }
 
+  .dispatchControl {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 20px;
+  }
+
   .assignForm {
     align-items: center;
     grid-template-columns: minmax(180px, 1fr) auto;
+  }
+
+  .assignForm .defaultDriver {
+    grid-column: 1 / -1;
   }
 
   .stopCard {
@@ -566,6 +696,7 @@
   }
 
   .actions,
+  .dispatchControl,
   .filters,
   .assignForm,
   .doorstepForm,
