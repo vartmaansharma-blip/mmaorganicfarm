@@ -26,6 +26,7 @@ type ManualOrderFormProps = {
   customerName: string;
   minimumStartDate: string;
   profileReady: boolean;
+  returnTo?: string;
   userId: string;
 };
 
@@ -45,6 +46,7 @@ function OrderEditor({
   customerName,
   minimumStartDate,
   profileReady,
+  returnTo,
   userId,
 }: ManualOrderFormProps) {
   const [purchaseMode, setPurchaseMode] = useState<"once" | "plan">("plan");
@@ -104,6 +106,7 @@ function OrderEditor({
   return (
     <form action={recordCustomerOrder} className={styles.orderWorkspace}>
       <input name="userId" type="hidden" value={userId} />
+      {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
       <div className={styles.orderEditor}>
         <fieldset className={styles.orderType}>
           <legend>Order type</legend>

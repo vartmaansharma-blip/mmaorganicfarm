@@ -6,22 +6,16 @@ import {
   todayInIndia,
   weekdayFromYmd,
 } from "@/lib/delivery-calendar";
-import { formatCheckoutAmount } from "@/lib/checkout-display";
 import {
   canManageLocations,
   requireFarmManager,
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import {
-  assignCustomerLocation,
   createArea,
   createCustomerProfile,
-  deleteCustomerProfile,
   importCustomerProfiles,
-  setOrderMode,
 } from "./actions";
-import { ManualOrderForm } from "./manual-order-form";
 import styles from "./locations.module.css";
 
 export const metadata: Metadata = {
@@ -52,16 +46,6 @@ type PlanRow = {
   weekly_delivery_items: DeliveryItem[];
 };
 
-type OrderItem = {
-  delivery_date: string | null;
-  frequency: "once" | "weekly";
-  product_key: string;
-  product_name: string;
-  quantity: number | string;
-  scheduled_days: number[] | null;
-  unit: string;
-};
-
 type OrderRow = {
   bottle_choice: "new" | "none" | "return";
   created_at: string;
@@ -69,22 +53,12 @@ type OrderRow = {
   id: string;
   is_test: boolean;
   milk_litres: number | string;
-  order_items: OrderItem[];
   paid_total_paise: number | null;
   purchase_mode: "adjustment" | "once" | "plan";
   start_date: string;
   status: string;
   total_paise: number;
   user_id: string;
-};
-
-type PaymentRow = {
-  amount_paise: number;
-  created_at: string;
-  is_test: boolean;
-  order_id: string;
-  paid_at: string | null;
-  status: string;
 };
 
 type CapacityDay = {
@@ -100,31 +74,8 @@ function normalizedLocation(value: string | null) {
   return (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return "Not set";
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  }).format(new Date(`${value.slice(0, 10)}T12:00:00+05:30`));
-}
-
 function titleCase(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function productName(productKey: string, fallback?: string) {
-  if (fallback) return fallback;
-  if (productKey === "milk") return "Fresh milk";
-  if (productKey === "paneer") return "Fresh paneer";
-  if (productKey === "ghee") return "Farm ghee";
-  return titleCase(productKey);
-}
-
-function quantityLabel(quantity: number | string, unit: string) {
-  const value = Number(quantity);
-  return `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
 }
 
 function litreLabel(quantity: number | string) {
@@ -156,13 +107,6 @@ function weeklyMilkByDay(plan: PlanRow | undefined) {
   );
 }
 
-function planLabel(order: OrderRow | undefined) {
-  if (!order) return "No order yet";
-  if (order.purchase_mode === "plan") return "Scheduled delivery plan";
-  if (order.purchase_mode === "adjustment") return "Milk quantity change";
-  return "One-time order";
-}
-
 type LocationsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -178,7 +122,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
     profilesResult,
     plansResult,
     ordersResult,
-    paymentsResult,
     capacityResult,
   ] =
     await Promise.all([
@@ -196,7 +139,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
       supabase
         .from("customer_profiles")
         .select(
-          "user_id, full_name, email, phone, address_line, locality, landmark, postal_code, delivery_area_id, delivery_route_id, route_stop_order",
+          "user_id, full_name, email, phone, address_line, locality, landmark, postal_code, delivery_area_id, delivery_route_id, route_stop_order, delivery_instructions",
         )
         .order("full_name"),
       admin
@@ -208,12 +151,8 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
       admin
         .from("orders")
         .select(
-          "id, user_id, delivery_plan_id, purchase_mode, status, is_test, milk_litres, bottle_choice, total_paise, paid_total_paise, start_date, created_at, order_items(product_key, product_name, quantity, unit, frequency, scheduled_days, delivery_date)",
+          "id, user_id, delivery_plan_id, purchase_mode, status, is_test, milk_litres, bottle_choice, total_paise, paid_total_paise, start_date, created_at",
         )
-        .order("created_at", { ascending: false }),
-      admin
-        .from("payments")
-        .select("order_id, status, is_test, amount_paise, paid_at, created_at")
         .order("created_at", { ascending: false }),
       admin.rpc("product_capacity_snapshot", {
         p_days: 8,
@@ -228,7 +167,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
     profilesResult.error,
     plansResult.error,
     ordersResult.error,
-    paymentsResult.error,
   ].find(Boolean);
   if (databaseError) throw databaseError;
 
@@ -237,20 +175,13 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const profiles = profilesResult.data ?? [];
   const plans = (plansResult.data ?? []) as PlanRow[];
   const orders = (ordersResult.data ?? []) as OrderRow[];
-  const payments = (paymentsResult.data ?? []) as PaymentRow[];
   const capacityDays = capacityResult.error
     ? []
     : ((capacityResult.data ?? []) as CapacityDay[]);
-  const orderCapacityDays = capacityDays.map((day) => ({
-    available_quantity: Number(day.available_quantity),
-    delivery_date: day.delivery_date,
-  }));
   const areaById = new Map(areas.map((area) => [area.id, area.name]));
   const routeById = new Map(routes.map((route) => [route.id, route]));
   const latestPlanByUser = new Map<string, PlanRow>();
   const latestOrderByUser = new Map<string, OrderRow>();
-  const ordersByUser = new Map<string, OrderRow[]>();
-  const latestPaymentByOrder = new Map<string, PaymentRow>();
   const planPriority = new Map([
     ["active", 4],
     ["paused", 3],
@@ -275,10 +206,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
     }
   });
   orders.forEach((order) => {
-    ordersByUser.set(order.user_id, [
-      ...(ordersByUser.get(order.user_id) ?? []),
-      order,
-    ]);
     const current = latestOrderByUser.get(order.user_id);
     if (
       !current ||
@@ -289,14 +216,8 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
       latestOrderByUser.set(order.user_id, order);
     }
   });
-  payments.forEach((payment) => {
-    if (!latestPaymentByOrder.has(payment.order_id)) {
-      latestPaymentByOrder.set(payment.order_id, payment);
-    }
-  });
 
   const canManage = canManageLocations(role);
-  const canDelete = role === "admin";
   const activePlanCount = plans.filter((plan) => !plan.is_test && plan.status === "active").length;
   const missingAddressCount = profiles.filter((profile) => !profile.address_line).length;
   const pendingOrderCount = orders.filter(
@@ -475,18 +396,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
             {filteredProfiles.map((profile) => {
               const plan = latestPlanByUser.get(profile.user_id);
               const order = latestOrderByUser.get(profile.user_id);
-              const customerOrders = ordersByUser.get(profile.user_id) ?? [];
-              const payment = order ? latestPaymentByOrder.get(order.id) : undefined;
-              const remainingDeliveries = plan
-                ? Math.max(0, Number(plan.purchased_deliveries) - Number(plan.delivered_deliveries))
-                : null;
               const weeklyMilk = weeklyMilkByDay(plan);
-              const paidAmount = order?.status === "paid"
-                ? order.paid_total_paise ?? payment?.amount_paise ?? order.total_paise
-                : 0;
-              const balanceDue = order
-                ? Math.max(0, Number(order.total_paise) - Number(paidAmount))
-                : 0;
               const addressForSuggestion = normalizedLocation(
                 [profile.address_line, profile.locality].filter(Boolean).join(" "),
               );
@@ -508,10 +418,10 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                     <span className={styles.initial} aria-hidden="true">
                       {(profile.full_name ?? "C").charAt(0).toUpperCase()}
                     </span>
-                    <span className={styles.customerIdentity}>
+                    <Link className={styles.customerIdentity} href={`/farm/customers/${profile.user_id}`}>
                       <strong>{profile.full_name ?? "Customer"}</strong>
-                      <span>{profile.phone ?? "No phone saved"}</span>
-                    </span>
+                      <span>{profile.phone ?? "No phone saved"} · Open profile</span>
+                    </Link>
                     <span className={styles.customerQuickFact}>
                       <small>Location</small>
                       <strong>{profile.locality || areaById.get(profile.delivery_area_id ?? "") || "Not assigned"}</strong>
@@ -529,6 +439,10 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                   </summary>
 
                   <div className={styles.customerBody}>
+                    <Link className={styles.workspaceLink} href={`/farm/customers/${profile.user_id}`}>
+                      <span><strong>Open customer workspace</strong><small>Orders, payments, deliveries, profile and route</small></span>
+                      <b aria-hidden="true">→</b>
+                    </Link>
                     <div className={styles.profileContact}>
                       <span><small>Phone</small><strong>{profile.phone ?? "No phone saved"}</strong></span>
                       <span><small>Email</small><strong>{profile.email ?? "No email saved"}</strong></span>
@@ -549,162 +463,6 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                     </div>
                   </div>
 
-                  <section className={styles.planSummary} aria-label={`${profile.full_name ?? "Customer"} order details`}>
-                    <div className={styles.planHeading}>
-                      <div>
-                        <span>Current order</span>
-                        <h3>{planLabel(order)}</h3>
-                      </div>
-                      <span className={`${styles.status} ${order?.status === "paid" ? styles.statusPaid : ""}`}>
-                        {order ? `${order.is_test ? "Test · " : ""}${titleCase(order.status)}` : "No order"}
-                      </span>
-                    </div>
-
-                    {order?.order_items?.length ? (
-                      <div className={styles.productList}>
-                        {order.order_items.map((item, index) => (
-                          <div key={`${order.id}-${item.product_key}-${index}`}>
-                            <strong>{productName(item.product_key, item.product_name)}</strong>
-                            <span>
-                              {quantityLabel(item.quantity, item.unit)} · {item.frequency === "weekly" ? "Scheduled" : "One time"}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className={styles.noPlan}>No products have been ordered yet.</p>
-                    )}
-
-                    {order ? (
-                      <dl className={styles.orderFacts}>
-                        <div><dt>Order</dt><dd>MMA-{order.id.slice(0, 8).toUpperCase()}</dd></div>
-                        <div><dt>Delivery starts</dt><dd>{formatDate(order.start_date)}</dd></div>
-                        <div><dt>Order total</dt><dd>{formatCheckoutAmount(order.total_paise)}</dd></div>
-                        <div><dt>Paid</dt><dd>{formatCheckoutAmount(paidAmount)}</dd></div>
-                        <div><dt>Balance due</dt><dd>{formatCheckoutAmount(balanceDue)}</dd></div>
-                        <div><dt>Payment</dt><dd>{order.status === "paid" ? `Paid${payment?.paid_at ? ` · ${formatDate(payment.paid_at)}` : ""}` : titleCase(payment?.status ?? order.status)}</dd></div>
-                        <div><dt>Recorded</dt><dd>{formatDate(order.created_at)}</dd></div>
-                        <div><dt>Mode</dt><dd>{order.is_test ? "Test order" : "Live order"}</dd></div>
-                        {plan ? (
-                          <>
-                            <div><dt>Plan</dt><dd>{titleCase(plan.status)}</dd></div>
-                            <div><dt>Deliveries</dt><dd>{remainingDeliveries} remaining of {plan.purchased_deliveries}</dd></div>
-                          </>
-                        ) : null}
-                        <div><dt>Bottle</dt><dd>{order.bottle_choice === "new" ? "New glass bottle" : order.bottle_choice === "return" ? "Returnable bottle" : "Not required"}</dd></div>
-                      </dl>
-                    ) : null}
-
-                    {plan ? (
-                      <div className={styles.weeklyPlan}>
-                        <span className={styles.weeklyPlanTitle}>Seven-day milk schedule</span>
-                        <div>
-                          {MILK_PLAN_DAYS.map((day, index) => {
-                            const quantity = weeklyMilk.get(index + 1) ?? 0;
-                            return (
-                              <span key={day.short}>
-                                <small>{day.short}</small>
-                                <strong>{quantity > 0 ? `${quantity} L` : "—"}</strong>
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : null}
-                  </section>
-
-                  {customerOrders.length ? (
-                    <details className={styles.orderHistory}>
-                      <summary>
-                        Order history <span>{customerOrders.length}</span>
-                      </summary>
-                      <div>
-                        {customerOrders.map((historicOrder) => (
-                          <article key={historicOrder.id}>
-                            <span>
-                              <strong>{planLabel(historicOrder)}</strong>
-                              <small>
-                                {formatDate(historicOrder.created_at)} · MMA-
-                                {historicOrder.id.slice(0, 8).toUpperCase()}
-                              </small>
-                            </span>
-                            <span>
-                              <b>
-                                {formatCheckoutAmount(
-                                  historicOrder.paid_total_paise ??
-                                    historicOrder.total_paise,
-                                )}
-                              </b>
-                              <small>{titleCase(historicOrder.status)}</small>
-                              {historicOrder.is_test ? <small className={styles.testLabel}>Test order</small> : null}
-                            </span>
-                            {canDelete ? (
-                              <form action={setOrderMode} className={styles.modeForm}>
-                                <input name="orderId" type="hidden" value={historicOrder.id} />
-                                <input name="mode" type="hidden" value={historicOrder.is_test ? "live" : "test"} />
-                                <button type="submit">
-                                  Mark {historicOrder.is_test ? "live" : "test"}
-                                </button>
-                              </form>
-                            ) : null}
-                          </article>
-                        ))}
-                      </div>
-                    </details>
-                  ) : null}
-
-                  {canManage ? (
-                    <details className={styles.editDetails}>
-                      <summary>Edit customer</summary>
-                      <form action={assignCustomerLocation} className={styles.assignmentForm}>
-                        <input name="userId" type="hidden" value={profile.user_id} />
-                        <div className={styles.detailFields}>
-                          <label><span>Customer name</span><input defaultValue={profile.full_name ?? "Customer"} maxLength={120} name="fullName" required /></label>
-                          <label><span>Phone</span><input defaultValue={profile.phone?.replace(/^\+91/, "") ?? ""} inputMode="numeric" maxLength={10} name="phone" placeholder="98765 43210" type="tel" /></label>
-                          <label className={styles.addressField}><span>Delivery address</span><textarea defaultValue={profile.address_line ?? ""} maxLength={500} name="address" placeholder="House, street, area and landmark" rows={2} /></label>
-                          <label><span>Locality</span><input defaultValue={profile.locality ?? ""} maxLength={120} name="locality" placeholder="Bistupur" /></label>
-                          <label><span>Landmark</span><input defaultValue={profile.landmark ?? ""} maxLength={180} name="landmark" placeholder="Near the main road" /></label>
-                          <label><span>Postal code</span><input defaultValue={profile.postal_code ?? ""} inputMode="numeric" maxLength={6} name="postalCode" placeholder="831001" /></label>
-                        </div>
-                        <div className={styles.routeFields}>
-                          <label>
-                            <span>Area (optional)</span>
-                            <select name="areaId" defaultValue={profile.delivery_area_id ?? suggestedArea?.id ?? ""}>
-                              <option value="">No area assigned</option>
-                              {areas.map((area) => <option value={area.id} key={area.id}>{area.name}</option>)}
-                            </select>
-                          </label>
-                          <button type="submit">Save customer</button>
-                        </div>
-                      </form>
-                      {canDelete ? (
-                        <form action={deleteCustomerProfile} className={styles.dangerZone}>
-                          <input name="userId" type="hidden" value={profile.user_id} />
-                          <div>
-                            <strong>Delete customer profile</strong>
-                            <p>
-                              Removes the farm profile and delivery details. Payment records remain saved.
-                            </p>
-                          </div>
-                          <label>
-                            <input name="confirmDelete" required type="checkbox" value="yes" />
-                            <span>I understand this profile will be removed.</span>
-                          </label>
-                          <button type="submit">Delete profile</button>
-                        </form>
-                      ) : null}
-                    </details>
-                  ) : null}
-
-                  {canManage ? (
-                    <ManualOrderForm
-                      capacityDays={orderCapacityDays}
-                      customerName={profile.full_name ?? "Customer"}
-                      minimumStartDate={nextDeliveryDate}
-                      profileReady={Boolean(profile.phone && profile.address_line)}
-                      userId={profile.user_id}
-                    />
-                  ) : null}
                   </div>
                 </details>
               );

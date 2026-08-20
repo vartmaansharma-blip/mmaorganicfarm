@@ -68,6 +68,10 @@ const manualOrderFormUrl = new URL(
   "../app/farm/locations/manual-order-form.tsx",
   import.meta.url,
 );
+const farmCustomerUrl = new URL(
+  "../app/farm/customers/[userId]/page.tsx",
+  import.meta.url,
+);
 const farmSchemaUrl = new URL("../supabase/farm_dashboard.sql", import.meta.url);
 const dailyDeliveriesSchemaUrl = new URL(
   "../supabase/daily_deliveries.sql",
@@ -664,10 +668,11 @@ test("presents the product builder as a visible farm shop", async () => {
 });
 
 test("provides persistent mobile-first farm delivery operations", async () => {
-  const [dashboard, dashboardActions, locations, actions, schema, dailySchema, oneTimeSchema, operationsSchema, cancellations, payments, testModeSchema, driverDeliverySchema, driverDeliverySecuritySchema, styles] = await Promise.all([
+  const [dashboard, dashboardActions, locations, customer, actions, schema, dailySchema, oneTimeSchema, operationsSchema, cancellations, payments, testModeSchema, driverDeliverySchema, driverDeliverySecuritySchema, styles] = await Promise.all([
     readFile(farmDashboardUrl, "utf8"),
     readFile(farmDashboardActionsUrl, "utf8"),
     readFile(farmLocationsUrl, "utf8"),
+    readFile(farmCustomerUrl, "utf8"),
     readFile(farmActionsUrl, "utf8"),
     readFile(farmSchemaUrl, "utf8"),
     readFile(dailyDeliveriesSchemaUrl, "utf8"),
@@ -695,16 +700,15 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(dashboardActions, /nextDeliveryDateInIndia/);
   assert.match(locations, /Farm customers/);
   assert.match(locations, /Profiles and orders/);
-  assert.match(locations, /No area assigned/);
+  assert.match(customer, /No area assigned/);
   assert.match(locations, /delivery_plans/);
-  assert.match(locations, /order_items/);
-  assert.match(locations, /payments/);
   assert.match(locations, /Current order/);
-  assert.match(locations, /Deliveries/);
-  assert.match(locations, /Edit customer/);
-  assert.match(locations, /Seven-day milk schedule/);
-  assert.match(locations, /Test order/);
-  assert.match(locations, /<details className=\{styles\.editDetails\}>/);
+  assert.match(customer, /Deliveries/);
+  assert.match(customer, /order_items/);
+  assert.match(customer, /payments/);
+  assert.match(customer, /Seven-day milk schedule|weekSchedule/);
+  assert.match(customer, /Test ·/);
+  assert.match(customer, /profileEditor/);
   assert.doesNotMatch(locations, /New route/);
   assert.doesNotMatch(locations, /Stop order/);
   assert.match(actions, /assignCustomerLocation/);
@@ -809,12 +813,13 @@ test("provides protected customer and daily delivery exports", async () => {
 });
 
 test("lets managers add, import, and manage customers safely", async () => {
-  const [locations, actions, customerImport, farmLayout, manualOrderForm] = await Promise.all([
+  const [locations, actions, customerImport, farmLayout, manualOrderForm, customer] = await Promise.all([
     readFile(farmLocationsUrl, "utf8"),
     readFile(farmActionsUrl, "utf8"),
     readFile(customerImportUrl, "utf8"),
     readFile(farmLayoutUrl, "utf8"),
     readFile(manualOrderFormUrl, "utf8"),
+    readFile(farmCustomerUrl, "utf8"),
   ]);
 
   assert.match(locations, /Add customer/);
@@ -826,6 +831,8 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(locations, /product_capacity_snapshot/);
   assert.match(locations, /What needs attention/);
   assert.match(locations, /Next delivery/);
+  assert.match(locations, /Open customer workspace/);
+  assert.match(locations, /\/farm\/customers\/\$\{profile\.user_id\}/);
   assert.match(manualOrderForm, /Record order/);
   assert.match(manualOrderForm, /Live · Payment pending/);
   assert.match(manualOrderForm, /Capacity impact/);
@@ -842,7 +849,17 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(actions, /recordCustomerOrder/);
   assert.match(actions, /status: "pending_payment"/);
   assert.match(actions, /The customer profile was not updated/);
+  assert.match(actions, /The selected route does not belong to the selected area/);
+  assert.match(actions, /route_stop_order: routeStopOrder/);
   assert.match(locations, /Postal code/);
+  assert.match(customer, /Customer workspace/);
+  assert.match(customer, /Lifetime paid/);
+  assert.match(customer, /View order history/);
+  assert.match(customer, /View payment ledger/);
+  assert.match(customer, /View delivery timeline/);
+  assert.match(customer, /Profile & route/);
+  assert.match(customer, /delivery_instructions/);
+  assert.match(customer, /ManualOrderForm/);
   assert.match(customerImport, /The CSV contains an unclosed quote/);
   assert.match(customerImport, /parseCustomerRows/);
   assert.match(customerImport, /Import no more than 200 customers/);

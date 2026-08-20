@@ -43,6 +43,18 @@ function normalizedLookup(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function customerReturnPath(formData: FormData, userId: string) {
+  const returnTo = textValue(formData, "returnTo");
+  return returnTo === `/farm/customers/${userId}`
+    ? returnTo
+    : "/farm/locations";
+}
+
+function redirectWithMessage(path: string, key: "error" | "message", message: string): never {
+  const separator = path.includes("?") ? "&" : "?";
+  redirect(`${path}${separator}${key}=${encodeURIComponent(message)}`);
+}
+
 function importResult(created: number, updated: number, skipped: number, error?: string): never {
   const parameters = new URLSearchParams({
     created: String(created),
@@ -187,13 +199,18 @@ export async function createArea(formData: FormData) {
 export async function assignCustomerLocation(formData: FormData) {
   const { supabase } = await requireLocationManager();
   const userId = textValue(formData, "userId");
+  const returnTo = customerReturnPath(formData, userId);
   const fullName = textValue(formData, "fullName");
+  const email = textValue(formData, "email").toLowerCase();
   const phone = normalizePhone(textValue(formData, "phone"));
   const address = textValue(formData, "address");
   const locality = textValue(formData, "locality");
   const landmark = textValue(formData, "landmark");
   const postalCode = textValue(formData, "postalCode");
-  const areaId = textValue(formData, "areaId") || null;
+  let areaId = textValue(formData, "areaId") || null;
+  const routeId = textValue(formData, "routeId") || null;
+  const requestedStopOrder = textValue(formData, "routeStopOrder");
+  const deliveryInstructions = textValue(formData, "deliveryInstructions");
 
   if (!userId) throw new Error("Customer is required.");
   if (fullName.length < 2 || fullName.length > 120) {
@@ -201,6 +218,9 @@ export async function assignCustomerLocation(formData: FormData) {
   }
   if (phone && phone.length !== 10) {
     throw new Error("Enter a valid 10-digit phone number.");
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Enter a valid email address.");
   }
   if (address && (address.length < 8 || address.length > 500)) {
     throw new Error("Enter a complete delivery address.");
@@ -212,19 +232,49 @@ export async function assignCustomerLocation(formData: FormData) {
   if (postalCode && !/^\d{6}$/.test(postalCode)) {
     throw new Error("Enter a valid 6-digit postal code.");
   }
+  if (deliveryInstructions.length > 500) {
+    throw new Error("Keep delivery instructions under 500 characters.");
+  }
+
+  let routeStopOrder: number | null = null;
+  if (requestedStopOrder) {
+    routeStopOrder = Number(requestedStopOrder);
+    if (!Number.isInteger(routeStopOrder) || routeStopOrder < 1 || routeStopOrder > 999) {
+      throw new Error("Enter a route stop position between 1 and 999.");
+    }
+  }
+  if (!routeId && routeStopOrder) {
+    throw new Error("Choose a delivery route before setting a stop position.");
+  }
+  if (routeId) {
+    const { data: route, error: routeError } = await supabase
+      .from("delivery_routes")
+      .select("id, area_id")
+      .eq("id", routeId)
+      .eq("active", true)
+      .maybeSingle();
+    if (routeError) throw routeError;
+    if (!route) throw new Error("Choose an active delivery route.");
+    if (areaId && route.area_id !== areaId) {
+      throw new Error("The selected route does not belong to the selected area.");
+    }
+    areaId = route.area_id;
+  }
 
   const { data, error } = await supabase
     .from("customer_profiles")
     .update({
       address_line: address || null,
       delivery_area_id: areaId,
-      delivery_route_id: null,
+      delivery_instructions: deliveryInstructions || null,
+      delivery_route_id: routeId,
+      email: email || null,
       full_name: fullName,
       landmark: landmark || null,
       locality: locality || null,
       phone: phone ? `+91${phone}` : null,
       postal_code: postalCode || null,
-      route_stop_order: null,
+      route_stop_order: routeStopOrder,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)
@@ -235,6 +285,10 @@ export async function assignCustomerLocation(formData: FormData) {
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
+  revalidatePath(`/farm/customers/${userId}`);
+  if (returnTo !== "/farm/locations") {
+    redirectWithMessage(returnTo, "message", "Customer profile and route updated.");
+  }
 }
 
 function manualProducts(formData: FormData): FarmProductSelection[] {
@@ -250,6 +304,7 @@ export async function recordCustomerOrder(formData: FormData) {
   await requireLocationManager();
   const admin = createAdminClient();
   const userId = textValue(formData, "userId");
+  const returnTo = customerReturnPath(formData, userId);
   const purchaseMode = textValue(formData, "purchaseMode") === "plan" ? "plan" : "once";
   const requestedBottle = textValue(formData, "bottleChoice");
   const bottleChoice: BottleChoice = requestedBottle === "new"
@@ -265,25 +320,25 @@ export async function recordCustomerOrder(formData: FormData) {
     Number(formData.get(`milkDay${index + 1}`) ?? 0),
   ) as WeeklyMilkSchedule;
 
-  if (!userId) redirect("/farm/locations?error=Choose+a+customer.");
+  if (!userId) redirectWithMessage("/farm/locations", "error", "Choose a customer.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || startDate < earliestStart) {
-    redirect("/farm/locations?error=Choose+a+valid+delivery+start+date.");
+    redirectWithMessage(returnTo, "error", "Choose a valid delivery start date.");
   }
   if (
     purchaseMode === "plan" &&
     (schedule.some((quantity) => !Number.isInteger(quantity) || quantity < 0 || quantity > 5) ||
       schedule.every((quantity) => quantity === 0))
   ) {
-    redirect("/farm/locations?error=Add+a+valid+seven-day+milk+schedule.");
+    redirectWithMessage(returnTo, "error", "Add a valid seven-day milk schedule.");
   }
   if (
     purchaseMode === "once" &&
     (!Number.isInteger(onceMilk) || onceMilk < 0 || onceMilk > 5)
   ) {
-    redirect("/farm/locations?error=Enter+a+valid+milk+quantity.");
+    redirectWithMessage(returnTo, "error", "Enter a valid milk quantity.");
   }
   if (purchaseMode === "once" && onceMilk === 0 && products.length === 0) {
-    redirect("/farm/locations?error=Add+milk+or+at+least+one+farm+product.");
+    redirectWithMessage(returnTo, "error", "Add milk or at least one farm product.");
   }
 
   const { data: profile, error: profileError } = await admin
@@ -293,7 +348,7 @@ export async function recordCustomerOrder(formData: FormData) {
     .maybeSingle();
   if (profileError) throw profileError;
   if (!profile?.phone || !profile.address_line) {
-    redirect("/farm/locations?error=Save+the+customer%27s+phone+and+address+before+recording+an+order.");
+    redirectWithMessage(returnTo, "error", "Save the customer's phone and address before recording an order.");
   }
 
   const pricing = purchaseMode === "plan"
@@ -405,7 +460,8 @@ export async function recordCustomerOrder(formData: FormData) {
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
-  redirect("/farm/locations?message=Order+recorded.+Payment+is+pending.");
+  revalidatePath(`/farm/customers/${userId}`);
+  redirectWithMessage(returnTo, "message", "Order recorded. Payment is pending.");
 }
 
 export async function deleteCustomerProfile(formData: FormData) {
@@ -463,6 +519,8 @@ export async function setOrderMode(formData: FormData) {
   }
 
   const orderId = textValue(formData, "orderId");
+  const userId = textValue(formData, "userId");
+  const returnTo = customerReturnPath(formData, userId);
   const mode = textValue(formData, "mode");
   if (!orderId || !["live", "test"].includes(mode)) {
     redirect("/farm/locations?error=Choose+a+valid+order+mode.");
@@ -523,7 +581,8 @@ export async function setOrderMode(formData: FormData) {
   revalidatePath("/farm/delivery-sheet");
   revalidatePath("/farm/locations");
   revalidatePath("/farm/payments");
-  redirect(`/farm/locations?message=Order+labelled+${mode}.`);
+  if (userId) revalidatePath(`/farm/customers/${userId}`);
+  redirectWithMessage(returnTo, "message", `Order labelled ${mode}.`);
 }
 
 export async function importCustomerProfiles(formData: FormData) {
