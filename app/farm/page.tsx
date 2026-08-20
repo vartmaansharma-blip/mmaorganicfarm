@@ -22,6 +22,7 @@ type DeliveryRow = {
   generated_at: string;
   id: string;
   status: string;
+  visit_key: string;
 };
 
 function capacityPercent(snapshot: CapacitySnapshot | null) {
@@ -40,8 +41,8 @@ export default async function FarmDashboardPage({ searchParams }: { searchParams
   const [profilesResult, plansResult, tomorrowResult, todayResult, routesResult, assignmentsResult, requestsResult, todayDispatchResult] = await Promise.all([
     supabase.from("customer_profiles").select("user_id,address_line,delivery_route_id"),
     supabase.from("delivery_plans").select("user_id").eq("is_test", false).eq("status", "active"),
-    supabase.from("daily_deliveries").select("id,status,generated_at,delivery_route_id,daily_delivery_items(product_key,quantity)").eq("delivery_date", tomorrow).eq("is_test", false),
-    supabase.from("daily_deliveries").select("id,status,delivery_confirmed,bottle_return_required,bottle_returned,assigned_driver_id").eq("delivery_date", today).eq("is_test", false),
+    supabase.from("daily_deliveries").select("id,visit_key,status,generated_at,delivery_route_id,daily_delivery_items(product_key,quantity)").eq("delivery_date", tomorrow).eq("is_test", false),
+    supabase.from("daily_deliveries").select("id,visit_key,status,delivery_confirmed,bottle_return_required,bottle_returned,assigned_driver_id").eq("delivery_date", today).eq("is_test", false),
     supabase.from("delivery_routes").select("id,name").eq("active", true),
     supabase.from("route_driver_assignments").select("route_id,driver_id"),
     supabase.from("cancellation_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
@@ -58,8 +59,13 @@ export default async function FarmDashboardPage({ searchParams }: { searchParams
   const todayStops = todayResult.data ?? [];
   const unrouted = profiles.filter((profile) => activeCustomerIds.has(profile.user_id) && !profile.delivery_route_id).length;
   const missingAddress = profiles.filter((profile) => activeCustomerIds.has(profile.user_id) && !profile.address_line).length;
-  const todayOpen = todayStops.filter((stop) => !stop.delivery_confirmed && !["delivered", "cancelled", "failed"].includes(stop.status)).length;
+  const todayOpen = new Set(todayStops
+    .filter((stop) => !stop.delivery_confirmed && !["delivered", "cancelled", "failed"].includes(stop.status))
+    .map((stop) => stop.visit_key)).size;
   const todayBottleReturns = todayStops.filter((stop) => stop.bottle_return_required && !stop.bottle_returned).length;
+  const tomorrowVisits = new Set(tomorrowStops
+    .filter((stop) => stop.status !== "cancelled")
+    .map((stop) => stop.visit_key)).size;
   const assignedRouteIds = new Set((assignmentsResult.data ?? []).map((assignment) => assignment.route_id));
   const routesWithoutDriver = (routesResult.data ?? []).filter((route) => !assignedRouteIds.has(route.id)).length;
   const generatedAt = tomorrowStops.map((stop) => stop.generated_at).sort().at(-1);
@@ -78,8 +84,8 @@ export default async function FarmDashboardPage({ searchParams }: { searchParams
     {params.error ? <p className={`${styles.notice} ${styles.error}`}>{params.error}</p> : null}
 
     <section className={styles.metrics} aria-label="Farm status">
-      <article data-attention={todayOpen > 0}><span>Today still open</span><strong>{todayOpen}</strong><small>delivery stops</small></article>
-      <article><span>Tomorrow prepared</span><strong>{tomorrowStops.length}</strong><small>{generatedAt ? "sheet generated" : "generate when ready"}</small></article>
+      <article data-attention={todayOpen > 0}><span>Today still open</span><strong>{todayOpen}</strong><small>doorstep visits</small></article>
+      <article><span>Tomorrow prepared</span><strong>{tomorrowVisits}</strong><small>{generatedAt ? "visits generated" : "generate when ready"}</small></article>
       <article data-attention={unrouted > 0}><span>Need a route</span><strong>{unrouted}</strong><small>active customers</small></article>
       <article data-attention={exceptionCount > 0}><span>Exceptions</span><strong>{exceptionCount}</strong><small>manager decisions</small></article>
     </section>
@@ -108,7 +114,7 @@ export default async function FarmDashboardPage({ searchParams }: { searchParams
     </section>
 
     <section className={styles.readiness}>
-      <div><p>Tomorrow&apos;s sheet</p><h2>{generatedAt ? "Prepared" : "Not generated"}</h2><span>{generatedAt ? `${tomorrowStops.length} paid delivery stops are ready.` : "Generate after route and capacity exceptions are resolved."}</span></div>
+      <div><p>Tomorrow&apos;s sheet</p><h2>{generatedAt ? "Prepared" : "Not generated"}</h2><span>{generatedAt ? `${tomorrowVisits} paid doorstep ${tomorrowVisits === 1 ? "visit is" : "visits are"} ready.` : "Generate after route and capacity exceptions are resolved."}</span></div>
       <div className={styles.readinessActions}><Link href="/farm/routes">Check routes</Link><Link href={`/farm/delivery-sheet?date=${tomorrow}`}>Open tomorrow</Link></div>
     </section>
   </main>;

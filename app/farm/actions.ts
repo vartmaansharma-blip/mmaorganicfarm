@@ -58,7 +58,7 @@ async function prepareDeliverySheet(deliveryDate: string) {
     `/farm?message=${encodeURIComponent(
       count === 0
         ? "Sheet checked. No active paid deliveries are scheduled for tomorrow."
-        : `${count} delivery ${count === 1 ? "stop" : "stops"} prepared for tomorrow.`,
+        : `${count} paid delivery ${count === 1 ? "line" : "lines"} refreshed for tomorrow. Open the sheet to review doorstep visits.`,
     )}`,
   );
 }

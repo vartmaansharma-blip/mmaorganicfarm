@@ -31,6 +31,7 @@ type CalendarPageProps = {
     date?: string;
     error?: string;
     message?: string;
+    plan?: string;
   }>;
 };
 
@@ -43,18 +44,17 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
   if (!user) redirect("/sign-in?next=%2Fcalendar");
 
-  const { data: plan } = await supabase
+  const { data: plans } = await supabase
     .from("delivery_plans")
     .select(
       "id, status, start_date, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
 
-  if (!plan) redirect("/milk");
+  if (!plans?.length) redirect("/milk");
+  const plan = plans.find((candidate) => candidate.id === params.plan) ?? plans[0];
 
   const calendar = buildDeliveryCalendar({
     days: 7,
@@ -117,6 +117,28 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           <span className={styles.status}>{statusLabel} · 30-day plan</span>
         </div>
 
+        {plans.length > 1 ? (
+          <nav className={styles.planSelector} aria-label="Choose a paid plan">
+            {plans.map((candidate, index) => {
+              const candidateRemaining = Math.max(
+                0,
+                Number(candidate.purchased_deliveries) - Number(candidate.delivered_deliveries),
+              );
+              return (
+                <Link
+                  aria-current={candidate.id === plan.id ? "page" : undefined}
+                  href={`/calendar?plan=${candidate.id}&date=${selectedDay.date}`}
+                  key={candidate.id}
+                >
+                  <span>Plan {plans.length - index}</span>
+                  <strong>{candidateRemaining} remaining</strong>
+                  <small>Started {formatPlanStartDate(candidate.start_date)}</small>
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
+
         <dl className={styles.balance}>
           <div>
             <dt>Purchased</dt>
@@ -165,7 +187,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                 <Link
                   aria-current={isSelected ? "date" : undefined}
                   className={isSelected ? styles.daySelected : styles.dayCard}
-                  href={`/calendar?date=${day.date}`}
+                  href={`/calendar?plan=${plan.id}&date=${day.date}`}
                   key={day.date}
                 >
                   <time dateTime={day.date}>{day.dayLabel}</time>

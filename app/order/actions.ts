@@ -176,6 +176,15 @@ export async function saveDeliveryDetails(formData: FormData) {
 
   const fullName =
     user.user_metadata.full_name ?? user.user_metadata.name ?? "Customer";
+  const { data: currentProfile, error: profileReadError } = await supabase
+    .from("customer_profiles")
+    .select("address_line")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (profileReadError) {
+    redirect(orderUrl("error", "We could not check your delivery route. Please try again.", purchase, bottle, milk, extras, schedule, start));
+  }
+  const addressChanged = (currentProfile?.address_line ?? "").trim().toLowerCase() !== address.toLowerCase();
   const { error } = await supabase.from("customer_profiles").upsert(
     {
       user_id: user.id,
@@ -203,6 +212,14 @@ export async function saveDeliveryDetails(formData: FormData) {
         start,
       ),
     );
+  }
+
+  const { error: routeError } = await supabase.rpc("refresh_customer_route", {
+    p_force_reroute: addressChanged,
+    p_user_id: user.id,
+  });
+  if (routeError) {
+    redirect(orderUrl("error", "Your details were saved, but the farm route could not be refreshed.", purchase, bottle, milk, extras, schedule, start));
   }
 
   let deliveryPlanId: string | null = null;

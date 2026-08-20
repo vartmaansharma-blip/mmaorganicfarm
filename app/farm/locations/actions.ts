@@ -339,6 +339,12 @@ export async function assignCustomerLocation(formData: FormData) {
   if (error) throw error;
   if (!data) throw new Error("The customer profile was not updated.");
 
+  const { error: routeSyncError } = await supabase.rpc("refresh_customer_route", {
+    p_force_reroute: false,
+    p_user_id: userId,
+  });
+  if (routeSyncError) throw routeSyncError;
+
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
   revalidatePath(`/farm/customers/${userId}`);

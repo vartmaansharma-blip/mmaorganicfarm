@@ -48,9 +48,16 @@ type DeliveryRow = {
   route_stop_order: number | null;
   status: string;
   user_id: string;
+  visit_key: string;
 };
 
-type DeliveryVisit = DeliveryRow & { deliveryIds: string[] };
+type DeliveryVisit = DeliveryRow & {
+  bottlesExpected: number;
+  bottlesReturned: number;
+  deliveryIds: string[];
+  oneTimeOrderLines: number;
+  planLines: number;
+};
 
 type RouteRow = {
   area_id: string;
@@ -81,7 +88,7 @@ type RouteGroup = {
   name: string;
   routeId: string | null;
   stopCapacity: number;
-  stops: DeliveryRow[];
+  stops: DeliveryVisit[];
 };
 
 function validDate(value: string | undefined) {
@@ -129,8 +136,7 @@ function routeLoadLabel(stops: DeliveryRow[]) {
 function combineCustomerVisits(stops: DeliveryRow[]): DeliveryVisit[] {
   const grouped = new Map<string, DeliveryRow[]>();
   stops.forEach((stop) => {
-    const key = [stop.user_id, stop.delivery_route_id ?? "unassigned", stop.address_snapshot ?? ""].join(":");
-    grouped.set(key, [...(grouped.get(key) ?? []), stop]);
+    grouped.set(stop.visit_key, [...(grouped.get(stop.visit_key) ?? []), stop]);
   });
 
   return [...grouped.values()].map((rows) => {
@@ -143,18 +149,29 @@ function combineCustomerVisits(stops: DeliveryRow[]): DeliveryVisit[] {
         quantity: Number(current?.quantity ?? 0) + Number(item.quantity),
       });
     }));
-    const delivered = rows.every((row) => row.delivery_confirmed || row.status === "delivered");
+    const actionableRows = rows.filter((row) => row.status !== "cancelled");
+    const delivered = actionableRows.length > 0 && actionableRows.every(
+      (row) => row.delivery_confirmed || row.status === "delivered",
+    );
     const cancelled = rows.every((row) => row.status === "cancelled");
-    const failed = rows.some((row) => row.status === "failed");
+    const failed = actionableRows.some((row) => row.status === "failed");
     const onRoute = rows.some((row) => row.status === "out_for_delivery");
+    const bottlesExpected = actionableRows.filter((row) => row.bottle_return_required).length;
+    const bottlesReturned = rows.filter(
+      (row) => row.status !== "cancelled" && row.bottle_return_required && row.bottle_returned,
+    ).length;
     return {
       ...first,
-      bottle_return_required: rows.some((row) => row.bottle_return_required),
-      bottle_returned: rows.every((row) => !row.bottle_return_required || row.bottle_returned),
+      bottle_return_required: bottlesExpected > 0,
+      bottle_returned: bottlesExpected === bottlesReturned,
+      bottlesExpected,
+      bottlesReturned,
       daily_delivery_items: [...items.values()],
       delivery_confirmed: delivered,
       deliveryIds: rows.map((row) => row.id),
       driver_note: [...new Set(rows.map((row) => row.driver_note).filter(Boolean))].join(" · ") || null,
+      oneTimeOrderLines: rows.filter((row) => row.order_id).length,
+      planLines: rows.filter((row) => row.plan_id).length,
       status: delivered ? "delivered" : cancelled ? "cancelled" : failed ? "failed" : onRoute ? "out_for_delivery" : first.status,
     };
   });
@@ -180,7 +197,7 @@ export default async function DeliverySheetPage({
   let deliveriesQuery = supabase
     .from("daily_deliveries")
     .select(
-      "id, user_id, plan_id, order_id, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)",
+      "id, user_id, plan_id, order_id, visit_key, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)",
     )
     .eq("delivery_date", deliveryDate)
     .eq("is_test", false);
@@ -284,8 +301,9 @@ export default async function DeliverySheetPage({
 
   const grouped = new Map<string, Map<string, RouteGroup>>();
   const totals = new Map<string, number>();
+  const visits = combineCustomerVisits(deliveries);
 
-  deliveries.forEach((delivery) => {
+  visits.forEach((delivery) => {
     const areaName =
       resolveDeliveryArea(
         delivery.delivery_area_id,
@@ -316,6 +334,9 @@ export default async function DeliverySheetPage({
     areaRoutes.set(routeKey, routeGroup);
     grouped.set(areaName, areaRoutes);
 
+  });
+
+  deliveries.forEach((delivery) => {
     (delivery.daily_delivery_items ?? []).forEach((item) => {
       totals.set(
         item.product_key,
@@ -330,7 +351,7 @@ export default async function DeliverySheetPage({
       routes: [...routeMap.values()]
         .map((route) => ({
           ...route,
-          stops: combineCustomerVisits(route.stops.sort((a, b) => {
+          stops: route.stops.sort((a, b) => {
             const savedOrder =
               (a.route_stop_order ?? Number.MAX_SAFE_INTEGER) -
               (b.route_stop_order ?? Number.MAX_SAFE_INTEGER);
@@ -340,7 +361,7 @@ export default async function DeliverySheetPage({
               "en-IN",
               { sensitivity: "base" },
             );
-          })),
+          }),
         }))
         .sort((a, b) => {
           if (!a.routeId) return 1;
@@ -350,21 +371,27 @@ export default async function DeliverySheetPage({
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const visits = combineCustomerVisits(deliveries);
   const delivered = visits.filter(
     (stop) => stop.delivery_confirmed || stop.status === "delivered",
   );
   const unfulfilled = visits.filter(
     (stop) => !stop.delivery_confirmed && !["delivered", "cancelled"].includes(stop.status),
   );
-  const bottlesOutstanding = visits.filter(
-    (stop) => stop.bottle_return_required && !stop.bottle_returned,
+  const bottlesOutstanding = visits.filter((visit) => visit.bottlesReturned < visit.bottlesExpected);
+  const bottlesOutstandingCount = bottlesOutstanding.reduce(
+    (sum, visit) => sum + visit.bottlesExpected - visit.bottlesReturned,
+    0,
   );
-  const unassigned = deliveries.filter((stop) => !stop.assigned_driver_id);
+  const unassigned = visits.filter((visit) => {
+    if (visit.assigned_driver_id) return false;
+    if (!visit.delivery_route_id) return true;
+    return !dailyAssignmentByRoute.get(visit.delivery_route_id)?.driver_id &&
+      !defaultAssignmentByRoute.get(visit.delivery_route_id);
+  });
   const plannedStops = deliveries.filter((stop) => stop.plan_id).length;
   const oneTimeStops = deliveries.filter((stop) => stop.order_id).length;
-  const unrouted = deliveries.filter((stop) => !stop.delivery_route_id).length;
-  const missingAddresses = deliveries.filter((stop) => !stop.address_snapshot?.trim()).length;
+  const unrouted = visits.filter((visit) => !visit.delivery_route_id).length;
+  const missingAddresses = visits.filter((visit) => !visit.address_snapshot?.trim()).length;
   const routeGroups = areas.flatMap((area) => area.routes);
   const routesWithoutDrivers = routeGroups.filter(
     (route) => route.routeId && !route.assignedDriverId,
@@ -372,7 +399,7 @@ export default async function DeliverySheetPage({
   const overloadedRoutes = routeGroups.filter(
     (route) => route.routeId && route.stops.length > route.stopCapacity,
   ).length;
-  const releaseBlockers = unrouted + missingAddresses + routesWithoutDrivers;
+  const releaseBlockers = unrouted + missingAddresses + routesWithoutDrivers + overloadedRoutes;
 
   return (
     <main className={styles.page}>
@@ -431,7 +458,7 @@ export default async function DeliverySheetPage({
                 : releaseBlockers
                   ? `${releaseBlockers} blocking ${releaseBlockers === 1 ? "issue" : "issues"} must be resolved before release.`
                   : overloadedRoutes
-                    ? `${overloadedRoutes} ${overloadedRoutes === 1 ? "route exceeds" : "routes exceed"} the planned stop limit. Review workload before release.`
+                    ? `${overloadedRoutes} ${overloadedRoutes === 1 ? "route exceeds" : "routes exceed"} the planned visit limit.`
                   : "Planned and paid one-time deliveries are combined and ready to check."}
             </span>
           </div>
@@ -447,7 +474,7 @@ export default async function DeliverySheetPage({
               <form action={releaseDailyDispatch}>
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
-                <button disabled={releaseBlockers > 0 || deliveries.length === 0} type="submit">Release routes</button>
+                <button disabled={releaseBlockers > 0 || visits.length === 0} type="submit">Release routes</button>
               </form>
             ) : null}
             {dispatch?.status === "released" ? (
@@ -463,11 +490,11 @@ export default async function DeliverySheetPage({
 
       <section className={styles.summary} aria-label="Delivery totals">
         <div><strong>{visits.length}</strong><span>Doorstep visits</span></div>
-        <div><strong>{plannedStops}</strong><span>Planned</span></div>
-        <div><strong>{oneTimeStops}</strong><span>Paid one-time</span></div>
+        <div><strong>{plannedStops}</strong><span>Plan lines</span></div>
+        <div><strong>{oneTimeStops}</strong><span>One-time orders</span></div>
         <div><strong>{delivered.length}</strong><span>Delivered</span></div>
         <div><strong>{unfulfilled.length}</strong><span>Not fulfilled</span></div>
-        <div><strong>{bottlesOutstanding.length}</strong><span>Bottles due</span></div>
+        <div><strong>{bottlesOutstandingCount}</strong><span>Bottles due</span></div>
         {[...totals.entries()].map(([key, quantity]) => (
           <div key={key}>
             <strong>{quantity}</strong>
@@ -544,7 +571,7 @@ export default async function DeliverySheetPage({
 
                   <ol className={styles.stopList}>
                     {route.stops.map((stop, index) => (
-                      <li className={styles.stopCard} key={stop.id}>
+                      <li className={styles.stopCard} key={stop.visit_key}>
                         <div className={styles.stopTop}>
                           <span className={styles.stopNumber}>{stop.route_stop_order ?? index + 1}</span>
                           <span className={`${styles.status} ${stop.delivery_confirmed ? styles.statusDone : ""}`}>
@@ -554,7 +581,13 @@ export default async function DeliverySheetPage({
 
                         <div className={styles.customer}>
                           <strong>{stop.customer_name}</strong>
-                          {(stop as DeliveryVisit).deliveryIds.length > 1 ? <span>{(stop as DeliveryVisit).deliveryIds.length} paid plans combined into this visit</span> : null}
+                          {stop.planLines + stop.oneTimeOrderLines > 1 ? (
+                            <span>
+                              {stop.planLines ? `${stop.planLines} plan ${stop.planLines === 1 ? "line" : "lines"}` : ""}
+                              {stop.planLines && stop.oneTimeOrderLines ? " · " : ""}
+                              {stop.oneTimeOrderLines ? `${stop.oneTimeOrderLines} one-time ${stop.oneTimeOrderLines === 1 ? "order" : "orders"}` : ""}
+                            </span>
+                          ) : null}
                           {stop.phone_snapshot ? (
                             <a href={phoneUrl(stop.phone_snapshot)}>Call {stop.phone_snapshot}</a>
                           ) : (
@@ -590,7 +623,7 @@ export default async function DeliverySheetPage({
 
                         {stop.status !== "cancelled" ? (
                           <form action={recordDeliveryStop} className={styles.doorstepForm}>
-                            {(stop as DeliveryVisit).deliveryIds.map((deliveryId) => <input key={deliveryId} name="deliveryId" type="hidden" value={deliveryId} />)}
+                            {stop.deliveryIds.map((deliveryId) => <input key={deliveryId} name="deliveryId" type="hidden" value={deliveryId} />)}
                             <input name="deliveryDate" type="hidden" value={deliveryDate} />
                             <input name="area" type="hidden" value={selectedArea} />
                             <p>At the doorstep</p>
@@ -604,14 +637,16 @@ export default async function DeliverySheetPage({
                               <span>Delivery completed</span>
                             </label>
                             {stop.bottle_return_required ? (
-                              <label className={styles.checkLabel}>
+                              <label className={styles.noteField}>
+                                <span>Bottles returned ({stop.bottlesExpected} due)</span>
                                 <input
-                                  defaultChecked={stop.bottle_returned}
-                                  name="bottleReturned"
-                                  type="checkbox"
-                                  value="yes"
+                                  defaultValue={stop.bottlesReturned}
+                                  max={stop.bottlesExpected}
+                                  min={0}
+                                  name="bottlesReturned"
+                                  required
+                                  type="number"
                                 />
-                                <span>Bottle returned</span>
                               </label>
                             ) : (
                               <p className={styles.notRequired}>No bottle return due</p>
@@ -654,11 +689,11 @@ export default async function DeliverySheetPage({
             <p>End-of-day control</p>
             <h2 id="end-report-title">What still needs attention</h2>
           </div>
-          <span>{unfulfilled.length + bottlesOutstanding.length + unassigned.length + overloadedRoutes} exceptions</span>
+          <span>{unfulfilled.length + bottlesOutstandingCount + unassigned.length + overloadedRoutes} exceptions</span>
         </header>
         <div className={styles.reportMetrics}>
           <article><strong>{unfulfilled.length}</strong><span>Deliveries not fulfilled</span></article>
-          <article><strong>{bottlesOutstanding.length}</strong><span>Bottles still with customers</span></article>
+          <article><strong>{bottlesOutstandingCount}</strong><span>Bottles still with customers</span></article>
           {managerView ? <article><strong>{unassigned.length}</strong><span>Stops without a driver</span></article> : null}
           {managerView ? <article><strong>{overloadedRoutes}</strong><span>Routes over stop limit</span></article> : null}
         </div>
@@ -668,7 +703,7 @@ export default async function DeliverySheetPage({
               <span key={`delivery-${stop.id}`}><strong>Delivery:</strong> {stop.customer_name} · {stop.address_snapshot ?? "address missing"}</span>
             ))}
             {bottlesOutstanding.map((stop) => (
-              <span key={`bottle-${stop.id}`}><strong>Bottle:</strong> {stop.customer_name} · return not recorded</span>
+              <span key={`bottle-${stop.visit_key}`}><strong>Bottle:</strong> {stop.customer_name} · {stop.bottlesExpected - stop.bottlesReturned} return {stop.bottlesExpected - stop.bottlesReturned === 1 ? "is" : "are"} not recorded</span>
             ))}
             {managerView ? unassigned.map((stop) => (
               <span key={`driver-${stop.id}`}><strong>Driver:</strong> {stop.customer_name} · route not assigned</span>

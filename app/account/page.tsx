@@ -36,16 +36,14 @@ export default async function AccountPage({
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { data: deliveryPlan } = await supabase
+  const { data: deliveryPlans } = await supabase
     .from("delivery_plans")
     .select(
       "id, status, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
   const [
     { data: notifications },
     { data: cancellationRequests },
@@ -81,6 +79,11 @@ export default async function AccountPage({
   const hasPhone = Boolean(profile?.phone?.trim());
   const hasAddress = Boolean(profile?.address_line?.trim());
   const hasDeliveryDetails = hasPhone || hasAddress;
+  const deliveryPlan = deliveryPlans?.[0] ?? null;
+  const totalPlanBalance = (deliveryPlans ?? []).reduce(
+    (total, plan) => total + Math.max(0, Number(plan.purchased_deliveries) - Number(plan.delivered_deliveries)),
+    0,
+  );
   const milkByDay = new Map(
     (deliveryPlan?.weekly_delivery_items ?? [])
       .filter((item) => item.product_key === "milk")
@@ -239,10 +242,44 @@ export default async function AccountPage({
             <div className={styles.planHeading}>
               <div>
                 <h2 id="plan-heading">Your weekly delivery plan</h2>
-                <p>Milk and farm add-ons saved together in one routine.</p>
+                <p>
+                  {deliveryPlans?.length === 1
+                    ? "Milk and farm add-ons saved together in one routine."
+                    : `${deliveryPlans?.length ?? 0} paid plans · ${totalPlanBalance} deliveries remaining in total.`}
+                </p>
               </div>
               <span className={styles.planStatus}>{planStatus}</span>
             </div>
+
+            {(deliveryPlans?.length ?? 0) > 1 ? (
+              <div className={styles.planSwitcher} aria-label="Current paid plans">
+                {deliveryPlans?.map((currentPlan, index) => {
+                  const currentRemaining = Math.max(
+                    0,
+                    Number(currentPlan.purchased_deliveries) - Number(currentPlan.delivered_deliveries),
+                  );
+                  return (
+                    <article key={currentPlan.id}>
+                      <div>
+                        <span>Plan {deliveryPlans.length - index}</span>
+                        <strong>{currentRemaining} deliveries remaining</strong>
+                        <small>Started {formatPlanStartDate(currentPlan.start_date)} · {currentPlan.status.replaceAll("_", " ")}</small>
+                      </div>
+                      <Link href={`/calendar?plan=${currentPlan.id}`}>Open calendar</Link>
+                      <details className={styles.cancelRequest}>
+                        <summary>Request cancellation</summary>
+                        <p>The farm reviews preparation and dispatch first. Paid milk is not automatically refunded.</p>
+                        <form action={requestPlanCancellation}>
+                          <input name="planId" type="hidden" value={currentPlan.id} />
+                          <label>Reason<textarea name="reason" required minLength={3} rows={3} /></label>
+                          <button type="submit">Send request</button>
+                        </form>
+                      </details>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : null}
 
             <dl className={styles.planSummary}>
               <div>
@@ -278,7 +315,7 @@ export default async function AccountPage({
                   <h3 id="upcoming-deliveries-heading">Next 7 days</h3>
                   <p>One-day quantity changes and skips appear here.</p>
                 </div>
-                <Link href="/calendar">Change a date</Link>
+                <Link href={`/calendar?plan=${deliveryPlan.id}`}>Change a date</Link>
               </div>
               <div className={styles.upcomingGrid}>
                 {upcomingDeliveries.map((day) => {
@@ -292,7 +329,7 @@ export default async function AccountPage({
 
                   return (
                     <Link
-                      href={`/calendar?date=${day.date}`}
+                      href={`/calendar?plan=${deliveryPlan.id}&date=${day.date}`}
                       key={day.date}
                     >
                       <time dateTime={day.date}>{day.dayLabel}</time>
@@ -354,14 +391,14 @@ export default async function AccountPage({
               leave your balance unchanged.
             </p>
             <div className={styles.planActions}>
-              <Link className={styles.openCalendar} href="/calendar">
+              <Link className={styles.openCalendar} href={`/calendar?plan=${deliveryPlan.id}`}>
                 Open delivery calendar
               </Link>
               <Link className={styles.editPlan} href="/milk?edit=plan">
                 Edit normal week
               </Link>
             </div>
-            <details className={styles.cancelRequest}>
+            {(deliveryPlans?.length ?? 0) === 1 ? <details className={styles.cancelRequest}>
               <summary>Request plan cancellation</summary>
               <p>The farm reviews the request against preparation and dispatch status. Paid milk is not automatically refunded.</p>
               <form action={requestPlanCancellation}>
@@ -372,7 +409,7 @@ export default async function AccountPage({
                 </label>
                 <button type="submit">Send request</button>
               </form>
-            </details>
+            </details> : null}
           </section>
         ) : null}
 

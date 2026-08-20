@@ -122,6 +122,11 @@ export async function assignRouteDriver(formData: FormData) {
   }, { onConflict: "route_id" });
   if (error) throw error;
 
+  const { error: syncError } = await supabase.rpc("sync_route_default_driver", {
+    p_route_id: routeId,
+  });
+  if (syncError) throw syncError;
+
   revalidatePath("/farm");
   revalidatePath("/farm/routes");
   revalidatePath("/farm/delivery-sheet");

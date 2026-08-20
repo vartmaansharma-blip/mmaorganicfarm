@@ -255,6 +255,44 @@
   font-weight: 650;
 }
 
+.planSwitcher {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.planSwitcher > article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #dededb;
+  border-radius: 6px;
+  background: #fafaf8;
+}
+
+.planSwitcher > article > div {
+  display: grid;
+  gap: 3px;
+}
+
+.planSwitcher span,
+.planSwitcher small {
+  color: #6f6e69;
+  font-size: 12px;
+}
+
+.planSwitcher a {
+  color: #1769aa;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.planSwitcher details {
+  grid-column: 1 / -1;
+}
+
 .planSummary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

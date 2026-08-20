@@ -93,6 +93,7 @@ type DeliveryRow = {
   id: string;
   route_stop_order: number | null;
   status: string;
+  visit_key: string;
 };
 
 type CapacityDay = {
@@ -190,7 +191,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
       .order("updated_at", { ascending: false }),
     supabase
       .from("daily_deliveries")
-      .select("id, delivery_date, status, completed_at, route_stop_order, daily_delivery_items(product_key, quantity, unit)")
+      .select("id, visit_key, delivery_date, status, completed_at, route_stop_order, daily_delivery_items(product_key, quantity, unit)")
       .eq("user_id", userId)
       .eq("is_test", false)
       .order("delivery_date", { ascending: false })
@@ -221,6 +222,37 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
   const payments = (paymentsResult.data ?? []) as PaymentRow[];
   const plans = (plansResult.data ?? []) as PlanRow[];
   const deliveries = (deliveriesResult.data ?? []) as DeliveryRow[];
+  const deliveryVisits = [...deliveries.reduce((grouped, delivery) => {
+    const rows = grouped.get(delivery.visit_key) ?? [];
+    grouped.set(delivery.visit_key, [...rows, delivery]);
+    return grouped;
+  }, new Map<string, DeliveryRow[]>()).values()].map((rows) => {
+    const first = rows[0];
+    const items = new Map<string, DeliveryItem>();
+    rows.forEach((row) => row.daily_delivery_items.forEach((item) => {
+      const current = items.get(item.product_key);
+      items.set(item.product_key, {
+        ...item,
+        quantity: Number(current?.quantity ?? 0) + Number(item.quantity),
+      });
+    }));
+    const actionable = rows.filter((row) => row.status !== "cancelled");
+    const status = actionable.length && actionable.every((row) => row.status === "delivered")
+      ? "delivered"
+      : rows.every((row) => row.status === "cancelled")
+        ? "cancelled"
+        : actionable.some((row) => row.status === "failed")
+          ? "failed"
+          : actionable.some((row) => row.status === "out_for_delivery")
+            ? "out_for_delivery"
+            : first.status;
+    return {
+      ...first,
+      completed_at: rows.map((row) => row.completed_at).filter(Boolean).sort().at(-1) ?? null,
+      daily_delivery_items: [...items.values()],
+      status,
+    };
+  });
   const capacityDays = capacityResult.error ? [] : (capacityResult.data ?? []) as CapacityDay[];
   const livePayments = payments;
   const paidOrders = orders;
@@ -238,28 +270,28 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
     order.status === "paid" ? Number(order.total_paise) : 0,
   );
   const lifetimePaid = paidOrders.reduce((sum, order) => sum + receivedForOrder(order), 0);
-  const completedDeliveries = deliveries.filter((delivery) => delivery.status === "delivered").length;
-  const failedDeliveries = deliveries.filter((delivery) => delivery.status === "failed").length;
-  const upcomingDeliveries = deliveries
+  const completedDeliveries = deliveryVisits.filter((delivery) => delivery.status === "delivered").length;
+  const failedDeliveries = deliveryVisits.filter((delivery) => delivery.status === "failed").length;
+  const upcomingDeliveries = deliveryVisits
     .filter((delivery) => delivery.delivery_date >= today && !["cancelled", "delivered", "failed"].includes(delivery.status))
     .sort((a, b) => a.delivery_date.localeCompare(b.delivery_date));
   const nextDelivery = upcomingDeliveries[0];
-  const weeklyMilk = new Map(
-    (activePlan?.weekly_delivery_items ?? [])
-      .filter((item) => item.product_key === "milk")
-      .map((item) => [Number(item.day_of_week), Number(item.quantity)]),
-  );
-  const scheduledNextQuantity = activePlan
-    ? weeklyMilk.get(weekdayFromYmd(nextDeliveryDate)) ?? 0
-    : 0;
+  const weeklyMilk = new Map<number, number>();
+  plans.forEach((plan) => plan.weekly_delivery_items
+    .filter((item) => item.product_key === "milk")
+    .forEach((item) => weeklyMilk.set(
+      Number(item.day_of_week),
+      (weeklyMilk.get(Number(item.day_of_week)) ?? 0) + Number(item.quantity),
+    )));
+  const scheduledNextQuantity = weeklyMilk.get(weekdayFromYmd(nextDeliveryDate)) ?? 0;
   const nextDeliveryLabel = nextDelivery
     ? formatCalendarDate(nextDelivery.delivery_date)
     : scheduledNextQuantity > 0
       ? formatCalendarDate(nextDeliveryDate)
       : "Not scheduled";
-  const remainingDeliveries = activePlan
-    ? Math.max(0, Number(activePlan.purchased_deliveries) - Number(activePlan.delivered_deliveries))
-    : 0;
+  const purchasedDeliveries = plans.reduce((sum, plan) => sum + Number(plan.purchased_deliveries), 0);
+  const deliveredDeliveries = plans.reduce((sum, plan) => sum + Number(plan.delivered_deliveries), 0);
+  const remainingDeliveries = Math.max(0, purchasedDeliveries - deliveredDeliveries);
   const accountState = activePlan?.status === "active"
       ? "Active customer"
       : paidOrders.length
@@ -297,7 +329,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
         <a href="#overview">Overview</a>
         <a href="#orders">Paid orders <span>{paidOrders.length}</span></a>
         <a href="#payments">Payments <span>{livePayments.length}</span></a>
-        <a href="#deliveries">Deliveries <span>{deliveries.length}</span></a>
+        <a href="#deliveries">Deliveries <span>{deliveryVisits.length}</span></a>
         <a href="#profile">Customer details</a>
       </nav>
 
@@ -310,13 +342,13 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
 
       <section className={styles.splitGrid}>
         <article className={styles.card}>
-          <div className={styles.cardHeading}><div><span>Current service</span><h2>{activePlan ? "Delivery plan" : "No active plan"}</h2></div><b data-state={activePlan?.status ?? "none"}>{activePlan ? titleCase(activePlan.status) : "Not active"}</b></div>
+          <div className={styles.cardHeading}><div><span>Current service</span><h2>{activePlan ? `${plans.length} paid ${plans.length === 1 ? "plan" : "plans"}` : "No active plan"}</h2></div><b data-state={activePlan?.status ?? "none"}>{activePlan ? titleCase(activePlan.status) : "Not active"}</b></div>
           {activePlan ? (
             <>
               <div className={styles.planProgress}>
                 <div><strong>{remainingDeliveries}</strong><span>deliveries remaining</span></div>
-                <meter min={0} max={activePlan.purchased_deliveries} value={activePlan.delivered_deliveries}>{activePlan.delivered_deliveries}</meter>
-                <small>{activePlan.delivered_deliveries} completed of {activePlan.purchased_deliveries}</small>
+                <meter min={0} max={purchasedDeliveries} value={deliveredDeliveries}>{deliveredDeliveries}</meter>
+                <small>{deliveredDeliveries} completed of {purchasedDeliveries} across all paid plans</small>
               </div>
               <div className={styles.weekSchedule}>
                 {MILK_PLAN_DAYS.map((day, index) => <span key={day.short}><small>{day.short}</small><strong>{weeklyMilk.get(index + 1) ? `${weeklyMilk.get(index + 1)} L` : "—"}</strong></span>)}
@@ -381,10 +413,10 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
 
       <section className={styles.section} id="deliveries">
         <div className={styles.sectionHeading}><div><span>Service timeline</span><h2>Deliveries</h2></div><Link href="/farm/delivery-sheet">Open delivery sheet</Link></div>
-        {deliveries.length ? <details className={styles.disclosure}>
-          <summary><span><strong>View delivery timeline</strong><small>{deliveries.length} generated stops · newest first</small></span><b aria-hidden="true">⌄</b></summary>
+        {deliveryVisits.length ? <details className={styles.disclosure}>
+          <summary><span><strong>View delivery timeline</strong><small>{deliveryVisits.length} doorstep visits · newest first</small></span><b aria-hidden="true">⌄</b></summary>
           <div className={styles.deliveryTimeline}>
-          {deliveries.map((delivery) => <article key={delivery.id}>
+          {deliveryVisits.map((delivery) => <article key={delivery.visit_key}>
             <span className={styles.timelineMark} data-state={delivery.status} />
             <div><strong>{formatCalendarDate(delivery.delivery_date)}</strong><small>{delivery.daily_delivery_items.map((item) => `${productName(item.product_key)} ${quantityLabel(item.quantity, item.unit)}`).join(" · ") || "No items recorded"}</small></div>
             <div><b data-state={delivery.status}>{titleCase(delivery.status)}</b><small>{delivery.completed_at ? formatDateTime(delivery.completed_at) : delivery.route_stop_order ? `Route stop ${delivery.route_stop_order}` : "Awaiting route position"}</small></div>

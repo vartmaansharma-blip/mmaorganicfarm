@@ -86,6 +86,10 @@ const operationsSchemaUrl = new URL(
   "../supabase/operations_completion.sql",
   import.meta.url,
 );
+const operationalVisitsSchemaUrl = new URL(
+  "../supabase/operational_delivery_visits.sql",
+  import.meta.url,
+);
 const farmCancellationsUrl = new URL(
   "../app/farm/cancellations/page.tsx",
   import.meta.url,
@@ -509,7 +513,7 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountPage, /One-day quantity changes and skips appear here/);
   assert.match(accountPage, /Milk skipped/);
   assert.match(accountPage, /remainingDeliveries/);
-  assert.match(accountPage, /href="\/calendar"/);
+  assert.match(accountPage, /href=\{`\/calendar\?plan=\$\{deliveryPlan\.id\}`\}/);
   assert.match(accountPage, /Open delivery calendar/);
   assert.match(accountPage, /Awaiting confirmation/);
   assert.match(accountPage, /href="\/milk\?edit=plan"/);
@@ -826,7 +830,7 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(sheet, /All areas/);
   assert.match(sheet, /At the doorstep/);
   assert.match(sheet, /Delivery completed/);
-  assert.match(sheet, /Bottle returned/);
+  assert.match(sheet, /Bottles returned/);
   assert.match(sheet, /End-of-day control/);
   assert.match(sheet, /Bottles still with customers/);
   assert.match(sheetActions, /assignRouteDriver/);
@@ -857,7 +861,7 @@ test("separates permanent route drivers from each day's released dispatch", asyn
   assert.match(dashboardActions, /prepare_daily_dispatch/);
   assert.match(routes, /Daily stop limit/);
   assert.match(sheet, /Morning dispatch/);
-  assert.match(sheet, /Paid one-time/);
+  assert.match(sheet, /One-time orders/);
   assert.match(sheet, /Prepare dispatch/);
   assert.match(sheet, /Release routes/);
   assert.match(sheet, /Reopen dispatch/);
@@ -882,8 +886,9 @@ test("separates permanent route drivers from each day's released dispatch", asyn
 });
 
 test("hardens real farm operations without deleting captured orders", async () => {
-  const [schema, staffPage, staffActions, paymentActions, payments, routes, deliveryActions, deliverySheet, orderActions, locationActions, farmLayout] = await Promise.all([
+  const [schema, visitSchema, staffPage, staffActions, paymentActions, payments, routes, deliveryActions, deliverySheet, orderActions, locationActions, farmLayout] = await Promise.all([
     readFile(operationsHardeningSchemaUrl, "utf8"),
+    readFile(operationalVisitsSchemaUrl, "utf8"),
     readFile(farmStaffPageUrl, "utf8"),
     readFile(farmStaffActionsUrl, "utf8"),
     readFile(farmPaymentActionsUrl, "utf8"),
@@ -899,6 +904,11 @@ test("hardens real farm operations without deleting captured orders", async () =
   assert.match(schema, /prevent_overlapping_delivery_plan/);
   assert.match(schema, /update_delivery_route_settings/);
   assert.match(schema, /record_delivery_visit/);
+  assert.match(visitSchema, /visit_key/);
+  assert.match(visitSchema, /count\(distinct delivery\.visit_key\)/);
+  assert.match(visitSchema, /p_bottles_returned integer/);
+  assert.match(visitSchema, /refresh_customer_route/);
+  assert.match(visitSchema, /require_paid_order_for_active_plan/);
   assert.doesNotMatch(schema, /refund/i);
   assert.doesNotMatch(schema, /delete from public\.delivery_plans/);
   assert.match(staffPage, /Invite a driver securely/);
@@ -911,7 +921,7 @@ test("hardens real farm operations without deleting captured orders", async () =
   assert.match(routes, /update_delivery_route_settings/);
   assert.match(deliveryActions, /record_delivery_visit/);
   assert.match(deliverySheet, /combineCustomerVisits/);
-  assert.match(deliverySheet, /paid plans combined into this visit/);
+  assert.match(deliverySheet, /planLines/);
   assert.match(orderActions, /already have an active milk plan/);
   assert.match(locationActions, /already has a current plan/);
 });

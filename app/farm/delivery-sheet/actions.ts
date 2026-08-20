@@ -102,7 +102,7 @@ export async function prepareDailyDispatch(formData: FormData) {
     formData,
     "message",
     generated
-      ? `${generated} paid delivery stops prepared. Review exceptions before release.`
+      ? `${generated} paid delivery lines refreshed. Review doorstep visits before release.`
       : "Dispatch refreshed. Review exceptions before release.",
   ));
 }
@@ -129,7 +129,7 @@ export async function releaseDailyDispatch(formData: FormData) {
   redirect(deliverySheetUrl(
     formData,
     "message",
-    `${Number(data ?? 0)} stops released to their drivers.`,
+    `${Number(data ?? 0)} doorstep visits released to their drivers.`,
   ));
 }
 
@@ -162,16 +162,19 @@ export async function reopenDailyDispatch(formData: FormData) {
 export async function recordDeliveryStop(formData: FormData) {
   const { supabase } = await requireFarmStaff("/farm/delivery-sheet");
   const deliveryIds = formData.getAll("deliveryId").map(String).filter((value) => /^[0-9a-f-]{36}$/i.test(value));
-  if (!deliveryIds.length || deliveryIds.length > 20) {
+  if (!deliveryIds.length || deliveryIds.length > 50) {
     redirect(deliverySheetUrl(formData, "error", "Delivery stop is missing."));
   }
 
   const deliveryConfirmed = formData.get("deliveryConfirmed") === "yes";
-  const bottleReturned = formData.get("bottleReturned") === "yes";
+  const bottlesReturned = Number(formData.get("bottlesReturned") ?? 0);
+  if (!Number.isInteger(bottlesReturned) || bottlesReturned < 0 || bottlesReturned > 50) {
+    redirect(deliverySheetUrl(formData, "error", "Enter a valid bottle return count."));
+  }
   const driverNote = textValue(formData, "driverNote");
 
   const { error } = await supabase.rpc("record_delivery_visit", {
-    p_bottle_returned: bottleReturned,
+    p_bottles_returned: bottlesReturned,
     p_delivery_confirmed: deliveryConfirmed,
     p_delivery_ids: deliveryIds,
     p_driver_note: driverNote || null,

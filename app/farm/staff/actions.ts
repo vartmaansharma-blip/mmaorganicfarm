@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { todayInIndia } from "@/lib/delivery-calendar";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -74,11 +75,26 @@ export async function setDriverActive(formData: FormData) {
 
   const admin = createAdminClient();
   if (!active) {
-    const { count, error: assignmentError } = await admin.from("route_driver_assignments")
-      .select("route_id", { count: "exact", head: true })
-      .eq("driver_id", userId);
+    const today = todayInIndia();
+    const [defaults, dailyAssignments, unfinishedDeliveries] = await Promise.all([
+      admin.from("route_driver_assignments")
+        .select("route_id", { count: "exact", head: true })
+        .eq("driver_id", userId),
+      admin.from("daily_route_assignments")
+        .select("route_id", { count: "exact", head: true })
+        .eq("driver_id", userId)
+        .gte("delivery_date", today),
+      admin.from("daily_deliveries")
+        .select("visit_key", { count: "exact", head: true })
+        .eq("assigned_driver_id", userId)
+        .gte("delivery_date", today)
+        .in("status", ["planned", "ready", "out_for_delivery", "failed"]),
+    ]);
+    const assignmentError = defaults.error ?? dailyAssignments.error ?? unfinishedDeliveries.error;
     if (assignmentError) staffMessage("error", assignmentError.message);
-    if (count) staffMessage("error", `Reassign ${count} permanent route${count === 1 ? "" : "s"} before deactivating this driver.`);
+    if (defaults.count || dailyAssignments.count || unfinishedDeliveries.count) {
+      staffMessage("error", "Reassign this driver's permanent routes and current or future dispatch work before deactivating access.");
+    }
   }
 
   const { error } = await admin.from("farm_staff").update({ active, updated_at: new Date().toISOString() }).eq("user_id", userId).eq("role", "driver");

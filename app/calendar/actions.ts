@@ -23,8 +23,10 @@ function calendarUrl(
   date: string,
   type: "error" | "message",
   message: string,
+  planId?: string,
 ) {
   const params = new URLSearchParams({ date, [type]: message });
+  if (planId) params.set("plan", planId);
   return `/calendar?${params.toString()}`;
 }
 
@@ -93,7 +95,7 @@ async function startMilkIncreasePayment({
     .eq("user_id", userId)
     .maybeSingle();
   if (!profile?.phone || !profile.address_line) {
-    redirect(calendarUrl(date, "error", "Add your phone and address before changing paid milk."));
+    redirect(calendarUrl(date, "error", "Add your phone and address before changing paid milk.", plan.id));
   }
 
   const extraLitres = requestedQuantity - currentQuantity;
@@ -122,7 +124,7 @@ async function startMilkIncreasePayment({
     .select("id")
     .single();
   if (orderError || !order) {
-    redirect(calendarUrl(date, "error", "We could not prepare the additional payment."));
+    redirect(calendarUrl(date, "error", "We could not prepare the additional payment.", plan.id));
   }
 
   const { error: itemError } = await admin.from("order_items").insert({
@@ -150,7 +152,7 @@ async function startMilkIncreasePayment({
       user_id: userId,
     });
   if (itemError || adjustmentError) {
-    redirect(calendarUrl(date, "error", "We could not save this quantity change."));
+    redirect(calendarUrl(date, "error", "We could not save this quantity change.", plan.id));
   }
 
   redirect(`/checkout/review?order=${order.id}`);
@@ -184,6 +186,7 @@ async function applyMilkReduction({
         date,
         "error",
         "The carried milk would exceed 5 L tomorrow. Choose a smaller reduction.",
+        planId,
       ),
     );
   }
@@ -215,7 +218,7 @@ async function applyMilkReduction({
     { onConflict: "plan_id,product_key,delivery_date" },
   );
   if (error) {
-    redirect(calendarUrl(date, "error", "We could not carry the milk forward."));
+    redirect(calendarUrl(date, "error", "We could not carry the milk forward.", planId));
   }
 
   const admin = createAdminClient();
@@ -237,6 +240,7 @@ async function applyMilkReduction({
       date,
       "message",
       `${adjustment.carryForwardLitres} L was moved to ${carryDate}. No refund was issued.`,
+      planId,
     ),
   );
 }
@@ -254,13 +258,14 @@ export async function saveDateChange(formData: FormData) {
         date || minimumDate,
         "error",
         "Choose tomorrow or a later delivery date.",
+        planId,
       ),
     );
   }
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
   if (date < plan.start_date) {
-    redirect(calendarUrl(date, "error", "This date is before your plan starts."));
+    redirect(calendarUrl(date, "error", "This date is before your plan starts.", planId));
   }
 
   if (action === "normal") {
@@ -273,7 +278,7 @@ export async function saveDateChange(formData: FormData) {
       .eq("product_key", productKey);
 
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not restore this date."));
+      redirect(calendarUrl(date, "error", "We could not restore this date.", planId));
     }
   } else {
     const quantity = Number(formData.get("quantity"));
@@ -284,7 +289,7 @@ export async function saveDateChange(formData: FormData) {
         (!Number.isInteger(quantity) || quantity < 1 || quantity > 5)) ||
       (productKey !== "milk" && isOverride)
     ) {
-      redirect(calendarUrl(date, "error", "Choose a valid date change."));
+      redirect(calendarUrl(date, "error", "Choose a valid date change.", planId));
     }
 
     if (productKey === "milk" && isOverride) {
@@ -325,13 +330,13 @@ export async function saveDateChange(formData: FormData) {
     );
 
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not save this date change."));
+      redirect(calendarUrl(date, "error", "We could not save this date change.", planId));
     }
   }
 
   revalidatePath("/calendar");
   revalidatePath("/account");
-  redirect(calendarUrl(date, "message", "Your delivery calendar was updated."));
+  redirect(calendarUrl(date, "message", "Your delivery calendar was updated.", planId));
 }
 
 export async function saveDeliveryDayChange(formData: FormData) {
@@ -346,13 +351,14 @@ export async function saveDeliveryDayChange(formData: FormData) {
         date || minimumDate,
         "error",
         "Choose tomorrow or a later delivery date.",
+        planId,
       ),
     );
   }
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
   if (date < plan.start_date) {
-    redirect(calendarUrl(date, "error", "This date is before your plan starts."));
+    redirect(calendarUrl(date, "error", "This date is before your plan starts.", planId));
   }
 
   if (action === "normal") {
@@ -363,7 +369,7 @@ export async function saveDeliveryDayChange(formData: FormData) {
       .eq("user_id", user.id)
       .eq("delivery_date", date);
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not restore this delivery day."));
+      redirect(calendarUrl(date, "error", "We could not restore this delivery day.", planId));
     }
   } else {
     const [
@@ -399,7 +405,7 @@ export async function saveDeliveryDayChange(formData: FormData) {
     const uniqueProductKeys = [...new Set(scheduledProductKeys)];
 
     if (!uniqueProductKeys.length) {
-      redirect(calendarUrl(date, "error", "There is no delivery scheduled on this date."));
+      redirect(calendarUrl(date, "error", "There is no delivery scheduled on this date.", planId));
     }
 
     const { error } = await supabase.from("delivery_exceptions").upsert(
@@ -417,7 +423,7 @@ export async function saveDeliveryDayChange(formData: FormData) {
     );
 
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not skip this delivery day."));
+      redirect(calendarUrl(date, "error", "We could not skip this delivery day.", planId));
     }
   }
 
@@ -430,6 +436,7 @@ export async function saveDeliveryDayChange(formData: FormData) {
       action === "skip"
         ? "This delivery day was skipped."
         : "This delivery day was restored.",
+      planId,
     ),
   );
 }
@@ -458,13 +465,14 @@ export async function savePause(formData: FormData) {
         selectedDate || minimumDate,
         "error",
         "A pause must cover at least two consecutive days.",
+        planId,
       ),
     );
   }
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
   if (startDate < plan.start_date) {
-    redirect(calendarUrl(selectedDate, "error", "The pause cannot begin before your plan."));
+    redirect(calendarUrl(selectedDate, "error", "The pause cannot begin before your plan.", planId));
   }
 
   const { data: overlap } = await supabase
@@ -478,7 +486,7 @@ export async function savePause(formData: FormData) {
     .maybeSingle();
 
   if (overlap) {
-    redirect(calendarUrl(selectedDate, "error", "Those dates are already paused."));
+    redirect(calendarUrl(selectedDate, "error", "Those dates are already paused.", planId));
   }
 
   const { error } = await supabase.from("delivery_pauses").insert({
@@ -489,12 +497,12 @@ export async function savePause(formData: FormData) {
   });
 
   if (error) {
-    redirect(calendarUrl(selectedDate, "error", "We could not pause those dates."));
+    redirect(calendarUrl(selectedDate, "error", "We could not pause those dates.", planId));
   }
 
   revalidatePath("/calendar");
   revalidatePath("/account");
-  redirect(calendarUrl(selectedDate, "message", "Your delivery pause was added."));
+  redirect(calendarUrl(selectedDate, "message", "Your delivery pause was added.", planId));
 }
 
 export async function removePause(formData: FormData) {
@@ -511,10 +519,10 @@ export async function removePause(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) {
-    redirect(calendarUrl(selectedDate, "error", "We could not remove this pause."));
+    redirect(calendarUrl(selectedDate, "error", "We could not remove this pause.", planId));
   }
 
   revalidatePath("/calendar");
   revalidatePath("/account");
-  redirect(calendarUrl(selectedDate, "message", "The pause was removed."));
+  redirect(calendarUrl(selectedDate, "message", "The pause was removed.", planId));
 }
