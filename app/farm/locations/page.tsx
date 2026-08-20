@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
+import { FARM_PRODUCTS } from "@/lib/farm-products";
 import {
   canManageLocations,
   requireFarmManager,
@@ -10,8 +12,10 @@ import { MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import {
   assignCustomerLocation,
   createArea,
+  createCustomerProfile,
   deleteCustomerProfile,
   importCustomerProfiles,
+  recordCustomerOrder,
   setOrderMode,
 } from "./actions";
 import styles from "./locations.module.css";
@@ -232,17 +236,57 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
   const activePlanCount = plans.filter((plan) => !plan.is_test && plan.status === "active").length;
   const paidOrderCount = orders.filter((order) => !order.is_test && order.status === "paid").length;
   const missingAddressCount = profiles.filter((profile) => !profile.address_line).length;
+  const readyProfileCount = profiles.filter(
+    (profile) => profile.full_name && profile.phone && profile.address_line,
+  ).length;
+  const profileReadiness = profiles.length
+    ? Math.round((readyProfileCount / profiles.length) * 100)
+    : 0;
+  const activePlanCoverage = profiles.length
+    ? Math.round((activePlanCount / profiles.length) * 100)
+    : 0;
+  const searchQuery = String(
+    Array.isArray(parameters.q) ? parameters.q[0] ?? "" : parameters.q ?? "",
+  ).trim();
+  const filter = String(
+    Array.isArray(parameters.filter)
+      ? parameters.filter[0] ?? "all"
+      : parameters.filter ?? "all",
+  );
+  const normalizedSearch = normalizedLocation(searchQuery);
+  const filteredProfiles = profiles.filter((profile) => {
+    const plan = latestPlanByUser.get(profile.user_id);
+    const order = latestOrderByUser.get(profile.user_id);
+    const matchesSearch = !normalizedSearch || normalizedLocation([
+      profile.full_name,
+      profile.phone,
+      profile.email,
+      profile.address_line,
+      profile.locality,
+    ].filter(Boolean).join(" ")).includes(normalizedSearch);
+    const matchesFilter = filter === "active"
+      ? plan?.status === "active" && !plan.is_test
+      : filter === "missing"
+        ? !profile.phone || !profile.address_line
+        : filter === "pending"
+          ? order?.status === "pending_payment" || order?.status === "draft"
+          : true;
+    return matchesSearch && matchesFilter;
+  });
+  const nextDeliveryDate = nextDeliveryDateInIndia();
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Farm records</p>
+          <p className={styles.eyebrow}>Customer operations</p>
           <h1>Customers</h1>
-          <p>Profiles, delivery addresses, purchased products, plans, and payments in one place.</p>
+          <p>Keep profiles, orders, schedules, and delivery readiness under control.</p>
         </div>
         <div className={styles.headerActions}>
-          {canManage ? <a href="/farm/exports/customers">Export customers</a> : null}
+          {canManage ? <a className={styles.primaryAction} href="#add-customer">Add customer</a> : null}
+          {canManage ? <a href="#import-customers">Import file</a> : null}
+          {canManage ? <a href="/farm/exports/customers">Export</a> : null}
           <Link href="/farm">Back to deliveries</Link>
         </div>
       </header>
@@ -256,70 +300,91 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
         </p>
       ) : null}
 
-      <section className={styles.summary} aria-label="Customer summary">
-        <div><strong>{profiles.length}</strong><span>Customers</span></div>
-        <div><strong>{activePlanCount}</strong><span>Active plans</span></div>
-        <div><strong>{paidOrderCount}</strong><span>Paid orders</span></div>
-        <div><strong>{missingAddressCount}</strong><span>Missing addresses</span></div>
+      <section className={styles.summary} aria-label="Customer overview">
+        <article><strong>{profiles.length}</strong><span>Total customers</span></article>
+        <article><strong>{activePlanCount}</strong><span>Active plans</span></article>
+        <article className={styles.meterCard}>
+          <div><strong>{profileReadiness}%</strong><span>Profiles ready</span></div>
+          <meter min="0" max="100" value={profileReadiness}>{profileReadiness}%</meter>
+          <small>{missingAddressCount ? `${missingAddressCount} need an address` : "All profiles are complete"}</small>
+        </article>
+        <article className={styles.meterCard}>
+          <div><strong>{activePlanCoverage}%</strong><span>Plan coverage</span></div>
+          <meter min="0" max="100" value={activePlanCoverage}>{activePlanCoverage}%</meter>
+          <small>{paidOrderCount} paid orders recorded</small>
+        </article>
       </section>
 
       {canManage ? (
-        <details className={styles.tools}>
-          <summary>Customer file and delivery areas</summary>
-          <div className={styles.toolsBody}>
-            <section className={styles.importPanel} aria-labelledby="import-title">
-              <div className={styles.sectionHeading}>
-                <p>Customer file</p>
-                <h2 id="import-title">Update profiles from CSV</h2>
+        <section className={styles.actionGrid} aria-label="Customer actions">
+          <details className={styles.actionPanel} id="add-customer">
+            <summary><span>Add customer</span><small>Create a profile manually</small></summary>
+            <form action={createCustomerProfile} className={styles.customerForm}>
+              <div className={styles.detailFields}>
+                <label><span>Customer name</span><input maxLength={120} name="fullName" required /></label>
+                <label><span>Phone</span><input inputMode="numeric" maxLength={10} name="phone" placeholder="98765 43210" type="tel" /></label>
+                <label><span>Email (optional)</span><input name="email" placeholder="customer@example.com" type="email" /></label>
+                <label className={styles.addressField}><span>Delivery address</span><textarea maxLength={500} name="address" required rows={2} /></label>
+                <label><span>Locality</span><input maxLength={120} name="locality" placeholder="Bistupur" /></label>
+                <label><span>Landmark</span><input maxLength={180} name="landmark" /></label>
+                <label><span>Postal code</span><input inputMode="numeric" maxLength={6} name="postalCode" /></label>
+                <label><span>Area</span><select name="areaId"><option value="">Assign automatically</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label>
               </div>
-              <div className={styles.importCopy}>
-                <p>
-                  Export the list, update existing customer details, and upload it again.
-                  New login accounts are never created automatically.
-                </p>
-                <a href="/farm/exports/customers">Download current customer file</a>
-              </div>
+              <button type="submit">Save customer</button>
+            </form>
+          </details>
+
+          <details className={styles.actionPanel} id="import-customers">
+            <summary><span>Import customers</span><small>Excel or CSV · up to 200 rows</small></summary>
+            <div className={styles.importBody}>
+              <p>Use name, phone or email, address, locality, landmark, postal code, and area columns.</p>
               <form action={importCustomerProfiles} className={styles.importForm}>
-                <label htmlFor="customer-file">Customer CSV</label>
-                <input accept=".csv,text/csv" id="customer-file" name="customerFile" required type="file" />
-                <button type="submit">Import customer file</button>
+                <label htmlFor="customer-file">Excel or CSV file</label>
+                <input accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" id="customer-file" name="customerFile" required type="file" />
+                <button type="submit">Import customers</button>
               </form>
               {parameters.importError ? (
                 <p className={styles.importError} role="alert">{String(parameters.importError)}</p>
-              ) : parameters.imported !== undefined ? (
+              ) : parameters.created !== undefined || parameters.updated !== undefined ? (
                 <p className={styles.importSuccess} role="status">
-                  Updated {String(parameters.imported)} customer
-                  {String(parameters.imported) === "1" ? "" : "s"}. Skipped {String(parameters.skipped ?? 0)}.
+                  Added {String(parameters.created ?? 0)} · Updated {String(parameters.updated ?? 0)} · Skipped {String(parameters.skipped ?? 0)}
                 </p>
               ) : null}
-            </section>
+            </div>
+          </details>
 
-            <section className={styles.setup} aria-labelledby="setup-title">
-              <div className={styles.sectionHeading}>
-                <p>Delivery grouping</p>
-                <h2 id="setup-title">Delivery areas</h2>
+          <details className={styles.actionPanel}>
+            <summary><span>Delivery areas</span><small>Manage automatic grouping</small></summary>
+            <form action={createArea} className={styles.areaForm}>
+              <label htmlFor="area-name">New area</label>
+              <div className={styles.inlineFields}>
+                <input id="area-name" name="name" placeholder="Bistupur" required />
+                <button type="submit">Add area</button>
               </div>
-              <form action={createArea}>
-                <label htmlFor="area-name">New delivery area</label>
-                <div className={styles.inlineFields}>
-                  <input id="area-name" name="name" placeholder="Bistupur" required />
-                  <button type="submit">Add area</button>
-                </div>
-              </form>
-            </section>
-          </div>
-        </details>
+            </form>
+          </details>
+        </section>
       ) : null}
 
       <section className={styles.customerSection} aria-labelledby="customers-title">
-        <div className={styles.sectionHeading}>
-          <p>Customer directory</p>
-          <h2 id="customers-title">Profiles and orders</h2>
+        <div className={styles.directoryHeading}>
+          <div className={styles.sectionHeading}>
+            <p>Customer directory</p>
+            <h2 id="customers-title">Profiles and orders</h2>
+          </div>
+          <span>{filteredProfiles.length} shown</span>
         </div>
 
-        {profiles.length ? (
+        <form className={styles.directoryToolbar} method="get">
+          <label><span className={styles.visuallyHidden}>Search customers</span><input defaultValue={searchQuery} name="q" placeholder="Search name, phone, address…" type="search" /></label>
+          <label><span className={styles.visuallyHidden}>Filter customers</span><select defaultValue={filter} name="filter"><option value="all">All customers</option><option value="active">Active plans</option><option value="pending">Payment pending</option><option value="missing">Missing details</option></select></label>
+          <button type="submit">Apply</button>
+          {searchQuery || filter !== "all" ? <Link href="/farm/locations">Clear</Link> : null}
+        </form>
+
+        {filteredProfiles.length ? (
           <div className={styles.customerList}>
-            {profiles.map((profile) => {
+            {filteredProfiles.map((profile) => {
               const plan = latestPlanByUser.get(profile.user_id);
               const order = latestOrderByUser.get(profile.user_id);
               const customerOrders = ordersByUser.get(profile.user_id) ?? [];
@@ -337,19 +402,40 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
               const suggestedArea = !profile.delivery_area_id
                 ? areas.find((area) => addressForSuggestion.includes(normalizedLocation(area.name)))
                 : null;
+              const planProgress = plan?.purchased_deliveries
+                ? Math.round((Number(plan.delivered_deliveries) / Number(plan.purchased_deliveries)) * 100)
+                : 0;
+              const profileReady = Boolean(profile.phone && profile.address_line);
 
               return (
-                <article className={styles.customer} key={profile.user_id}>
-                  <div className={styles.customerIdentity}>
+                <details className={styles.customer} key={profile.user_id}>
+                  <summary className={styles.customerSummary}>
                     <span className={styles.initial} aria-hidden="true">
                       {(profile.full_name ?? "C").charAt(0).toUpperCase()}
                     </span>
-                    <div>
+                    <span className={styles.customerIdentity}>
                       <strong>{profile.full_name ?? "Customer"}</strong>
                       <span>{profile.phone ?? "No phone saved"}</span>
+                    </span>
+                    <span className={styles.customerQuickFact}>
+                      <small>Location</small>
+                      <strong>{profile.locality || areaById.get(profile.delivery_area_id ?? "") || "Not assigned"}</strong>
+                    </span>
+                    <span className={styles.customerQuickFact}>
+                      <small>Current order</small>
+                      <strong>{order ? titleCase(order.status) : "No order"}</strong>
+                    </span>
+                    <span className={styles.customerMeter}>
+                      <span><small>{plan ? "Plan used" : "Profile"}</small><b>{plan ? `${planProgress}%` : profileReady ? "Ready" : "Needs details"}</b></span>
+                      <meter min="0" max="100" value={plan ? planProgress : profileReady ? 100 : 45}>{plan ? planProgress : profileReady ? 100 : 45}%</meter>
+                    </span>
+                    <span className={styles.chevron} aria-hidden="true" />
+                  </summary>
+
+                  <div className={styles.customerBody}>
+                    <div className={styles.profileContact}>
                       <span>{profile.email ?? "No email saved"}</span>
                     </div>
-                  </div>
 
                   <div className={styles.addressSummary}>
                     <span>Delivery location</span>
@@ -507,12 +593,53 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                       ) : null}
                     </details>
                   ) : null}
-                </article>
+
+                  {canManage ? (
+                    <details className={styles.recordOrder}>
+                      <summary>Record order</summary>
+                      <form action={recordCustomerOrder} className={styles.orderForm}>
+                        <input name="userId" type="hidden" value={profile.user_id} />
+                        <fieldset className={styles.orderType}>
+                          <legend>Order type</legend>
+                          <label><input defaultChecked name="purchaseMode" type="radio" value="plan" /><span>30-delivery plan</span></label>
+                          <label><input name="purchaseMode" type="radio" value="once" /><span>One-time order</span></label>
+                        </fieldset>
+
+                        <div className={styles.planOnly}>
+                          <span className={styles.formLabel}>Seven-day milk schedule</span>
+                          <div className={styles.scheduleInputs}>
+                            {MILK_PLAN_DAYS.map((day, index) => (
+                              <label key={day.short}><span>{day.short}</span><input defaultValue="0" inputMode="decimal" max="5" min="0" name={`milkDay${index + 1}`} step="1" type="number" /></label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className={styles.onceOnly}>
+                          <label><span className={styles.formLabel}>Milk litres</span><input defaultValue="0" inputMode="decimal" max="5" min="0" name="milkLitres" step="1" type="number" /></label>
+                        </div>
+
+                        <div className={styles.orderFields}>
+                          {FARM_PRODUCTS.map((product) => (
+                            <label key={product.id}><span>{product.name}</span><input defaultValue="0" inputMode="numeric" max="5" min="0" name={`${product.id}Quantity`} step="1" type="number" /><small>{product.unit}</small></label>
+                          ))}
+                          <label><span>Delivery starts</span><input defaultValue={nextDeliveryDate} min={nextDeliveryDate} name="startDate" required type="date" /></label>
+                          <label><span>Bottle</span><select defaultValue="return" name="bottleChoice"><option value="return">Customer returns bottle</option><option value="new">New bottle required</option><option value="none">No bottle</option></select></label>
+                        </div>
+
+                        <div className={styles.orderSubmit}>
+                          <p>The order will be saved as payment pending.</p>
+                          <button type="submit">Record order</button>
+                        </div>
+                      </form>
+                    </details>
+                  ) : null}
+                  </div>
+                </details>
               );
             })}
           </div>
         ) : (
-          <div className={styles.empty}>No signed-in customers yet.</div>
+          <div className={styles.empty}>No customers match this view.</div>
         )}
       </section>
     </main>

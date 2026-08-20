@@ -804,7 +804,7 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(shellStyles, /@media print/);
 });
 
-test("lets managers safely update existing customers from CSV", async () => {
+test("lets managers add, import, and manage customers safely", async () => {
   const [locations, actions, customerImport, farmLayout] = await Promise.all([
     readFile(farmLocationsUrl, "utf8"),
     readFile(farmActionsUrl, "utf8"),
@@ -812,16 +812,26 @@ test("lets managers safely update existing customers from CSV", async () => {
     readFile(farmLayoutUrl, "utf8"),
   ]);
 
-  assert.match(locations, /Update profiles from CSV/);
-  assert.match(locations, /Download current customer file/);
-  assert.match(locations, /new login accounts are never created automatically/i);
+  assert.match(locations, /Add customer/);
+  assert.match(locations, /Import customers/);
+  assert.match(locations, /\.xlsx,\.csv/);
+  assert.match(locations, /className=\{styles\.customerSummary\}/);
+  assert.match(locations, /<meter/);
+  assert.match(locations, /Record order/);
+  assert.match(actions, /createCustomerProfile/);
+  assert.match(actions, /createManagedCustomer/);
+  assert.match(actions, /auth\.admin\.createUser/);
   assert.match(actions, /importCustomerProfiles/);
+  assert.match(actions, /readSheet/);
   assert.match(actions, /profileByEmail/);
   assert.match(actions, /profileByPhone/);
-  assert.match(actions, /256_000/);
+  assert.match(actions, /2_000_000/);
+  assert.match(actions, /recordCustomerOrder/);
+  assert.match(actions, /status: "pending_payment"/);
   assert.match(actions, /The customer profile was not updated/);
   assert.match(locations, /Postal code/);
   assert.match(customerImport, /The CSV contains an unclosed quote/);
+  assert.match(customerImport, /parseCustomerRows/);
   assert.match(customerImport, /Import no more than 200 customers/);
   assert.doesNotMatch(farmLayout, /requireFarmStaff\(\)/);
 });

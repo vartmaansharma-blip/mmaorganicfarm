@@ -2,12 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { readSheet } from "read-excel-file/universal";
 import {
   areaSlug,
   canManageLocations,
   requireFarmStaff,
 } from "@/lib/farm-dashboard";
-import { parseCustomerImport } from "@/lib/customer-import";
+import {
+  parseCustomerImport,
+  parseCustomerRows,
+  type CustomerImportRow,
+} from "@/lib/customer-import";
+import {
+  FARM_PRODUCTS,
+  type FarmProductSelection,
+} from "@/lib/farm-products";
+import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
+import { MILK_PLAN_DAYS, type WeeklyMilkSchedule } from "@/lib/milk-plan";
+import {
+  calculateOrderPricing,
+  calculatePlanPricing,
+  MILK_PRICE_PER_LITRE,
+  PLAN_DELIVERY_COUNT,
+  type BottleChoice,
+} from "@/lib/order-pricing";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function textValue(formData: FormData, key: string) {
@@ -25,10 +43,11 @@ function normalizedLookup(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function importResult(imported: number, skipped: number, error?: string): never {
+function importResult(created: number, updated: number, skipped: number, error?: string): never {
   const parameters = new URLSearchParams({
-    imported: String(imported),
+    created: String(created),
     skipped: String(skipped),
+    updated: String(updated),
   });
   if (error) parameters.set("importError", error);
   redirect(`/farm/locations?${parameters.toString()}`);
@@ -40,6 +59,113 @@ async function requireLocationManager() {
     throw new Error("Manager access is required.");
   }
   return context;
+}
+
+type CustomerProfileInput = {
+  address: string;
+  areaId: string | null;
+  email: string | null;
+  fullName: string;
+  landmark: string | null;
+  locality: string | null;
+  phone: string | null;
+  postalCode: string | null;
+};
+
+function customerProfileInput(formData: FormData): CustomerProfileInput {
+  const fullName = textValue(formData, "fullName");
+  const email = textValue(formData, "email").toLowerCase() || null;
+  const normalizedPhone = normalizePhone(textValue(formData, "phone"));
+  const phone = normalizedPhone ? `+91${normalizedPhone}` : null;
+  const address = textValue(formData, "address");
+  const locality = textValue(formData, "locality") || null;
+  const landmark = textValue(formData, "landmark") || null;
+  const postalCode = textValue(formData, "postalCode") || null;
+  const areaId = textValue(formData, "areaId") || null;
+
+  if (fullName.length < 2 || fullName.length > 120) {
+    throw new Error("Enter the customer's name.");
+  }
+  if (!email && !phone) throw new Error("Add a phone number or email address.");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Enter a valid email address.");
+  }
+  if (normalizedPhone && normalizedPhone.length !== 10) {
+    throw new Error("Enter a valid 10-digit phone number.");
+  }
+  if (address.length < 8 || address.length > 500) {
+    throw new Error("Enter a complete delivery address.");
+  }
+  if (locality && (locality.length < 2 || locality.length > 120)) {
+    throw new Error("Enter a valid locality.");
+  }
+  if (landmark && landmark.length > 180) throw new Error("The landmark is too long.");
+  if (postalCode && !/^\d{6}$/.test(postalCode)) {
+    throw new Error("Enter a valid 6-digit postal code.");
+  }
+
+  return { address, areaId, email, fullName, landmark, locality, phone, postalCode };
+}
+
+async function createManagedCustomer(input: CustomerProfileInput) {
+  const admin = createAdminClient();
+  const duplicateQueries = [
+    input.email
+      ? admin.from("customer_profiles").select("user_id").ilike("email", input.email).limit(1).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    input.phone
+      ? admin.from("customer_profiles").select("user_id").eq("phone", input.phone).limit(1).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ];
+  const [emailMatch, phoneMatch] = await Promise.all(duplicateQueries);
+  const lookupError = emailMatch.error ?? phoneMatch.error;
+  if (lookupError) throw lookupError;
+  if (emailMatch.data || phoneMatch.data) {
+    throw new Error("A customer with this phone number or email already exists.");
+  }
+
+  const { data, error } = await admin.auth.admin.createUser({
+    ...(input.email ? { email: input.email } : {}),
+    ...(input.phone ? { phone: input.phone } : {}),
+    app_metadata: { customer_source: "farm" },
+    user_metadata: { full_name: input.fullName },
+  });
+  if (error || !data.user) throw error ?? new Error("The customer account could not be created.");
+
+  const { error: profileError } = await admin.from("customer_profiles").upsert({
+    address_line: input.address,
+    delivery_area_id: input.areaId,
+    delivery_route_id: null,
+    email: input.email,
+    full_name: input.fullName,
+    landmark: input.landmark,
+    locality: input.locality,
+    phone: input.phone,
+    postal_code: input.postalCode,
+    route_stop_order: null,
+    updated_at: new Date().toISOString(),
+    user_id: data.user.id,
+  });
+  if (profileError) {
+    await admin.auth.admin.deleteUser(data.user.id);
+    throw profileError;
+  }
+
+  return data.user.id;
+}
+
+export async function createCustomerProfile(formData: FormData) {
+  await requireLocationManager();
+  try {
+    await createManagedCustomer(customerProfileInput(formData));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The customer could not be added.";
+    redirect(`/farm/locations?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/farm");
+  revalidatePath("/farm/locations");
+  redirect("/farm/locations?message=Customer+profile+added.");
 }
 
 export async function createArea(formData: FormData) {
@@ -109,6 +235,177 @@ export async function assignCustomerLocation(formData: FormData) {
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
+}
+
+function manualProducts(formData: FormData): FarmProductSelection[] {
+  return FARM_PRODUCTS.flatMap((product) => {
+    const quantity = Number(formData.get(`${product.id}Quantity`) ?? 0);
+    return Number.isInteger(quantity) && quantity >= 1 && quantity <= 5
+      ? [{ ...product, days: [], frequency: "once" as const, quantity }]
+      : [];
+  });
+}
+
+export async function recordCustomerOrder(formData: FormData) {
+  await requireLocationManager();
+  const admin = createAdminClient();
+  const userId = textValue(formData, "userId");
+  const purchaseMode = textValue(formData, "purchaseMode") === "plan" ? "plan" : "once";
+  const requestedBottle = textValue(formData, "bottleChoice");
+  const bottleChoice: BottleChoice = requestedBottle === "new"
+    ? "new"
+    : requestedBottle === "none"
+      ? "none"
+      : "return";
+  const startDate = textValue(formData, "startDate");
+  const earliestStart = nextDeliveryDateInIndia();
+  const products = manualProducts(formData);
+  const onceMilk = Number(formData.get("milkLitres") ?? 0);
+  const schedule = MILK_PLAN_DAYS.map((_, index) =>
+    Number(formData.get(`milkDay${index + 1}`) ?? 0),
+  ) as WeeklyMilkSchedule;
+
+  if (!userId) redirect("/farm/locations?error=Choose+a+customer.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || startDate < earliestStart) {
+    redirect("/farm/locations?error=Choose+a+valid+delivery+start+date.");
+  }
+  if (
+    purchaseMode === "plan" &&
+    (schedule.some((quantity) => !Number.isInteger(quantity) || quantity < 0 || quantity > 5) ||
+      schedule.every((quantity) => quantity === 0))
+  ) {
+    redirect("/farm/locations?error=Add+a+valid+seven-day+milk+schedule.");
+  }
+  if (
+    purchaseMode === "once" &&
+    (!Number.isInteger(onceMilk) || onceMilk < 0 || onceMilk > 5)
+  ) {
+    redirect("/farm/locations?error=Enter+a+valid+milk+quantity.");
+  }
+  if (purchaseMode === "once" && onceMilk === 0 && products.length === 0) {
+    redirect("/farm/locations?error=Add+milk+or+at+least+one+farm+product.");
+  }
+
+  const { data: profile, error: profileError } = await admin
+    .from("customer_profiles")
+    .select("user_id, phone, address_line")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (!profile?.phone || !profile.address_line) {
+    redirect("/farm/locations?error=Save+the+customer%27s+phone+and+address+before+recording+an+order.");
+  }
+
+  const pricing = purchaseMode === "plan"
+    ? calculatePlanPricing({ bottleChoice, products, schedule, startDate })
+    : calculateOrderPricing({ bottleChoice, milkLitres: onceMilk, products });
+
+  let deliveryPlanId: string | null = null;
+  if (purchaseMode === "plan") {
+    const { data: plan, error: planError } = await admin
+      .from("delivery_plans")
+      .insert({
+        bottle_choice: bottleChoice,
+        delivered_deliveries: 0,
+        is_test: false,
+        purchased_deliveries: PLAN_DELIVERY_COUNT,
+        start_date: startDate,
+        status: "pending_confirmation",
+        user_id: userId,
+      })
+      .select("id")
+      .single();
+    if (planError || !plan) throw planError ?? new Error("The delivery plan could not be created.");
+    deliveryPlanId = plan.id;
+
+    const weeklyItems = schedule.flatMap((quantity, index) =>
+      quantity > 0
+        ? [{
+            day_of_week: index + 1,
+            plan_id: plan.id,
+            product_key: "milk",
+            quantity,
+            unit: "litre",
+            user_id: userId,
+          }]
+        : [],
+    );
+    const { error: scheduleError } = await admin.from("weekly_delivery_items").insert(weeklyItems);
+    if (scheduleError) {
+      await admin.from("delivery_plans").delete().eq("id", plan.id);
+      throw scheduleError;
+    }
+  }
+
+  const { data: order, error: orderError } = await admin
+    .from("orders")
+    .insert({
+      address_snapshot: profile.address_line,
+      bottle_charge_paise: pricing.bottleCharge * 100,
+      bottle_choice: bottleChoice,
+      currency: "INR",
+      delivery_plan_id: deliveryPlanId,
+      is_test: false,
+      milk_litres: pricing.milkLitres,
+      paid_total_paise: null,
+      phone_snapshot: profile.phone,
+      purchase_mode: purchaseMode,
+      start_date: startDate,
+      status: "pending_payment",
+      subtotal_paise: (pricing.total - pricing.bottleCharge) * 100,
+      total_paise: pricing.total * 100,
+      user_id: userId,
+    })
+    .select("id")
+    .single();
+  if (orderError || !order) {
+    if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
+    throw orderError ?? new Error("The order could not be recorded.");
+  }
+
+  const scheduledDays = purchaseMode === "plan"
+    ? schedule.flatMap((quantity, index) => quantity > 0 ? [index + 1] : [])
+    : [];
+  const orderItems = [
+    ...(pricing.milkLitres > 0
+      ? [{
+          delivery_date: startDate,
+          frequency: purchaseMode === "plan" ? "weekly" : "once",
+          line_total_paise: pricing.milkTotal * 100,
+          order_id: order.id,
+          product_key: "milk",
+          product_name: "Fresh farm milk",
+          quantity: pricing.milkLitres,
+          scheduled_days: scheduledDays,
+          unit: purchaseMode === "plan" ? "litres / 30 deliveries" : "litre",
+          unit_price_paise: MILK_PRICE_PER_LITRE * 100,
+          user_id: userId,
+        }]
+      : []),
+    ...products.map((product) => ({
+      delivery_date: startDate,
+      frequency: "once",
+      line_total_paise: (pricing.productTotals[product.id] ?? 0) * 100,
+      order_id: order.id,
+      product_key: product.id,
+      product_name: product.name,
+      quantity: product.quantity,
+      scheduled_days: [],
+      unit: product.unit,
+      unit_price_paise: product.price * 100,
+      user_id: userId,
+    })),
+  ];
+  const { error: itemsError } = await admin.from("order_items").insert(orderItems);
+  if (itemsError) {
+    await admin.from("orders").delete().eq("id", order.id);
+    if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
+    throw itemsError;
+  }
+
+  revalidatePath("/farm");
+  revalidatePath("/farm/locations");
+  redirect("/farm/locations?message=Order+recorded.+Payment+is+pending.");
 }
 
 export async function deleteCustomerProfile(formData: FormData) {
@@ -231,23 +528,28 @@ export async function setOrderMode(formData: FormData) {
 
 export async function importCustomerProfiles(formData: FormData) {
   const { supabase } = await requireLocationManager();
+  const admin = createAdminClient();
   const upload = formData.get("customerFile");
 
   if (!(upload instanceof File) || !upload.size) {
-    importResult(0, 0, "Choose a CSV file.");
+    importResult(0, 0, 0, "Choose an Excel or CSV file.");
   }
-  if (upload.size > 256_000) {
-    importResult(0, 0, "The CSV must be smaller than 256 KB.");
+  if (upload.size > 2_000_000) {
+    importResult(0, 0, 0, "The customer file must be smaller than 2 MB.");
   }
-  if (!upload.name.toLowerCase().endsWith(".csv")) {
-    importResult(0, 0, "Upload a .csv file.");
+  const extension = upload.name.toLowerCase().split(".").pop();
+  if (!extension || !["csv", "xlsx"].includes(extension)) {
+    importResult(0, 0, 0, "Upload an .xlsx or .csv file.");
   }
 
-  let rows;
+  let rows: CustomerImportRow[];
   try {
-    rows = parseCustomerImport(await upload.text());
+    rows = extension === "xlsx"
+      ? parseCustomerRows(await readSheet(upload))
+      : parseCustomerImport(await upload.text());
   } catch (error) {
     importResult(
+      0,
       0,
       0,
       error instanceof Error ? error.message : "The CSV could not be read.",
@@ -255,7 +557,7 @@ export async function importCustomerProfiles(formData: FormData) {
   }
 
   if (!rows.length) {
-    importResult(0, 0, "No customer rows with an email or phone were found.");
+    importResult(0, 0, 0, "No customer rows with an email or phone were found.");
   }
 
   const [profilesResult, areasResult, routesResult] = await Promise.all([
@@ -290,7 +592,8 @@ export async function importCustomerProfiles(formData: FormData) {
   );
   const emptyAssignmentLabels = new Set(["", "none", "noroute", "unassigned"]);
 
-  let imported = 0;
+  let created = 0;
+  let updated = 0;
   let skipped = 0;
   const processedUsers = new Set<string>();
 
@@ -303,10 +606,7 @@ export async function importCustomerProfiles(formData: FormData) {
       ? profileByPhone.get(normalizedPhone)
       : undefined;
 
-    if (
-      (emailMatch && phoneMatch && emailMatch.user_id !== phoneMatch.user_id) ||
-      (!emailMatch && !phoneMatch)
-    ) {
+    if (emailMatch && phoneMatch && emailMatch.user_id !== phoneMatch.user_id) {
       skipped += 1;
       continue;
     }
@@ -323,12 +623,6 @@ export async function importCustomerProfiles(formData: FormData) {
       continue;
     }
     if (row.postalCode && !/^\d{6}$/.test(row.postalCode)) {
-      skipped += 1;
-      continue;
-    }
-
-    const profile = emailMatch ?? phoneMatch;
-    if (!profile || processedUsers.has(profile.user_id)) {
       skipped += 1;
       continue;
     }
@@ -379,13 +673,41 @@ export async function importCustomerProfiles(formData: FormData) {
       }
       update.route_stop_order = stopOrder;
     }
-    if (!Object.keys(update).length) {
+
+    let profile = emailMatch ?? phoneMatch;
+    if (!profile) {
+      if (!row.name || !row.address || (!row.email && !normalizedPhone)) {
+        skipped += 1;
+        continue;
+      }
+      try {
+        const userId = await createManagedCustomer({
+          address: row.address.slice(0, 500),
+          areaId: typeof update.delivery_area_id === "string" ? update.delivery_area_id : null,
+          email: row.email?.trim().toLowerCase() ?? null,
+          fullName: row.name.slice(0, 120),
+          landmark: row.landmark?.slice(0, 180) ?? null,
+          locality: row.locality?.slice(0, 120) ?? null,
+          phone: normalizedPhone ? `+91${normalizedPhone}` : null,
+          postalCode: row.postalCode ?? null,
+        });
+        profile = { user_id: userId, email: row.email ?? null, phone: normalizedPhone ? `+91${normalizedPhone}` : null };
+        if (row.email) profileByEmail.set(row.email.trim().toLowerCase(), profile);
+        if (normalizedPhone) profileByPhone.set(normalizedPhone, profile);
+        created += 1;
+      } catch {
+        skipped += 1;
+        continue;
+      }
+    }
+
+    if (processedUsers.has(profile.user_id)) {
       skipped += 1;
       continue;
     }
     update.updated_at = new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from("customer_profiles")
       .update(update)
       .eq("user_id", profile.user_id)
@@ -398,10 +720,14 @@ export async function importCustomerProfiles(formData: FormData) {
     }
 
     processedUsers.add(profile.user_id);
-    imported += 1;
+    if (!emailMatch && !phoneMatch) {
+      // Counted as created above.
+    } else {
+      updated += 1;
+    }
   }
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
-  importResult(imported, skipped);
+  importResult(created, updated, skipped);
 }

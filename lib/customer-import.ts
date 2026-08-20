@@ -18,11 +18,15 @@ const HEADER_ALIASES: Record<string, keyof CustomerImportRow> = {
   customername: "name",
   deliveryaddress: "address",
   email: "email",
+  emailaddress: "email",
   landmark: "landmark",
   locality: "locality",
+  mobile: "phone",
+  mobilenumber: "phone",
   name: "name",
   phone: "phone",
   phonenumber: "phone",
+  pincode: "postalCode",
   postalcode: "postalCode",
   postcode: "postalCode",
   route: "route",
@@ -79,16 +83,23 @@ function parseCsvRows(value: string) {
   return rows;
 }
 
-export function parseCustomerImport(value: string) {
-  const rows = parseCsvRows(value.replace(/^\ufeff/, ""));
+function cellText(value: unknown) {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).trim();
+}
+
+export function parseCustomerRows(rows: readonly (readonly unknown[])[]) {
   if (rows.length < 2) {
-    throw new Error("The CSV must contain a header and at least one customer.");
+    throw new Error("The file must contain a header and at least one customer.");
   }
   if (rows.length > 201) {
     throw new Error("Import no more than 200 customers at a time.");
   }
 
-  const headers = rows[0].map((header) => HEADER_ALIASES[normalizedHeader(header)]);
+  const headers = rows[0].map(
+    (header) => HEADER_ALIASES[normalizedHeader(cellText(header))],
+  );
   if (!headers.includes("email") && !headers.includes("phone")) {
     throw new Error("Add an Email or Phone column so customers can be matched.");
   }
@@ -97,11 +108,15 @@ export function parseCustomerImport(value: string) {
     const customer: CustomerImportRow = {};
     headers.forEach((header, index) => {
       if (!header) return;
-      const cell = (cells[index] ?? "").trim();
+      const cell = cellText(cells[index]);
       if (cell) customer[header] = cell;
     });
     return customer;
   });
 
   return customerRows.filter((row) => row.email || row.phone);
+}
+
+export function parseCustomerImport(value: string) {
+  return parseCustomerRows(parseCsvRows(value.replace(/^\ufeff/, "")));
 }
