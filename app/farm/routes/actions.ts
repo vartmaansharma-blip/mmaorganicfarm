@@ -91,7 +91,8 @@ export async function updateDeliveryRoute(formData: FormData) {
   });
   if (error) redirect(`/farm/routes?error=${encodeURIComponent(error.message)}`);
 
-  await supabase.rpc("assign_unrouted_customers");
+  const { error: routingError } = await supabase.rpc("assign_unrouted_customers");
+  if (routingError) redirect(`/farm/routes?error=${encodeURIComponent(`Route settings were saved, but customer routing failed: ${routingError.message}`)}`);
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
   revalidatePath("/farm/routes");
@@ -111,8 +112,8 @@ export async function assignRouteDriver(formData: FormData) {
     .eq("role", "driver")
     .eq("active", true)
     .maybeSingle();
-  if (driverError) throw driverError;
-  if (!driver) throw new Error("Choose an active driver.");
+  if (driverError) redirect(`/farm/routes?error=${encodeURIComponent(driverError.message)}`);
+  if (!driver) redirect("/farm/routes?error=Choose+an+active+driver.");
 
   const { error } = await supabase.from("route_driver_assignments").upsert({
     driver_id: driverId,
@@ -120,12 +121,12 @@ export async function assignRouteDriver(formData: FormData) {
     updated_at: new Date().toISOString(),
     updated_by: user.id,
   }, { onConflict: "route_id" });
-  if (error) throw error;
+  if (error) redirect(`/farm/routes?error=${encodeURIComponent(error.message)}`);
 
   const { error: syncError } = await supabase.rpc("sync_route_default_driver", {
     p_route_id: routeId,
   });
-  if (syncError) throw syncError;
+  if (syncError) redirect(`/farm/routes?error=${encodeURIComponent(`The driver was assigned, but future route work could not be synchronized: ${syncError.message}`)}`);
 
   revalidatePath("/farm");
   revalidatePath("/farm/routes");

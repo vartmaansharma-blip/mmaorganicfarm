@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { FormSubmitButton } from "../form-submit-button";
 import { createArea, updateArea } from "../locations/actions";
 import {
   assignRouteDriver,
@@ -74,7 +75,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
 
     <section className={styles.automation}>
       <div><p>Automatic rule</p><h2>Route a customer when payment activates the schedule</h2><span>Existing valid assignments stay unchanged. Unmatched customers remain in the exception queue for a manager.</span></div>
-      <form action={runAutomaticRouting}><button type="submit">Run routing now</button></form>
+      <form action={runAutomaticRouting}><FormSubmitButton pendingLabel="Routing customers…">Run routing now</FormSubmitButton></form>
     </section>
 
     <section className={styles.setup} aria-labelledby="farm-setup-title">
@@ -104,7 +105,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
                   <label>Display order<input defaultValue={area.sort_order} max={999} min={0} name="sortOrder" required type="number" /></label>
                   <label className={styles.toggle}><input defaultChecked={area.active} name="active" type="checkbox" /> Available for routing</label>
                   <p>Deactivation is blocked until its active routes and customers have been moved.</p>
-                  <button type="submit">Save area</button>
+                  <FormSubmitButton pendingLabel="Saving area…">Save area</FormSubmitButton>
                 </form>
               </details>
             </header>
@@ -119,9 +120,9 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
                   <label>Daily stop limit<input defaultValue={route.stop_capacity} max={200} min={1} name="stopCapacity" required type="number" /></label>
                   <label className={styles.wide}>Locality or address terms<textarea defaultValue={(route.match_terms ?? []).join(", ")} name="matchTerms" placeholder="Birsanagar Zone 1, Telco Colony" rows={2} /></label>
                   <label className={styles.wide}>Postal codes<input defaultValue={(route.postal_codes ?? []).join(", ")} name="postalCodes" placeholder="831004, 831019" /></label>
-                  <button type="submit">Save routing rules</button>
+                  <FormSubmitButton pendingLabel="Saving route…">Save routing rules</FormSubmitButton>
                 </form>
-                {drivers.length ? <form action={assignRouteDriver} className={styles.driverForm}><input name="routeId" type="hidden" value={route.id} /><select defaultValue={assignments.get(route.id) ?? ""} name="driverId" required><option value="" disabled>Choose driver</option>{drivers.map((driver) => <option key={driver.user_id} value={driver.user_id}>{driverNames.get(driver.user_id) ?? "Driver"}</option>)}</select><button type="submit">Assign driver</button></form> : <p className={styles.driverMissing}>Add an active staff member with the driver role before assigning this route.</p>}
+                {drivers.length ? <form action={assignRouteDriver} className={styles.driverForm}><input name="routeId" type="hidden" value={route.id} /><select defaultValue={assignments.get(route.id) ?? ""} name="driverId" required><option value="" disabled>Choose driver</option>{drivers.map((driver) => <option key={driver.user_id} value={driver.user_id}>{driverNames.get(driver.user_id) ?? "Driver"}</option>)}</select><FormSubmitButton pendingLabel="Assigning…">Assign driver</FormSubmitButton></form> : <p className={styles.driverMissing}>Add an active staff member with the driver role before assigning this route.</p>}
               </details>)}
             </div>
           </article>;
@@ -132,7 +133,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
     <div className={actionStyles.actions}>
     <details className={styles.createRoute}><summary>Add service area</summary><form action={createArea} className={styles.routeForm}>
       <label className={styles.wide}>Area name<input name="name" placeholder="Bistupur" required /></label>
-      <button type="submit">Create area</button>
+      <FormSubmitButton pendingLabel="Creating area…">Create area</FormSubmitButton>
     </form></details>
     <details className={styles.createRoute}><summary>Add delivery route</summary><form action={createDeliveryRoute} className={styles.routeForm}>
       <label>Service area<select name="areaId" required><option value="">Choose area</option>{activeAreas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label>
@@ -141,7 +142,7 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
       <label>Daily stop limit<input defaultValue={25} max={200} min={1} name="stopCapacity" required type="number" /></label>
       <label className={styles.wide}>Locality or address terms<textarea name="matchTerms" placeholder="Comma-separated terms" rows={2} /></label>
       <label className={styles.wide}>Postal codes<input name="postalCodes" placeholder="831004, 831019" /></label>
-      <button type="submit">Create route</button>
+      <FormSubmitButton pendingLabel="Creating route…">Create route</FormSubmitButton>
     </form></details>
     </div>
   </main>;

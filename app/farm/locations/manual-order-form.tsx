@@ -14,6 +14,7 @@ import {
   type BottleChoice,
 } from "@/lib/order-pricing";
 import { recordCustomerOrder } from "./actions";
+import { FormSubmitButton } from "../form-submit-button";
 import styles from "./locations.module.css";
 import confirmationStyles from "./payment-confirmation.module.css";
 
@@ -294,7 +295,7 @@ function OrderEditor({
         </label>
         <div className={styles.orderSubmit}>
           <p>Only record the order after the money has been received. A manager can correct a manual payment later.</p>
-          <button disabled={!orderReady} type="submit">Record paid order</button>
+          {orderReady ? <FormSubmitButton pendingLabel="Recording paid order…">Record paid order</FormSubmitButton> : <button disabled type="button">Record paid order</button>}
         </div>
       </aside>
     </form>

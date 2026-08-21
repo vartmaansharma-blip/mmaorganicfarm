@@ -16,6 +16,7 @@ import {
   requireFarmManager,
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { FormSubmitButton } from "../form-submit-button";
 import {
   removeCapacityOverride,
   saveCapacityOverride,
@@ -46,7 +47,7 @@ type CapacityRow = {
 export default async function CapacityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ product?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; product?: string }>;
 }) {
   const params = await searchParams;
   const requestedProduct = params.product ?? "";
@@ -145,6 +146,9 @@ export default async function CapacityPage({
         })}
       </nav>
 
+      {params.message ? <p className={styles.notice} role="status">{params.message}</p> : null}
+      {params.error ? <p className={`${styles.notice} ${styles.error}`} role="alert">{params.error}</p> : null}
+
       {migrationPending ? (
         <p className={styles.migrationNotice}>
           Preview mode: multi-product capacity is ready in code but is not active
@@ -189,7 +193,7 @@ export default async function CapacityPage({
                 step={selectedProduct.step}
                 type="number"
               />
-              <button type="submit">Update limit</button>
+              <FormSubmitButton pendingLabel="Updating…">Update limit</FormSubmitButton>
             </div>
           </form>
         ) : null}
@@ -275,7 +279,7 @@ export default async function CapacityPage({
                 type="number"
               />
             </label>
-            <button type="submit">Save day limit</button>
+            <FormSubmitButton pendingLabel="Saving day…">Save day limit</FormSubmitButton>
           </form>
 
           {overrides.length ? (
@@ -294,7 +298,7 @@ export default async function CapacityPage({
                       type="hidden"
                       value={override.delivery_date}
                     />
-                    <button type="submit">Use normal limit</button>
+                    <FormSubmitButton pendingLabel="Removing…">Use normal limit</FormSubmitButton>
                   </form>
                 </div>
               ))}

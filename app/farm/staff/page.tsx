@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteDriver, setDriverActive } from "./actions";
+import { FormSubmitButton } from "../form-submit-button";
 import styles from "./staff.module.css";
 
 export const metadata: Metadata = { title: "Farm staff", robots: { index: false, follow: false } };
@@ -26,8 +27,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
 
     <section className={styles.summary}><article><strong>{drivers.filter((driver) => driver.active).length}</strong><span>Active drivers</span></article><article><strong>{drivers.filter((driver) => !driver.active).length}</strong><span>Inactive drivers</span></article></section>
 
-    {role === "admin" ? <section className={styles.invite}><div><p>Driver onboarding</p><h2>Invite a driver securely</h2><span>The driver receives an email to create their password. No shared password is stored or shown to the manager.</span></div><form action={inviteDriver}><label>Driver name<input name="fullName" required /></label><label>Email address<input name="email" required type="email" /></label><button type="submit">Send driver invitation</button></form></section> : null}
+    {role === "admin" ? <section className={styles.invite}><div><p>Driver onboarding</p><h2>Invite a driver securely</h2><span>The driver receives an email to create their password. No shared password is stored or shown to the manager.</span></div><form action={inviteDriver}><label>Driver name<input name="fullName" required /></label><label>Email address<input name="email" required type="email" /></label><FormSubmitButton pendingLabel="Sending invitation…">Send driver invitation</FormSubmitButton></form></section> : null}
 
-    <section className={styles.list} aria-label="Driver accounts">{drivers.length ? drivers.map((driver) => { const profile = profileById.get(driver.user_id); return <article data-inactive={!driver.active} key={driver.user_id}><div><strong>{profile?.full_name ?? "Driver"}</strong><span>{profile?.email ?? "Email unavailable"}</span></div><b>{driver.active ? "Active" : "Inactive"}</b>{role === "admin" ? <form action={setDriverActive}><input name="userId" type="hidden" value={driver.user_id} /><input name="active" type="hidden" value={driver.active ? "false" : "true"} /><button type="submit">{driver.active ? "Deactivate" : "Restore access"}</button></form> : null}</article>; }) : <p className={styles.empty}>No driver accounts yet. Invite the first driver before preparing morning dispatch.</p>}</section>
+    <section className={styles.list} aria-label="Driver accounts">{drivers.length ? drivers.map((driver) => { const profile = profileById.get(driver.user_id); return <article data-inactive={!driver.active} key={driver.user_id}><div><strong>{profile?.full_name ?? "Driver"}</strong><span>{profile?.email ?? "Email unavailable"}</span></div><b>{driver.active ? "Active" : "Inactive"}</b>{role === "admin" ? <form action={setDriverActive}><input name="userId" type="hidden" value={driver.user_id} /><input name="active" type="hidden" value={driver.active ? "false" : "true"} /><FormSubmitButton pendingLabel="Updating…">{driver.active ? "Deactivate" : "Restore access"}</FormSubmitButton></form> : null}</article>; }) : <p className={styles.empty}>No driver accounts yet. Invite the first driver before preparing morning dispatch.</p>}</section>
   </main>;
 }

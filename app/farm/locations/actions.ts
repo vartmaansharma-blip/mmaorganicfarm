@@ -196,11 +196,12 @@ export async function createArea(formData: FormData) {
   const { error } = await supabase
     .from("delivery_areas")
     .upsert({ active: true, name, slug }, { onConflict: "slug" });
-  if (error) throw error;
+  if (error) redirectWithMessage("/farm/routes", "error", error.message);
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
   revalidatePath("/farm/routes");
+  redirectWithMessage("/farm/routes", "message", "Service area created.");
 }
 
 export async function updateArea(formData: FormData) {
@@ -268,39 +269,39 @@ export async function assignCustomerLocation(formData: FormData) {
   const requestedStopOrder = textValue(formData, "routeStopOrder");
   const deliveryInstructions = textValue(formData, "deliveryInstructions");
 
-  if (!userId) throw new Error("Customer is required.");
+  if (!userId) redirectWithMessage(returnTo, "error", "Customer is required.");
   if (fullName.length < 2 || fullName.length > 120) {
-    throw new Error("Enter the customer's name.");
+    redirectWithMessage(returnTo, "error", "Enter the customer's name.");
   }
   if (phone && phone.length !== 10) {
-    throw new Error("Enter a valid 10-digit phone number.");
+    redirectWithMessage(returnTo, "error", "Enter a valid 10-digit phone number.");
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error("Enter a valid email address.");
+    redirectWithMessage(returnTo, "error", "Enter a valid email address.");
   }
   if (address && (address.length < 8 || address.length > 500)) {
-    throw new Error("Enter a complete delivery address.");
+    redirectWithMessage(returnTo, "error", "Enter a complete delivery address.");
   }
   if (locality && (locality.length < 2 || locality.length > 120)) {
-    throw new Error("Enter a valid locality.");
+    redirectWithMessage(returnTo, "error", "Enter a valid locality.");
   }
-  if (landmark.length > 180) throw new Error("The landmark is too long.");
+  if (landmark.length > 180) redirectWithMessage(returnTo, "error", "The landmark is too long.");
   if (postalCode && !/^\d{6}$/.test(postalCode)) {
-    throw new Error("Enter a valid 6-digit postal code.");
+    redirectWithMessage(returnTo, "error", "Enter a valid 6-digit postal code.");
   }
   if (deliveryInstructions.length > 500) {
-    throw new Error("Keep delivery instructions under 500 characters.");
+    redirectWithMessage(returnTo, "error", "Keep delivery instructions under 500 characters.");
   }
 
   let routeStopOrder: number | null = null;
   if (requestedStopOrder) {
     routeStopOrder = Number(requestedStopOrder);
     if (!Number.isInteger(routeStopOrder) || routeStopOrder < 1 || routeStopOrder > 999) {
-      throw new Error("Enter a route stop position between 1 and 999.");
+      redirectWithMessage(returnTo, "error", "Enter a route stop position between 1 and 999.");
     }
   }
   if (!routeId && routeStopOrder) {
-    throw new Error("Choose a delivery route before setting a stop position.");
+    redirectWithMessage(returnTo, "error", "Choose a delivery route before setting a stop position.");
   }
   if (routeId) {
     const { data: route, error: routeError } = await supabase
@@ -309,10 +310,10 @@ export async function assignCustomerLocation(formData: FormData) {
       .eq("id", routeId)
       .eq("active", true)
       .maybeSingle();
-    if (routeError) throw routeError;
-    if (!route) throw new Error("Choose an active delivery route.");
+    if (routeError) redirectWithMessage(returnTo, "error", routeError.message);
+    if (!route) redirectWithMessage(returnTo, "error", "Choose an active delivery route.");
     if (areaId && route.area_id !== areaId) {
-      throw new Error("The selected route does not belong to the selected area.");
+      redirectWithMessage(returnTo, "error", "That route belongs to another area. Choose a route shown for the selected area.");
     }
     areaId = route.area_id;
   }
@@ -336,21 +337,19 @@ export async function assignCustomerLocation(formData: FormData) {
     .eq("user_id", userId)
     .select("user_id")
     .maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error("The customer profile was not updated.");
+  if (error) redirectWithMessage(returnTo, "error", error.message);
+  if (!data) redirectWithMessage(returnTo, "error", "The customer profile was not updated.");
 
   const { error: routeSyncError } = await supabase.rpc("refresh_customer_route", {
     p_force_reroute: false,
     p_user_id: userId,
   });
-  if (routeSyncError) throw routeSyncError;
+  if (routeSyncError) redirectWithMessage(returnTo, "error", routeSyncError.message);
 
   revalidatePath("/farm");
   revalidatePath("/farm/locations");
   revalidatePath(`/farm/customers/${userId}`);
-  if (returnTo !== "/farm/locations") {
-    redirectWithMessage(returnTo, "message", "Customer profile and route updated.");
-  }
+  redirectWithMessage(returnTo, "message", "Customer profile and route updated.");
 }
 
 function manualProducts(formData: FormData): FarmProductSelection[] {
@@ -363,7 +362,7 @@ function manualProducts(formData: FormData): FarmProductSelection[] {
 }
 
 export async function recordCustomerOrder(formData: FormData) {
-  await requireLocationManager();
+  const { supabase } = await requireLocationManager();
   const admin = createAdminClient();
   const userId = textValue(formData, "userId");
   const returnTo = customerReturnPath(formData, userId);
@@ -420,9 +419,17 @@ export async function recordCustomerOrder(formData: FormData) {
     .select("user_id, phone, address_line")
     .eq("user_id", userId)
     .maybeSingle();
-  if (profileError) throw profileError;
+  if (profileError) redirectWithMessage(returnTo, "error", profileError.message);
   if (!profile?.phone || !profile.address_line) {
     redirectWithMessage(returnTo, "error", "Save the customer's phone and address before recording an order.");
+  }
+
+  const { data: assignedRouteId, error: routeRefreshError } = await supabase.rpc("refresh_customer_route", {
+    p_force_reroute: false,
+    p_user_id: userId,
+  });
+  if (routeRefreshError) {
+    redirectWithMessage(returnTo, "error", `The customer is saved, but automatic routing failed: ${routeRefreshError.message}`);
   }
 
   const pricing = purchaseMode === "plan"
@@ -438,7 +445,7 @@ export async function recordCustomerOrder(formData: FormData) {
       .in("status", ["pending_confirmation", "active", "paused"])
       .limit(1)
       .maybeSingle();
-    if (existingPlanError) throw existingPlanError;
+    if (existingPlanError) redirectWithMessage(returnTo, "error", existingPlanError.message);
     if (existingPlan) {
       redirectWithMessage(
         returnTo,
@@ -460,7 +467,7 @@ export async function recordCustomerOrder(formData: FormData) {
       })
       .select("id")
       .single();
-    if (planError || !plan) throw planError ?? new Error("The delivery plan could not be created.");
+    if (planError || !plan) redirectWithMessage(returnTo, "error", planError?.message ?? "The delivery plan could not be created.");
     deliveryPlanId = plan.id;
 
     const weeklyItems = schedule.flatMap((quantity, index) =>
@@ -478,7 +485,7 @@ export async function recordCustomerOrder(formData: FormData) {
     const { error: scheduleError } = await admin.from("weekly_delivery_items").insert(weeklyItems);
     if (scheduleError) {
       await admin.from("delivery_plans").delete().eq("id", plan.id);
-      throw scheduleError;
+      redirectWithMessage(returnTo, "error", scheduleError.message);
     }
   }
 
@@ -505,7 +512,7 @@ export async function recordCustomerOrder(formData: FormData) {
     .single();
   if (orderError || !order) {
     if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
-    throw orderError ?? new Error("The order could not be recorded.");
+    redirectWithMessage(returnTo, "error", orderError?.message ?? "The order could not be recorded.");
   }
 
   const scheduledDays = purchaseMode === "plan"
@@ -545,7 +552,7 @@ export async function recordCustomerOrder(formData: FormData) {
   if (itemsError) {
     await admin.from("orders").delete().eq("id", order.id);
     if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
-    throw itemsError;
+    redirectWithMessage(returnTo, "error", itemsError.message);
   }
 
   try {
@@ -570,7 +577,7 @@ export async function recordCustomerOrder(formData: FormData) {
     await releaseOrderCapacity(order.id);
     await admin.from("orders").delete().eq("id", order.id);
     if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
-    throw paymentError;
+    redirectWithMessage(returnTo, "error", paymentError.message);
   }
 
   revalidatePath("/farm");
@@ -578,7 +585,13 @@ export async function recordCustomerOrder(formData: FormData) {
   revalidatePath("/farm/routes");
   revalidatePath("/farm/payments");
   revalidatePath(`/farm/customers/${userId}`);
-  redirectWithMessage(returnTo, "message", "Paid order recorded and schedule activated.");
+  redirectWithMessage(
+    returnTo,
+    "message",
+    assignedRouteId
+      ? "Paid order recorded, schedule activated, and route confirmed."
+      : "Paid order recorded and schedule activated. This customer still needs a route.",
+  );
 }
 
 export async function deleteCustomerProfile(formData: FormData) {

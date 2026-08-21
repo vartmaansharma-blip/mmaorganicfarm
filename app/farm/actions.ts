@@ -17,7 +17,7 @@ async function prepareDeliverySheet(deliveryDate: string) {
     .select("status")
     .eq("delivery_date", deliveryDate)
     .maybeSingle();
-  if (dispatchReadError) throw dispatchReadError;
+  if (dispatchReadError) redirect(`/farm?error=${encodeURIComponent(dispatchReadError.message)}`);
   if (dispatch?.status === "released") {
     redirect(`/farm?error=${encodeURIComponent("Reopen the released dispatch before refreshing its delivery sheet.")}`);
   }
@@ -29,7 +29,7 @@ async function prepareDeliverySheet(deliveryDate: string) {
     .eq("is_test", false)
     .in("status", ["out_for_delivery", "delivered", "failed"])
     .limit(1);
-  if (startedError) throw startedError;
+  if (startedError) redirect(`/farm?error=${encodeURIComponent(startedError.message)}`);
   if ((startedStops ?? []).length) {
     redirect(`/farm?error=${encodeURIComponent("The delivery sheet cannot be refreshed after route work has started.")}`);
   }

@@ -76,7 +76,7 @@ export async function prepareDailyDispatch(formData: FormData) {
     .eq("is_test", false)
     .in("status", ["out_for_delivery", "delivered", "failed"])
     .limit(1);
-  if (stopsError) throw stopsError;
+  if (stopsError) redirect(deliverySheetUrl(formData, "error", stopsError.message));
 
   let generated = 0;
   if (!(startedStops ?? []).length) {

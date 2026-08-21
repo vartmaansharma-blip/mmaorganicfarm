@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { resolveCancellationRequest } from "./actions";
+import { FormSubmitButton } from "../form-submit-button";
 import styles from "../operations-list.module.css";
 
 export const metadata: Metadata = { title: "Cancellation requests", robots: { index: false, follow: false } };
@@ -32,7 +33,7 @@ export default async function CancellationRequestsPage({ searchParams }: { searc
         {request.status === "requested" ? <form action={resolveCancellationRequest}>
           <input name="requestId" type="hidden" value={request.id} />
           <label>Farm note<textarea name="note" rows={2} /></label>
-          <div><button name="status" value="approved">Approve</button><button name="status" value="declined">Decline</button></div>
+          <div><FormSubmitButton name="status" pendingLabel="Resolving…" value="approved">Approve</FormSubmitButton><FormSubmitButton name="status" pendingLabel="Resolving…" value="declined">Decline</FormSubmitButton></div>
         </form> : request.resolution_note ? <p className={styles.resolution}>{request.resolution_note}</p> : null}
         <Link href={`/farm/customers/${request.user_id}`}>Open customer</Link>
       </article>) : <div className={styles.empty}>{showHistory ? "No past requests." : "No open requests."}</div>}

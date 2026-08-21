@@ -5,6 +5,7 @@ import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import styles from "../operations-list.module.css";
 import { resetManualPayment } from "./actions";
+import { FormSubmitButton } from "../form-submit-button";
 
 export const metadata: Metadata = { title: "Farm payments", robots: { index: false, follow: false } };
 
@@ -81,7 +82,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
         <p>{formatCheckoutAmount(payment.amount_paise)}</p>
         <small>{paymentMethodLabel(payment.payment_method)} · {payment.provider_payment_id ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
         {!customerId ? <Link href={`/farm/customers/${payment.user_id}`}>Open customer</Link> : null}
-        {role === "admin" && payment.provider === "manual" ? <details className={styles.correction}><summary>Correct this payment</summary><form action={resetManualPayment}><input name="paymentId" type="hidden" value={payment.id} /><input name="userId" type="hidden" value={payment.user_id} /><label>Reason for reset<textarea maxLength={300} minLength={3} name="reason" placeholder="For example: cash entry recorded twice" required rows={2} /></label><p>This removes the payment from totals and cancels the related order and future service. The correction remains recorded.</p><button type="submit">Reset payment</button></form></details> : null}
+        {role === "admin" && payment.provider === "manual" ? <details className={styles.correction}><summary>Correct this payment</summary><form action={resetManualPayment}><input name="paymentId" type="hidden" value={payment.id} /><input name="userId" type="hidden" value={payment.user_id} /><label>Reason for reset<textarea maxLength={300} minLength={3} name="reason" placeholder="For example: cash entry recorded twice" required rows={2} /></label><p>This removes the payment from totals and cancels the related order and future service. The correction remains recorded.</p><FormSubmitButton pendingLabel="Resetting…">Reset payment</FormSubmitButton></form></details> : null}
       </article>) : <div className={styles.empty}>No confirmed payments yet.</div>}
     </section>
 

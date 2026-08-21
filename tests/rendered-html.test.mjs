@@ -199,6 +199,18 @@ const operationsHardeningSchemaUrl = new URL(
 );
 const farmStaffPageUrl = new URL("../app/farm/staff/page.tsx", import.meta.url);
 const farmStaffActionsUrl = new URL("../app/farm/staff/actions.ts", import.meta.url);
+const customerRoutingFieldsUrl = new URL(
+  "../app/farm/customer-routing-fields.tsx",
+  import.meta.url,
+);
+const operationsReliabilitySchemaUrl = new URL(
+  "../supabase/end_to_end_operations_reliability.sql",
+  import.meta.url,
+);
+const farmRoutesStylesUrl = new URL(
+  "../app/farm/routes/routes.module.css",
+  import.meta.url,
+);
 
 test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
@@ -723,7 +735,7 @@ test("provides persistent mobile-first farm delivery operations", async () => {
   assert.match(dashboardActions, /nextDeliveryDateInIndia/);
   assert.match(locations, /Farm customers/);
   assert.match(locations, /Profiles and paid orders/);
-  assert.match(customer, /No area assigned/);
+  assert.match(customer, /CustomerRoutingFields/);
   assert.match(locations, /delivery_plans/);
   assert.match(locations, /Paid orders/);
   assert.match(customer, /Deliveries/);
@@ -952,7 +964,7 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(manualOrderForm, /Live · Paid order/);
   assert.match(manualOrderForm, /Capacity impact/);
   assert.match(manualOrderForm, /calculatePlanPricing/);
-  assert.match(manualOrderForm, /disabled=\{!orderReady\}/);
+  assert.match(manualOrderForm, /orderReady \? <FormSubmitButton/);
   assert.match(actions, /createCustomerProfile/);
   assert.match(actions, /createManagedCustomer/);
   assert.match(actions, /auth\.admin\.createUser/);
@@ -968,7 +980,7 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(essentialSchema, /status = 'paid'/);
   assert.match(essentialSchema, /consume_order_capacity/);
   assert.match(actions, /The customer profile was not updated/);
-  assert.match(actions, /The selected route does not belong to the selected area/);
+  assert.match(actions, /That route belongs to another area/);
   assert.match(actions, /route_stop_order: routeStopOrder/);
   assert.match(locations, /Postal code/);
   assert.match(customer, /Customer account/);
@@ -988,6 +1000,29 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(customerImport, /parseCustomerRows/);
   assert.match(customerImport, /Import no more than 200 customers/);
   assert.doesNotMatch(farmLayout, /requireFarmStaff\(\)/);
+});
+
+test("keeps operational edits consistent and recoverable", async () => {
+  const [routingFields, routesStyles, reliabilitySchema, locationActions, capacityActions] = await Promise.all([
+    readFile(customerRoutingFieldsUrl, "utf8"),
+    readFile(farmRoutesStylesUrl, "utf8"),
+    readFile(operationsReliabilitySchemaUrl, "utf8"),
+    readFile(farmActionsUrl, "utf8"),
+    readFile(capacityActionsUrl, "utf8"),
+  ]);
+
+  assert.match(routingFields, /currentRoute\?\.areaId === nextAreaId/);
+  assert.match(routingFields, /Assign automatically in this area/);
+  assert.match(routingFields, /disabled=\{!areaId\}/);
+  assert.match(routesStyles, /\.area\{overflow:visible\}/);
+  assert.match(reliabilitySchema, /refresh_customer_route_impl\(v_customer\.user_id, false\)/);
+  assert.match(reliabilitySchema, /resolve_cancellation_request_impl/);
+  assert.match(reliabilitySchema, /for update/);
+  assert.match(reliabilitySchema, /status in \('planned', 'ready', 'failed'\)/);
+  assert.doesNotMatch(reliabilitySchema, /refund/i);
+  assert.match(locationActions, /assignedRouteId/);
+  assert.match(locationActions, /This customer still needs a route/);
+  assert.match(capacityActions, /Normal daily capacity updated/);
 });
 
 test("collects delivery details only when a customer starts an order", async () => {

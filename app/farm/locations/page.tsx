@@ -11,6 +11,7 @@ import {
   requireFarmManager,
 } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { FormSubmitButton } from "../form-submit-button";
 import {
   createCustomerProfile,
   importCustomerProfiles,
@@ -321,7 +322,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
                 <label><span>Postal code</span><input inputMode="numeric" maxLength={6} name="postalCode" /></label>
                 <label><span>Area</span><select name="areaId"><option value="">Assign automatically</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label>
               </div>
-              <button type="submit">Save customer</button>
+              <FormSubmitButton pendingLabel="Saving customer…">Save customer</FormSubmitButton>
             </form>
           </details>
 
@@ -332,7 +333,7 @@ export default async function LocationsPage({ searchParams }: LocationsPageProps
               <form action={importCustomerProfiles} className={styles.importForm}>
                 <label htmlFor="customer-file">Excel or CSV file</label>
                 <input accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" id="customer-file" name="customerFile" required type="file" />
-                <button type="submit">Import customers</button>
+                <FormSubmitButton pendingLabel="Importing customers…">Import customers</FormSubmitButton>
               </form>
               {parameters.importError ? (
                 <p className={styles.importError} role="alert">{String(parameters.importError)}</p>

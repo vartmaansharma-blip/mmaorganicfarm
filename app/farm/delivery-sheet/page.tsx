@@ -8,6 +8,7 @@ import {
 import { resolveDeliveryArea } from "@/lib/delivery-area";
 import { canManageLocations, requireFarmStaff } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { FormSubmitButton } from "../form-submit-button";
 import {
   assignRouteDriver,
   prepareDailyDispatch,
@@ -467,21 +468,21 @@ export default async function DeliverySheetPage({
               <form action={prepareDailyDispatch}>
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
-                <button type="submit">{dispatch ? "Refresh dispatch" : "Prepare dispatch"}</button>
+                <FormSubmitButton pendingLabel="Preparing dispatch…">{dispatch ? "Refresh dispatch" : "Prepare dispatch"}</FormSubmitButton>
               </form>
             ) : null}
             {dispatch?.status === "draft" ? (
               <form action={releaseDailyDispatch}>
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
-                <button disabled={releaseBlockers > 0 || visits.length === 0} type="submit">Release routes</button>
+                {releaseBlockers > 0 || visits.length === 0 ? <button disabled type="button">Release routes</button> : <FormSubmitButton pendingLabel="Releasing routes…">Release routes</FormSubmitButton>}
               </form>
             ) : null}
             {dispatch?.status === "released" ? (
               <form action={reopenDailyDispatch}>
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
-                <button className={styles.secondaryButton} type="submit">Reopen dispatch</button>
+                <FormSubmitButton className={styles.secondaryButton} pendingLabel="Reopening…">Reopen dispatch</FormSubmitButton>
               </form>
             ) : null}
           </div>
@@ -558,7 +559,7 @@ export default async function DeliverySheetPage({
                           <input name="makeDefault" type="checkbox" value="yes" />
                           <span>Make this the permanent route driver</span>
                         </label>
-                        <button type="submit">Save today&apos;s driver</button>
+                        <FormSubmitButton pendingLabel="Assigning driver…">Save today&apos;s driver</FormSubmitButton>
                       </form>
                     ) : null}
                     {managerView && route.routeId && !dispatch ? (
@@ -661,7 +662,7 @@ export default async function DeliverySheetPage({
                                 type="text"
                               />
                             </label>
-                            <button type="submit">Save visit</button>
+                            <FormSubmitButton pendingLabel="Saving visit…">Save visit</FormSubmitButton>
                           </form>
                         ) : null}
                       </li>

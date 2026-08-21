@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   canManageLocations,
   requireFarmStaff,
@@ -31,6 +32,24 @@ function capacityValue(formData: FormData) {
   return { dailyLimit: Math.round(value * 100) / 100, productKey };
 }
 
+function capacityPath(productKey: string, key: "error" | "message", message: string) {
+  const product = isCapacityProductId(productKey) ? productKey : "milk";
+  return `/farm/capacity?product=${product}&${key}=${encodeURIComponent(message)}`;
+}
+
+function parsedCapacityValue(formData: FormData) {
+  const requestedProduct = String(formData.get("productKey") ?? "");
+  try {
+    return capacityValue(formData);
+  } catch (error) {
+    redirect(capacityPath(
+      requestedProduct,
+      "error",
+      error instanceof Error ? error.message : "Enter a valid capacity limit.",
+    ));
+  }
+}
+
 async function requireCapacityManager() {
   const context = await requireFarmStaff("/farm/capacity");
   if (!canManageLocations(context.role)) {
@@ -42,7 +61,7 @@ async function requireCapacityManager() {
 export async function updateDefaultCapacity(formData: FormData) {
   const { user } = await requireCapacityManager();
   const admin = createAdminClient();
-  const { dailyLimit, productKey } = capacityValue(formData);
+  const { dailyLimit, productKey } = parsedCapacityValue(formData);
   const { error } = await admin
     .from("production_capacity")
     .upsert({
@@ -51,21 +70,22 @@ export async function updateDefaultCapacity(formData: FormData) {
       updated_at: new Date().toISOString(),
       updated_by: user.id,
     });
-  if (error) throw error;
+  if (error) redirect(capacityPath(productKey, "error", error.message));
   revalidatePath("/farm/capacity");
   revalidatePath("/farm");
+  redirect(capacityPath(productKey, "message", "Normal daily capacity updated."));
 }
 
 export async function saveCapacityOverride(formData: FormData) {
   const { user } = await requireCapacityManager();
   const admin = createAdminClient();
   const deliveryDate = String(formData.get("deliveryDate") ?? "");
-  const { dailyLimit, productKey } = capacityValue(formData);
+  const { dailyLimit, productKey } = parsedCapacityValue(formData);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) {
-    throw new Error("Choose a valid delivery date.");
+    redirect(capacityPath(productKey, "error", "Choose a valid delivery date."));
   }
   if (deliveryDate < nextDeliveryDateInIndia()) {
-    throw new Error("Capacity can only be changed for future deliveries.");
+    redirect(capacityPath(productKey, "error", "Capacity can only be changed for future deliveries."));
   }
 
   const { error } = await admin.from("production_capacity_overrides").upsert(
@@ -78,9 +98,10 @@ export async function saveCapacityOverride(formData: FormData) {
     },
     { onConflict: "product_key,delivery_date" },
   );
-  if (error) throw error;
+  if (error) redirect(capacityPath(productKey, "error", error.message));
   revalidatePath("/farm/capacity");
   revalidatePath("/farm");
+  redirect(capacityPath(productKey, "message", "Capacity for that date was saved."));
 }
 
 export async function removeCapacityOverride(formData: FormData) {
@@ -89,14 +110,15 @@ export async function removeCapacityOverride(formData: FormData) {
   const deliveryDate = String(formData.get("deliveryDate") ?? "");
   const productKey = String(formData.get("productKey") ?? "");
   if (!isCapacityProductId(productKey)) {
-    throw new Error("Choose a valid farm product.");
+    redirect(capacityPath(productKey, "error", "Choose a valid farm product."));
   }
   const { error } = await admin
     .from("production_capacity_overrides")
     .delete()
     .eq("product_key", productKey)
     .eq("delivery_date", deliveryDate);
-  if (error) throw error;
+  if (error) redirect(capacityPath(productKey, "error", error.message));
   revalidatePath("/farm/capacity");
   revalidatePath("/farm");
+  redirect(capacityPath(productKey, "message", "The normal daily limit is active again."));
 }

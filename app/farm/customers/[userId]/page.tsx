@@ -11,6 +11,8 @@ import {
 import { canManageLocations, requireFarmManager } from "@/lib/farm-dashboard";
 import { MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CustomerRoutingFields } from "../../customer-routing-fields";
+import { FormSubmitButton } from "../../form-submit-button";
 import {
   assignCustomerLocation,
   deleteCustomerProfile,
@@ -446,11 +448,15 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
               <label><span>Locality</span><input defaultValue={profile.locality ?? ""} maxLength={120} name="locality" /></label>
               <label><span>Landmark</span><input defaultValue={profile.landmark ?? ""} maxLength={180} name="landmark" /></label>
               <label><span>Postal code</span><input defaultValue={profile.postal_code ?? ""} inputMode="numeric" maxLength={6} name="postalCode" /></label>
-              <label><span>Delivery area</span><select defaultValue={profile.delivery_area_id ?? ""} name="areaId"><option value="">No area assigned</option>{areas.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}</select></label>
-              <label><span>Delivery route</span><select defaultValue={profile.delivery_route_id ?? ""} name="routeId"><option value="">No route assigned</option>{areas.map((candidate) => <optgroup label={candidate.name} key={candidate.id}>{routes.filter((routeOption) => routeOption.area_id === candidate.id).map((routeOption) => <option key={routeOption.id} value={routeOption.id}>{routeOption.name}{routeOption.code ? ` · ${routeOption.code}` : ""}</option>)}</optgroup>)}</select></label>
-              <label><span>Stop position</span><input defaultValue={profile.route_stop_order ?? ""} inputMode="numeric" max="999" min="1" name="routeStopOrder" type="number" /><small>Used to order the driver&apos;s route.</small></label>
+              <CustomerRoutingFields
+                areas={areas.map((candidate) => ({ id: candidate.id, name: candidate.name }))}
+                initialAreaId={profile.delivery_area_id ?? ""}
+                initialRouteId={profile.delivery_route_id ?? ""}
+                initialStopOrder={profile.route_stop_order}
+                routes={routes.map((routeOption) => ({ areaId: routeOption.area_id, code: routeOption.code, id: routeOption.id, name: routeOption.name }))}
+              />
               <label className={styles.wideField}><span>Delivery instructions</span><textarea defaultValue={profile.delivery_instructions ?? ""} maxLength={500} name="deliveryInstructions" placeholder="Gate, floor, preferred handover point…" rows={2} /></label>
-              <div className={styles.formActions}><p>Choosing a route automatically keeps the customer in that route&apos;s area.</p><button type="submit">Save changes</button></div>
+              <div className={styles.formActions}><p>Choose automatic routing or select a route inside the chosen area.</p><FormSubmitButton pendingLabel="Saving customer…">Save changes</FormSubmitButton></div>
             </form>
             {canDelete ? <details className={styles.dangerZone}><summary>More account actions</summary><form action={deleteCustomerProfile}><input name="userId" type="hidden" value={userId} /><div><strong>Delete customer profile</strong><p>Payment and historical order records remain retained.</p></div><label><input name="confirmDelete" required type="checkbox" value="yes" /> I understand this removes the active profile.</label><button type="submit">Delete profile</button></form></details> : null}
           </details>

@@ -100,6 +100,27 @@
   padding: 12px 14px;
 }
 
+.notice {
+  background: #eaf5ee;
+  border: 1px solid #bdd8c5;
+  border-radius: 8px;
+  color: #245a32;
+  font-size: 13px;
+  margin: 20px 0 0;
+  padding: 12px 14px;
+}
+
+.error {
+  background: #fff0ee;
+  border-color: #e0b4ae;
+  color: #8d2118;
+}
+
+.page form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .summary span,
 .summary label {
   display: block;
