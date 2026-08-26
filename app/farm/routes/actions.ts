@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 import { canManageLocations, requireFarmStaff } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export type InlineActionState = {
+  error?: string;
+  message?: string;
+  ok: boolean;
+};
+
 function textValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
@@ -132,6 +138,68 @@ export async function assignRouteDriver(formData: FormData) {
   revalidatePath("/farm/routes");
   revalidatePath("/farm/delivery-sheet");
   redirect("/farm/routes?message=Driver+assigned+to+route.");
+}
+
+export async function assignRouteDriverInline(
+  _previousState: InlineActionState | null,
+  formData: FormData,
+): Promise<InlineActionState> {
+  try {
+    const { supabase, user } = await requireRouteManager();
+    const routeId = textValue(formData, "routeId");
+    const driverId = textValue(formData, "driverId");
+    if (!routeId || !driverId) return { error: "Choose a route and driver.", ok: false };
+
+    const admin = createAdminClient();
+    const { data: driver, error: driverError } = await admin.from("farm_staff")
+      .select("user_id")
+      .eq("user_id", driverId)
+      .eq("role", "driver")
+      .eq("active", true)
+      .maybeSingle();
+    if (driverError) return { error: driverError.message, ok: false };
+    if (!driver) return { error: "Choose an active driver.", ok: false };
+
+    const { error } = await supabase.from("route_driver_assignments").upsert({
+      driver_id: driverId,
+      route_id: routeId,
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    }, { onConflict: "route_id" });
+    if (error) return { error: error.message, ok: false };
+
+    const { error: syncError } = await supabase.rpc("sync_route_default_driver", {
+      p_route_id: routeId,
+    });
+    if (syncError) {
+      return { error: `The driver was assigned, but future route work could not be synchronized: ${syncError.message}`, ok: false };
+    }
+
+    return { message: "Route driver saved. Future unreleased delivery work is synchronized.", ok: true };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "The route driver could not be saved.", ok: false };
+  }
+}
+
+export async function retireDeliveryRoute(
+  _previousState: InlineActionState | null,
+  formData: FormData,
+): Promise<InlineActionState> {
+  try {
+    const { supabase } = await requireRouteManager();
+    const routeId = textValue(formData, "routeId");
+    const replacementRouteId = textValue(formData, "replacementRouteId");
+    const reason = textValue(formData, "reason");
+    const { data, error } = await supabase.rpc("retire_delivery_route", {
+      p_reason: reason,
+      p_replacement_route_id: replacementRouteId,
+      p_route_id: routeId,
+    });
+    if (error) return { error: error.message, ok: false };
+    return { message: `Route closed safely. ${Number(data ?? 0)} customer or future delivery records were moved.`, ok: true };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "The route could not be closed.", ok: false };
+  }
 }
 
 export async function runAutomaticRouting() {

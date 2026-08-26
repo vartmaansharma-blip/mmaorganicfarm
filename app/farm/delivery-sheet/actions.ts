@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { canManageLocations, requireFarmStaff } from "@/lib/farm-dashboard";
 
+export type RouteMoveActionState = {
+  error?: string;
+  message?: string;
+  ok: boolean;
+};
+
 function textValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
@@ -189,4 +195,42 @@ export async function recordDeliveryStop(formData: FormData) {
   revalidatePath("/farm");
   revalidatePath("/farm/delivery-sheet");
   redirect(deliverySheetUrl(formData, "message", "Doorstep checks saved."));
+}
+
+export async function moveDeliveryVisit(
+  _previousState: RouteMoveActionState | null,
+  formData: FormData,
+): Promise<RouteMoveActionState> {
+  try {
+    const { role, supabase } = await requireFarmStaff("/farm/delivery-sheet");
+    if (!canManageLocations(role)) return { error: "Manager access is required.", ok: false };
+
+    const deliveryDate = validDate(textValue(formData, "deliveryDate"));
+    const visitKey = textValue(formData, "visitKey");
+    const routeId = textValue(formData, "routeId");
+    const position = Number.parseInt(textValue(formData, "position"), 10);
+    const applyToCustomer = formData.get("applyToCustomer") === "yes";
+    if (!deliveryDate || !visitKey || !routeId || !Number.isInteger(position)) {
+      return { error: "Choose a route and a valid stop position.", ok: false };
+    }
+
+    const { data, error } = await supabase.rpc("move_delivery_visit", {
+      p_apply_to_customer: applyToCustomer,
+      p_delivery_date: deliveryDate,
+      p_position: position,
+      p_route_id: routeId,
+      p_visit_key: visitKey,
+    });
+    if (error) return { error: error.message, ok: false };
+
+    const savedPosition = Number((data as { stop_position?: number } | null)?.stop_position ?? position);
+    return {
+      message: applyToCustomer
+        ? `Visit moved to position ${savedPosition}; the customer default and future unreleased visits were updated.`
+        : `Visit moved to position ${savedPosition} for this delivery date only.`,
+      ok: true,
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "The visit could not be moved.", ok: false };
+  }
 }

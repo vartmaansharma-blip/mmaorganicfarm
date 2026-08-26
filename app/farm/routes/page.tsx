@@ -5,11 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { FormSubmitButton } from "../form-submit-button";
 import { createArea, updateArea } from "../locations/actions";
 import {
-  assignRouteDriver,
   createDeliveryRoute,
   runAutomaticRouting,
   updateDeliveryRoute,
 } from "./actions";
+import { RetireRouteControl, RouteDriverAssignment } from "./route-management-controls";
 import styles from "./routes.module.css";
 import actionStyles from "./route-actions.module.css";
 
@@ -52,6 +52,10 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
     : { data: [], error: null };
   if (driverProfiles.error) throw driverProfiles.error;
   const driverNames = new Map((driverProfiles.data ?? []).map((profile) => [profile.user_id, profile.full_name ?? "Driver"]));
+  const driverOptions = drivers.map((driver) => ({
+    id: driver.user_id,
+    name: driverNames.get(driver.user_id) ?? "Driver",
+  }));
   const profiles = profilesResult.data ?? [];
   const activeCustomerIds = new Set((plansResult.data ?? []).map((plan) => plan.user_id));
   const unrouted = profiles.filter((profile) => activeCustomerIds.has(profile.user_id) && !profile.delivery_route_id).length;
@@ -122,7 +126,8 @@ export default async function RoutesPage({ searchParams }: { searchParams: Promi
                   <label className={styles.wide}>Postal codes<input defaultValue={(route.postal_codes ?? []).join(", ")} name="postalCodes" placeholder="831004, 831019" /></label>
                   <FormSubmitButton pendingLabel="Saving route…">Save routing rules</FormSubmitButton>
                 </form>
-                {drivers.length ? <form action={assignRouteDriver} className={styles.driverForm}><input name="routeId" type="hidden" value={route.id} /><select defaultValue={assignments.get(route.id) ?? ""} name="driverId" required><option value="" disabled>Choose driver</option>{drivers.map((driver) => <option key={driver.user_id} value={driver.user_id}>{driverNames.get(driver.user_id) ?? "Driver"}</option>)}</select><FormSubmitButton pendingLabel="Assigning…">Assign driver</FormSubmitButton></form> : <p className={styles.driverMissing}>Add an active staff member with the driver role before assigning this route.</p>}
+                {drivers.length ? <RouteDriverAssignment driverId={assignments.get(route.id) ?? null} drivers={driverOptions} routeId={route.id} /> : <p className={styles.driverMissing}>Add an active staff member with the driver role before assigning this route.</p>}
+                <RetireRouteControl replacementRoutes={routes.filter((candidate) => candidate.id !== route.id).map((candidate) => ({ id: candidate.id, name: candidate.name }))} routeId={route.id} routeName={route.name} />
               </details>)}
             </div>
           </article>;

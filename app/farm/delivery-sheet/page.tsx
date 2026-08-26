@@ -17,6 +17,7 @@ import {
   reopenDailyDispatch,
 } from "./actions";
 import { PrintSheetButton } from "./print-button";
+import { RouteStopEditor } from "./route-stop-editor";
 import styles from "./sheet.module.css";
 
 export const metadata: Metadata = {
@@ -61,6 +62,7 @@ type DeliveryVisit = DeliveryRow & {
 };
 
 type RouteRow = {
+  active: boolean;
   area_id: string;
   id: string;
   name: string;
@@ -275,6 +277,13 @@ export default async function DeliverySheetPage({
 
   const deliveryAreas = areasResult.data ?? [];
   const routes = (routesResult.data ?? []) as RouteRow[];
+  const routeOptions = routes
+    .filter((route) => route.active)
+    .map((route) => ({
+      areaName: deliveryAreas.find((area) => area.id === route.area_id)?.name ?? "Service area",
+      id: route.id,
+      name: route.name,
+    }));
   const routeById = new Map(routes.map((route) => [route.id, route]));
   const defaultAssignmentByRoute = new Map(
     (assignmentsResult.data ?? []).map((assignment) => [
@@ -621,6 +630,16 @@ export default async function DeliverySheetPage({
                             <span>Bottle · leave new bottle</span>
                           ) : null}
                         </div>
+
+                        {managerView && dispatch?.status !== "released" && routeOptions.length ? (
+                          <RouteStopEditor
+                            currentPosition={stop.route_stop_order ?? index + 1}
+                            currentRouteId={stop.delivery_route_id}
+                            deliveryDate={deliveryDate}
+                            routes={routeOptions}
+                            visitKey={stop.visit_key}
+                          />
+                        ) : null}
 
                         {stop.status !== "cancelled" ? (
                           <form action={recordDeliveryStop} className={styles.doorstepForm}>
