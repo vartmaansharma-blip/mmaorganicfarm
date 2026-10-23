@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/app/components/theme-toggle";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import styles from "./public-information.module.css";
@@ -27,13 +28,16 @@ export function PublicInformationLayout({
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link className={styles.brand} href="/">
+        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
           <img src="/mma-logo.png" alt="" aria-hidden="true" />
           <span>M&apos;ma Organic Farm</span>
         </Link>
-        <Link className={styles.back} href="/">
-          Back to farm <span aria-hidden="true">↗</span>
-        </Link>
+        <div className="customer-header-actions">
+          <Link className={styles.back} href="/">
+            Back to farm <span aria-hidden="true">↗</span>
+          </Link>
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className={styles.main}>

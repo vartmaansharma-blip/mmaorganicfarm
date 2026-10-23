@@ -224,7 +224,7 @@ test("defines search and social metadata for fresh milk delivery", async () => {
   assert.match(layout, /hero-milk\.png/);
 });
 
-test("loads one consistent Inter typography system", async () => {
+test("loads the shared editorial and interface typography system", async () => {
   const [layout, styles, signInStyles, orderStyles] = await Promise.all([
     readFile(layoutUrl, "utf8"),
     readFile(stylesUrl, "utf8"),
@@ -232,9 +232,11 @@ test("loads one consistent Inter typography system", async () => {
     readFile(new URL("../app/order/order.module.css", import.meta.url), "utf8"),
   ]);
 
-  assert.match(layout, /Inter/);
-  assert.match(layout, /variable: "--font-inter"/);
-  assert.match(styles, /--font-sans: var\(--font-inter\)/);
+  assert.match(layout, /localFont/);
+  assert.match(layout, /Fraunces-Variable/);
+  assert.match(layout, /SpaceGrotesk-Variable/);
+  assert.match(layout, /variable: "--font-space-grotesk"/);
+  assert.match(styles, /--font-sans: var\(--font-space-grotesk\)/);
   assert.match(styles, /font-family: var\(--font-sans\)/);
   assert.doesNotMatch(signInStyles, /font-weight: 900/);
   assert.doesNotMatch(orderStyles, /font-weight: 850/);
@@ -254,9 +256,9 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
     ]);
 
   assert.doesNotMatch(styles, /^main\s*\{/m);
-  assert.match(page, /LandingSidebar/);
+  assert.match(page, /CapsuleNavigation/);
   assert.match(page, /landingStyles\.main/);
-  assert.match(signInStyles, /background: #fff/);
+  assert.match(signInStyles, /background:var\(--ui-page\)/);
   assert.doesNotMatch(signInStyles, /farmShade|farmPanel/);
   assert.doesNotMatch(signInStyles, /grid-template-columns: minmax\(0, 1\.06fr\)/);
   assert.match(orderStyles, /width: min\(100%, 620px\)/);
@@ -282,10 +284,8 @@ test("uses stable profile and home navigation labels", async () => {
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
 
-  assert.match(page, /Dairy should always be fresh from the farm/);
-  assert.match(page, /hero-brand-lockup/);
-  assert.match(page, /order-orbit/);
-  assert.match(page, /START PLAN/);
+  assert.match(page, /RisingGlassHero/);
+  assert.doesNotMatch(page, /order-orbit|bottle-stage/);
   assert.match(page, /₹62 per litre/);
   assert.match(page, /919818804419/);
   assert.match(page, /20 years operating/);

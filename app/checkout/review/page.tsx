@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/app/components/theme-toggle";
 import type { Metadata } from "next";
 import Image from "next/image"; import Link from "next/link"; import { redirect } from "next/navigation";
 import { formatCheckoutAmount, formatOrderItemSchedule } from "@/lib/checkout-display";
@@ -13,7 +14,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const { data: items } = await supabase.from("order_items").select("id,product_key,product_name,quantity,unit,line_total_paise,frequency,scheduled_days,delivery_date").eq("order_id", order.id).eq("user_id", user.id).order("created_at");
   const help = encodeURIComponent(`Hello M'ma Organic Farm, I need help with order ${order.id.slice(0,8).toUpperCase()}.`); const adminReady = hasSupabaseAdminConfig();
   return <main className={styles.page}>
-    <header className={styles.header}><Link className={styles.brand} href="/"><Image src="/mma-logo.png" alt="" width={66} height={56}/><span>M&apos;ma Organic Farm</span></Link><Link href={order.purchase_mode === "adjustment" ? "/calendar" : "/milk"}>Edit order</Link></header>
+    <header className={styles.header}><Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/"><Image src="/mma-logo.png" alt="" width={66} height={56}/><span>M&apos;ma Organic Farm</span></Link><div className="customer-header-actions"><Link href={order.purchase_mode === "adjustment" ? "/calendar" : "/milk"}>Edit order</Link><ThemeToggle /></div></header>
     <div className={styles.shell}><section className={styles.heading}><p>Step 3 of 4</p><h1>Review your order.</h1><span>Nothing is charged until you confirm payment.</span></section>
     <section className={styles.section}><div className={styles.sectionHeading}><div><p>Order {order.id.slice(0,8).toUpperCase()}</p><h2>{order.purchase_mode === "plan" ? "30-delivery farm plan" : order.purchase_mode === "adjustment" ? "Additional milk" : "One-time farm order"}</h2></div><span>{order.status === "pending_payment" ? "Payment started" : "Draft"}</span></div>
       <div className={styles.items}>{(items ?? []).map((item) => <div className={styles.item} key={item.id}><div><strong>{item.product_name}</strong><span>{item.quantity} × {item.unit}</span><small>{formatOrderItemSchedule(item)}</small></div><b>{formatCheckoutAmount(item.line_total_paise)}</b></div>)}</div>

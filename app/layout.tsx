@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const inter = Inter({
+const editorial = localFont({
+  src: "../public/fonts/Fraunces-Variable.ttf",
   display: "swap",
-  subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-fraunces",
+  weight: "100 900",
+});
+const interfaceFont = localFont({
+  src: "../public/fonts/SpaceGrotesk-Variable.ttf",
+  display: "swap",
+  variable: "--font-space-grotesk",
+  weight: "300 700",
 });
 
 const siteUrl = "https://mmaorganicfarm-tvn8.vercel.app";
@@ -69,7 +76,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className={inter.variable} data-scroll-behavior="smooth" lang="en">
+    <html className={`${editorial.variable} ${interfaceFont.variable}`} data-theme="dark" data-scroll-behavior="smooth" lang="en" suppressHydrationWarning>
+      <head>
+        <script id="mama-theme" dangerouslySetInnerHTML={{ __html: `(function(){var t='dark';try{if(localStorage.getItem('mama-theme')==='light')t='light'}catch(e){}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t})()` }} />
+      </head>
       <body>{children}</body>
     </html>
   );

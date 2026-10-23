@@ -1,8 +1,8 @@
 .page {
   min-height: 100svh;
   padding: 0 18px 72px;
-  color: #191919;
-  background: #fff;
+  color:var(--ui-text);
+  background:var(--ui-page);
 }
 
 .header {
@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  border-bottom: 1px solid #ededeb;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .brand {
@@ -31,7 +31,7 @@
 
 .back {
   flex: 0 0 auto;
-  color: #55544f;
+  color:var(--ui-muted);
   font-size: 13px;
   font-weight: 600;
   text-decoration: underline;
@@ -46,13 +46,13 @@
   display: grid;
   gap: 16px;
   padding-bottom: 26px;
-  border-bottom: 1px solid #ededeb;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .eyebrow,
 .sectionNumber {
   margin: 0 0 8px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -67,7 +67,7 @@
 .heading p:not(.eyebrow) {
   max-width: 58ch;
   margin: 14px 0 0;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 15px;
   line-height: 1.55;
 }
@@ -75,9 +75,9 @@
 .status {
   width: fit-content;
   padding: 5px 8px;
-  border-radius: 4px;
-  color: #805500;
-  background: #fff3c4;
+  border-radius:4px;
+  color:var(--ui-warning-text);
+  background:var(--ui-warning-bg);
   font-size: 12px;
   font-weight: 650;
 }
@@ -86,20 +86,20 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 24px 0 0;
-  border-top: 1px solid #ededeb;
-  border-left: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
+  border-left:1px solid var(--ui-border);
 }
 
 .balance div {
   min-width: 0;
   padding: 15px;
-  border-right: 1px solid #ededeb;
-  border-bottom: 1px solid #ededeb;
+  border-right:1px solid var(--ui-border);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .balance dt {
   margin-bottom: 6px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 11px;
   font-weight: 600;
 }
@@ -115,19 +115,19 @@
 .error {
   margin: 20px 0 0;
   padding: 12px 14px;
-  border-radius: 4px;
+  border-radius:4px;
   font-size: 13px;
   line-height: 1.5;
 }
 
 .success {
-  color: #1d5837;
-  background: #edf7f1;
+  color:var(--ui-success-text);
+  background:var(--ui-success-bg);
 }
 
 .error {
-  color: #8a2b2b;
-  background: #fff1f0;
+  color:var(--ui-error-text);
+  background:var(--ui-error-bg);
 }
 
 .timeline,
@@ -135,7 +135,7 @@
 .pauseSection {
   margin-top: 42px;
   padding-top: 28px;
-  border-top: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
 }
 
 .sectionHeading {
@@ -154,13 +154,13 @@
 
 .sectionHeading > a,
 .sectionHeading > span {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 12px;
   font-weight: 600;
 }
 
 .sectionHeading > a {
-  color: #2383e2;
+  color:var(--ui-focus);
 }
 
 .dayGrid {
@@ -176,9 +176,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 13px;
-  border: 1px solid #dfdfdc;
-  border-radius: 5px;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:5px;
+  background:var(--ui-page);
 }
 
 .planSelector {
@@ -192,30 +192,30 @@
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border: 1px solid #d9d9d6;
-  border-radius: 5px;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:5px;
+  background:var(--ui-page);
 }
 
 .planSelector a[aria-current="page"] {
-  border-color: #191919;
-  box-shadow: inset 0 0 0 1px #191919;
+  border-color:var(--ui-border);
+  box-shadow:inset 0 0 0 1px var(--ui-border);
 }
 
 .planSelector span,
 .planSelector small {
-  color: #6f6e69;
+  color:var(--ui-muted);
   font-size: 12px;
 }
 
 .daySelected {
-  border-color: #191919;
-  box-shadow: inset 0 0 0 1px #191919;
+  border-color:var(--ui-border);
+  box-shadow:inset 0 0 0 1px var(--ui-border);
 }
 
 .dayCard time,
 .daySelected time {
-  color: #55544f;
+  color:var(--ui-muted);
   font-size: 12px;
   font-weight: 650;
 }
@@ -244,8 +244,8 @@
 .pausedNote {
   margin: 0;
   padding: 16px;
-  border-left: 3px solid #e9b949;
-  background: #fff9e8;
+  border-left:3px solid var(--ui-action);
+  background:var(--ui-warning-bg);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -263,10 +263,10 @@
 .pauseForm button,
 .pauseList button {
   min-height: 42px;
-  border: 1px solid #d3d3d1;
-  border-radius: 4px;
-  color: #191919;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:4px;
+  color:var(--ui-text);
+  background:var(--ui-page);
   font: inherit;
   font-size: 13px;
   font-weight: 650;
@@ -274,15 +274,15 @@
 }
 
 .dayActions button:first-of-type {
-  color: #fff;
-  border-color: #191919;
-  background: #191919;
+  color:var(--ui-on-action);
+  border-color:var(--ui-border);
+  background:var(--ui-action);
 }
 
 .itemEditor {
   padding: 18px 0;
-  border-top: 1px solid #ededeb;
-  border-bottom: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .itemEditor > div:first-child,
@@ -295,7 +295,7 @@
 .itemEditor > div:first-child > span,
 .addOnRow small,
 .pauseList small {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 13px;
 }
 
@@ -309,7 +309,7 @@
 .pauseForm label {
   display: grid;
   gap: 7px;
-  color: #55544f;
+  color:var(--ui-muted);
   font-size: 12px;
   font-weight: 600;
 }
@@ -319,10 +319,10 @@
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
-  border: 1px solid #d3d3d1;
-  border-radius: 4px;
-  color: #191919;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:4px;
+  color:var(--ui-text);
+  background:var(--ui-page);
   font: inherit;
   font-size: 15px;
 }
@@ -335,9 +335,9 @@
 
 .itemEditor form > div button:first-child,
 .pauseForm > button {
-  color: #fff;
-  border-color: #191919;
-  background: #191919;
+  color:var(--ui-on-action);
+  border-color:var(--ui-border);
+  background:var(--ui-action);
 }
 
 .addOns {
@@ -356,7 +356,7 @@
   align-items: center;
   gap: 14px;
   padding: 14px 0;
-  border-top: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
 }
 
 .addOnRow button,
@@ -376,7 +376,7 @@
 
 .pauseList {
   margin-top: 22px;
-  border-bottom: 1px solid #ededeb;
+  border-bottom:1px solid var(--ui-border);
 }
 
 @media (min-width: 620px) {

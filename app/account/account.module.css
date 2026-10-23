@@ -1,8 +1,8 @@
 .page {
   min-height: 100svh;
   padding: 0 24px 72px;
-  color: #191919;
-  background: #fff;
+  color:var(--ui-text);
+  background:var(--ui-page);
 }
 
 .header {
@@ -13,7 +13,7 @@
   justify-content: space-between;
   gap: 24px;
   margin: 0 auto;
-  border-bottom: 1px solid rgba(20, 20, 20, 0.13);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .brand {
@@ -43,18 +43,18 @@
 }
 
 .notice {
-  background: #eef7f0;
-  border: 1px solid #bad7c1;
-  color: #244c30;
+  background:var(--ui-success-bg);
+  border:1px solid var(--ui-border);
+  color:var(--ui-success-text);
   font-size: 13px;
   margin: 0 0 24px;
   padding: 11px 13px;
 }
 
 .noticeError {
-  background: #fff1ef;
-  border-color: #e2b8b0;
-  color: #7d2b21;
+  background:var(--ui-error-bg);
+  border-color:var(--ui-border);
+  color:var(--ui-error-text);
 }
 
 .pageHeading {
@@ -63,12 +63,12 @@
   justify-content: space-between;
   gap: 32px;
   padding-bottom: 32px;
-  border-bottom: 1px solid #ededeb;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .eyebrow {
   margin: 0 0 8px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 14px;
   font-weight: 500;
 }
@@ -76,13 +76,13 @@
 .content h1 {
   margin: 0;
   font-size: 40px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.15;
 }
 
 .intro {
   margin: 10px 0 0;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 16px;
   line-height: 1.55;
 }
@@ -94,9 +94,9 @@
   align-items: center;
   justify-content: center;
   padding: 0 16px;
-  border-radius: 4px;
-  color: #fff;
-  background: #191919;
+  border-radius:4px;
+  color:var(--ui-on-action);
+  background:var(--ui-action);
   font-size: 14px;
   font-weight: 600;
 }
@@ -113,7 +113,7 @@
 
 .sectionHeading p {
   margin: 6px 0 18px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 15px;
   line-height: 1.5;
 }
@@ -124,15 +124,15 @@
   align-items: center;
   gap: 14px;
   padding: 18px 0;
-  border-top: 1px solid #ededeb;
-  border-bottom: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .avatar,
 .avatarFallback {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius:50%;
 }
 
 .avatar {
@@ -142,8 +142,8 @@
 .avatarFallback {
   display: grid;
   place-items: center;
-  color: #fff;
-  background: #2383e2;
+  color:var(--ui-on-action);
+  background:var(--ui-action);
   font-size: 20px;
   font-weight: 650;
 }
@@ -160,7 +160,7 @@
 }
 
 .identity span {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 14px;
 }
 
@@ -168,7 +168,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #55544f;
+  color:var(--ui-muted);
   font-size: 13px;
   font-weight: 500;
 }
@@ -176,8 +176,8 @@
 .status::before {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
-  background: #2eaadc;
+  border-radius:50%;
+  background:var(--ui-focus);
   content: "";
 }
 
@@ -190,12 +190,12 @@
   grid-template-columns: 150px minmax(0, 1fr);
   gap: 24px;
   padding: 18px 0;
-  border-bottom: 1px solid #ededeb;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .details div + div {
   padding-left: 0;
-  border-left: 0;
+  border-left:0;
 }
 
 .details dt {
@@ -205,7 +205,7 @@
 
 .details dd {
   margin: 0;
-  color: #55544f;
+  color:var(--ui-muted);
   font-size: 15px;
   line-height: 1.55;
 }
@@ -213,7 +213,7 @@
 .editDetails {
   display: inline-flex;
   margin-top: 18px;
-  color: #2383e2;
+  color:var(--ui-focus);
   font-size: 14px;
   font-weight: 600;
 }
@@ -221,7 +221,7 @@
 .planSection {
   margin-top: 44px;
   padding-top: 32px;
-  border-top: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
 }
 
 .planHeading {
@@ -234,13 +234,13 @@
 .planHeading h2 {
   margin: 0;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.25;
 }
 
 .planHeading p {
   margin: 6px 0 0;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 15px;
   line-height: 1.5;
 }
@@ -248,9 +248,9 @@
 .planStatus {
   flex: 0 0 auto;
   padding: 5px 9px;
-  border-radius: 4px;
-  color: #805500;
-  background: #fff3c4;
+  border-radius:4px;
+  color:var(--ui-warning-text);
+  background:var(--ui-warning-bg);
   font-size: 12px;
   font-weight: 650;
 }
@@ -267,9 +267,9 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid #dededb;
-  border-radius: 6px;
-  background: #fafaf8;
+  border:1px solid var(--ui-border);
+  border-radius:6px;
+  background:var(--ui-surface);
 }
 
 .planSwitcher > article > div {
@@ -279,12 +279,12 @@
 
 .planSwitcher span,
 .planSwitcher small {
-  color: #6f6e69;
+  color:var(--ui-muted);
   font-size: 12px;
 }
 
 .planSwitcher a {
-  color: #1769aa;
+  color:var(--ui-focus);
   font-size: 13px;
   font-weight: 650;
 }
@@ -298,8 +298,8 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   margin: 24px 0 0;
-  background: #ededeb;
-  border: 1px solid #ededeb;
+  background:var(--ui-border);
+  border:1px solid var(--ui-border);
 }
 
 .planActions {
@@ -316,27 +316,27 @@
   align-items: center;
   justify-content: center;
   padding: 0 14px;
-  border: 1px solid #d3d3d1;
-  border-radius: 4px;
+  border:1px solid var(--ui-border);
+  border-radius:4px;
   font-size: 13px;
   font-weight: 650;
 }
 
 .openCalendar {
-  color: #fff;
-  border-color: #191919;
-  background: #191919;
+  color:var(--ui-on-action);
+  border-color:var(--ui-border);
+  background:var(--ui-action);
 }
 
 .planSummary div {
   min-width: 0;
   padding: 16px;
-  background: #fff;
+  background:var(--ui-page);
 }
 
 .planSummary dt {
   margin-bottom: 7px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 12px;
   font-weight: 600;
 }
@@ -370,12 +370,12 @@
 
 .upcomingHeading p {
   margin-top: 5px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 13px;
 }
 
 .upcomingHeading > a {
-  color: #2383e2;
+  color:var(--ui-focus);
   font-size: 13px;
   font-weight: 650;
 }
@@ -393,14 +393,14 @@
   display: flex;
   flex-direction: column;
   padding: 12px;
-  border: 1px solid #deddd8;
-  border-radius: 5px;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:5px;
+  background:var(--ui-page);
 }
 
 .upcomingGrid time,
 .upcomingGrid small {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 10px;
 }
 
@@ -420,8 +420,8 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   margin-top: 16px;
-  border-top: 1px solid #ededeb;
-  border-bottom: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .planDay {
@@ -431,7 +431,7 @@
 }
 
 .planDay + .planDay {
-  border-left: 1px solid #ededeb;
+  border-left:1px solid var(--ui-border);
 }
 
 .planDay span,
@@ -441,7 +441,7 @@
 
 .planDay span {
   margin-bottom: 6px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 11px;
   font-weight: 600;
 }
@@ -472,9 +472,9 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 5px 12px;
   padding: 13px 14px;
-  border: 1px solid #deddd8;
-  border-radius: 4px;
-  background: #f7f7f5;
+  border:1px solid var(--ui-border);
+  border-radius:4px;
+  background:var(--ui-surface);
 }
 
 .addOnSchedule article span,
@@ -484,19 +484,19 @@
 
 .addOnSchedule article small {
   grid-column: 1 / -1;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 11px;
 }
 
 .planNote {
   margin: 12px 0 0;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .cancelRequest {
-  border-top: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
   margin-top: 22px;
   padding-top: 18px;
 }
@@ -509,7 +509,7 @@
 
 .cancelRequest > p,
 .activityHeading p {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -530,8 +530,8 @@
 }
 
 .cancelRequest textarea {
-  border: 1px solid #d3d3d1;
-  border-radius: 4px;
+  border:1px solid var(--ui-input-border);
+  border-radius:4px;
   font: inherit;
   padding: 10px;
   resize: vertical;
@@ -539,9 +539,9 @@
 
 .cancelRequest button,
 .activityHeading button {
-  background: #fff;
-  border: 1px solid #d3d3d1;
-  border-radius: 4px;
+  background:var(--ui-page);
+  border:1px solid var(--ui-border);
+  border-radius:4px;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -552,7 +552,7 @@
 
 .activitySection,
 .requestSection {
-  border-top: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
   margin-top: 44px;
   padding-top: 30px;
 }
@@ -577,7 +577,7 @@
 .activityList article,
 .requestSection article {
   align-items: flex-start;
-  border-top: 1px solid #ededeb;
+  border-top:1px solid var(--ui-border);
   display: flex;
   gap: 18px;
   justify-content: space-between;
@@ -600,14 +600,14 @@
 .requestSection span,
 .requestSection p,
 .activityList time {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 12px;
   line-height: 1.45;
   margin: 0;
 }
 
 .activityList .unread {
-  border-left: 3px solid #2383e2;
+  border-left:3px solid var(--ui-focus);
   padding-left: 12px;
 }
 
@@ -616,11 +616,11 @@
 }
 
 .orderHistory {
-  border-top: 1px solid #e6e5e1;
+  border-top:1px solid var(--ui-border);
 }
 
 .orderHistory details {
-  border-bottom: 1px solid #e6e5e1;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .orderHistory summary {
@@ -648,19 +648,19 @@
 
 .orderHistory summary strong,
 .orderHistory summary b {
-  color: #1f1f1d;
+  color:var(--ui-text);
   font-size: 15px;
 }
 
 .orderHistory summary small,
 .orderHistory details > div > small {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 12px;
   text-transform: capitalize;
 }
 
 .orderHistory details > div {
-  background: #f7f7f5;
+  background:var(--ui-surface);
   margin-bottom: 14px;
   padding: 14px;
 }
@@ -680,16 +680,16 @@
   gap: 24px;
   margin-top: 52px;
   padding-top: 22px;
-  border-top: 1px solid #ededeb;
-  color: #9b9a97;
+  border-top:1px solid var(--ui-border);
+  color:var(--ui-muted);
   font-size: 13px;
 }
 
 .signOut {
   padding: 0;
-  border: 0;
-  color: #55544f;
-  background: transparent;
+  border:0;
+  color:var(--ui-muted);
+  background:transparent;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -764,11 +764,11 @@
   }
 
   .planDay:nth-child(5) {
-    border-left: 0;
+    border-left:0;
   }
 
   .planDay:nth-child(n + 5) {
-    border-top: 1px solid #ededeb;
+    border-top:1px solid var(--ui-border);
   }
 
   .addOnSchedule > div {
@@ -781,3 +781,5 @@
     gap: 12px;
   }
 }
+
+.cancelRequest textarea::placeholder { color:var(--ui-muted); opacity:1; }

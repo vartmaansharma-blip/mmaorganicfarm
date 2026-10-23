@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/app/components/theme-toggle";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -44,11 +45,14 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={styles.brand} href="/" aria-label="M'ma Organic Farm">
+        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
           <Image src="/mma-logo.png" alt="" width={72} height={62} priority />
           <span>M&apos;ma Organic Farm</span>
         </Link>
-        <span className={styles.location}>Fresh milk in Jamshedpur</span>
+        <div className="customer-header-actions">
+          <span className={styles.location}>Fresh milk in Jamshedpur</span>
+          <ThemeToggle />
+        </div>
       </header>
 
       <section className={styles.authPanel}>

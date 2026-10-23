@@ -1,18 +1,10 @@
-import { LandingSidebar } from "@/app/components/landing-sidebar";
+import { CapsuleNavigation } from "@/app/components/capsule-navigation";
+import { RisingGlassHero } from "@/app/components/rising-glass-hero";
 import landingStyles from "./landing.module.css";
 
 const orderPath = "/milk";
 const whatsappContact =
   "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%20have%20a%20question%20about%20fresh%20milk%20delivery.";
-
-const orderLoopText = "START PLAN • FRESH MILK • ";
-const orderLoopLetters = Array.from(orderLoopText);
-
-const facts = [
-  ["₹62", "per litre"],
-  ["Your days", "your schedule"],
-  ["30", "deliveries per plan"],
-];
 
 const trust = [
   {
@@ -132,77 +124,12 @@ export default async function Home() {
         Skip to content
       </a>
 
-      <LandingSidebar />
+      <CapsuleNavigation />
 
       <main className={landingStyles.main} id="main">
-        <section className="hero" id="home">
-          <header className="topbar">
-            <p>Jamshedpur · Fresh from farm</p>
-            <div className="topbar-actions">
-              <a
-                className="order-orbit"
-                href={orderPath}
-                aria-label="Start a fresh M'ma milk order"
-              >
-                <span className="order-orbit-text" aria-hidden="true">
-                  {orderLoopLetters.map((letter, index) => (
-                    <span
-                      key={`${letter}-${index}`}
-                      style={{
-                        transform: `rotate(${index * (360 / orderLoopLetters.length)}deg) translateY(var(--order-radius, -36px))`,
-                      }}
-                    >
-                      {letter}
-                    </span>
-                  ))}
-                </span>
-                <span className="order-orbit-core" aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </header>
+        <RisingGlassHero />
 
-          <div className="hero-copy">
-            <div className="hero-brand-lockup" aria-label="M'ma Organic Farm">
-              <img src="/mma-logo.png" alt="" aria-hidden="true" />
-              <span><strong>M&apos;ma</strong><small>Organic Farm</small></span>
-            </div>
-            <p className="eyebrow">A milk routine built around your home</p>
-            <h1>Dairy should always be fresh from the farm.</h1>
-            <p className="hero-intro">
-              Choose your delivery days, set the litres your family needs, and
-              receive fresh milk at home in a glass bottle.
-            </p>
-            <div className="hero-actions">
-              <a className="button button-dark" href={orderPath}>
-                Shop Now <span>↗</span>
-              </a>
-              <a className="button button-light" href="#milk">
-                About Us <span>↓</span>
-              </a>
-            </div>
-            <p className="hero-reassurance">
-              From ₹62 per litre. Review your complete schedule before continuing.
-            </p>
-          </div>
-
-          <a className="bottle-stage" href="#milk" aria-label="Explore M'ma farm fresh milk">
-            <span className="orbit orbit-one" />
-            <span className="orbit orbit-two" />
-            <span className="bottle-shadow" />
-            <img src="/hero-milk.png" alt="M'ma Farms fresh milk bottle" />
-            <span className="bottle-note">Hover to pause · Click to explore</span>
-          </a>
-
-          <div className="hero-facts" aria-label="Key milk facts">
-            {facts.map(([value, label]) => (
-              <div key={value}>
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
+        <div id="site-content" className={landingStyles.content} tabIndex={-1}>
         <section className="confidence-strip" aria-label="Why families choose M'ma Organic Farm">
           {trust.map((item) => (
             <article key={item.number}>
@@ -388,6 +315,7 @@ export default async function Home() {
           </nav>
           <p className="footer-copyright">© 2026 M&apos;ma Organic Farm</p>
         </footer>
+        </div>
       </main>
 
       <a
