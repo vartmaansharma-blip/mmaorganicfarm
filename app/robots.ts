@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: ["/", "/pricing", "/shipping", "/contact", "/terms", "/privacy", "/cancellation-refunds"],
       disallow: ["/account", "/calendar", "/farm", "/order"],
     },
-    sitemap: "https://mmaorganicfarm-tvn8.vercel.app/sitemap.xml",
+    sitemap: "https://mmaorganicfarm.vercel.app/sitemap.xml",
   };
 }

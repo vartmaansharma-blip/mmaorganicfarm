@@ -61,7 +61,7 @@ const officialPoints = [
   },
 ];
 
-const siteUrl = "https://mmaorganicfarm-tvn8.vercel.app";
+const siteUrl = "https://mmaorganicfarm.vercel.app";
 
 const structuredData = {
   "@context": "https://schema.org",
