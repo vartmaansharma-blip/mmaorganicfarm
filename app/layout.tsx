@@ -1,29 +1,36 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const inter = Inter({
+const editorial = localFont({
+  src: "../public/fonts/Fraunces-Variable.ttf",
   display: "swap",
-  subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-fraunces",
+  weight: "100 900",
+});
+const interfaceFont = localFont({
+  src: "../public/fonts/SpaceGrotesk-Variable.ttf",
+  display: "swap",
+  variable: "--font-space-grotesk",
+  weight: "300 700",
 });
 
 const siteUrl = "https://mmaorganicfarm-tvn8.vercel.app";
-const siteTitle = "M'ma Organic Farm | Fresh Farm Milk Delivery in Jamshedpur";
+const siteTitle = "Mama Organic Farm | Fresh Farm Milk Delivery in Jamshedpur";
 const siteDescription =
-  "Order fresh farm milk in Jamshedpur from M'ma Organic Farm. ₹62 per litre, glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
+  "Order fresh farm milk in Jamshedpur from Mama Organic Farm. ₹62 per litre, glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: siteTitle,
-    template: "%s | M'ma Organic Farm",
+    template: "%s | Mama Organic Farm",
   },
   description: siteDescription,
   keywords: [
     "fresh milk delivery Jamshedpur",
     "farm fresh milk Jamshedpur",
-    "M'ma Organic Farm",
+    "Mama Organic Farm",
     "Mma Organic Farm",
     "glass bottle milk Jamshedpur",
     "milk home delivery Jamshedpur",
@@ -36,11 +43,11 @@ export const metadata: Metadata = {
     title: siteTitle,
     description: siteDescription,
     url: siteUrl,
-    siteName: "M'ma Organic Farm",
+    siteName: "Mama Organic Farm",
     images: [
       {
         url: "/hero-milk.png",
-        alt: "M'ma Organic Farm fresh milk bottle",
+        alt: "Mama Organic Farm fresh milk bottle",
       },
     ],
     locale: "en_IN",
@@ -69,7 +76,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className={inter.variable} data-scroll-behavior="smooth" lang="en">
+    <html className={`${editorial.variable} ${interfaceFont.variable}`} data-theme="dark" data-scroll-behavior="smooth" lang="en" suppressHydrationWarning>
+      <head>
+        <script id="mama-theme" dangerouslySetInnerHTML={{ __html: `(function(){var t='dark';try{if(localStorage.getItem('mama-theme')==='light')t='light'}catch(e){}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t})()` }} />
+      </head>
       <body>{children}</body>
     </html>
   );

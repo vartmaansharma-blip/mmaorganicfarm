@@ -1,4 +1,18 @@
 :root {
+  --font-editorial: var(--font-fraunces), Georgia, serif;
+  --hero-paper: #f7f3ea;
+  --hero-ink: #291b0f;
+  --hero-yellow: #ffcb32;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --page-gutter: clamp(24px, 5.6vw, 100px);
+  --home-header-height: 126px;
   --ink: #141414;
   --paper: #f4f2ec;
   --white: #fff;
@@ -6,8 +20,32 @@
   --blue: #8ecbed;
   --green: #274839;
   --line: rgba(20, 20, 20, 0.15);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* One shared theme contract; first visits default to warm charcoal. */
+:root, :root[data-theme="dark"] {
+  color-scheme: dark;
+  --hero-paper: #171c18;
+  --hero-surface: #202721;
+  --hero-ink: #f5eee1;
+  --hero-muted: #bcb6a8;
+  --hero-yellow: #f6cb49;
+  --hero-line: #414b3e;
+  --hero-hover: #2a342a;
+  --hero-active: #3f3a24;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --hero-paper: #f7f3ea;
+  --hero-surface: #f0eadd;
+  --hero-ink: #291b0f;
+  --hero-muted: #625747;
+  --hero-yellow: #ffcb32;
+  --hero-line: #d8d0c3;
+  --hero-hover: #eee7d8;
+  --hero-active: #fbe8b0;
 }
 
 * {
@@ -348,7 +386,8 @@ a {
 h1,
 h2 {
   margin: 0;
-  font-weight: 900;
+  font-family: var(--font-editorial);
+  font-weight: 500;
   line-height: 0.98;
 }
 
@@ -1454,3 +1493,8 @@ h1 {
     height: 36px;
   }
 }
+
+/* Shared destinations stay clear of the homepage's sticky capsule header. */
+#site-content, #milk, #about, #farm { scroll-margin-top: calc(var(--home-header-height) + 20px); }
+@media (max-width: 900px) { :root { --home-header-height: 80px; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

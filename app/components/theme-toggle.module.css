@@ -1,0 +1,4 @@
+.toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border: 1px solid var(--hero-line); border-radius: 50%; background: transparent; color: var(--hero-ink); cursor: pointer; }
+.toggle:hover { background: var(--hero-hover); }
+.toggle:focus-visible { outline: 2px solid var(--hero-ink); outline-offset: 3px; }
+@media (scripting: none) { .toggle { display: none; } }
