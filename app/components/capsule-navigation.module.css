@@ -1,4 +1,5 @@
 .header {
+  opacity: var(--hero-chrome-opacity, 1);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -19,6 +20,9 @@
 .capsule a[aria-current] { background: var(--hero-active); }
 .shop { color: #291b0f; justify-self: end; display: flex; align-items: center; justify-content: center; gap: 22px; min-height: 48px; padding: 0 24px; background: var(--hero-yellow); border-radius: 999px; font-size: 14px; font-weight: 600; transition: background-color 160ms ease; }
 .shop:hover { background: #eeb913; }
+.shop span:last-child { transition: transform 180ms ease; }
+.shop:active, .menuButton:active { transform: scale(.98); }
+@media (hover: hover) and (pointer: fine) { .shop:hover span:last-child { transform: translateX(3px); } }
 .header a:focus-visible { outline: 2px solid var(--hero-ink); outline-offset: 4px; }
 @media (max-width: 1000px) {
   .header { gap: 16px; }
@@ -40,6 +44,8 @@
 .drawerLinks a small { font-size: 11px; color: var(--hero-muted); }
 .drawerLinks a[aria-current] { background: var(--hero-active); border-radius: 10px; border-bottom-color: transparent; }
 .drawerLinks a > span:last-child { font-size: 18px; }
+.drawerLinks a { transition: background-color 160ms ease; }
+.drawerLinks a:hover { background: var(--hero-hover); }
 .drawerFooter { margin-top: auto; padding-top: 40px; padding-bottom: env(safe-area-inset-bottom); }
 .drawerFooter p { color: var(--hero-muted); font-size: 14px; line-height: 1.6; }
 .drawerFooter a { color: #291b0f; display: flex; justify-content: space-between; align-items: center; min-height: 52px; padding: 0 22px; border-radius: 999px; background: var(--hero-yellow); font-size: 15px; font-weight: 500; }
@@ -57,10 +63,12 @@
   .menuButton:focus-visible { outline: 2px solid var(--hero-ink); outline-offset: 3px; }
 }
 @media (max-height: 650px) { .drawerLinks { margin-top: 16px; } .drawerLinks a { min-height: 58px; } .drawerFooter { padding-top: 20px; } }
-@media (prefers-reduced-motion: reduce) { .header a { transition: none; } .drawer[open] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .header a, .shop span:last-child, .drawerLinks a { transition: none; } .header a:active, .menuButton:active, .shop:hover span:last-child { transform: none; } .drawer[open] { animation: none; } }
 
 .noScriptNav { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; }
 .noScriptNav a { display: flex; align-items: center; min-height: 44px; }
 @media (scripting: none) { .menuButton { display: none; } .header { position: relative; } }
 
 :global(html[data-theme="light"]) .brand img { mix-blend-mode: multiply; }
+
+:global(html[data-hero-immersive="true"]) .header { visibility: hidden; }

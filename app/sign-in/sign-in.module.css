@@ -1,7 +1,7 @@
 .page {
   min-height: 100svh;
-  color: #191919;
-  background: #fff;
+  color:var(--ui-text);
+  background:var(--ui-page);
 }
 
 .header {
@@ -11,14 +11,14 @@
   justify-content: space-between;
   gap: 24px;
   padding: 10px clamp(20px, 4vw, 52px);
-  border-bottom: 1px solid #ededeb;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: #191919;
+  color:var(--ui-text);
 }
 
 .brand img {
@@ -34,7 +34,7 @@
 }
 
 .location {
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 12px;
 }
 
@@ -50,7 +50,7 @@
 .authContent h1 {
   margin: 0;
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.18;
   text-align: center;
 }
@@ -58,7 +58,7 @@
 .intro {
   max-width: 46ch;
   margin: 12px auto 28px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 14px;
   line-height: 1.55;
   font-weight: 400;
@@ -69,23 +69,23 @@
 .message {
   margin: 0 0 18px;
   padding: 12px 14px;
-  border: 1px solid;
-  border-radius: 4px;
+  border:1px solid;
+  border-radius:4px;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.45;
 }
 
 .error {
-  color: #812f26;
-  border-color: #d5a29b;
-  background: #fff1ef;
+  color:var(--ui-error-text);
+  border-color:var(--ui-border);
+  background:var(--ui-error-bg);
 }
 
 .message {
-  color: #24503b;
-  border-color: #9fc2ae;
-  background: #edf8f1;
+  color:var(--ui-success-text);
+  border-color:var(--ui-border);
+  background:var(--ui-success-bg);
 }
 
 .googleButton,
@@ -97,8 +97,8 @@
   justify-content: center;
   gap: 14px;
   padding: 0 18px;
-  border: 1px solid #d3d3d1;
-  border-radius: 4px;
+  border:1px solid var(--ui-border);
+  border-radius:4px;
   font: inherit;
   font-weight: 650;
   cursor: pointer;
@@ -106,8 +106,8 @@
 }
 
 .googleButton {
-  color: #141414;
-  background: #fff;
+  color:var(--ui-text);
+  background:var(--ui-page);
 }
 
 .googleButton img {
@@ -121,20 +121,20 @@
 }
 
 .googleButton:hover {
-  background: #f7f7f5;
-  border-color: #b8b8b5;
+  background:var(--ui-surface);
+  border-color:var(--ui-border);
 }
 
 .googleButton:disabled {
-  color: #787774;
-  background: #f7f7f5;
-  border-color: #d3d3d1;
+  color:var(--ui-muted);
+  background:var(--ui-surface);
+  border-color:var(--ui-border);
   cursor: wait;
 }
 
 .inlineError {
   margin: 10px 0 0;
-  color: #812f26;
+  color:var(--ui-error-text);
   font-size: 12px;
   line-height: 1.45;
   text-align: center;
@@ -145,7 +145,7 @@
   align-items: center;
   gap: 14px;
   margin: 22px 0;
-  color: #9b9a97;
+  color:var(--ui-muted);
   font-size: 11px;
   font-weight: 500;
 }
@@ -155,7 +155,7 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: #ededeb;
+  background:var(--ui-border);
 }
 
 .emailForm {
@@ -174,24 +174,26 @@
   width: 100%;
   min-height: 46px;
   padding: 0 14px;
-  border: 1px solid #d3d3d1;
-  border-radius: 4px;
-  outline: none;
-  color: #141414;
-  background: #fff;
+  border:1px solid var(--ui-input-border);
+  border-radius:4px;
+  outline:none;
+  color:var(--ui-text);
+  background:var(--ui-page);
   font: inherit;
 }
 
 .emailForm input:focus {
-  border-color: #2383e2;
-  outline: 2px solid rgba(35, 131, 226, 0.18);
-  outline-offset: 1px;
+  border-color:var(--ui-focus);
+  outline:2px solid var(--ui-focus);
+  outline-offset:1px;
 }
+
+.emailForm input::placeholder { color:var(--ui-muted); opacity:1; }
 
 .forgotLink {
   justify-self: end;
   margin-top: -6px;
-  color: #4f4b44;
+  color:var(--ui-muted);
   font-size: 12px;
   font-weight: 600;
   text-decoration: underline;
@@ -201,14 +203,14 @@
 .submitButton {
   justify-content: center;
   margin-top: 6px;
-  color: #fff;
-  border-color: #191919;
-  background: #191919;
+  color:var(--ui-on-action);
+  border-color:var(--ui-border);
+  background:var(--ui-action);
 }
 
 .submitButton:hover {
-  border-color: #333;
-  background: #333;
+  border-color:var(--ui-border);
+  background:var(--ui-action);
 }
 
 .submitButton span {
@@ -217,13 +219,13 @@
 
 .switchMode {
   margin: 22px 0 0;
-  color: #5e5b54;
+  color:var(--ui-muted);
   font-size: 13px;
   text-align: center;
 }
 
 .switchMode a {
-  color: #141414;
+  color:var(--ui-text);
   font-weight: 650;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -232,18 +234,19 @@
 .privacyNote {
   max-width: 46ch;
   margin: 30px auto 0;
-  color: #9b9a97;
+  color:var(--ui-muted);
   font-size: 11px;
   line-height: 1.55;
   text-align: center;
 }
 
 .recoveryPage {
+  color:var(--ui-text);
   min-height: 100svh;
   display: grid;
   place-items: center;
   padding: 28px;
-  background: #fff;
+  background:var(--ui-page);
 }
 
 .recoveryContent {
@@ -255,7 +258,7 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 48px;
-  color: #141414;
+  color:var(--ui-text);
   font-size: 16px;
   font-weight: 750;
 }
@@ -269,13 +272,13 @@
 .recoveryContent h1 {
   margin: 0;
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.18;
 }
 
 .eyebrow {
   margin: 0 0 10px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -284,7 +287,7 @@
 .recoveryIntro {
   max-width: 44ch;
   margin: 12px 0 28px;
-  color: #787774;
+  color:var(--ui-muted);
   font-size: 14px;
   line-height: 1.55;
 }
@@ -292,7 +295,7 @@
 .recoveryBack {
   display: inline-block;
   margin-top: 24px;
-  color: #4f4b44;
+  color:var(--ui-muted);
   font-size: 13px;
   font-weight: 600;
   text-decoration: underline;

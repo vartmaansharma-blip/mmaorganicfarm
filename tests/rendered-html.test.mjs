@@ -258,7 +258,7 @@ test("uses scoped layouts for authentication, ordering, and landing navigation",
   assert.doesNotMatch(styles, /^main\s*\{/m);
   assert.match(page, /CapsuleNavigation/);
   assert.match(page, /landingStyles\.main/);
-  assert.match(signInStyles, /background: #fff/);
+  assert.match(signInStyles, /background:var\(--ui-page\)/);
   assert.doesNotMatch(signInStyles, /farmShade|farmPanel/);
   assert.doesNotMatch(signInStyles, /grid-template-columns: minmax\(0, 1\.06fr\)/);
   assert.match(orderStyles, /width: min\(100%, 620px\)/);

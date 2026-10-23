@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/app/components/theme-toggle";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -89,13 +90,16 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={styles.brand} href="/">
+        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
           <span>M&apos;ma Organic Farm</span>
         </Link>
-        <Link className={styles.back} href="/milk">
-          Back to products
-        </Link>
+        <div className="customer-header-actions">
+          <Link className={styles.back} href="/milk">
+            Back to products
+          </Link>
+          <ThemeToggle />
+        </div>
       </header>
 
       <section className={styles.layout}>

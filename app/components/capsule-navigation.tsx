@@ -48,15 +48,15 @@ export function CapsuleNavigation() {
 
   return (
     <header className={styles.header}>
-      <a className={styles.brand} href="#home" aria-label="Mama Organic Farm home">
-        <Image src="/mma-logo.png" alt="Mama Organic Farm" width={362} height={301} priority />
+      <a className={styles.brand} href="#home" aria-label="M'ma Organic Farm home">
+        <Image src="/mma-logo.png" alt="M'ma Organic Farm" width={362} height={301} priority />
       </a>
       <nav className={styles.capsule} aria-label="Primary navigation">
         {links.map(({ label, href }) => (
           <Link key={href} href={href} prefetch={false} aria-current={href === active ? "location" : undefined}>{label}</Link>
         ))}
       </nav>
-      <Link className={styles.shop} href="/milk" prefetch={false}><span className={styles.desktopShop}>Shop Mama</span><span className={styles.mobileShop}>Shop</span> <span aria-hidden="true">→</span></Link>
+      <Link className={styles.shop} href="/milk" prefetch={false}><span className={styles.desktopShop}>Shop M&apos;ma</span><span className={styles.mobileShop}>Shop</span> <span aria-hidden="true">→</span></Link>
       <ThemeToggle />
       <button
         ref={menuToggle}
@@ -92,7 +92,7 @@ export function CapsuleNavigation() {
         }}
       >
         <div className={styles.drawerHeader}>
-          <p id="mobile-navigation-title">Mama Organic Farm</p>
+          <p id="mobile-navigation-title">M&apos;ma Organic Farm</p>
           <button type="button" aria-label="Close navigation menu" onClick={() => menu.current?.close()}>Close <span aria-hidden="true">×</span></button>
         </div>
         <nav aria-label="Mobile navigation" className={styles.drawerLinks}>
@@ -104,7 +104,7 @@ export function CapsuleNavigation() {
         </nav>
         <div className={styles.drawerFooter}>
           <p>Discover the farm behind<br />your everyday milk.</p>
-          <Link href="/milk" prefetch={false} onClick={() => menu.current?.close()}>Shop Mama <span aria-hidden="true">→</span></Link>
+          <Link href="/milk" prefetch={false} onClick={() => menu.current?.close()}>Shop M&apos;ma <span aria-hidden="true">→</span></Link>
         </div>
       </dialog>
       <noscript>

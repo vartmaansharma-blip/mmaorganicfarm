@@ -41,6 +41,76 @@ async function scrollToProgress(page, progress) {
   await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.progress) - p) < .004, progress);
 }
 
+function contrast(foreground, background) {
+  const luminance = hex => {
+    const raw = hex.trim().replace('#', '');
+    const expanded = raw.length === 3 ? [...raw].map(c => c + c).join('') : raw;
+    const rgb = hex.trim().startsWith('#') ? expanded.match(/.{2}/g).map(c => parseInt(c, 16) / 255) : hex.match(/[\d.]+/g).slice(0, 3).map(Number).map(n => n / 255);
+    const linear = rgb.map(c => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+    return linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722;
+  };
+  const a = luminance(foreground), b = luminance(background);
+  return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+}
+
+async function verifyConnectedPages(browser, name) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  const page = await context.newPage();
+  const routes = ['/sign-in', '/forgot-password', '/reset-password', '/pricing', '/shipping', '/contact', '/terms', '/privacy', '/cancellation-refunds'];
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const measured = [];
+  for (const theme of ['dark', 'light']) {
+    await page.goto(base, { waitUntil: 'networkidle' });
+    if (theme === 'light') await page.getByRole('button', { name: 'Switch to light mode' }).click();
+    for (const route of routes) {
+      await page.goto(base + route, { waitUntil: 'networkidle' });
+      await page.evaluate(() => document.fonts.ready);
+      assert.equal(await page.locator('html').getAttribute('data-theme'), theme, `${route} retains theme`);
+      assert.equal(await page.getByRole('button', { name: `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` }).count(), 1);
+      const state = await page.evaluate(() => {
+        const style = getComputedStyle(document.documentElement);
+        const bodyStyle = getComputedStyle(document.body);
+        const heading = document.querySelector('h1');
+        let ancestor = heading;
+        let background = 'rgb(255,255,255)';
+        while (ancestor) {
+          const color = getComputedStyle(ancestor).backgroundColor;
+          if (color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') { background = color; break; }
+          ancestor = ancestor.parentElement;
+        }
+        const keys = ['text','muted','page','surface','action','on-action','selected','on-selected','success-text','success-bg','error-text','error-bg','warning-text','warning-bg','input-border'];
+        return { overflow: document.documentElement.scrollWidth > innerWidth,
+          headingFont: getComputedStyle(document.querySelector('h1')).fontFamily,
+          bodyFont: getComputedStyle(document.body).fontFamily,
+          editorialContract: bodyStyle.getPropertyValue('--font-fraunces').trim().split(',')[0].trim(),
+          interfaceContract: bodyStyle.getPropertyValue('--font-space-grotesk').trim().split(',')[0].trim(),
+          headingColor: getComputedStyle(heading).color, headingBackground: background,
+          tokens: Object.fromEntries(keys.map(k => [k, style.getPropertyValue('--ui-' + k).trim()])) };
+      });
+      assert.equal(state.overflow, false, `${route} ${theme} mobile overflow`);
+      const face = value => value.split(',')[0].replace(/["']/g, '').trim();
+      assert.equal(face(state.headingFont), face(state.editorialContract), `${route} shares the editorial face`);
+      assert.equal(face(state.bodyFont), face(state.interfaceContract), `${route} shares the interface face`);
+      assert.ok(contrast(state.headingColor, state.headingBackground) >= 4.5, `${route} heading contrast`);
+      if (route === '/sign-in') {
+        const pairs = [['text','page'],['muted','page'],['muted','surface'],['on-action','action'],['on-selected','selected'],['success-text','success-bg'],['error-text','error-bg'],['warning-text','warning-bg']];
+        for (const [fg,bg] of pairs) {
+          const ratio = contrast(state.tokens[fg], state.tokens[bg]);
+          assert.ok(ratio >= 4.5, `${theme}: ${fg}/${bg} contrast ${ratio}`);
+          measured.push({ theme, pair: `${fg}/${bg}`, ratio: +ratio.toFixed(2) });
+        }
+        assert.ok(contrast(state.tokens['input-border'], state.tokens.page) >= 3, 'input boundary contrast');
+        await page.screenshot({ path: path.join(output, `${name}-connected-sign-in-${theme}.png`) });
+      }
+      if (route === '/pricing') await page.screenshot({ path: path.join(output, `${name}-connected-pricing-${theme}.png`) });
+    }
+  }
+  assert.deepEqual(errors, [], `${name}: connected-page runtime errors`);
+  await context.close();
+  results.push({ engine: name, connectedPublicPages: routes.length, themes: 2, typography: 'shared', textContrastMinimum: 4.5, measured });
+}
+
 try {
   await ready();
   const engines = (process.env.HERO_BROWSERS || "chromium").split(",");
@@ -70,21 +140,33 @@ try {
         assert.equal(initial, "0.000");
         const tops = [];
         let previousFill = 0;
-        for (const p of [.12, .3, .5, .58, .7, .8, .86, 1]) {
+        for (const p of [.12, .3, .48, .57, .66, .78, .9, 1]) {
           await scrollToProgress(page, p);
           const state = await page.locator("#home").evaluate(root => ({ fill: Number(root.dataset.fill), top: root.firstElementChild.getBoundingClientRect().top }));
           assert.ok(state.fill >= previousFill);
           previousFill = state.fill;
           if (p < .9) tops.push(state.top);
-          if (width === 390 && [.3, .58, .8, .86, 1].includes(p)) await page.screenshot({ path: path.join(output, `${name}-mobile-${p}.png`) });
+          if (p === .66 || p === .78 || p === .9) {
+            const expected = p === .66 ? "side" : p === .78 ? "top" : "macro";
+            assert.equal(await page.locator("#home").getAttribute("data-shot"), expected);
+          }
+          if (width === 390 && [.3, .57, .66, .78, .9, 1].includes(p)) await page.screenshot({ path: path.join(output, `${name}-mobile-${p}.png`) });
         }
+        await scrollToProgress(page, .92);
+        assert.equal(await page.locator("header").isVisible(), false, "macro frame hides navigation");
+        assert.equal(await page.locator("#hero-heading").isVisible(), false, "macro frame hides copy");
+        assert.equal(await page.locator(".whatsapp-float").isVisible(), false, "macro frame hides floating controls");
+        await page.screenshot({ path: path.join(output, `${name}-${width}-full-screen-macro.png`) });
+        await page.evaluate(() => { const r=document.querySelector('#home').getBoundingClientRect(); window.scrollTo({top:scrollY+r.bottom-50,behavior:'instant'}); });
+        await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false');
+        assert.equal(await page.locator("header").isVisible(), true, "site resumes after final frame");
         assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, "glass panel must stay stationary while filling");
         await scrollToProgress(page, .2);
         assert.ok(Number(await page.locator("#home").getAttribute("data-fill")) < .4, "scrolling back must lower the liquid");
         await scrollToProgress(page, 0);
         await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
 
-        const headerShop = page.locator("header").getByRole("link", { name: /^Shop(?: Mama)?$/ }).first();
+        const headerShop = page.locator("header").getByRole("link", { name: /^Shop(?: M'ma)?$/ }).first();
         assert.equal(await headerShop.getAttribute("href"), "/milk");
         if (width < 901) {
           const toggle = page.getByRole("button", { name: "Open navigation menu" });
@@ -117,7 +199,7 @@ try {
         }
         await page.goto(base, { waitUntil: "networkidle" });
         await page.getByRole("link", { name: /Skip introduction/ }).click();
-        await page.waitForTimeout(800);
+        await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false' && document.querySelector('#site-content').getBoundingClientRect().top < 150);
         assert.equal(await page.evaluate(() => location.hash), "#site-content");
         assert.ok((await headerShop.boundingBox()).y >= 0, "Shop must remain visible after skipping");
         results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false });
@@ -143,6 +225,7 @@ try {
         assert.match(anonymous.url(), /\/sign-in$/);
         await anonymous.close();
       }
+      await verifyConnectedPages(browser, name);
       assert.deepEqual(errors, [], `${name}: browser runtime errors`);
       results.push({ engine: name, reducedMotion: "static", runtimeErrors: errors.length });
     } finally { await browser.close(); }

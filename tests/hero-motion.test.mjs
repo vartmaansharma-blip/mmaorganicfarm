@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { dampProgress, heroFrame, heroProgress, liquidGeometry } from "../lib/hero-motion.ts";
+import { dampProgress, heroFrame, heroProgress, liquidGeometry, macroPresentation } from "../lib/hero-motion.ts";
 
 test("fill starts at the sticky header and reaches full before coffee or camera changes", () => {
   assert.equal(heroProgress(126, 2200, 774, 126), 0);
   assert.equal(heroProgress(-1300, 2200, 774, 126), 1);
-  assert.deepEqual(heroFrame(0), { fill: 0, coffee: 0, angle: 0, detail: 0 });
-  assert.equal(heroFrame(.56).fill, 1);
-  assert.equal(heroFrame(.56).coffee, 0);
-  for (let p = 0; p < .56; p += .005) {
-    assert.equal(heroFrame(p).angle, 0);
+  assert.deepEqual(heroFrame(0), { fill: 0, coffee: 0, side: 0, top: 0, macro: 0 });
+  assert.equal(heroFrame(.48).fill, 1);
+  assert.equal(heroFrame(.48).coffee, 0);
+  for (let p = 0; p < .48; p += .005) {
+    assert.equal(heroFrame(p).side, 0);
     assert.equal(heroFrame(p).coffee, 0);
   }
 });
@@ -22,7 +22,7 @@ test("every sample is bounded, continuous, monotonic during filling, and reversi
     frames.push(frame);
     for (const key of Object.keys(frame)) {
       assert.ok(frame[key] >= 0 && frame[key] <= 1);
-      assert.ok(Math.abs(frame[key] - previous[key]) < 0.025);
+      assert.ok(Math.abs(frame[key] - previous[key]) < 0.04);
     }
     assert.ok(frame.fill >= previous.fill);
     previous = frame;
@@ -32,14 +32,15 @@ test("every sample is bounded, continuous, monotonic during filling, and reversi
   assert.deepEqual(heroFrame(2), heroFrame(1));
 });
 
-test("camera detail resolves back to the settled front glass", () => {
-  assert.equal(heroFrame(.8).angle, 1);
-  assert.equal(heroFrame(.86).detail, 1);
-  assert.deepEqual(heroFrame(1), { fill: 1, coffee: 1, angle: 0, detail: 0 });
+test("three independent photographic views finish on the macro", () => {
+  assert.equal(heroFrame(.66).side, 1);
+  assert.equal(heroFrame(.78).top, 1);
+  assert.equal(heroFrame(.9).macro, 1);
+  assert.deepEqual(heroFrame(1), { fill: 1, coffee: 1, side: 0, top: 0, macro: 1 });
 });
 
 test("reduced motion always returns a static finished front glass", () => {
-  for (const p of [0, .2, .5, .8, 1]) assert.deepEqual(heroFrame(p, true), heroFrame(1));
+  for (const p of [0, .2, .5, .8, 1]) assert.deepEqual(heroFrame(p, true), { fill: 1, coffee: 1, side: 0, top: 0, macro: 0 });
 });
 
 test("damping is time based, settles, reverses and never overshoots", () => {
@@ -70,4 +71,14 @@ test("liquid surface stays inside the rim and widens smoothly with the tapered g
     assert.match(level.path, / A /, "surface uses a curved meniscus");
     previous = level;
   }
+});
+
+test("the final full-screen frame slides away directly into content and reverses", () => {
+  const full = macroPresentation(844, 844, 1, 80);
+  assert.deepEqual(full, { opacity: 1, offsetY: 0, immersive: true });
+  const leaving = macroPresentation(422, 844, 1, 80);
+  assert.deepEqual(leaving, { opacity: 1, offsetY: -422, immersive: true });
+  assert.equal(macroPresentation(100, 844, 1, 80).opacity, 0);
+  assert.equal(macroPresentation(-1, 844, 1, 80).immersive, false);
+  assert.deepEqual(macroPresentation(844, 844, 1, 80), full);
 });

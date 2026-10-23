@@ -16,21 +16,21 @@ const interfaceFont = localFont({
 });
 
 const siteUrl = "https://mmaorganicfarm-tvn8.vercel.app";
-const siteTitle = "Mama Organic Farm | Fresh Farm Milk Delivery in Jamshedpur";
+const siteTitle = "M'ma Organic Farm | Fresh Farm Milk Delivery in Jamshedpur";
 const siteDescription =
-  "Order fresh farm milk in Jamshedpur from Mama Organic Farm. ₹62 per litre, glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
+  "Order fresh farm milk in Jamshedpur from M'ma Organic Farm. ₹62 per litre, glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: siteTitle,
-    template: "%s | Mama Organic Farm",
+    template: "%s | M'ma Organic Farm",
   },
   description: siteDescription,
   keywords: [
     "fresh milk delivery Jamshedpur",
     "farm fresh milk Jamshedpur",
-    "Mama Organic Farm",
+    "M'ma Organic Farm",
     "Mma Organic Farm",
     "glass bottle milk Jamshedpur",
     "milk home delivery Jamshedpur",
@@ -43,11 +43,11 @@ export const metadata: Metadata = {
     title: siteTitle,
     description: siteDescription,
     url: siteUrl,
-    siteName: "Mama Organic Farm",
+    siteName: "M'ma Organic Farm",
     images: [
       {
         url: "/hero-milk.png",
-        alt: "Mama Organic Farm fresh milk bottle",
+        alt: "M'ma Organic Farm fresh milk bottle",
       },
     ],
     locale: "en_IN",

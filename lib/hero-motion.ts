@@ -20,12 +20,16 @@ export function dampProgress(current: number, target: number, elapsedMs: number)
 
 export function heroFrame(progress: number, reducedMotion = false) {
   const p = reducedMotion ? 1 : clamp01(progress);
+  // Short dissolves separated by clean holds keep each camera angle readable.
+  const sideIn = easeBetween(p, .60, .64);
+  const topIn = easeBetween(p, .72, .76);
+  const macroIn = easeBetween(p, .84, .90);
   return {
-    fill: easeBetween(p, 0, 0.56),
-    // The complete coffee photograph only appears after the liquid reaches its level.
-    coffee: easeBetween(p, 0.56, 0.67),
-    angle: reducedMotion ? 0 : easeBetween(p, 0.68, 0.77) * (1 - easeBetween(p, 0.9, 0.98)),
-    detail: reducedMotion ? 0 : easeBetween(p, 0.78, 0.85) * (1 - easeBetween(p, 0.88, 0.95)),
+    fill: easeBetween(p, 0, .48),
+    coffee: easeBetween(p, .48, .57),
+    side: reducedMotion ? 0 : sideIn * (1 - topIn),
+    top: reducedMotion ? 0 : topIn * (1 - macroIn),
+    macro: reducedMotion ? 0 : macroIn,
   };
 }
 
@@ -40,5 +44,16 @@ export function liquidGeometry(fill: number) {
   return {
     y, left, right, depth,
     path: `M ${left} ${y} A ${radius} ${depth} 0 0 1 ${right} ${y} L 0.772 0.786 Q 0.5 0.803 0.228 0.786 Z`,
+  };
+}
+
+/** The final macro is a native-scroll curtain, not a return to the glass. */
+export function macroPresentation(bottom: number, viewportHeight: number, opacity: number, headerHeight: number) {
+  // Allow subpixel anchor rounding at the shared 20px scroll margin.
+  const visible = bottom > headerHeight + 22 && opacity > .001;
+  return {
+    opacity: visible ? opacity : 0,
+    offsetY: Math.min(0, bottom - viewportHeight),
+    immersive: visible && opacity > .999,
   };
 }

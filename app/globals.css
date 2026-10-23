@@ -35,6 +35,16 @@
   --hero-line: #414b3e;
   --hero-hover: #2a342a;
   --hero-active: #3f3a24;
+  --ui-selected: #294936;
+  --ui-on-selected: #eef7ef;
+  --ui-success-text: #bde6c4;
+  --ui-success-bg: #20382b;
+  --ui-error-text: #ffb9ae;
+  --ui-error-bg: #3a2520;
+  --ui-warning-text: #f2d38a;
+  --ui-warning-bg: #3d3420;
+  --ui-focus: #f6cb49;
+  --ui-input-border: #6c7869;
 }
 :root[data-theme="light"] {
   color-scheme: light;
@@ -46,6 +56,16 @@
   --hero-line: #d8d0c3;
   --hero-hover: #eee7d8;
   --hero-active: #fbe8b0;
+  --ui-selected: #214d3a;
+  --ui-on-selected: #fff;
+  --ui-success-text: #214d3a;
+  --ui-success-bg: #edf8f1;
+  --ui-error-text: #8d3026;
+  --ui-error-bg: #fff1ef;
+  --ui-warning-text: #70580f;
+  --ui-warning-bg: #fff8df;
+  --ui-focus: #846900;
+  --ui-input-border: #8f8778;
 }
 
 * {
@@ -975,6 +995,7 @@ h1 {
 }
 
 .whatsapp-float {
+  opacity: var(--hero-chrome-opacity, 1);
   position: fixed;
   right: 18px;
   bottom: 18px;
@@ -1498,3 +1519,26 @@ h1 {
 #site-content, #milk, #about, #farm { scroll-margin-top: calc(var(--home-header-height) + 20px); }
 @media (max-width: 900px) { :root { --home-header-height: 80px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Customer pages share the same theme, type, action and feedback palette. */
+:root {
+  --ui-page: var(--hero-paper);
+  --ui-surface: var(--hero-surface);
+  --ui-text: var(--hero-ink);
+  --ui-muted: var(--hero-muted);
+  --ui-border: var(--hero-line);
+  --ui-action: var(--hero-yellow);
+  --ui-on-action: #291b0f;
+}
+.customer-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; min-width: 0; }
+.customer-header-actions > a { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }
+.customer-header-brand { flex-shrink: 0; }
+.customer-recovery-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 36px; }
+.customer-recovery-heading a { margin-bottom: 0; }
+.customer-success-heading { width: min(100%, 680px); display: flex; align-items: center; gap: 20px; margin-inline: auto; }
+@media (max-width: 480px) {
+  .customer-header-brand > span { display: none; }
+  .customer-header-actions { gap: 12px; }
+}
+
+html[data-hero-immersive="true"] .whatsapp-float { visibility: hidden; }

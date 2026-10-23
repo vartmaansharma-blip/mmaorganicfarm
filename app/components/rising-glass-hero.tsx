@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
-import { dampProgress, heroFrame, heroProgress, liquidGeometry } from "@/lib/hero-motion";
+import { dampProgress, heroFrame, heroProgress, liquidGeometry, macroPresentation } from "@/lib/hero-motion";
 import styles from "./rising-glass-hero.module.css";
 
 export function RisingGlassHero() {
   const section = useRef<HTMLElement>(null);
   const liquidMask = useRef<SVGPathElement>(null);
+  const immersiveExit = useRef<HTMLAnchorElement>(null);
   const maskId = `milk-${useId().replace(/:/g, "")}`;
 
   useEffect(() => {
@@ -29,8 +30,18 @@ export function RisingGlassHero() {
       const liquid = liquidGeometry(values.fill);
       root.style.setProperty("--fill-progress", String(values.fill));
       root.style.setProperty("--coffee-progress", String(values.coffee));
-      root.style.setProperty("--angle-opacity", String(values.angle));
-      root.style.setProperty("--detail-progress", String(values.detail));
+      const curtain = macroPresentation(rect.bottom, window.innerHeight, values.macro, headerHeight);
+      root.style.setProperty("--angle-opacity", String(Math.min(1, values.side + values.top + values.macro)));
+      root.style.setProperty("--side-opacity", String(values.side));
+      root.style.setProperty("--top-opacity", String(values.top));
+      root.style.setProperty("--macro-opacity", String(curtain.opacity));
+      root.style.setProperty("--macro-offset", `${curtain.offsetY}px`);
+      root.dataset.immersive = String(curtain.immersive);
+      root.dataset.macroVisible = String(curtain.opacity > .001);
+      document.documentElement.dataset.heroImmersive = String(curtain.immersive);
+      document.documentElement.style.setProperty("--hero-chrome-opacity", String(1 - curtain.opacity));
+      if (immersiveExit.current) immersiveExit.current.tabIndex = curtain.immersive ? 0 : -1;
+      root.dataset.shot = values.macro > .5 ? "macro" : values.top > .5 ? "top" : values.side > .5 ? "side" : "front";
       root.style.setProperty("--liquid-y", `${liquid.y * 100}%`);
       root.style.setProperty("--liquid-left", `${liquid.left * 100}%`);
       root.style.setProperty("--liquid-depth", `${liquid.depth * 100}%`);
@@ -53,6 +64,8 @@ export function RisingGlassHero() {
     window.addEventListener("pageshow", reset);
     motion.addEventListener("change", reset);
     return () => {
+      delete document.documentElement.dataset.heroImmersive;
+      document.documentElement.style.removeProperty("--hero-chrome-opacity");
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", reset);
@@ -65,18 +78,18 @@ export function RisingGlassHero() {
     <section ref={section} className={styles.sequence} id="home" aria-labelledby="hero-heading">
       <div className={styles.panel}>
         <div className={styles.copy}>
-          <p className={styles.label}>MAMA ORGANIC FARM</p>
+          <p className={styles.label}>M&apos;MA ORGANIC FARM</p>
           <span className={styles.rule} aria-hidden="true" />
           <h1 id="hero-heading">Every glass<br />has a beginning<span className={styles.period}>.</span></h1>
           <p className={styles.description}>Discover the farm behind<br className={styles.desktopBreak} /> your everyday milk.</p>
           <div className={styles.actions}>
-            <Link className={styles.primary} href="/milk" prefetch={false}>Shop Mama <span aria-hidden="true">→</span></Link>
+            <Link className={styles.primary} href="/milk" prefetch={false}>Shop M&apos;ma <span aria-hidden="true">→</span></Link>
             <a className={styles.secondary} href="#farm">Explore the Farm</a>
           </div>
         </div>
 
-        <div className={styles.visual} role="img" aria-label="A traditional grooved glass fills with milk, reveals coffee ribbons, then changes viewpoint as you scroll">
-          <div className={styles.glass} aria-hidden="true">
+        <div className={styles.visual}>
+          <div className={styles.glass} role="img" aria-label="A traditional grooved glass fills with milk, reveals coffee ribbons, then reveals side and top-down views as you scroll">
             <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={1024} height={1536} priority sizes="(max-width: 720px) 240px, 38vw" />
             <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
               <defs>
@@ -90,9 +103,15 @@ export function RisingGlassHero() {
             </div>
             <span className={styles.surface} />
             <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={1024} height={1536} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.angle} src="/hero/coffee-angle.webp" alt="" width={1024} height={1536} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.side} src="/hero/coffee-side.webp" alt="" width={1024} height={1536} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={1024} height={1536} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
           </div>
         </div>
+
+        <div className={styles.macro} aria-hidden="true">
+          <Image src="/hero/coffee-macro.webp" alt="" fill loading="eager" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" />
+        </div>
+        <a ref={immersiveExit} className={styles.immersiveExit} href="#site-content" tabIndex={-1}>Continue to the site</a>
 
         <ol className={styles.chapters} aria-label="From the glass to your home">
           <li className={styles.current}><span>01</span><small>The glass</small></li>

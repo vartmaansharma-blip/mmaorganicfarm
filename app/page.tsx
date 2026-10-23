@@ -69,7 +69,7 @@ const structuredData = {
     {
       "@type": "LocalBusiness",
       "@id": `${siteUrl}/#business`,
-      name: "Mama Organic Farm",
+      name: "M'ma Organic Farm",
       url: siteUrl,
       telephone: "+919818804419",
       image: `${siteUrl}/hero-milk.png`,
@@ -92,7 +92,7 @@ const structuredData = {
       name: "Fresh Farm Milk",
       brand: {
         "@type": "Brand",
-        name: "Mama Organic Farm",
+        name: "M'ma Organic Farm",
       },
       image: `${siteUrl}/hero-milk.png`,
       description:

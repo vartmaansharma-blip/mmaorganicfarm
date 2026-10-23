@@ -1,8 +1,8 @@
 .page {
   min-height: 100svh;
   padding: 0 24px 132px;
-  color: #191919;
-  background: #fff;
+  color:var(--ui-text);
+  background:var(--ui-page);
 }
 
 .header {
@@ -16,8 +16,8 @@
   justify-content: space-between;
   gap: 24px;
   margin: 0 auto;
-  border-bottom: 1px solid #e7e6e2;
-  background: rgba(255, 255, 255, 0.96);
+  border-bottom:1px solid var(--ui-border);
+  background:var(--ui-page);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -36,7 +36,7 @@
 }
 
 .brand small {
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 10px;
   font-weight: 650;
   text-transform: uppercase;
@@ -63,9 +63,9 @@
 
 .headerActions > span {
   padding: 7px 9px;
-  border: 1px solid #d7d5ce;
-  border-radius: 3px;
-  color: #66645e;
+  border:1px solid var(--ui-border);
+  border-radius:3px;
+  color:var(--ui-muted);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -77,7 +77,7 @@
   grid-template-columns: minmax(0, 1.02fr) minmax(360px, 0.98fr);
   align-items: stretch;
   margin: 40px auto 0;
-  border-bottom: 1px solid #deddd8;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .visual {
@@ -86,13 +86,13 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #f4c84b;
+  background:var(--ui-action);
 }
 
 .visual::after {
   position: absolute;
   inset: 24px;
-  border: 1px solid rgba(20, 20, 20, 0.24);
+  border:1px solid var(--ui-border);
   pointer-events: none;
   content: "";
 }
@@ -103,8 +103,8 @@
   z-index: 3;
   padding: 7px 9px;
   margin: 0;
-  color: #fff;
-  background: rgba(20, 20, 20, 0.72);
+  color:#fff;
+  background:rgba(20, 20, 20, 0.72);
   font-size: 11px;
   font-weight: 750;
   text-transform: uppercase;
@@ -130,8 +130,8 @@
   flex-direction: column;
   justify-content: center;
   padding: 58px 64px;
-  border-top: 1px solid #deddd8;
-  border-right: 1px solid #deddd8;
+  border-top:1px solid var(--ui-border);
+  border-right:1px solid var(--ui-border);
 }
 
 .eyebrow,
@@ -152,13 +152,13 @@
 
 .price {
   margin: 28px 0 0;
-  color: #224f3b;
+  color:var(--ui-success-text);
   font-size: 30px;
   font-weight: 750;
 }
 
 .price span {
-  color: #6f6d66;
+  color:var(--ui-muted);
   font-size: 14px;
   font-weight: 550;
 }
@@ -166,14 +166,14 @@
 .intro {
   max-width: 42ch;
   margin: 24px 0 0;
-  color: #66645e;
+  color:var(--ui-muted);
   font-size: 17px;
   line-height: 1.65;
 }
 
 .productFacts {
   margin: 36px 0 0;
-  border-top: 1px solid #deddd8;
+  border-top:1px solid var(--ui-border);
 }
 
 .productFacts div {
@@ -181,7 +181,7 @@
   grid-template-columns: 90px minmax(0, 1fr);
   gap: 20px;
   padding: 14px 0;
-  border-bottom: 1px solid #deddd8;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .productFacts dt,
@@ -190,7 +190,7 @@
 }
 
 .productFacts dt {
-  color: #8a8881;
+  color:var(--ui-muted);
 }
 
 .productFacts dd {
@@ -224,17 +224,17 @@
   gap: 4px 24px;
   align-items: center;
   padding: 12px 18px;
-  border: 1px solid #191919;
-  border-radius: 6px;
-  color: #fff;
-  background: #191919;
-  box-shadow: 0 14px 34px rgba(20, 20, 20, 0.24);
+  border:1px solid var(--ui-border);
+  border-radius:6px;
+  color:var(--ui-on-action);
+  background:var(--ui-action);
+  box-shadow:0 14px 34px rgba(20, 20, 20, 0.24);
   transform: translateX(-50%);
 }
 
 .basketStatus span,
 .basketStatus small {
-  color: rgba(255, 255, 255, 0.66);
+  color:var(--ui-page);
   font-size: 10px;
 }
 
@@ -267,9 +267,9 @@
   max-width: 620px;
   margin: 20px 0 0 220px;
   padding: 12px 14px;
-  border-left: 3px solid #f4c84b;
-  color: #55544f;
-  background: #fbfaf8;
+  border-left:3px solid var(--ui-action);
+  color:var(--ui-muted);
+  background:var(--ui-surface);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -279,18 +279,18 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 38px 0 48px 220px;
-  border: 1px solid #c9c8c2;
-  border-radius: 5px;
-  background: #f4f3f0;
+  border:1px solid var(--ui-border);
+  border-radius:5px;
+  background:var(--ui-surface);
 }
 
 .modeSwitch button {
   min-height: 52px;
   padding: 0 16px;
-  border: 0;
-  border-radius: 4px;
-  color: #77746d;
-  background: transparent;
+  border:0;
+  border-radius:4px;
+  color:var(--ui-muted);
+  background:transparent;
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -298,20 +298,20 @@
 }
 
 .modeSwitch .modeActive {
-  color: #fff;
-  background: #214d3a;
+  color:var(--ui-on-selected);
+  background:var(--ui-selected);
 }
 
 .bottleChoice {
   width: min(100%, 620px);
   margin: -26px 0 44px 220px;
   padding: 0;
-  border: 0;
+  border:0;
 }
 
 .bottleChoice legend {
   margin-bottom: 10px;
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 11px;
   font-weight: 650;
   text-transform: uppercase;
@@ -330,22 +330,22 @@
   gap: 10px;
   align-items: center;
   padding: 13px 14px;
-  border: 1px solid #c9c8c2;
-  border-radius: 5px;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:5px;
+  background:var(--ui-page);
   cursor: pointer;
 }
 
 .bottleOptions label:has(input:checked) {
-  border-color: #214d3a;
-  background: #f1f6f3;
+  border-color:var(--ui-success-text);
+  background:var(--ui-success-bg);
 }
 
 .bottleOptions input {
   width: 17px;
   height: 17px;
   margin: 0;
-  accent-color: #214d3a;
+  accent-color:var(--ui-success-text);
 }
 
 .bottleOptions strong,
@@ -359,7 +359,7 @@
 
 .bottleOptions small {
   margin-top: 4px;
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -367,8 +367,8 @@
 .extras {
   margin: 0 0 48px;
   padding: 34px 0 44px;
-  border-top: 1px solid #deddd8;
-  border-bottom: 1px solid #deddd8;
+  border-top:1px solid var(--ui-border);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .recommended {
@@ -378,8 +378,8 @@
   align-items: start;
   margin: 8px 0 48px;
   padding: 28px 0;
-  border-top: 1px solid #deddd8;
-  border-bottom: 1px solid #deddd8;
+  border-top:1px solid var(--ui-border);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .recommended h3 {
@@ -399,10 +399,10 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 18px;
-  border: 1px solid #c9c8c2;
-  border-radius: 5px;
-  color: #191919;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:5px;
+  color:var(--ui-text);
+  background:var(--ui-page);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -410,8 +410,8 @@
 
 .recommendedGrid button:hover,
 .recommendedGrid button:focus-visible {
-  border-color: #214d3a;
-  background: #f1f6f3;
+  border-color:var(--ui-success-text);
+  background:var(--ui-success-bg);
 }
 
 .recommendedGrid strong {
@@ -420,7 +420,7 @@
 
 .recommendedGrid span {
   margin-top: 8px;
-  color: #6f6d67;
+  color:var(--ui-muted);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -449,7 +449,7 @@
 .extrasHeading > p {
   max-width: 34ch;
   margin: 0;
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 12px;
   line-height: 1.5;
   text-align: right;
@@ -464,9 +464,9 @@
 .extraGrid article {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #d2d0c9;
-  border-radius: 7px;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:7px;
+  background:var(--ui-page);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -476,8 +476,8 @@
   aspect-ratio: 1.24;
   display: block;
   overflow: hidden;
-  border-bottom: 1px solid #deddd8;
-  background: #f5c94c;
+  border-bottom:1px solid var(--ui-border);
+  background:var(--ui-action);
 }
 
 .productMedia > img {
@@ -495,8 +495,8 @@
   bottom: 12px;
   z-index: 2;
   padding: 6px 8px;
-  color: #fff;
-  background: #191919;
+  color:var(--ui-on-action);
+  background:var(--ui-action);
   font-size: 9px;
   font-weight: 750;
   text-transform: uppercase;
@@ -508,8 +508,8 @@
   display: grid;
   place-content: center;
   justify-items: center;
-  color: #1d4c38;
-  background: #f4efe3;
+  color:var(--ui-success-text);
+  background:var(--ui-surface);
 }
 
 .productPlaceholder small,
@@ -535,15 +535,15 @@
 
 .productMarker span,
 .productMarker small {
-  color: #8a8881;
+  color:var(--ui-muted);
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .extraGrid .extraSelected {
-  border-color: #214d3a;
-  box-shadow: inset 0 0 0 1px #214d3a;
+  border-color:var(--ui-success-text);
+  box-shadow:inset 0 0 0 1px var(--ui-success-text);
 }
 
 .extraGrid label {
@@ -577,19 +577,19 @@
 
 .productIdentity small {
   margin-top: 5px;
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 11px;
 }
 
 .productIdentity b {
-  color: #214d3a;
+  color:var(--ui-success-text);
   font-size: 10px;
   text-transform: uppercase;
 }
 
 .extraGrid label > b {
   align-self: start;
-  color: #214d3a;
+  color:var(--ui-success-text);
   font-size: 10px;
   text-transform: uppercase;
 }
@@ -598,7 +598,7 @@
   width: 17px;
   height: 17px;
   margin: 2px 0 0;
-  accent-color: #214d3a;
+  accent-color:var(--ui-success-text);
 }
 
 .extraGrid strong,
@@ -613,7 +613,7 @@
 
 .extraGrid small {
   margin-top: 4px;
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 10px;
   line-height: 1.35;
 }
@@ -636,9 +636,9 @@
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) 34px;
   align-items: center;
-  border: 1px solid #c9c8c2;
-  border-radius: 3px;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:3px;
+  background:var(--ui-page);
 }
 
 .extraGrid article > .extraQuantity {
@@ -652,17 +652,17 @@
   justify-content: space-between;
   margin: 0 16px 16px;
   padding: 0 12px;
-  border: 1px solid #191919;
-  border-radius: 3px;
+  border:1px solid var(--ui-border);
+  border-radius:3px;
   font-size: 11px;
   font-weight: 700;
 }
 
 .extraQuantity button {
   height: 32px;
-  border: 0;
-  color: #191919;
-  background: transparent;
+  border:0;
+  color:var(--ui-text);
+  background:transparent;
   font: inherit;
   cursor: pointer;
 }
@@ -680,10 +680,10 @@
 .extraFrequency button {
   min-height: 32px;
   padding: 4px;
-  border: 1px solid #c9c8c2;
-  border-radius: 3px;
-  color: #66645e;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:3px;
+  color:var(--ui-muted);
+  background:var(--ui-page);
   font: inherit;
   font-size: 9px;
   font-weight: 650;
@@ -691,9 +691,9 @@
 }
 
 .extraFrequency button[aria-pressed="true"] {
-  border-color: #214d3a;
-  color: #fff;
-  background: #214d3a;
+  border-color:var(--ui-success-text);
+  color:var(--ui-on-selected);
+  background:var(--ui-selected);
 }
 
 .extraDays {
@@ -703,7 +703,7 @@
 }
 
 .extraDays > span {
-  color: #66645e;
+  color:var(--ui-muted);
   font-size: 9px;
   font-weight: 650;
 }
@@ -718,10 +718,10 @@
   min-width: 0;
   min-height: 28px;
   padding: 0;
-  border: 1px solid #c9c8c2;
-  border-radius: 3px;
-  color: #66645e;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:3px;
+  color:var(--ui-muted);
+  background:var(--ui-page);
   font: inherit;
   font-size: 8px;
   font-weight: 700;
@@ -729,14 +729,14 @@
 }
 
 .extraDays button[aria-pressed="true"] {
-  border-color: #214d3a;
-  color: #fff;
-  background: #214d3a;
+  border-color:var(--ui-success-text);
+  color:var(--ui-on-selected);
+  background:var(--ui-selected);
 }
 
 .onceLayout,
 .planLayout {
-  border-top: 1px solid #deddd8;
+  border-top:1px solid var(--ui-border);
 }
 
 .onceLayout {
@@ -754,22 +754,22 @@
 }
 
 .onceCopy > p:last-child {
-  color: #75736d;
+  color:var(--ui-muted);
   font-size: 16px;
 }
 
 .onceAction {
   padding-left: 36px;
-  border-left: 1px solid #deddd8;
+  border-left:1px solid var(--ui-border);
 }
 
 .largeStepper,
 .stepper {
   display: grid;
   align-items: center;
-  border: 1px solid #c9c8c2;
-  border-radius: 4px;
-  background: #fff;
+  border:1px solid var(--ui-border);
+  border-radius:4px;
+  background:var(--ui-page);
 }
 
 .largeStepper {
@@ -779,9 +779,9 @@
 
 .largeStepper button,
 .stepper button {
-  border: 0;
-  color: #191919;
-  background: transparent;
+  border:0;
+  color:var(--ui-text);
+  background:transparent;
   font: inherit;
   cursor: pointer;
 }
@@ -793,12 +793,12 @@
 
 .largeStepper button:first-child,
 .stepper button:first-child {
-  border-right: 1px solid #deddd8;
+  border-right:1px solid var(--ui-border);
 }
 
 .largeStepper button:last-child,
 .stepper button:last-child {
-  border-left: 1px solid #deddd8;
+  border-left:1px solid var(--ui-border);
 }
 
 .largeStepper button:disabled,
@@ -823,7 +823,7 @@
 }
 
 .totalLine span {
-  color: #77746d;
+  color:var(--ui-muted);
 }
 
 .totalLine strong {
@@ -832,7 +832,7 @@
 
 .extrasPriceNote {
   margin: -10px 0 20px;
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -844,10 +844,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 18px;
-  border: 1px solid #171717;
-  border-radius: 4px;
-  color: #fff;
-  background: #171717;
+  border:1px solid var(--ui-border);
+  border-radius:4px;
+  color:var(--ui-on-action);
+  background:var(--ui-action);
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -874,9 +874,9 @@
 
 .resetButton {
   padding: 0;
-  border: 0;
-  color: #6f6d66;
-  background: transparent;
+  border:0;
+  color:var(--ui-muted);
+  background:transparent;
   font: inherit;
   font-size: 12px;
   font-weight: 650;
@@ -889,15 +889,15 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   margin-top: 28px;
-  border-top: 1px solid #deddd8;
-  border-left: 1px solid #deddd8;
+  border-top:1px solid var(--ui-border);
+  border-left:1px solid var(--ui-border);
 }
 
 .day {
   min-width: 0;
   padding: 14px 10px 12px;
-  border-right: 1px solid #deddd8;
-  border-bottom: 1px solid #deddd8;
+  border-right:1px solid var(--ui-border);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .dayName {
@@ -912,7 +912,7 @@
 }
 
 .dayName span {
-  color: #8a8881;
+  color:var(--ui-muted);
   font-size: 9px;
   text-transform: uppercase;
 }
@@ -938,7 +938,7 @@
 
 .dateSection {
   padding: 32px 0;
-  border-bottom: 1px solid #deddd8;
+  border-bottom:1px solid var(--ui-border);
 }
 
 .dateSection label {
@@ -954,7 +954,7 @@
 }
 
 .dateCopy small {
-  color: #77746d;
+  color:var(--ui-muted);
   font-size: 11px;
   line-height: 1.45;
 }
@@ -962,10 +962,10 @@
 .dateSection input {
   min-height: 46px;
   padding: 0 12px;
-  border: 1px solid #c9c8c2;
-  border-radius: 4px;
-  color: #191919;
-  background: #fff;
+  border:1px solid var(--ui-input-border);
+  border-radius:4px;
+  color:var(--ui-text);
+  background:var(--ui-page);
   font: inherit;
   font-size: 13px;
 }
@@ -973,9 +973,9 @@
 .summary {
   align-self: start;
   padding: 28px;
-  border: 1px solid #cfcdbf;
-  border-radius: 5px;
-  background: #fff8d8;
+  border:1px solid var(--ui-border);
+  border-radius:5px;
+  background:var(--ui-warning-bg);
 }
 
 .summaryMetric {
@@ -991,13 +991,13 @@
 }
 
 .summaryMetric span {
-  color: #6f6b58;
+  color:var(--ui-muted);
   font-size: 13px;
 }
 
 .summary dl {
   margin: 26px 0 24px;
-  border-top: 1px solid rgba(20, 20, 20, 0.18);
+  border-top:1px solid var(--ui-border);
 }
 
 .summary dl div {
@@ -1005,7 +1005,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 13px 0;
-  border-bottom: 1px solid rgba(20, 20, 20, 0.18);
+  border-bottom:1px solid var(--ui-border);
 }
 
 .summary dt,
@@ -1014,7 +1014,7 @@
 }
 
 .summary dt {
-  color: #77725f;
+  color:var(--ui-muted);
 }
 
 .summary dd {
@@ -1025,7 +1025,7 @@
 
 .summaryNote {
   margin: 14px 0 0;
-  color: #77725f;
+  color:var(--ui-muted);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -1041,7 +1041,7 @@
 
   .productCopy {
     padding: 52px 7vw;
-    border-left: 1px solid #deddd8;
+    border-left:1px solid var(--ui-border);
   }
 
   .productCopy h1 {
@@ -1217,7 +1217,7 @@
 
   .onceAction {
     padding: 0;
-    border-left: 0;
+    border-left:0;
   }
 
   .planLayout {
@@ -1227,7 +1227,7 @@
 
   .week {
     grid-template-columns: 1fr;
-    border-top: 0;
+    border-top:0;
   }
 
   .day {
@@ -1237,7 +1237,7 @@
     gap: 18px;
     min-height: 66px;
     padding: 10px 12px;
-    border-top: 1px solid #deddd8;
+    border-top:1px solid var(--ui-border);
   }
 
   .dayName {
