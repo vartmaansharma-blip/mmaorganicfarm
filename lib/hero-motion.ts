@@ -22,14 +22,14 @@ export function heroFrame(progress: number, reducedMotion = false) {
   const p = reducedMotion ? 1 : clamp01(progress);
   // Short dissolves separated by clean holds keep each camera angle readable.
   const sideIn = easeBetween(p, .60, .64);
-  const topIn = easeBetween(p, .72, .76);
-  const macroIn = easeBetween(p, .84, .90);
+  const macroIn = easeBetween(p, .74, .82);
+  const closingTop = easeBetween(p, .90, .96);
   return {
     fill: easeBetween(p, 0, .48),
     coffee: easeBetween(p, .48, .57),
-    side: reducedMotion ? 0 : sideIn * (1 - topIn),
-    top: reducedMotion ? 0 : topIn * (1 - macroIn),
-    macro: reducedMotion ? 0 : macroIn,
+    side: reducedMotion ? 0 : sideIn * (1 - macroIn),
+    top: reducedMotion ? 0 : closingTop,
+    macro: reducedMotion ? 0 : macroIn * (1 - closingTop),
   };
 }
 
@@ -47,7 +47,7 @@ export function liquidGeometry(fill: number) {
   };
 }
 
-/** The final macro is a native-scroll curtain, not a return to the glass. */
+/** Bound the full-screen insert to this section, including anchor skips. */
 export function macroPresentation(bottom: number, viewportHeight: number, opacity: number, headerHeight: number) {
   // Allow subpixel anchor rounding at the shared 20px scroll margin.
   const visible = bottom > headerHeight + 22 && opacity > .001;

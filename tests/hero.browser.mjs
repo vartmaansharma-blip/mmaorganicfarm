@@ -140,23 +140,29 @@ try {
         assert.equal(initial, "0.000");
         const tops = [];
         let previousFill = 0;
-        for (const p of [.12, .3, .48, .57, .66, .78, .9, 1]) {
+        for (const p of [.12, .3, .48, .57, .66, .86, .99, 1]) {
           await scrollToProgress(page, p);
           const state = await page.locator("#home").evaluate(root => ({ fill: Number(root.dataset.fill), top: root.firstElementChild.getBoundingClientRect().top }));
           assert.ok(state.fill >= previousFill);
           previousFill = state.fill;
-          if (p < .9) tops.push(state.top);
-          if (p === .66 || p === .78 || p === .9) {
-            const expected = p === .66 ? "side" : p === .78 ? "top" : "macro";
+          if (p < .86) tops.push(state.top);
+          if (p === .66 || p === .86 || p === .99) {
+            const expected = p === .66 ? "side" : p === .99 ? "top" : "macro";
             assert.equal(await page.locator("#home").getAttribute("data-shot"), expected);
           }
-          if (width === 390 && [.3, .57, .66, .78, .9, 1].includes(p)) await page.screenshot({ path: path.join(output, `${name}-mobile-${p}.png`) });
+          if (width === 390 && [.3, .57, .66, .86, .99, 1].includes(p)) await page.screenshot({ path: path.join(output, `${name}-mobile-${p}.png`) });
         }
-        await scrollToProgress(page, .92);
+        await scrollToProgress(page, .89);
         assert.equal(await page.locator("header").isVisible(), false, "macro frame hides navigation");
         assert.equal(await page.locator("#hero-heading").isVisible(), false, "macro frame hides copy");
         assert.equal(await page.locator(".whatsapp-float").isVisible(), false, "macro frame hides floating controls");
         await page.screenshot({ path: path.join(output, `${name}-${width}-full-screen-macro.png`) });
+        await scrollToProgress(page, .99);
+        assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top', 'closing frame is the supplied overhead composition');
+        assert.equal(await page.locator('header').isVisible(), true, 'navigation returns for closing shot');
+        assert.equal(await page.locator('#hero-heading').isVisible(), true, 'copy returns for closing shot');
+        assert.equal(await page.locator('.whatsapp-float').isVisible(), true, 'contact action returns for closing shot');
+        await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
         await page.evaluate(() => { const r=document.querySelector('#home').getBoundingClientRect(); window.scrollTo({top:scrollY+r.bottom-50,behavior:'instant'}); });
         await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false');
         assert.equal(await page.locator("header").isVisible(), true, "site resumes after final frame");

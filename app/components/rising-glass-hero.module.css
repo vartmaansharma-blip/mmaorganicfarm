@@ -45,7 +45,7 @@
 .chapters .current::before { background: var(--hero-yellow); }
 .chapters span { font-size: 16px; font-weight: 500; }
 .chapters small { display: block; margin-top: 7px; font-size: 12px; white-space: nowrap; }
-.current span { color: var(--hero-yellow); }
+.current span { color: var(--ui-focus); }
 .scroll { position: absolute; left: var(--page-gutter); bottom: 28px; display: grid; grid-template-columns: 24px auto; gap: 5px 14px; align-items: center; color: var(--hero-muted); font-size: 12px; }
 .scroll small { display: block; margin-top: 4px; }
 .mouse { width: 22px; height: 34px; border: 1px solid currentColor; border-radius: 20px; display: flex; justify-content: center; padding-top: 6px; }

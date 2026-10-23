@@ -11,7 +11,7 @@ WebP cutouts retain transparent alpha and are capped at 800 px wide. The supplie
 | `coffee-front.webp` | Reference-derived front glass, isolated from background, steam and floor. |
 | `coffee-side.webp` | Separate generated elevated three-quarter photograph, not a crop of the front. |
 | `coffee-top.webp` | Separate generated overhead photograph with a circular rim and visible liquid surface. |
-| `coffee-macro.webp` | The exact supplied `ChatGPT Image 17 Oct 2026, 18_36_24.png`, converted to WebP; full-viewport final shot. |
+| `coffee-macro.webp` | The exact supplied `ChatGPT Image 17 Oct 2026, 18_36_24.png`, converted to WebP; full-viewport insert before the closing overhead shot. |
 | `coffee-angle.webp` | Earlier elevated-view study, retained but no longer used. |
 
 ## Asset prompts
@@ -28,6 +28,6 @@ Overhead: A true top-down camera looking straight into the same grooved glass, c
 
 ## Motion and accessibility
 
-Native scrolling drives absolute progress; no scroll interception or timer-based film playback. Time-based damping follows touch/trackpad scrolling and settles without overshoot. The liquid mask rises continuously before the camera changes. Short dissolves and separate holds keep the photographs distinct. The final supplied macro fills the viewport, hides all visual chrome, and scrolls upward directly into the site. It never returns to the front glass. Reverse scrolling retraces the sequence.
+Native scrolling drives absolute progress; no scroll interception or timer-based film playback. Time-based damping follows touch/trackpad scrolling and settles without overshoot. The liquid mask rises continuously before the camera changes. Short dissolves and separate holds keep the photographs distinct. The supplied macro fills the viewport and hides all visual chrome. It then dissolves into a final overhead composition with copy, navigation and Shop restored, as requested in the latest reference. The closing shot releases naturally into the site; reverse scrolling retraces the sequence.
 
 Reduced motion and no JavaScript show a static finished glass without the long pinned sequence. The skip link and focus-only final-frame continuation provide keyboard exits. No heavy video or 3D runtime is loaded.

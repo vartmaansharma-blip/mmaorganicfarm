@@ -32,11 +32,13 @@ test("every sample is bounded, continuous, monotonic during filling, and reversi
   assert.deepEqual(heroFrame(2), heroFrame(1));
 });
 
-test("three independent photographic views finish on the macro", () => {
+test("distinct photographic views include an image-only insert and finish overhead", () => {
   assert.equal(heroFrame(.66).side, 1);
-  assert.equal(heroFrame(.78).top, 1);
+  assert.equal(heroFrame(.7).side, 1);
   assert.equal(heroFrame(.9).macro, 1);
-  assert.deepEqual(heroFrame(1), { fill: 1, coffee: 1, side: 0, top: 0, macro: 1 });
+  assert.equal(heroFrame(.88).macro, 1);
+  assert.equal(heroFrame(.96).top, 1);
+  assert.deepEqual(heroFrame(1), { fill: 1, coffee: 1, side: 0, top: 1, macro: 0 });
 });
 
 test("reduced motion always returns a static finished front glass", () => {
@@ -73,7 +75,7 @@ test("liquid surface stays inside the rim and widens smoothly with the tapered g
   }
 });
 
-test("the final full-screen frame slides away directly into content and reverses", () => {
+test("the full-screen insert stays bounded and anchor skips restore the page", () => {
   const full = macroPresentation(844, 844, 1, 80);
   assert.deepEqual(full, { opacity: 1, offsetY: 0, immersive: true });
   const leaving = macroPresentation(422, 844, 1, 80);

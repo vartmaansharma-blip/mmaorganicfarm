@@ -80,7 +80,7 @@ export function RisingGlassHero() {
         <div className={styles.copy}>
           <p className={styles.label}>M&apos;MA ORGANIC FARM</p>
           <span className={styles.rule} aria-hidden="true" />
-          <h1 id="hero-heading">Every glass<br />has a beginning<span className={styles.period}>.</span></h1>
+          <h1 id="hero-heading">Every glass<br />has a beginning<span className={styles.period} aria-hidden="true">.</span></h1>
           <p className={styles.description}>Discover the farm behind<br className={styles.desktopBreak} /> your everyday milk.</p>
           <div className={styles.actions}>
             <Link className={styles.primary} href="/milk" prefetch={false}>Shop M&apos;ma <span aria-hidden="true">→</span></Link>

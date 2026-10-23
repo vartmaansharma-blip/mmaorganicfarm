@@ -22,14 +22,14 @@ Native scroll drives absolute progress; reverse scroll retraces it. There is no 
 | 48–57% | Matched coffee treatment dissolves into the fully filled glass. |
 | 57–60% | Clear front-view hold. |
 | 60–64% | Short dissolve into a separate elevated three-quarter photograph. |
-| 64–72% | Side-view hold. |
-| 72–76% | Short dissolve into a true overhead photograph. |
-| 76–84% | Overhead hold. |
-| 84–90% | Longer dissolve into the exact supplied coffee/milk macro, filling the viewport. Navigation and floating controls fade away. |
-| 90–100% | Full-screen macro only: no copy, visible controls, logo or navigation. |
-| Continued scroll | The macro scrolls upward like a curtain, directly revealing the actual site. No return to the glass. |
+| 64–74% | Side-view hold. |
+| 74–82% | Dissolve into the exact supplied coffee/milk macro, filling the viewport. Navigation and floating controls fade away. |
+| 82–90% | Full-screen macro only: no copy, visible controls, logo or navigation. |
+| 90–96% | Dissolve into the supplied closing overhead composition; copy, navigation and Shop return. |
+| 96–100% | Clean overhead hold, reserved for the ending. |
+| Continued scroll | The closing hero releases naturally into the actual site content. |
 
-The measured scroll distance, rather than a fixed duration, controls these transitions. A focus-only continuation gives keyboard visitors a route out of the final frame. Skip introduction goes directly to content. Reduced motion and JavaScript-disabled visits show a finished static glass without the long pinned film.
+The measured scroll distance, rather than a fixed duration, controls these transitions. A focus-only continuation gives keyboard visitors a route out of the full-screen insert. Skip introduction goes directly to content. Reduced motion and JavaScript-disabled visits show a finished static glass without the long pinned film.
 
 The wide macro's responsive `sizes` accounts for its rendered width when it covers a portrait viewport, preventing a small mobile image from being stretched across the full screen.
 
@@ -49,7 +49,7 @@ HERO_BROWSERS=chromium,webkit npm run test:browser
 npm audit --omit=dev
 ```
 
-Browser checks start the optimized production build with an unreachable, non-secret auth fixture. They verify anonymous `/milk` and `/account` gates without customer data or writes. The matrix covers 320×568, 390×844, 768×1024 and 1440×960; forward/reverse fill; stationary panel; shot order; image-only finale/direct exit; theme persistence; navigation focus/destinations/skip; reduced motion; nine public customer routes in both themes with shared typography and palette contrast checks.
+Browser checks start the optimized production build with an unreachable, non-secret auth fixture. They verify anonymous `/milk` and `/account` gates without customer data or writes. The matrix covers 320×568, 390×844, 768×1024 and 1440×960; forward/reverse fill; stationary panel; shot order; image-only insert/closing overhead/direct content exit; theme persistence; navigation focus/destinations/skip; reduced motion; nine public customer routes in both themes with shared typography and palette contrast checks.
 
 The local checks do not claim physical iPhone/Android performance, authenticated ordering acceptance or a live payment test. No customer orders, delivery schedules or payments are created during verification. These unchanged backend journeys remain separate acceptance coverage.
 
