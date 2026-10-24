@@ -49,14 +49,14 @@ export function CapsuleNavigation() {
   return (
     <header className={styles.header}>
       <a className={styles.brand} href="#home" aria-label="M'ma Organic Farm home">
-        <Image src="/mma-logo.png" alt="M'ma Organic Farm" width={362} height={301} priority />
+        <Image src="/mma-logo.png" alt="M'ma Organic Farm" width={362} height={301} />
       </a>
       <nav className={styles.capsule} aria-label="Primary navigation">
         {links.map(({ label, href }) => (
           <Link key={href} href={href} prefetch={false} aria-current={href === active ? "location" : undefined}>{label}</Link>
         ))}
       </nav>
-      <Link className={styles.shop} href="/milk" prefetch={false}><span className={styles.desktopShop}>Shop M&apos;ma</span><span className={styles.mobileShop}>Shop</span> <span aria-hidden="true">→</span></Link>
+      <Link className={styles.shop} href="/milk" prefetch={false} data-conversion="plan_cta_click" data-location="header" aria-label="Shop M'ma"><span className={styles.desktopShop}>Shop M&apos;ma</span><span className={styles.mobileShop}>Shop</span> <span aria-hidden="true">→</span></Link>
       <ThemeToggle />
       <button
         ref={menuToggle}

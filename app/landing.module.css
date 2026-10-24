@@ -7,6 +7,28 @@
 .content :global(.confidence-strip article), .content :global(.official-grid article) { background: var(--hero-surface); }
 .content :global(.milk-section), .content :global(.official-section), .content :global(.farm-section) { background: var(--hero-paper); }
 .content :global(.confidence-strip span), .content :global(.confidence-strip p), .content :global(.official-heading > p:last-child), .content :global(.official-grid p), .content :global(.farm-heading > p:last-child), .content :global(.feature-list p), .content :global(.feature-list span) { color: var(--hero-muted); }
-.content :global(.price-tag), .content :global(.button-yellow), .content :global(.closing-section) { color: #291b0f; }
-.content :global(.button-dark) { background: var(--hero-ink); color: var(--hero-paper); }
+.content :global(.button-yellow), .content :global(.closing-section) { color: var(--hero-on-yellow); }
+.content :global(.button-dark) { background: var(--green); color: #f7f3e8; }
 .content :global(.feature-list div) { border-color: var(--hero-line); }
+.content :global(.eyebrow), .content :global(.story-metrics strong) { color: var(--hero-accent); }
+.content :global(.closing-section .eyebrow) { color: var(--green); }
+.content :global(.ticker) { color: #f7f3e8; background: var(--green); }
+.content :global(.site-footer) { color: #f5f0e4; background: #1e231d; }
+.content :global(.button) { transition: transform 140ms ease, background-color 160ms ease; }
+.content :global(.button:hover) { transform: translateY(-1px); box-shadow: none; }
+.content :global(.button:active) { transform: scale(.98); }
+.content :global(.button:focus-visible) { outline: 2px solid var(--ui-focus); outline-offset: 4px; }
+
+/* Pause the existing visual ticker without changing its layout. */
+.content :global(.ticker:hover div), .content :global(.ticker:focus-within div) { animation-play-state: paused; }
+.content :global(.ticker:focus-visible) { outline: 2px solid var(--ui-focus); outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) { .content :global(.ticker div) { animation: none; } .content :global(.button) { transition: none; transform: none; } }
+
+/* Keep the existing dark price badge readable in both themes. */
+.content :global(.price-tag) { color: #fff; }
+
+/* Sage surfaces connect the farm story with the hero and scheduling controls. */
+.content :global(.about-section) { background: var(--hero-surface); }
+.content :global(.glass-story) { color: var(--hero-ink); border-color: var(--hero-line); background: var(--hero-paper); box-shadow: 0 20px 60px rgb(0 0 0 / .06); }
+.content :global(.story-metrics) { border-color: var(--hero-line); }
+.content :global(.story-metrics span) { color: var(--hero-muted); }

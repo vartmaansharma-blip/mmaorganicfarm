@@ -38,7 +38,7 @@ async function scrollToProgress(page, progress) {
     const header = parseFloat(getComputedStyle(panel).top) || 0;
     window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight), behavior: "instant" });
   }, progress);
-  await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.progress) - p) < .004, progress);
+  await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.progress) - p) < .004 && document.getElementById("home").dataset.transitioning === "false", progress);
 }
 
 function contrast(foreground, background) {
@@ -51,6 +51,20 @@ function contrast(foreground, background) {
   };
   const a = luminance(foreground), b = luminance(background);
   return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+}
+
+async function verifyHomepageContrast(page) {
+  const colors = await page.locator('#hero-heading, #home p, #home a, .confidence-strip p, .glass-story > p, .story-metrics strong, .story-metrics span, .button, .closing-section .eyebrow, .ticker').evaluateAll(elements => elements.map(element => {
+    let ancestor = element;
+    let background;
+    while (ancestor && !background) {
+      const value = getComputedStyle(ancestor).backgroundColor;
+      if (value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)') background = value;
+      ancestor = ancestor.parentElement;
+    }
+    return { label: element.textContent.trim().slice(0, 35), text: getComputedStyle(element).color, background };
+  }));
+  for (const color of colors) assert.ok(contrast(color.text, color.background) >= 4.5, `homepage contrast: ${color.label}`);
 }
 
 async function verifyConnectedPages(browser, name) {
@@ -118,7 +132,7 @@ try {
     const browser = await ({ chromium, webkit })[name].launch({ headless: true });
     const errors = [];
     try {
-      for (const [width, height] of [[320, 568], [390, 844], [768, 1024], [1440, 960]]) {
+      for (const [width, height] of [[320, 568], [360, 740], [390, 844], [768, 1024], [1200, 630], [1440, 960]]) {
         const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901 });
         const page = await context.newPage();
         page.on("pageerror", error => errors.push(error.message));
@@ -129,19 +143,34 @@ try {
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${name} ${width}: horizontal overflow`);
         const heroBox = await page.locator("#hero-heading").boundingBox();
         assert.ok(heroBox.x >= 0 && heroBox.x + heroBox.width <= width + 1);
+        const priceColors = await page.locator('.price-tag').evaluate(e => ({ foreground: getComputedStyle(e).color, background: getComputedStyle(e).backgroundColor }));
+        assert.ok(contrast(priceColors.foreground, priceColors.background) >= 4.5, 'milk price badge is readable');
         assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
         await page.getByRole("button", { name: "Switch to light mode" }).click();
         assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
         await page.reload({ waitUntil: "networkidle" });
         assert.equal(await page.locator("html").getAttribute("data-theme"), "light", "saved light choice must survive reload");
+        await verifyHomepageContrast(page);
         await page.screenshot({ path: path.join(output, `${name}-${width}-light.png`) });
         await page.getByRole("button", { name: "Switch to dark mode" }).click();
+        await verifyHomepageContrast(page);
         const initial = await page.locator("#home").getAttribute("data-fill");
         assert.equal(initial, "0.000");
+        const alignment = await page.locator("#home").evaluate(root => {
+          const f = root.querySelector('img[src*="coffee-front"]').getBoundingClientRect();
+          const s = root.querySelector('img[src*="coffee-side"]').getBoundingClientRect();
+          return { rim: Math.abs(f.y + f.height * 139 / 1200 - s.y - s.height * 108 / 1200), base: Math.abs(f.y + f.height * 1074 / 1200 - s.y - s.height * 1092 / 1200), height: f.height };
+        });
+        assert.ok(alignment.rim < 2 && alignment.base < 2, "front and side have matching glass heights");
+        if (width === 390) assert.ok(alignment.height >= 340, "mobile glass is larger than the production 295px canvas");
+        const cue = await page.locator('a').filter({ hasText: 'Scroll to fill' }).boundingBox();
+        if (width > 720) assert.ok(Math.abs(cue.x + cue.width / 2 - width / 2) < 1, "laptop scroll indicator is centered");
+        else assert.ok(Math.abs(cue.x - 24) < 1, "phone scroll cue keeps the production left alignment");
         const tops = [];
         let previousFill = 0;
-        for (const p of [.12, .3, .48, .57, .66, .86, .99, 1]) {
+        for (const p of [.12, .3, .48, .5, .57, .66, .86, .99, 1]) {
           await scrollToProgress(page, p);
+          assert.equal(await page.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), String(Math.round(p * 100)));
           const state = await page.locator("#home").evaluate(root => ({ fill: Number(root.dataset.fill), top: root.firstElementChild.getBoundingClientRect().top }));
           assert.ok(state.fill >= previousFill);
           previousFill = state.fill;
@@ -169,8 +198,16 @@ try {
         assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, "glass panel must stay stationary while filling");
         await scrollToProgress(page, .2);
         assert.ok(Number(await page.locator("#home").getAttribute("data-fill")) < .4, "scrolling back must lower the liquid");
+        if (width === 390 || width === 1440) {
+          for (const pause of [.525, .62, .78, .93]) {
+            await scrollToProgress(page, pause);
+            const weights = await page.locator('#home').evaluate(root => ['--coffee-progress','--side-opacity','--top-opacity','--macro-opacity'].map(key => Number(root.style.getPropertyValue(key))));
+            assert.ok(weights.every(value => value === 0 || value === 1), 'stopping between shots must settle on a clean photograph');
+          }
+        }
         await scrollToProgress(page, 0);
         await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
+        assert.equal(await page.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), "0");
 
         const headerShop = page.locator("header").getByRole("link", { name: /^Shop(?: M'ma)?$/ }).first();
         assert.equal(await headerShop.getAttribute("href"), "/milk");
@@ -179,6 +216,10 @@ try {
           await toggle.click();
           const dialog = page.getByRole("dialog");
           assert.equal(await dialog.isVisible(), true);
+          await dialog.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+          const glass = await dialog.evaluate(element => ({ surface: getComputedStyle(element).backgroundColor, backdrop: getComputedStyle(element, '::backdrop').backdropFilter || getComputedStyle(element, '::backdrop').webkitBackdropFilter }));
+          assert.match(glass.surface, /rgba\(/, 'glass menu retains a translucent tinted surface');
+          assert.match(glass.backdrop, /blur/, 'modal backdrop softens the page behind navigation');
           assert.equal(await dialog.getByRole("navigation").getByRole("link").count(), 5);
           for (let i = 0; i < 10; i++) {
             await page.keyboard.press("Tab");
@@ -208,7 +249,7 @@ try {
         await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false' && document.querySelector('#site-content').getBoundingClientRect().top < 150);
         assert.equal(await page.evaluate(() => location.hash), "#site-content");
         assert.ok((await headerShop.boundingBox()).y >= 0, "Shop must remain visible after skipping");
-        results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false });
+        results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false, sideAlignmentPixels: alignment });
         await context.close();
       }
 
@@ -216,6 +257,7 @@ try {
       const staticPage = await reduced.newPage();
       await staticPage.goto(base, { waitUntil: "networkidle" });
       await staticPage.waitForFunction(() => document.getElementById("home").dataset.fill === "1.000");
+      assert.equal(await staticPage.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), "100");
       assert.equal(await staticPage.locator("#home").evaluate(root => root.offsetHeight === root.firstElementChild.offsetHeight), true, "reduced motion must not require a scroll sequence");
       await staticPage.screenshot({ path: path.join(output, `${name}-reduced-motion.png`) });
       await reduced.close();

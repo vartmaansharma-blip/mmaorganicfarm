@@ -216,12 +216,13 @@ test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
 
   assert.match(layout, /Fresh Farm Milk Delivery in Jamshedpur/);
-  assert.match(layout, /fresh milk delivery Jamshedpur/);
-  assert.match(layout, /milk home delivery Jamshedpur/);
+  assert.doesNotMatch(layout, /keywords:/);
   assert.match(layout, /openGraph/);
   assert.match(layout, /twitter/);
   assert.match(layout, /canonical/);
-  assert.match(layout, /hero-milk\.png/);
+  assert.match(layout, /og-milk\.jpg/);
+  assert.match(layout, /width: 1200/);
+  assert.match(layout, /height: 630/);
 });
 
 test("loads the shared editorial and interface typography system", async () => {

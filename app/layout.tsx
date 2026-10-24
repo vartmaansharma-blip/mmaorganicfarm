@@ -3,13 +3,13 @@ import localFont from "next/font/local";
 import "./globals.css";
 
 const editorial = localFont({
-  src: "../public/fonts/Fraunces-Variable.ttf",
+  src: "../public/fonts/Fraunces-Variable.woff2",
   display: "swap",
   variable: "--font-fraunces",
   weight: "100 900",
 });
 const interfaceFont = localFont({
-  src: "../public/fonts/SpaceGrotesk-Variable.ttf",
+  src: "../public/fonts/SpaceGrotesk-Variable.woff2",
   display: "swap",
   variable: "--font-space-grotesk",
   weight: "300 700",
@@ -27,15 +27,6 @@ export const metadata: Metadata = {
     template: "%s | M'ma Organic Farm",
   },
   description: siteDescription,
-  keywords: [
-    "fresh milk delivery Jamshedpur",
-    "farm fresh milk Jamshedpur",
-    "M'ma Organic Farm",
-    "Mma Organic Farm",
-    "glass bottle milk Jamshedpur",
-    "milk home delivery Jamshedpur",
-    "fresh farm dairy Jamshedpur",
-  ],
   alternates: {
     canonical: "/",
   },
@@ -46,8 +37,10 @@ export const metadata: Metadata = {
     siteName: "M'ma Organic Farm",
     images: [
       {
-        url: "/hero-milk.png",
-        alt: "M'ma Organic Farm fresh milk bottle",
+        url: "/og-milk.jpg",
+        width: 1200,
+        height: 630,
+        alt: "M'ma Organic Farm — fresh milk delivered in glass in Jamshedpur",
       },
     ],
     locale: "en_IN",
@@ -57,16 +50,16 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteTitle,
     description: siteDescription,
-    images: ["/hero-milk.png"],
+    images: ["/og-milk.jpg"],
   },
   robots: {
     index: true,
     follow: true,
   },
   icons: {
-    icon: [{ url: "/mma-logo.png", type: "image/png" }],
-    shortcut: "/mma-logo.png",
-    apple: "/mma-logo.png",
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 

@@ -1,3 +1,5 @@
+import Image from "next/image";
+import { LandingConversionTracking } from "@/app/components/landing-conversion-tracking";
 import { CapsuleNavigation } from "@/app/components/capsule-navigation";
 import { RisingGlassHero } from "@/app/components/rising-glass-hero";
 import landingStyles from "./landing.module.css";
@@ -101,8 +103,8 @@ const structuredData = {
         "@type": "Offer",
         price: "62",
         priceCurrency: "INR",
-        availability: "https://schema.org/InStock",
-        url: `${siteUrl}/#milk`,
+        priceSpecification: { "@type": "UnitPriceSpecification", price: "62", priceCurrency: "INR", unitText: "litre" },
+        url: `${siteUrl}/milk`,
         eligibleRegion: {
           "@type": "City",
           name: "Jamshedpur",
@@ -124,6 +126,7 @@ export default async function Home() {
         Skip to content
       </a>
 
+      <LandingConversionTracking />
       <CapsuleNavigation />
 
       <main className={landingStyles.main} id="main">
@@ -140,12 +143,12 @@ export default async function Home() {
           ))}
         </section>
 
-        <div className="ticker" aria-label="M'ma Organic Farm ordering summary">
+        <div className="ticker" role="region" tabIndex={0} aria-label="M'ma Organic Farm ordering summary">
           <div>
             <span>
               M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ BUILD YOUR MILK PLAN ✦
             </span>
-            <span>
+            <span aria-hidden="true">
               M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ BUILD YOUR MILK PLAN ✦
             </span>
           </div>
@@ -163,7 +166,7 @@ export default async function Home() {
 
           <div className="milk-layout">
             <article className="milk-visual">
-              <img src="/farm-bottle.png" alt="M'ma Farms milk bottle at the farm" />
+              <Image src="/farm/bottle.webp" alt="M'ma Organic Farm milk bottle at the farm" width={1122} height={1402} sizes="(max-width: 720px) calc(100vw - 40px), 45vw" />
               <div className="price-tag">
                 <strong>₹62</strong>
                 <span>/ litre</span>
@@ -183,7 +186,7 @@ export default async function Home() {
                   </div>
                 ))}
               </div>
-              <a className="button button-yellow" href={orderPath}>
+              <a className="button button-yellow" href={orderPath} data-conversion="plan_cta_click" data-location="landing">
                 Build my weekly plan <span>↗</span>
               </a>
             </div>
@@ -206,8 +209,8 @@ export default async function Home() {
             </p>
             <p>
               The farm serves more than 500 families and produces over 1,000 L
-              of milk each day. Its licensed and certification-led approach is
-              built around trust, consistency and a better daily bottle.
+              of milk each day. Speak directly with the farm team about your delivery,
+              the milk and the bottle arrangement before starting your plan.
             </p>
             <div className="story-metrics">
               <div>
@@ -263,13 +266,13 @@ export default async function Home() {
 
           <div className="farm-gallery">
             <figure className="farm-card farm-card-large">
-              <img src="/cowshed.jpeg" alt="Cows resting in the farm cowshed" />
+              <Image src="/farm/cowshed.webp" alt="Cows resting in the farm cowshed" width={1040} height={780} sizes="(max-width: 720px) calc(100vw - 40px), 60vw" />
               <figcaption>
                 <span>01</span>Comfort and daily care
               </figcaption>
             </figure>
             <figure className="farm-card">
-              <img src="/milking-station.jpeg" alt="Visitors viewing the farm milking station" />
+              <Image src="/farm/milking-station.webp" alt="Visitors viewing the farm milking station" width={1032} height={774} sizes="(max-width: 720px) calc(100vw - 40px), 40vw" />
               <figcaption>
                 <span>02</span>The farm in view
               </figcaption>
@@ -286,10 +289,10 @@ export default async function Home() {
           </h2>
           <p>Choose your days, adjust the litres, and skip a delivery when life changes.</p>
           <div className="closing-actions">
-            <a className="button button-dark" href={orderPath}>
+            <a className="button button-dark" href={orderPath} data-conversion="plan_cta_click" data-location="landing">
               Start my milk plan <span>↗</span>
             </a>
-            <a className="button button-light" href="tel:+919818804419">
+            <a className="button button-light" href="tel:+919818804419" data-conversion="call_click" data-location="closing">
               Call to order <span>↗</span>
             </a>
           </div>
@@ -320,10 +323,10 @@ export default async function Home() {
 
       <a
         className="whatsapp-float"
-        href={whatsappContact}
+        href={whatsappContact} data-conversion="whatsapp_click" data-location="floating_contact"
         aria-label="Chat with M'ma Organic Farm on WhatsApp"
       >
-        <img src="/whatsapp.svg" alt="" aria-hidden="true" />
+        <Image src="/whatsapp.svg" alt="" aria-hidden="true" width={28} height={28} />
         <small>Order milk</small>
       </a>
     </>
