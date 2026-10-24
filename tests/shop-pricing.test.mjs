@@ -331,3 +331,22 @@ test("payment-to-cart binding matches the actual products, date and quantities, 
     false,
   );
 });
+test("a scheduled cart beginning on an unselected weekday quotes add-ons on its actual first milk delivery", () => {
+  const state = createShopState("2026-10-25");
+  state.drafts.plan.milk.schedule = [1, 1, 1, 1, 1, 0, 0];
+  state.drafts.plan.milk.extras.paneer.enabled = true;
+  const cart = addCartProduct(
+    state.carts.plan,
+    "milk",
+    state.drafts.plan.milk,
+    "plan",
+  );
+  assert.equal(cartQuote(cart, "plan", "2025-01-01").deliveryCharge, 58);
+  assert.equal(
+    new URL(
+      cartOrderHref(cart, "plan"),
+      "https://example.com",
+    ).searchParams.get("start"),
+    "2026-10-26",
+  );
+});

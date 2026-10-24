@@ -120,7 +120,7 @@ export function ProductDetails({ id }: { id: ShopProductId }) {
           bottleChoice: "return",
           products: extras,
           schedule: d.schedule,
-          startDate: validDate ? d.start : "",
+          startDate: validDate ? (dates[0]?.date ?? d.start) : "",
           firstPlanStart: firstPlanStart ?? dates[0]?.date ?? d.start,
         })
       : calculateOrderPricing({

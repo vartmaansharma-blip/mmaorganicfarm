@@ -79,7 +79,9 @@ export function cartQuote(
         bottleChoice: "return",
         products,
         schedule: cart.milk.schedule,
-        startDate: cart.start,
+        startDate:
+          milkDeliveryDates(cart.milk.schedule, cart.start)[0]?.date ??
+          cart.start,
         firstPlanStart:
           firstPlanStart ??
           milkDeliveryDates(cart.milk.schedule, cart.start)[0]?.date ??

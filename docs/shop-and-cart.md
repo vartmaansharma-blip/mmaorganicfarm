@@ -26,7 +26,7 @@ The waiver uses the earliest non-test paid plan order or active/paused/completed
 
 ## Verification and limits
 
-- TypeScript, zero-error lint (two existing warnings) and 53 source/unit checks.
+- TypeScript, zero-error lint (two existing warnings) and 54 source/unit checks.
 - Optimized Next.js production build with webpack. A local Node 26 Turbopack compilation stalled; the supported webpack production build completes. The hosted preview build must also pass before merge.
 - Actual anonymous app: Chromium and WebKit, 320/390/768/1440 px, dark/light; cart quantities/removal, independent modes, reload/navigation recovery, outline icons, focus return, 44 px targets, combined checkout URL and preserved sign-in return; autoplay and reduced-motion checks; unauthenticated payment endpoint returns 401.
 - Homepage film, immersive frame, skip, menu, forward/reverse fill and connected policy-page regressions are checked separately. Financial checks cover the per-delivery threshold, bottle exclusion, calendar-month expiry, add-on occurrences, tampered stored totals, adjustment pricing and cart-to-order matching.
