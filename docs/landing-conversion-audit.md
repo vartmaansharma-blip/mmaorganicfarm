@@ -28,8 +28,11 @@ The user rejected the conversion redesign and requested the earlier production v
 
 ## Verification and limitations
 
-The production build and 34 source/unit checks pass. TypeScript passes; lint has zero errors and two pre-existing warnings. Browser checks cover Chromium/WebKit, both themes, 320/360/390/768/1200/1440 widths, forward/reverse film, macro/overhead/skip, menu focus/Escape/backdrop, reduced motion and nine public customer/policy routes. Follow-up evidence and current Lighthouse numbers are included with the preview delivery; the rejected redesign's score of 93 must not be attributed to this restored design.
+The production build and 37 source/unit checks pass. TypeScript passes; lint has zero errors and two pre-existing warnings. Browser checks cover Chromium/WebKit, both themes, 320/360/390/768/1200/1440 widths, forward/reverse film, macro/overhead/skip, menu focus/Escape/backdrop, reduced motion and nine public customer/policy routes. Follow-up evidence and current Lighthouse numbers are included with the preview delivery; the rejected redesign's score of 93 must not be attributed to this restored design.
 
 A direct comparison against production at 390 and 1440 widths confirms unchanged header, headline and copy bounding boxes. At 390×844 the glass canvas grows from 295.39 to 354.47px (20%); desktop sizing remains unchanged at 1440×960. Header/copy image differences are below 0.3% of compared pixels, principally font rasterization. The subsequent scroll-cue/rail changes are the user's explicit additions.
 
 No authenticated order, payment, customer/calendar write or physical-phone test has been performed. The event bridge is instrumented, not a remotely collecting analytics service. Missing owner facts are recorded in landing-owner-content-checklist.md. Main and production remain unchanged pending a later explicit release instruction.
+
+
+Camera changes now use 110ms clock-driven dissolves between clean shot targets. They finish even when native scrolling stops; a small progress deadband prevents boundary jitter from repeatedly restarting a transition. The fill remains continuously scroll-controlled, reverse transitions start from current image weights, fast skips resolve to the requested shot, and reduced motion remains static. Pausing inside the former blend windows must leave exact 0/1 photographic weights rather than a persistent double exposure.

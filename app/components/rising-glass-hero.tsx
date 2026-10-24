@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
-import { dampProgress, heroFrame, heroProgress, liquidGeometry, macroPresentation } from "@/lib/hero-motion";
+import { dampProgress, heroFrame, heroProgress, liquidGeometry, macroPresentation, stepCamera, type CameraTransition } from "@/lib/hero-motion";
 import styles from "./rising-glass-hero.module.css";
 
 export function RisingGlassHero() {
@@ -20,18 +20,24 @@ export function RisingGlassHero() {
     let frame = 0;
     let lastTime = 0;
     let current = -1;
+    let camera: CameraTransition | undefined;
     const paint = (time: number) => {
       const rect = root.getBoundingClientRect();
       const panel = root.firstElementChild as HTMLElement;
       const headerHeight = parseFloat(getComputedStyle(panel).top) || 0;
       const target = heroProgress(rect.top, rect.height, panel.offsetHeight, headerHeight);
-      const snap = current < 0 || motion.matches || target === 0 || target === 1;
+      const firstPaint = current < 0;
+      const snap = firstPaint || motion.matches || target === 0 || target === 1;
       current = snap ? target : dampProgress(current, target, lastTime ? Math.min(64, time - lastTime) : 16.67);
       const progress = motion.matches ? 1 : current;
       root.style.setProperty("--scroll-progress", String(progress));
       root.dataset.progressStage = progress >= .999 ? "complete" : progress >= .5 ? "middle" : "beginning";
       storyProgress.current?.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
-      const values = heroFrame(current, motion.matches);
+      const targetFrame = heroFrame(current, motion.matches, camera?.to);
+      const shot = stepCamera(camera, targetFrame, time, firstPaint || motion.matches);
+      camera = shot.state;
+      const values = { fill: targetFrame.fill, ...shot.values };
+      root.dataset.transitioning = String(shot.active);
       const liquid = liquidGeometry(values.fill);
       root.style.setProperty("--fill-progress", String(values.fill));
       root.style.setProperty("--coffee-progress", String(values.coffee));
@@ -53,7 +59,7 @@ export function RisingGlassHero() {
       liquidMask.current?.setAttribute("d", liquid.path);
       root.dataset.fill = values.fill.toFixed(3);
       root.dataset.progress = (motion.matches ? 1 : current).toFixed(3);
-      if (!motion.matches && Math.abs(target - current) > 0.0001) {
+      if (!motion.matches && (Math.abs(target - current) > 0.0001 || shot.active)) {
         lastTime = time;
         frame = window.requestAnimationFrame(paint);
       } else {

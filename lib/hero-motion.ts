@@ -18,19 +18,43 @@ export function dampProgress(current: number, target: number, elapsedMs: number)
   return Math.abs(next - target) < 0.0001 ? clamp01(target) : clamp01(next);
 }
 
-export function heroFrame(progress: number, reducedMotion = false) {
+export type HeroCamera = { coffee: number; side: number; top: number; macro: number };
+export type CameraTransition = { from: HeroCamera; to: HeroCamera; startedAt: number };
+export const CAMERA_TRANSITION_MS = 110;
+const cameraKeys = ["coffee", "side", "top", "macro"] as const;
+
+/** Select a clean photograph; a small deadband prevents threshold flicker. */
+export function heroFrame(progress: number, reducedMotion = false, previous?: HeroCamera) {
   const p = reducedMotion ? 1 : clamp01(progress);
-  // Short dissolves separated by clean holds keep each camera angle readable.
-  const sideIn = easeBetween(p, .60, .64);
-  const macroIn = easeBetween(p, .74, .82);
-  const closingTop = easeBetween(p, .90, .96);
+  const past = (threshold: number, wasPast: boolean) => p >= threshold + (previous ? (wasPast ? -.004 : .004) : 0);
+  const top = !reducedMotion && past(.93, previous?.top === 1);
+  const macro = !reducedMotion && past(.78, !!previous && previous.macro + previous.top > 0);
+  const side = !reducedMotion && past(.62, !!previous && previous.side + previous.macro + previous.top > 0);
   return {
     fill: easeBetween(p, 0, .48),
-    coffee: easeBetween(p, .48, .57),
-    side: reducedMotion ? 0 : sideIn * (1 - macroIn),
-    top: reducedMotion ? 0 : closingTop,
-    macro: reducedMotion ? 0 : macroIn * (1 - closingTop),
+    coffee: past(.525, previous?.coffee === 1) ? 1 : 0,
+    side: side && !macro && !top ? 1 : 0,
+    top: top ? 1 : 0,
+    macro: macro && !top ? 1 : 0,
   };
+}
+
+function cameraAt(state: CameraTransition, now: number): HeroCamera {
+  if (now - state.startedAt >= CAMERA_TRANSITION_MS) return state.to;
+  const t = easeBetween(now - state.startedAt, 0, CAMERA_TRANSITION_MS);
+  const blend = (key: keyof HeroCamera) => state.from[key] + (state.to[key] - state.from[key]) * t;
+  return { coffee: blend("coffee"), side: blend("side"), top: blend("top"), macro: blend("macro") };
+}
+
+/** A dissolve finishes in clock time even if scrolling stops between photographs. */
+export function stepCamera(previous: CameraTransition | undefined, target: HeroCamera, now: number, immediate = false) {
+  const clean = { coffee: target.coffee, side: target.side, top: target.top, macro: target.macro };
+  const state: CameraTransition = !previous || immediate
+    ? { from: clean, to: clean, startedAt: now - CAMERA_TRANSITION_MS }
+    : cameraKeys.some(key => previous.to[key] !== clean[key])
+      ? { from: cameraAt(previous, now), to: clean, startedAt: now }
+      : previous;
+  return { state, values: cameraAt(state, now), active: now - state.startedAt < CAMERA_TRANSITION_MS };
 }
 
 /** A curved meniscus inside tapered photographic glass walls, in normalized coordinates. */

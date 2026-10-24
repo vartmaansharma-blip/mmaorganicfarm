@@ -38,7 +38,7 @@ async function scrollToProgress(page, progress) {
     const header = parseFloat(getComputedStyle(panel).top) || 0;
     window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight), behavior: "instant" });
   }, progress);
-  await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.progress) - p) < .004, progress);
+  await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.progress) - p) < .004 && document.getElementById("home").dataset.transitioning === "false", progress);
 }
 
 function contrast(foreground, background) {
@@ -182,6 +182,13 @@ try {
         assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, "glass panel must stay stationary while filling");
         await scrollToProgress(page, .2);
         assert.ok(Number(await page.locator("#home").getAttribute("data-fill")) < .4, "scrolling back must lower the liquid");
+        if (width === 390 || width === 1440) {
+          for (const pause of [.525, .62, .78, .93]) {
+            await scrollToProgress(page, pause);
+            const weights = await page.locator('#home').evaluate(root => ['--coffee-progress','--side-opacity','--top-opacity','--macro-opacity'].map(key => Number(root.style.getPropertyValue(key))));
+            assert.ok(weights.every(value => value === 0 || value === 1), 'stopping between shots must settle on a clean photograph');
+          }
+        }
         await scrollToProgress(page, 0);
         await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
         assert.equal(await page.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), "0");
