@@ -11,7 +11,7 @@ No placeholders from this checklist appear on the public page. Existing publishe
 | DELIVERY_TIME | Actual delivery window and exceptions |
 | DELIVERY_AREAS | Current eligible localities and any service restrictions |
 | BOTTLE_RETURN_DEPOSIT | Current return procedure, deposit/charges and conditions consistent with checkout |
-| TRIAL_FLOW | Confirm whether a 3-day trial exists, its price and conditions; current link only asks about availability |
+| TRIAL_FLOW | Confirm whether a 3-day trial exists, its price and conditions; no trial CTA is added to the restored design |
 | FOUNDER_NAME_PHOTO_STORY | Approved factual founder story and permissioned photograph |
 | REAL_TESTIMONIALS | Genuine quotes, customer attribution and explicit publication consent |
 | FARM_VIDEO_CAPTIONS | Approved video, poster, transcript/captions and usage permission |
@@ -21,4 +21,4 @@ No placeholders from this checklist appear on the public page. Existing publishe
 | ANALYTICS_DESTINATION | Chosen provider, configuration and consent requirements; current events have no network collector |
 | FULL_HINDI_TRANSLATION | Approved translation of product, policy and ordering content; the hero currently has a Hindi tagline |
 
-The review component renders nothing until consented reviews are supplied. Optional video support renders nothing until a complete media record is supplied. Missing facts are handled through a direct contact invitation instead of fabricated answers, reviews or founder material.
+The rejected review/video components and additional FAQ/delivery layouts have been removed to preserve the approved production design. These are private future-content requirements, not public placeholders. No unsupported founder, review, licensing or certification claims are added.

@@ -10,7 +10,7 @@ export default function ContactPage() {
   return (
     <PublicInformationLayout
       eyebrow="Contact the farm"
-      title="Talk directly to M'ma."
+      title="Talk directly to M’ma."
       intro="Questions about products, delivery, or an existing order are handled directly by the farm team."
     >
       <section>

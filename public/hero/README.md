@@ -28,11 +28,12 @@ Overhead: A true top-down camera looking straight into the same grooved glass, c
 
 ## Motion and accessibility
 
-Native scrolling drives absolute progress; no scroll interception or timer-based film playback. Time-based damping follows touch/trackpad scrolling and settles without overshoot. The liquid mask rises continuously before the camera changes. Short dissolves and separate holds keep the photographs distinct. The supplied macro fills the viewport and hides all visual chrome. It then dissolves into a final overhead composition with copy and navigation restored, as requested in the latest reference. The closing shot releases naturally into the site; reverse scrolling retraces the sequence.
+Native scrolling drives absolute progress; no scroll interception or timer-based film playback. Time-based damping follows touch/trackpad scrolling and settles without overshoot. The liquid mask rises continuously before the camera changes. Short dissolves and separate holds keep the photographs distinct. The supplied macro fills the viewport and hides all visual chrome. It then dissolves into a final overhead composition with copy, navigation and Shop restored, as requested in the latest reference. The closing shot releases naturally into the site; reverse scrolling retraces the sequence.
 
-The film is now mounted only after a visitor chooses “Watch the glass story”; its frames and animation code are not requested on initial page load. Reduced motion shows a static finished glass without the long pinned sequence. Without JavaScript, the main milk hero and native FAQs work and the optional film is not mounted. The skip link and focus-only final-frame continuation provide keyboard exits. No heavy video or 3D runtime is loaded.
+Reduced motion and no JavaScript show a static finished glass without the long pinned sequence. The skip link and focus-only final-frame continuation provide keyboard exits. No heavy video or 3D runtime is loaded.
 
+## Mobile scale and side-view matching
 
-## Side-view composition alignment
+The original hero remains the first screen. Mobile glass height is now 42svh capped at 360px (short phones: 35svh capped at 234px), approximately 20% larger than production. The side layer uses a uniform 1.09229 scale with (-4.955827%, -3.344626%) translation: front alpha y=139..1074 and side y=164..1020 on 800×1200 canvases now align at the rim/base without stretching.
 
-Front and side alpha silhouettes originally had heights of 935 and 856 pixels on their 800×1200 canvases. The side layer uses a uniform scale of 1.09229 and translation of (-4.955827%, -3.344626%) relative to its own canvas. This aligns the photographed rim/base with the front without stretching the glass. Browser verification measures the displayed endpoints within 2px at 320, 360, 390, 768 and 1440 widths. The circular overhead shot remains a distinct camera perspective.
+The bottom mouse/scroll cue is centered on laptop layouts and retains its original left alignment on phones. The existing desktop chapter rail fills continuously from the hero's normalized native scroll progress; it reverses with scrolling, reaches 100% at the final frame and disappears during the full-screen macro. It remains hidden on narrow screens as in production. Images/typography/layout otherwise follow the approved production design.

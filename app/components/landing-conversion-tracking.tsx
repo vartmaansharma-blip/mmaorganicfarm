@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 
-type ConversionEvent = "hero_cta_click" | "sticky_bar_click" | "plan_cta_click" | "whatsapp_click" | "call_click" | "plan_builder_start" | "film_open";
+type ConversionEvent = "hero_cta_click" | "plan_cta_click" | "whatsapp_click" | "call_click" | "plan_builder_start";
 type ConversionPayload = { event: ConversionEvent; location: string };
 declare global { interface Window { dataLayer?: Record<string, unknown>[] } }
-const allowed = new Set<ConversionEvent>(["hero_cta_click", "sticky_bar_click", "plan_cta_click", "whatsapp_click", "call_click", "film_open"]);
+const allowed = new Set<ConversionEvent>(["hero_cta_click", "plan_cta_click", "whatsapp_click", "call_click"]);
 
 /** No network transport, cookies, identifiers or free-text customer data. */
 export function LandingConversionTracking() {
