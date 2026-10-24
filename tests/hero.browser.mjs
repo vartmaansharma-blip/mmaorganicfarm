@@ -81,7 +81,9 @@ async function verifyConnectedPages(browser, name) {
       await page.goto(base + route, { waitUntil: 'networkidle' });
       await page.evaluate(() => document.fonts.ready);
       assert.equal(await page.locator('html').getAttribute('data-theme'), theme, `${route} retains theme`);
-      assert.equal(await page.getByRole('button', { name: `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` }).count(), 1);
+      const focusedAuth=["/sign-in","/forgot-password","/reset-password"].includes(route);
+      assert.equal(await page.getByRole('button', { name: `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` }).count(), focusedAuth?0:1);
+      assert.equal(await page.getByRole("button",{name:"Open navigation menu"}).count(),focusedAuth?0:1);
       const state = await page.evaluate(() => {
         const style = getComputedStyle(document.documentElement);
         const bodyStyle = getComputedStyle(document.body);
@@ -110,9 +112,7 @@ async function verifyConnectedPages(browser, name) {
       if (route === '/sign-in') {
         const email = page.getByLabel('Email address', { exact: true });
         await email.fill('visual-fixture@example.invalid');
-        await page.getByRole('button', { name: /Switch to .* mode/ }).click();
-        assert.equal(await email.inputValue(), 'visual-fixture@example.invalid', 'theme changes preserve form input');
-        await page.getByRole('button', { name: /Switch to .* mode/ }).click();
+        assert.equal(await email.inputValue(), 'visual-fixture@example.invalid');
         const field = await email.evaluate(element => ({ size: parseFloat(getComputedStyle(element).fontSize), height: element.getBoundingClientRect().height }));
         assert.ok(field.size >= 16 && field.height >= 48, 'customer fields stay readable and comfortable on mobile');
         const pairs = [['text','page'],['muted','page'],['muted','surface'],['on-action','action'],['on-selected','selected'],['success-text','success-bg'],['error-text','error-bg'],['warning-text','warning-bg']];
@@ -225,8 +225,8 @@ try {
         await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
         assert.equal(await page.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), "0");
 
-        const headerShop = page.locator("header").getByRole("link", { name: /^Shop(?: M'ma)?$/ }).first();
-        assert.equal(await headerShop.getAttribute("href"), "/milk");
+        const headerShop = page.locator("header").getByRole("button", { name: /^Open cart,/ }).first();
+        assert.equal(await headerShop.getAttribute("aria-haspopup"), "dialog");
         if (width < 901) {
           const toggle = page.getByRole("button", { name: "Open navigation menu" });
           await toggle.click();
@@ -264,7 +264,7 @@ try {
         await page.getByRole("link", { name: /Skip introduction/ }).click();
         await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false' && document.querySelector('#site-content').getBoundingClientRect().top < 150);
         assert.equal(await page.evaluate(() => location.hash), "#site-content");
-        assert.ok((await headerShop.boundingBox()).y >= 0, "Shop must remain visible after skipping");
+        assert.ok((await headerShop.boundingBox()).y >= 0, "Cart must remain visible after skipping");
         results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false, sideAlignmentPixels: alignment });
         await context.close();
       }

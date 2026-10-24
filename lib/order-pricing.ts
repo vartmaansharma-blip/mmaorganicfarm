@@ -1,3 +1,4 @@
+import { deliveryChargeForSubtotal } from "./delivery-pricing";
 import type { FarmProductSelection } from "@/lib/farm-products";
 import type { WeeklyMilkSchedule } from "@/lib/milk-plan";
 
@@ -41,7 +42,10 @@ export function calculateOrderPricing({
       ? safeMilkLitres * NEW_BOTTLE_CHARGE
       : 0;
 
+  const productSubtotal=milkTotal+recurringAddOnsTotal+oneTimeAddOnsTotal;
+  const deliveryCharge=deliveryChargeForSubtotal(productSubtotal,"once");
   return {
+    deliveryCharge,
     bottleCharge,
     milkLitres: safeMilkLitres,
     milkTotal,
@@ -59,7 +63,7 @@ export function calculateOrderPricing({
       milkTotal +
       recurringAddOnsTotal +
       oneTimeAddOnsTotal +
-      bottleCharge,
+      bottleCharge + deliveryCharge,
   };
 }
 
@@ -68,11 +72,13 @@ export function calculatePlanPricing({
   products,
   schedule,
   startDate,
+  firstPlanStart = startDate,
 }: {
   bottleChoice: BottleChoice;
   products: FarmProductSelection[];
   schedule: WeeklyMilkSchedule;
   startDate: string;
+  firstPlanStart?: string;
 }) {
   const oneTimeTotals = Object.fromEntries(
     products
@@ -82,9 +88,11 @@ export function calculatePlanPricing({
   const productTotals: Record<string, number> = { ...oneTimeTotals };
   let milkLitres = 0;
   let completedDeliveries = 0;
-  let cursor = new Date(`${startDate}T12:00:00+05:30`);
+  let cursor = new Date(`${startDate}T12:00:00Z`);
+  let deliveryCharge=0;
+  let firstProductDelivery=true;
 
-  if (!startDate || schedule.every((quantity) => quantity === 0)) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || Number.isNaN(cursor.valueOf()) || cursor.toISOString().slice(0,10)!==startDate || schedule.length!==7 || !schedule.every(q=>Number.isInteger(q)&&q>=0&&q<=5) || schedule.every((quantity) => quantity === 0)) {
     return calculateOrderPricing({
       bottleChoice: "none",
       milkLitres: 0,
@@ -93,7 +101,7 @@ export function calculatePlanPricing({
   }
 
   while (completedDeliveries < PLAN_DELIVERY_COUNT) {
-    const dayOfWeek = ((cursor.getDay() + 6) % 7) + 1;
+    const dayOfWeek = ((cursor.getUTCDay() + 6) % 7) + 1;
     const dayMilk = schedule[dayOfWeek - 1] ?? 0;
 
     if (dayMilk > 0) {
@@ -101,16 +109,20 @@ export function calculatePlanPricing({
       completedDeliveries += 1;
     }
 
+    let dailySubtotal=dayMilk*MILK_PRICE_PER_LITRE;
+    if(firstProductDelivery){dailySubtotal+=Object.values(oneTimeTotals).reduce((sum,value)=>sum+value,0);}
     products
       .filter(
         (product) =>
           product.frequency === "weekly" && product.days.includes(dayOfWeek),
       )
       .forEach((product) => {
+        dailySubtotal+=product.price*product.quantity;
         productTotals[product.id] =
           (productTotals[product.id] ?? 0) + product.price * product.quantity;
       });
 
+    if(dailySubtotal>0){deliveryCharge+=deliveryChargeForSubtotal(dailySubtotal,"plan",cursor.toISOString().slice(0,10),firstPlanStart);firstProductDelivery=false;}
     cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
   }
 
@@ -126,6 +138,7 @@ export function calculatePlanPricing({
     .reduce((total, [, value]) => total + value, 0);
 
   return {
+    deliveryCharge,
     bottleCharge,
     milkLitres,
     milkTotal,
@@ -133,7 +146,7 @@ export function calculatePlanPricing({
     productTotals,
     recurringAddOnsTotal,
     total:
-      milkTotal + bottleCharge + oneTimeAddOnsTotal + recurringAddOnsTotal,
+      milkTotal + bottleCharge + oneTimeAddOnsTotal + recurringAddOnsTotal + deliveryCharge,
   };
 }
 

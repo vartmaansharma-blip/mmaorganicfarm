@@ -1,3 +1,4 @@
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -57,7 +58,7 @@ export default async function FarmLayout({ children }: { children: ReactNode }) 
         </div>
       </aside>
 
-      <div className={styles.workspace}>{children}</div>
+      <div className={styles.workspace}><div className={styles.pageControls}><PageNavigationControls/></div>{children}</div>
 
       <nav
         className={`${styles.mobileNav} ${driverView ? styles.driverMobileNav : ""}`}

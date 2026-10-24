@@ -29,8 +29,9 @@ export default function PricingPage() {
       </section>
       <section>
         <h2>Glass bottle</h2>
-        <p>The current online milk price uses the return-bottle option. New bottle ordering will be added later.</p>
+        <p>Milk is ₹62 per litre with bottle return. New glass bottles add ₹10 per litre; this is a bottle purchase, separate from delivery.</p>
       </section>
+<section><h2>Delivery</h2><p>One-time orders: ₹5 delivery, free when products total above ₹199. Scheduled orders: no delivery, platform, surge or miscellaneous fees for one calendar month from your first scheduled plan. After that month, delivery is ₹2 per delivery, free when that delivery’s products total above ₹199. The threshold excludes bottle purchases. Handling, platform and surge fees are not added.</p></section>
       <section>
         <h2>Final amount</h2>
         <p>The final amount depends on the products, quantities, and schedule selected by the customer. Any price change is shown before payment.</p>

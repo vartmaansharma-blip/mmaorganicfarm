@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -104,7 +104,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           <Link className={styles.back} href="/account">
             Profile
           </Link>
-          <ThemeToggle />
+          <PageNavigationControls />
         </div>
       </header>
 

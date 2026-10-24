@@ -1,5 +1,7 @@
 "use server";
 
+import { orderReturnPath } from "@/lib/shop-draft";
+import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
 import { redirect } from "next/navigation";
 import {
   parseFarmProductSelections,
@@ -54,7 +56,8 @@ export async function saveDeliveryDetails(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/sign-in?next=%2Forder&message=Sign+in+to+continue+your+order.");
+    const choices=Object.fromEntries(["purchase","bottle","milk","extras","schedule","start"].map(key=>[key,String(formData.get(key)??"")]));
+    redirect(`/sign-in?next=${encodeURIComponent(orderReturnPath(choices))}&message=Sign+in+to+continue+your+order.`);
   }
 
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
@@ -87,6 +90,7 @@ export async function saveDeliveryDetails(formData: FormData) {
   const effectiveMilkLitres = purchase === "plan" && weeklySchedule
     ? weeklySchedule.reduce((total, litres) => total + litres, 0)
     : milkLitres;
+  const firstPlanStart=purchase==="plan"?await firstScheduledPlanStart(supabase,user.id):null;
   const pricing =
     purchase === "plan" && weeklySchedule
       ? calculatePlanPricing({
@@ -94,13 +98,14 @@ export async function saveDeliveryDetails(formData: FormData) {
           products: selectedProducts,
           schedule: weeklySchedule,
           startDate: start,
+          firstPlanStart:firstPlanStart??start,
         })
       : calculateOrderPricing({
           bottleChoice: bottle,
           milkLitres: effectiveMilkLitres,
           products: selectedProducts,
         });
-  const orderDeliveryDate = purchase === "plan" ? start : minimumStartDate;
+  const orderDeliveryDate = purchase === "plan" ? start : start && start >= minimumStartDate ? start : minimumStartDate;
 
   if (
     purchase === "plan" &&
@@ -286,7 +291,7 @@ export async function saveDeliveryDetails(formData: FormData) {
     address_snapshot: address, bottle_charge_paise: pricing.bottleCharge * 100, bottle_choice: bottle,
     currency: "INR", delivery_plan_id: deliveryPlanId, milk_litres: pricing.milkLitres,
     phone_snapshot: `+91${phone}`, purchase_mode: purchase, start_date: orderDeliveryDate,
-    status: "draft", subtotal_paise: (pricing.total - pricing.bottleCharge) * 100,
+    status: "draft", subtotal_paise: (pricing.total - pricing.bottleCharge - pricing.deliveryCharge) * 100,
     total_paise: pricing.total * 100, user_id: user.id,
   }).select("id").single();
   if (orderError || !order) redirect(orderUrl("error", "We saved your details but could not prepare checkout. Please try again.", purchase, bottle, milk, extras, schedule, start));

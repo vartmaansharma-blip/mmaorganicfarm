@@ -678,10 +678,10 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.doesNotMatch(builder, /delivery charge|delivery fee/i);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /grid-template-columns: 1fr/);
-  assert.match(landing, /const orderPath = "\/milk"/);
+  assert.match(landing, /const orderPath = "\/shop"/);
   assert.match(sidebar, /href="\/milk"/);
   assert.match(account, /href="\/milk"/);
-  assert.match(order, /href="\/milk"/);
+  assert.match(order, /href="\/shop"/);
 });
 
 test("presents the product builder as a visible farm shop", async () => {
@@ -1038,7 +1038,7 @@ test("collects delivery details only when a customer starts an order", async () 
     readFile(deliveryPlanSchemaUrl, "utf8"),
   ]);
 
-  assert.match(page, /const orderPath = "\/milk"/);
+  assert.match(page, /const orderPath = "\/shop"/);
   assert.match(signIn, /name="next"/);
   assert.match(callback, /mma_auth_next/);
   assert.match(orderPage, /Phone number/);

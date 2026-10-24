@@ -70,6 +70,7 @@ function formatLitres(value: number) {
 }
 
 type MilkPlanBuilderProps = {
+  firstPlanStart: string | null;
   initialExtras?: FarmProductSelection[];
   initialSchedule?: WeeklyMilkSchedule;
   initialStartDate?: string;
@@ -77,6 +78,7 @@ type MilkPlanBuilderProps = {
 };
 
 export function MilkPlanBuilder({
+  firstPlanStart,
   initialExtras = [],
   initialSchedule = defaultSchedule,
   initialStartDate = "",
@@ -134,6 +136,7 @@ export function MilkPlanBuilder({
     products: selectedExtras,
     schedule,
     startDate,
+    firstPlanStart: firstPlanStart ?? startDate,
   });
   const weeklyEstimate = weeklyPricing.milkTotal;
   const weeklyExtrasTotal = weeklyPricing.recurringAddOnsTotal;

@@ -1586,3 +1586,10 @@ h1 {
 }
 
 html[data-hero-immersive="true"] .whatsapp-float { visibility: hidden; }
+
+/* Compact shared controls replace duplicate destination links on small screens. */
+@media(max-width:680px){
+ .customer-header-brand>span{display:none}
+ .customer-header-actions:has([data-page-controls])>a,
+ .customer-header-actions:has([data-page-controls])>div:not([data-page-controls]){display:none}
+}

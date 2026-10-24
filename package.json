@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "test:browser": "node tests/hero.browser.mjs",
     "typecheck": "tsc --noEmit",
-    "test:customer-ui": "node tests/customer-system.browser.mjs"
+    "test:customer-ui": "node tests/customer-system.browser.mjs",
+    "test:shop": "node tests/shop.browser.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",

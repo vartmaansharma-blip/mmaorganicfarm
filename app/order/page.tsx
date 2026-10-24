@@ -1,4 +1,6 @@
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { orderReturnPath } from "@/lib/shop-draft";
+import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -45,7 +47,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/sign-in?next=%2Forder&message=Sign+in+to+continue+your+order.");
+    redirect(`/sign-in?next=${encodeURIComponent(orderReturnPath(params))}&message=Sign+in+to+continue+your+order.`);
   }
 
   const { data: profile } = await supabase
@@ -72,6 +74,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
       : params.bottle === "new"
         ? "new"
         : "return";
+  const firstPlanStart=params.purchase==="plan"?await firstScheduledPlanStart(supabase,user.id):null;
   const pricing =
     purchase === "plan" && planSchedule
       ? calculatePlanPricing({
@@ -79,6 +82,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           products: selectedProducts,
           schedule: planSchedule,
           startDate: params.start ?? "",
+          firstPlanStart:firstPlanStart??params.start??"",
         })
       : calculateOrderPricing({
           bottleChoice,
@@ -95,10 +99,10 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <span>M&apos;ma Organic Farm</span>
         </Link>
         <div className="customer-header-actions">
-          <Link className={styles.back} href="/milk">
+          <Link className={styles.back} href="/shop">
             Back to products
           </Link>
-          <ThemeToggle />
+          <PageNavigationControls />
         </div>
       </header>
 
@@ -173,7 +177,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                     <dd>₹{pricing.oneTimeAddOnsTotal}</dd>
                   </div>
                 ) : null}
-                <div className={styles.priceTotal}>
+                <div><dt>Delivery</dt><dd>{pricing.deliveryCharge?`₹${pricing.deliveryCharge}`:"Free"}</dd></div><div className={styles.priceTotal}>
                   <dt>{purchase === "plan" ? "30-delivery plan total" : "Order total"}</dt>
                   <dd>₹{pricing.total}</dd>
                 </div>

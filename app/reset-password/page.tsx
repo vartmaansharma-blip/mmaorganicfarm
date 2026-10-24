@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,7 +25,7 @@ export default async function ResetPasswordPage({
         <div className="customer-recovery-heading"><Link className={styles.recoveryBrand} href="/">
           <Image src="/mma-logo.png" alt="" width={64} height={54} />
           <span>M&apos;ma Organic Farm</span>
-        </Link><ThemeToggle /></div>
+        </Link><PageNavigationControls /></div>
         <p className={styles.eyebrow}>Customer account</p>
         <h1>Choose a new password.</h1>
         <p className={styles.recoveryIntro}>

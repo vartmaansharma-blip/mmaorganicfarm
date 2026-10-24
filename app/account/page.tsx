@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -163,7 +163,7 @@ export default async function AccountPage({
           <Link className={styles.back} href="/#milk">
             Back to milk
           </Link>
-          <ThemeToggle />
+          <PageNavigationControls />
         </div>
       </header>
 

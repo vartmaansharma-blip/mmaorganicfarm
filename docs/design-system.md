@@ -45,7 +45,7 @@ Theme changes update CSS only; they do not remount the builder, restart the hero
 
 Covered: authentication/recovery, existing `/milk` builder, delivery details, review, confirmation, account, calendar, policy pages and homepage action shape. No new public catalogue, new account system, new payment provider, customer intelligence or operations rewrite is introduced.
 
-`/milk` currently authenticates before rendering the builder. A public `/shop` catalogue and `/our-story` route are absent; public Farm and Our Story navigation uses homepage anchors. These are separate customer-flow/content tasks. Moving authentication requires a deliberate persistence/security review, not a styling edit. Older household, intelligence, loyalty and provenance proposals require backend support and real operational evidence; they are not claimed as delivered.
+The initial controls pass left `/milk` authentication unchanged. The subsequent [shop and cart implementation](shop-and-cart.md) adds public `/shop` discovery and preserves order choices through sign-in. A dedicated `/our-story` route is still absent; public Farm and Our Story navigation uses homepage anchors. These are separate customer-flow/content tasks. Moving authentication requires a deliberate persistence/security review, not a styling edit. Older household, intelligence, loyalty and provenance proposals require backend support and real operational evidence; they are not claimed as delivered.
 
 ## Verification
 

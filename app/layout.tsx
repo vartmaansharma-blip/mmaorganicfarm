@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import {ShopProvider} from "./shop/shop-state";
+import {nextDeliveryDateInIndia} from "@/lib/delivery-calendar";
 
 const editorial = localFont({
   src: "../public/fonts/Fraunces-Variable.woff2",
@@ -73,7 +75,7 @@ export default function RootLayout({
       <head>
         <script id="mama-theme" dangerouslySetInnerHTML={{ __html: `(function(){var t='dark';try{if(localStorage.getItem('mama-theme')==='light')t='light'}catch(e){}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t})()` }} />
       </head>
-      <body>{children}</body>
+      <body><ShopProvider minimumDate={nextDeliveryDateInIndia()}>{children}</ShopProvider></body>
     </html>
   );
 }

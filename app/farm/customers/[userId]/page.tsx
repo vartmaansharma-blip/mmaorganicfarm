@@ -10,6 +10,7 @@ import {
 } from "@/lib/delivery-calendar";
 import { canManageLocations, requireFarmManager } from "@/lib/farm-dashboard";
 import { MILK_PLAN_DAYS } from "@/lib/milk-plan";
+import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CustomerRoutingFields } from "../../customer-routing-fields";
 import { FormSubmitButton } from "../../form-submit-button";
@@ -150,6 +151,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
   const messages = await searchParams;
   const { role, supabase } = await requireFarmManager(`/farm/customers/${userId}`);
   const admin = createAdminClient();
+  const firstPlanStart = await firstScheduledPlanStart(admin, userId);
   const today = todayInIndia();
   const nextDeliveryDate = nextDeliveryDateInIndia();
 
@@ -465,7 +467,7 @@ export default async function CustomerPage({ params, searchParams }: CustomerPag
 
       {canManage ? <section className={styles.section} id="new-order">
         <div className={styles.sectionHeading}><div><span>Farm-assisted purchase</span><h2>Record a paid customer order</h2><p>Use this only after the farm has received payment from the customer.</p></div></div>
-        <ManualOrderForm capacityDays={capacityDays} customerName={profile.full_name ?? "Customer"} minimumStartDate={nextDeliveryDate} profileReady={Boolean(profile.phone && profile.address_line)} returnTo={returnTo} userId={userId} />
+        <ManualOrderForm firstPlanStart={firstPlanStart} capacityDays={capacityDays} customerName={profile.full_name ?? "Customer"} minimumStartDate={nextDeliveryDate} profileReady={Boolean(profile.phone && profile.address_line)} returnTo={returnTo} userId={userId} />
       </section> : null}
     </main>
   );
