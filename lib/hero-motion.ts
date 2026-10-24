@@ -19,7 +19,7 @@ export function dampProgress(current: number, target: number, elapsedMs: number)
 }
 
 export type HeroCamera = { coffee: number; side: number; top: number; macro: number };
-export type CameraTransition = { from: HeroCamera; to: HeroCamera; startedAt: number };
+export type CameraTransition = { from: HeroCamera; to: HeroCamera; startedAt: number; durationMs: number };
 export const CAMERA_TRANSITION_MS = 110;
 const cameraKeys = ["coffee", "side", "top", "macro"] as const;
 
@@ -40,8 +40,8 @@ export function heroFrame(progress: number, reducedMotion = false, previous?: He
 }
 
 function cameraAt(state: CameraTransition, now: number): HeroCamera {
-  if (now - state.startedAt >= CAMERA_TRANSITION_MS) return state.to;
-  const t = easeBetween(now - state.startedAt, 0, CAMERA_TRANSITION_MS);
+  if (now - state.startedAt >= state.durationMs) return state.to;
+  const t = easeBetween(now - state.startedAt, 0, state.durationMs);
   const blend = (key: keyof HeroCamera) => state.from[key] + (state.to[key] - state.from[key]) * t;
   return { coffee: blend("coffee"), side: blend("side"), top: blend("top"), macro: blend("macro") };
 }
@@ -50,11 +50,11 @@ function cameraAt(state: CameraTransition, now: number): HeroCamera {
 export function stepCamera(previous: CameraTransition | undefined, target: HeroCamera, now: number, immediate = false) {
   const clean = { coffee: target.coffee, side: target.side, top: target.top, macro: target.macro };
   const state: CameraTransition = !previous || immediate
-    ? { from: clean, to: clean, startedAt: now - CAMERA_TRANSITION_MS }
+    ? { from: clean, to: clean, startedAt: now - CAMERA_TRANSITION_MS, durationMs: CAMERA_TRANSITION_MS }
     : cameraKeys.some(key => previous.to[key] !== clean[key])
-      ? { from: cameraAt(previous, now), to: clean, startedAt: now }
+      ? { from: cameraAt(previous, now), to: clean, startedAt: now, durationMs: previous.to.macro !== clean.macro ? (clean.macro ? 220 : 180) : CAMERA_TRANSITION_MS }
       : previous;
-  return { state, values: cameraAt(state, now), active: now - state.startedAt < CAMERA_TRANSITION_MS };
+  return { state, values: cameraAt(state, now), active: now - state.startedAt < state.durationMs };
 }
 
 /** A curved meniscus inside tapered photographic glass walls, in normalized coordinates. */

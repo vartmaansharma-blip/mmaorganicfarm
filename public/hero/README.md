@@ -9,7 +9,8 @@ WebP cutouts retain transparent alpha and are capped at 800 px wide. The supplie
 | `glass-empty.webp` | Frame-matched empty edit of the generated front cutout. |
 | `glass-milk.webp` | Frame-matched milk edit; a tapered SVG mask reveals the liquid smoothly. |
 | `coffee-front.webp` | Reference-derived front glass, isolated from background, steam and floor. |
-| `coffee-side.webp` | Separate generated elevated three-quarter photograph, not a crop of the front. |
+| `coffee-side.webp` | Earlier elevated-view study, retained but no longer used. |
+| `coffee-side-v2.webp` | Replacement derived from the approved front photo with a gentler, more consistent camera elevation and genuine transparent alpha. |
 | `coffee-top.webp` | Separate generated overhead photograph with a circular rim and visible liquid surface. |
 | `coffee-macro.webp` | The exact supplied `ChatGPT Image 17 Oct 2026, 18_36_24.png`, converted to WebP; full-viewport insert before the closing overhead shot. |
 | `coffee-angle.webp` | Earlier elevated-view study, retained but no longer used. |
@@ -39,4 +40,15 @@ The original hero remains the first screen. Mobile glass height is now 42svh cap
 The bottom mouse/scroll cue is centered on laptop layouts and retains its original left alignment on phones. The existing desktop chapter rail fills continuously from the hero's normalized native scroll progress; it reverses with scrolling, reaches 100% at the final frame and disappears during the full-screen macro. It remains hidden on narrow screens as in production. Images/typography/layout otherwise follow the approved production design.
 
 
-Camera changes now use 110ms clock-driven dissolves between clean shot targets. They finish even when native scrolling stops; a small progress deadband prevents boundary jitter from repeatedly restarting a transition. The fill remains continuously scroll-controlled, reverse transitions start from current image weights, fast skips resolve to the requested shot, and reduced motion remains static. Pausing inside the former blend windows must leave exact 0/1 photographic weights rather than a persistent double exposure.
+Camera changes now use short clock-driven transitions (110ms angle match, 220ms swirl push-in, 180ms overhead pull-back) between clean shot targets. They finish even when native scrolling stops; a small progress deadband prevents boundary jitter from repeatedly restarting a transition. The fill remains continuously scroll-controlled, reverse transitions start from current image weights, fast skips resolve to the requested shot, and reduced motion remains static. Pausing inside the former blend windows must leave exact 0/1 photographic weights rather than a persistent double exposure.
+
+
+## Replacement second shot — current asset
+
+`coffee-side-v2.webp` replaces the former second frame. It was generated with the built-in image tool from `coffee-front.webp`, not a new 3D model. Source PNG: exec-d2b047ba-7c2e-4868-9eae-abc85d75b947.png. The generated alpha is preserved while converting to 800×1200 WebP. The visible alpha span is x=81..719, y=108..1092. Current CSS uses scale .950203252 and translation (2.489837%, 3.031504%) to align rim/base with front y=139..1074. Earlier calibration notes above describe the superseded side image.
+
+Final generation prompt:
+
+Use case: precise-object-edit. Create a replacement second camera shot for a photographic website sequence. Input image is the authoritative edit target and identity reference: the exact approved tall, slender, tapered fluted glass with milk and coffee marbling. Change ONLY the camera viewpoint, lifting it very slightly (about 8 degrees) and moving it a little around the glass (about 10 degrees), to reveal a little more of the liquid surface. This must look like the SAME physical glass, SAME contents, SAME photographic lighting and exposure, taken in the same continuous studio photoshoot. Preserve the front glass's tall slender proportions, tapered walls, long straight grooves, thick FLAT clear base, fine lip thickness, liquid fill level safely below the rim, milk/coffee color balance and recognizable marbling. The second shot must not look squat, barrel-shaped, tilted, bulging, flared, shorter, or like another cup. Keep the glass upright and vertical; no leaning camera, no fisheye. The rim should be only a little more open than the reference, a shallow ellipse rather than a deep bowl. Keep the entire glass centered on the SAME portrait 2:3 canvas; visible rim at approximately 11.6% of canvas height and base at 89.5%, with comparable object width to reference, so it is naturally frame matched. Crisp optically realistic glass edges and milk detail, premium product photography with restrained warm neutral highlights, no extra glow. Genuine transparent background and zero-alpha outside the glass, no ground, floor, cast shadow, steam, props, text, border or other scene. Output only one complete isolated glass, not a contact sheet.
+
+The swirl has a gentle photographic push-in: the glass grows toward the liquid as the full-screen texture arrives, then pulls back into the overhead finish. The angle match remains brief. All zoom/opacity motion is bounded in clock time (at most 220ms), with no blur filter or persistent in-between frame.

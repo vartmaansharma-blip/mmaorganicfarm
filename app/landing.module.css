@@ -18,3 +18,9 @@
 
 /* Keep the existing dark price badge readable in both themes. */
 .content :global(.price-tag) { color: #fff; }
+
+/* One milk-and-coffee palette connects the farm story with the hero. */
+.content :global(.about-section) { background: var(--hero-surface); }
+.content :global(.glass-story) { color: var(--hero-ink); border-color: var(--hero-line); background: var(--hero-paper); box-shadow: 0 20px 60px rgb(0 0 0 / .06); }
+.content :global(.story-metrics) { border-color: var(--hero-line); }
+.content :global(.story-metrics span) { color: var(--hero-muted); }

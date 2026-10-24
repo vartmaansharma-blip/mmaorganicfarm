@@ -143,7 +143,7 @@ try {
         const alignment = await page.locator("#home").evaluate(root => {
           const f = root.querySelector('img[src*="coffee-front"]').getBoundingClientRect();
           const s = root.querySelector('img[src*="coffee-side"]').getBoundingClientRect();
-          return { rim: Math.abs(f.y + f.height * 139 / 1200 - s.y - s.height * 164 / 1200), base: Math.abs(f.y + f.height * 1074 / 1200 - s.y - s.height * 1020 / 1200), height: f.height };
+          return { rim: Math.abs(f.y + f.height * 139 / 1200 - s.y - s.height * 108 / 1200), base: Math.abs(f.y + f.height * 1074 / 1200 - s.y - s.height * 1092 / 1200), height: f.height };
         });
         assert.ok(alignment.rim < 2 && alignment.base < 2, "front and side have matching glass heights");
         if (width === 390) assert.ok(alignment.height >= 340, "mobile glass is larger than the production 295px canvas");

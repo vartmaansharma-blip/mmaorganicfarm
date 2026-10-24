@@ -33,7 +33,7 @@
 @media (hover: hover) and (pointer: fine) { .primary:hover span { transform: translateX(4px); } }
 .secondary { border-color: var(--hero-muted); }
 .secondary:hover { background: var(--hero-hover); }
-.visual { align-self: stretch; display: grid; place-items: center; position: relative; min-width: 0; }
+.visual { transform-origin: 50% 35%; transform: scale(calc(1 + var(--macro-opacity) * .22)); align-self: stretch; display: grid; place-items: center; position: relative; min-width: 0; }
 .glass { position: relative; width: min(100%, 420px); aspect-ratio: 2 / 3; }
 .glass img { width: 100%; height: 100%; object-fit: contain; }
 .empty { position: absolute; inset: 0; opacity: calc(1 - var(--angle-opacity)); }
@@ -94,10 +94,10 @@
 @media (scripting: none) { .sequence { height: auto; --fill-progress: 1; } .panel { position: relative; top: 0; } }
 
 .coffee { position: absolute; inset: 0; opacity: calc(var(--coffee-progress) * (1 - var(--angle-opacity))); }
-.side { position: absolute; inset: 0; opacity: var(--side-opacity); transform-origin: 0 0; transform: translate(-4.955827%, -3.344626%) scale(1.09229); }
+.side { position: absolute; inset: 0; opacity: var(--side-opacity); transform-origin: 0 0; transform: translate(2.489837%, 3.031504%) scale(.950203252); }
 .top { position: absolute; inset: 0; opacity: var(--top-opacity); transform: scale(1.12); }
-.macro { position: fixed; inset: 0; z-index: 60; width: 100vw; height: 100dvh; opacity: var(--macro-opacity); transform: translateY(var(--macro-offset)); pointer-events: none; }
-.macro img { object-fit: cover; }
+.macro { position: fixed; inset: 0; z-index: 60; width: 100vw; height: 100dvh; overflow: hidden; opacity: var(--macro-opacity); transform: translateY(var(--macro-offset)); pointer-events: none; }
+.macro img { object-fit: cover; transform: scale(calc(1 + var(--macro-opacity) * .08)); }
 .sequence[data-macro-visible="true"] .macro { pointer-events: auto; }
 .sequence[data-immersive="true"] :is(.copy, .visual, .storyRail, .chapters, .scroll, .skip) { visibility: hidden; }
 .immersiveExit { position: fixed; z-index: 70; bottom: 20px; left: 20px; transform: translateY(200%); opacity: 0; padding: 12px 20px; border-radius: 999px; background: var(--hero-paper); color: var(--hero-ink); font-size: 14px; pointer-events: none; }

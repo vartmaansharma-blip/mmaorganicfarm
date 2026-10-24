@@ -92,10 +92,10 @@ test("camera dissolves finish on a sharp frame when scrolling stops in an old bl
     let step = stepCamera(undefined, heroFrame(from), 0);
     const target = heroFrame(to, false, step.state.to);
     step = stepCamera(step.state, target, 10);
-    const middle = stepCamera(step.state, target, 10 + CAMERA_TRANSITION_MS / 2);
+    const middle = stepCamera(step.state, target, 10 + step.state.durationMs / 2);
     assert.equal(middle.active, true);
     for (const value of Object.values(middle.values)) assert.ok(value >= 0 && value <= 1);
-    const end = stepCamera(middle.state, target, 10 + CAMERA_TRANSITION_MS);
+    const end = stepCamera(middle.state, target, 10 + step.state.durationMs);
     assert.equal(end.active, false);
     assert.deepEqual(end.values, { coffee: target.coffee, side: target.side, top: target.top, macro: target.macro });
     assert.ok(Object.values(end.values).every(value => value === 0 || value === 1));
@@ -121,4 +121,18 @@ test("small scroll jitter around a camera boundary does not restart the dissolve
   assert.equal(after.side, 1);
   assert.equal(heroFrame(.619, false, after).side, 1);
   assert.equal(heroFrame(.615, false, after).side, 0);
+});
+
+
+test("macro entry and exit get a bounded zoom beat while angle changes remain brief", () => {
+  const front = stepCamera(undefined, heroFrame(.57), 0);
+  const side = stepCamera(front.state, heroFrame(.66), 10);
+  const macro = stepCamera(side.state, heroFrame(.86), 200);
+  const overhead = stepCamera(macro.state, heroFrame(.99), 500);
+  assert.ok(side.state.durationMs < macro.state.durationMs);
+  assert.ok(overhead.state.durationMs < macro.state.durationMs);
+  for (const beat of [side, macro, overhead]) {
+    assert.ok(beat.state.durationMs <= 220);
+    assert.equal(stepCamera(beat.state, beat.state.to, beat.state.startedAt + beat.state.durationMs).active, false);
+  }
 });

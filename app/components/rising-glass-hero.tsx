@@ -114,7 +114,7 @@ export function RisingGlassHero() {
             </div>
             <span className={styles.surface} />
             <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.side} src="/hero/coffee-side.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.side} src="/hero/coffee-side-v2.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 240px, 38vw" />
             <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 260px, 38vw" />
           </div>
         </div>
