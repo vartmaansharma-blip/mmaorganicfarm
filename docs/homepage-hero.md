@@ -4,7 +4,7 @@
 
 The October 24 conversation, approved `M’ma Organic Farm Milk Hero.png` layout, and the two supplied coffee references control this design. The older uploaded `memory.md` is not a design source. The latest spelling is **M’ma Organic Farm**. The genuine orange/red heart logo is unchanged.
 
-Fraunces headlines and Space Grotesk interface text are self-hosted under their OFL licenses. A shared warm charcoal/ivory palette, yellow actions, spacing and semantic feedback colors connect the homepage to sign-in, recovery, public information, shop, order, account, calendar, review and confirmation screens. Staff operations remain within their existing layout. This change does not rewrite authentication, ordering, capacity, payment or delivery logic.
+Fraunces headlines and Space Grotesk interface text are self-hosted under their OFL licenses. A shared olive-charcoal/milk-ivory palette, farm-green and sage identity, honey-gold actions, spacing and semantic feedback colors connect the homepage to sign-in, recovery, public information, shop, order, account, calendar, review and confirmation screens. Staff operations remain within their existing layout. This change does not rewrite authentication, ordering, capacity, payment or delivery logic.
 
 ## Mobile experience
 
@@ -18,18 +18,16 @@ Native scroll drives absolute progress; reverse scroll retraces it. There is no 
 
 | Progress | Shot and transition |
 | --- | --- |
-| 0–48% | Stationary photographic glass; curved meniscus rises continuously inside tapered walls. |
-| 48–57% | Matched coffee treatment dissolves into the fully filled glass. |
-| 57–60% | Clear front-view hold. |
-| 60–64% | Short dissolve into a separate elevated three-quarter photograph. |
-| 64–74% | Side-view hold. |
-| 74–82% | Dissolve into the exact supplied coffee/milk macro, filling the viewport. Navigation and floating controls fade away. |
-| 82–90% | Full-screen macro only: no copy, visible controls, logo or navigation. |
-| 90–96% | Dissolve into the supplied closing overhead composition; copy, navigation and Shop return. |
-| 96–100% | Clean overhead hold, reserved for the ending. |
-| Continued scroll | The closing hero releases naturally into the actual site content. |
+| 0–48% | Stationary glass; curved meniscus rises smoothly inside tapered walls. |
+| 52.5% boundary | Coffee treatment arrives in a 110ms match dissolve. |
+| 62% boundary | Matched elevated glass arrives in a 110ms angle dissolve. |
+| 78% boundary | 220ms push-in into the supplied full-screen coffee/milk texture; all visible chrome leaves. |
+| 78–93% | Image-only macro hold. |
+| 93% boundary | 180ms pull-back into the closing overhead composition; navigation and actions return. |
+| 93–100% | Clean overhead hold. |
+| Continued scroll | The hero releases naturally into the actual site. |
 
-The measured scroll distance, rather than a fixed duration, controls these transitions. A focus-only continuation gives keyboard visitors a route out of the full-screen insert. Skip introduction goes directly to content. Reduced motion and JavaScript-disabled visits show a finished static glass without the long pinned film.
+Scroll controls the fill continuously and selects clean camera targets. Camera transitions finish in clock time even when scrolling stops; a small boundary deadband prevents jitter. Reverse transitions begin at current image weights. No photograph blur filter or persistent double exposure is used. A focus-only continuation gives keyboard visitors a route out of the full-screen insert. Skip introduction goes directly to content. Reduced motion and JavaScript-disabled visits show a finished static glass without the long pinned film.
 
 The wide macro's responsive `sizes` accounts for its rendered width when it covers a portrait viewport, preventing a small mobile image from being stretched across the full screen.
 
@@ -56,3 +54,21 @@ The local checks do not claim physical iPhone/Android performance, authenticated
 ## Release
 
 The user explicitly authorized merge to main and production deployment after completion in the October 24 conversation. This supersedes the initial draft-only delivery instruction. Release uses the existing PR, preserving published history, after production build, source/unit tests, browser verification, visual inspection and a matching preview deployment. Next.js and compatible production transitive packages were updated to resolve advisories discovered during the release audit. Exact release SHA, preview/production status and verification results belong in the delivery report; this document does not assert a deployment occurred.
+
+## Approved palette and interaction contract — 24 October 2026
+
+The user accepted the palette proposal and requested deployment. This supersedes the intermediate espresso palette and temporary release hold. “Tech meets food” means warm photography and editorial headlines, with precise, legible scheduling controls; it does not add new scheduling behavior.
+
+| Role | Light | Dark (default) |
+| --- | --- | --- |
+| Page | Milk ivory `#F7F3E8` | Olive charcoal `#1E231D` |
+| Surface / active navigation | `#E6EBDD` | `#2C3528` |
+| Primary text | `#29271F` | `#F5F0E4` |
+| Secondary text | `#626354` | `#C0C5B7` |
+| Farm accent / selected schedule | Farm green `#3F563E` | Soft sage `#B9C6AA` |
+| Selected text | `#F7F3E8` | `#1E231D` |
+| Primary action | Honey gold `#F4C64B`, text `#29271F` | Same |
+
+Earth brown `#8E6A48` is a supporting brand swatch, echoed in the coffee photography rather than used for interface text. Farm green ties the ticker and secondary actions to the sage farm-story surfaces. Footer uses the same olive charcoal as the dark theme. Status success/error/warning remain distinguishable with readable text.
+
+Buttons use short 140–180ms press/arrow feedback. Existing farm-photo hover remains subtle; ticker can pause. Reduced motion removes these movements. The native mobile modal has a tinted glass surface, a softened modal backdrop, and opaque/reduced-transparency fallbacks; both prefixed and standard filter declarations are retained in the optimized CSS. No separate 3D view or customer-data writes are added.

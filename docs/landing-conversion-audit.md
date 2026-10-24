@@ -5,7 +5,7 @@ The user rejected the conversion redesign and requested the earlier production v
 ## Design retained
 
 - Restore the original always-present photographic hero, headline, two CTAs, chapter labels, full-screen swirl and closing overhead frame.
-- Restore the production navigation, section order, layouts, photos, dark default, saved light theme, colors, borders and typefaces.
+- Restore the production navigation, section order, layouts, photos, dark default, saved light theme, borders and typefaces. The later explicitly approved palette is documented in homepage-hero.md.
 - Remove the rejected static hero, optional-film disclosure, mobile bottom conversion bar, new FAQ/delivery/story layouts and unused components/data.
 - Preserve the original native scroll choreography and reduced-motion behavior. No 3D model or video runtime is added.
 
@@ -42,7 +42,7 @@ Camera changes now use short clock-driven transitions (110ms angle match, 220ms 
 
 The mobile menu drawer now uses a restrained warm frosted surface with a blur/saturation backdrop, subtle highlighted edge, opaque fallback and reduced-transparency fallback. Navigation layout, keyboard trapping, Escape and backdrop close remain intact. The right-hand story rail retains its thin original treatment.
 
-Both themes now share an espresso/cream/gold palette. Green-tinted brand surfaces and the disconnected green farm-story background are replaced with warm neutrals; semantic success feedback keeps its meaningful status color. Story-card text and metrics follow theme tokens in both modes. This is an explicitly requested palette improvement after restoration of the approved layout.
+The final approved palette is farm green/sage, milk ivory/olive charcoal and honey gold. It supersedes the intermediate espresso/cream candidate. Shared tokens connect navigation, farm story, sign-in, ordering and calendar selections; semantic status feedback remains distinct. Story-card text and metrics follow theme tokens in both modes. The latest user instruction explicitly approves applying and deploying the shown palette.
 
 The replacement second photograph derives from the approved front glass via the built-in image generator, using a shallower viewpoint, matching marbling/exposure and transparent alpha. The older side asset is retained for history; the website now uses coffee-side-v2.webp. Its alpha geometry and on-screen alignment are verified again before release.
 

@@ -1,8 +1,8 @@
 :root {
   --font-editorial: var(--font-fraunces), Georgia, serif;
-  --hero-paper: #faf5ec;
-  --hero-ink: #2d2017;
-  --hero-yellow: #f3c64d;
+  --hero-paper: #f7f3e8;
+  --hero-ink: #29271f;
+  --hero-yellow: #f4c64b;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -13,59 +13,64 @@
   --space-8: 64px;
   --page-gutter: clamp(24px, 5.6vw, 100px);
   --home-header-height: 126px;
-  --ink: #251b14;
-  --paper: #faf5ec;
-  --white: #fffaf2;
-  --yellow: #f3c64d;
-  --blue: #eaddc8;
-  --green: #30251c;
+  --ink: #29271f;
+  --paper: #f7f3e8;
+  --white: #f7f3e8;
+  --yellow: #f4c64b;
+  --blue: #e6ebdd;
+  --green: #3f563e;
+  --brand-earth: #8e6a48;
+  --hero-on-yellow: #29271f;
+  --hero-yellow-hover: #e8b835;
   --line: rgba(37, 27, 20, 0.15);
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* One shared theme contract; first visits default to warm charcoal. */
+/* Farm warmth and precise scheduling share one contract; dark is the default. */
 :root, :root[data-theme="dark"] {
   color-scheme: dark;
-  --hero-paper: #1b1714;
-  --hero-surface: #27211c;
-  --hero-ink: #f6eee1;
-  --hero-muted: #c3b5a4;
-  --hero-yellow: #f3c64d;
-  --hero-line: #514437;
-  --hero-hover: #352b23;
-  --hero-active: #46361e;
-  --ui-selected: #58412b;
-  --ui-on-selected: #fff5e7;
+  --hero-paper: #1e231d;
+  --hero-surface: #2c3528;
+  --hero-ink: #f5f0e4;
+  --hero-muted: #c0c5b7;
+  --hero-yellow: #f4c64b;
+  --hero-line: #4a5744;
+  --hero-hover: #354030;
+  --hero-active: #2c3528;
+  --hero-accent: #b9c6aa;
+  --ui-selected: #b9c6aa;
+  --ui-on-selected: #1e231d;
   --ui-success-text: #bde6c4;
   --ui-success-bg: #20382b;
   --ui-error-text: #ffb9ae;
   --ui-error-bg: #3a2520;
   --ui-warning-text: #f2d38a;
   --ui-warning-bg: #3d3420;
-  --ui-focus: #f3c64d;
-  --ui-input-border: #8b7966;
+  --ui-focus: #f4c64b;
+  --ui-input-border: #85947b;
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --hero-paper: #faf5ec;
-  --hero-surface: #f0e5d5;
-  --hero-ink: #2d2017;
-  --hero-muted: #6b5848;
-  --hero-yellow: #f3c64d;
-  --hero-line: #d3c2aa;
-  --hero-hover: #e9dcc8;
-  --hero-active: #f5dfb0;
-  --ui-selected: #6a4d2d;
-  --ui-on-selected: #fffaf2;
+  --hero-paper: #f7f3e8;
+  --hero-surface: #e6ebdd;
+  --hero-ink: #29271f;
+  --hero-muted: #626354;
+  --hero-yellow: #f4c64b;
+  --hero-line: #d0d8c8;
+  --hero-hover: #dce4d3;
+  --hero-active: #e6ebdd;
+  --hero-accent: #3f563e;
+  --ui-selected: #3f563e;
+  --ui-on-selected: #f7f3e8;
   --ui-success-text: #214d3a;
   --ui-success-bg: #edf8f1;
   --ui-error-text: #8d3026;
   --ui-error-bg: #fff1ef;
   --ui-warning-text: #70580f;
   --ui-warning-bg: #fff8df;
-  --ui-focus: #886000;
-  --ui-input-border: #91806a;
+  --ui-focus: #3f563e;
+  --ui-input-border: #7b876e;
 }
 
 * {
@@ -1528,7 +1533,7 @@ h1 {
   --ui-muted: var(--hero-muted);
   --ui-border: var(--hero-line);
   --ui-action: var(--hero-yellow);
-  --ui-on-action: #291b0f;
+  --ui-on-action: var(--hero-on-yellow);
 }
 .customer-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; min-width: 0; }
 .customer-header-actions > a { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }

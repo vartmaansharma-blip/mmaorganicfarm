@@ -53,6 +53,20 @@ function contrast(foreground, background) {
   return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
 }
 
+async function verifyHomepageContrast(page) {
+  const colors = await page.locator('#hero-heading, #home p, #home a, .confidence-strip p, .glass-story > p, .story-metrics strong, .story-metrics span, .button, .closing-section .eyebrow, .ticker').evaluateAll(elements => elements.map(element => {
+    let ancestor = element;
+    let background;
+    while (ancestor && !background) {
+      const value = getComputedStyle(ancestor).backgroundColor;
+      if (value !== 'transparent' && value !== 'rgba(0, 0, 0, 0)') background = value;
+      ancestor = ancestor.parentElement;
+    }
+    return { label: element.textContent.trim().slice(0, 35), text: getComputedStyle(element).color, background };
+  }));
+  for (const color of colors) assert.ok(contrast(color.text, color.background) >= 4.5, `homepage contrast: ${color.label}`);
+}
+
 async function verifyConnectedPages(browser, name) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
   const page = await context.newPage();
@@ -136,8 +150,10 @@ try {
         assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
         await page.reload({ waitUntil: "networkidle" });
         assert.equal(await page.locator("html").getAttribute("data-theme"), "light", "saved light choice must survive reload");
+        await verifyHomepageContrast(page);
         await page.screenshot({ path: path.join(output, `${name}-${width}-light.png`) });
         await page.getByRole("button", { name: "Switch to dark mode" }).click();
+        await verifyHomepageContrast(page);
         const initial = await page.locator("#home").getAttribute("data-fill");
         assert.equal(initial, "0.000");
         const alignment = await page.locator("#home").evaluate(root => {
@@ -200,6 +216,10 @@ try {
           await toggle.click();
           const dialog = page.getByRole("dialog");
           assert.equal(await dialog.isVisible(), true);
+          await dialog.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+          const glass = await dialog.evaluate(element => ({ surface: getComputedStyle(element).backgroundColor, backdrop: getComputedStyle(element, '::backdrop').backdropFilter || getComputedStyle(element, '::backdrop').webkitBackdropFilter }));
+          assert.match(glass.surface, /rgba\(/, 'glass menu retains a translucent tinted surface');
+          assert.match(glass.backdrop, /blur/, 'modal backdrop softens the page behind navigation');
           assert.equal(await dialog.getByRole("navigation").getByRole("link").count(), 5);
           for (let i = 0; i < 10; i++) {
             await page.keyboard.press("Tab");
