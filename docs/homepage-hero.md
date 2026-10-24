@@ -72,3 +72,7 @@ The user accepted the palette proposal and requested deployment. This supersedes
 Earth brown `#8E6A48` is a supporting brand swatch, echoed in the coffee photography rather than used for interface text. Farm green ties the ticker and secondary actions to the sage farm-story surfaces. Footer uses the same olive charcoal as the dark theme. Status success/error/warning remain distinguishable with readable text.
 
 Buttons use short 140–180ms press/arrow feedback. Existing farm-photo hover remains subtle; ticker can pause. Reduced motion removes these movements. The native mobile modal has a tinted glass surface, a softened modal backdrop, and opaque/reduced-transparency fallbacks; both prefixed and standard filter declarations are retained in the optimized CSS. No separate 3D view or customer-data writes are added.
+
+## Shared customer controls
+
+The canonical customer token and control usage contract is [design-system.md](design-system.md). Customer controls reuse the approved farm palette without changing the hero photographs, dimensions, type composition or scroll/camera motion.

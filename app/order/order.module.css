@@ -1,4 +1,5 @@
 .page {
+  composes: surface from "../components/customer-ui.module.css";
   min-height: 100svh;
   padding: 0 24px 72px;
   color:var(--ui-text);
@@ -52,7 +53,7 @@
 .copy h1 {
   max-width: 18ch;
   margin: 0;
-  font-size: clamp(36px, 5vw, 48px);
+  font-size: var(--ui-type-page);
   font-weight: 500;
   line-height: 1.12;
 }
@@ -95,7 +96,7 @@
   margin: -10px 0 34px;
   padding: 18px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-surface);
 }
 
@@ -130,18 +131,18 @@
   gap: 4px;
   padding: 8px 3px;
   border:1px solid var(--ui-border);
-  border-radius:3px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
   text-align: center;
 }
 
 .weekReview small {
   color:var(--ui-muted);
-  font-size: 9px;
+  font-size: var(--ui-type-caption);
 }
 
 .weekReview b {
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
 }
 
 .orderSummary ul {
@@ -160,7 +161,7 @@
 
 .productReview > span {
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
 }
 
 .orderSummary li {
@@ -250,20 +251,20 @@
   align-items: start;
   padding: 14px;
   border:1px solid var(--ui-border);
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   cursor: pointer;
 }
 
 .bottleChoice label:has(input:checked) {
-  border-color:var(--ui-success-text);
-  background:var(--ui-success-bg);
+  border-color:var(--color-accent);
+  background:var(--color-surface);
 }
 
 .bottleChoice input {
   width: 17px;
   height: 17px;
   margin: 1px 0 0;
-  accent-color:var(--ui-success-text);
+  accent-color:var(--color-accent);
 }
 
 .bottleChoice strong,
@@ -279,7 +280,7 @@
 .bottleChoice small {
   margin-top: 5px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   line-height: 1.4;
 }
 
@@ -287,6 +288,7 @@
   .bottleChoice > div {
     grid-template-columns: 1fr;
   }
+
 }
 
 .form label {
@@ -306,36 +308,20 @@
 }
 
 .form textarea {
-  width: 100%;
-  border:1px solid var(--ui-input-border);
-  border-radius:4px;
-  outline:none;
-  color:var(--ui-text);
-  background:var(--ui-page);
-  font: inherit;
-  font-size: 16px;
-}
-
-.form textarea {
   min-height: 126px;
   padding: 15px 16px;
   resize: vertical;
   line-height: 1.55;
 }
 
-.form textarea:focus {
-  border-color:var(--ui-focus);
-  outline:2px solid var(--ui-focus);
-  outline-offset:1px;
-}
-
 .phoneField {
+  composes: field from "../components/customer-ui.module.css";
   min-height: 56px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   border:1px solid var(--ui-border);
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
 }
 
@@ -365,22 +351,6 @@
   font-size: 16px;
 }
 
-.form button {
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px;
-  border:1px solid var(--ui-border);
-  border-radius:5px;
-  color:var(--ui-on-action);
-  background:var(--ui-action);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 650;
-  cursor: pointer;
-}
-
 .form button span {
   display: none;
 }
@@ -406,6 +376,7 @@
   .copy h1 {
     max-width: 18ch;
   }
+
 }
 
 @media (max-width: 520px) {
@@ -422,7 +393,7 @@
   }
 
   .copy h1 {
-    font-size: 36px;
+    font-size: var(--ui-type-page);
   }
 
   .form {
@@ -434,7 +405,7 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
     margin-bottom: 32px;
-    font-size: 10px;
+    font-size: var(--ui-type-caption);
   }
 
   .steps span {
@@ -463,6 +434,13 @@
   .weekReview {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
 }
 
 .form textarea::placeholder, .phoneField input::placeholder { color:var(--ui-muted); opacity:1; }
+
+.submitButton { composes: primary from "../components/customer-ui.module.css"; }
+.addressField { composes: field from "../components/customer-ui.module.css"; min-height: 126px; resize: vertical; }
+.phoneField.phoneField { padding: 0; }
+
+.steps .active { color: var(--color-accent); border-color: var(--color-accent); }

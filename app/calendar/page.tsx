@@ -263,6 +263,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                   <label>
                     <span>Milk for this date</span>
                     <select
+                      className={styles.inputField}
                       defaultValue={String(selectedMilk?.quantity ?? 1)}
                       name="quantity"
                     >
@@ -335,6 +336,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             <label>
               <span>From</span>
               <input
+                className={styles.inputField}
                 defaultValue={selectedDay.date}
                 min={nextDeliveryDateInIndia()}
                 name="start_date"
@@ -344,6 +346,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             <label>
               <span>Until</span>
               <input
+                className={styles.inputField}
                 defaultValue={addCalendarDays(selectedDay.date, 1)}
                 min={addCalendarDays(nextDeliveryDateInIndia(), 1)}
                 name="end_date"

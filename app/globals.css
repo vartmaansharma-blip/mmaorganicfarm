@@ -1,8 +1,5 @@
 :root {
   --font-editorial: var(--font-fraunces), Georgia, serif;
-  --hero-paper: #f7f3e8;
-  --hero-ink: #29271f;
-  --hero-yellow: #f4c64b;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -20,57 +17,98 @@
   --blue: #e6ebdd;
   --green: #3f563e;
   --brand-earth: #8e6a48;
-  --hero-on-yellow: #29271f;
-  --hero-yellow-hover: #e8b835;
   --line: rgba(37, 27, 20, 0.15);
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* Farm warmth and precise scheduling share one contract; dark is the default. */
+/* Canonical semantic colors. Keep the approved photographic hero palette. */
 :root, :root[data-theme="dark"] {
   color-scheme: dark;
-  --hero-paper: #1e231d;
-  --hero-surface: #2c3528;
-  --hero-ink: #f5f0e4;
-  --hero-muted: #c0c5b7;
-  --hero-yellow: #f4c64b;
-  --hero-line: #4a5744;
-  --hero-hover: #354030;
-  --hero-active: #2c3528;
-  --hero-accent: #b9c6aa;
-  --ui-selected: #b9c6aa;
-  --ui-on-selected: #1e231d;
-  --ui-success-text: #bde6c4;
-  --ui-success-bg: #20382b;
-  --ui-error-text: #ffb9ae;
-  --ui-error-bg: #3a2520;
-  --ui-warning-text: #f2d38a;
-  --ui-warning-bg: #3d3420;
-  --ui-focus: #f4c64b;
-  --ui-input-border: #85947b;
+  --color-background: #1e231d;
+  --color-surface: #2c3528;
+  --color-surface-raised: #313b2d;
+  --color-surface-hover: #354030;
+  --color-text-primary: #f5f0e4;
+  --color-text-secondary: #c0c5b7;
+  --color-border: #4a5744;
+  --color-accent: #b9c6aa;
+  --color-accent-contrast: #1e231d;
+  --color-action-primary: #f4c64b;
+  --color-action-primary-text: #29271f;
+  --color-action-primary-hover: #e8b835;
+  --color-action-secondary: #2c3528;
+  --color-action-secondary-text: #f5f0e4;
+  --color-focus-ring: #f4c64b;
+  --color-input-background: #1e231d;
+  --color-input-border: #85947b;
+  --color-success: #bde6c4;
+  --color-success-surface: #20382b;
+  --color-warning: #f2d38a;
+  --color-warning-surface: #3d3420;
+  --color-error: #ffb9ae;
+  --color-error-surface: #3a2520;
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --hero-paper: #f7f3e8;
-  --hero-surface: #e6ebdd;
-  --hero-ink: #29271f;
-  --hero-muted: #626354;
-  --hero-yellow: #f4c64b;
-  --hero-line: #d0d8c8;
-  --hero-hover: #dce4d3;
-  --hero-active: #e6ebdd;
-  --hero-accent: #3f563e;
-  --ui-selected: #3f563e;
-  --ui-on-selected: #f7f3e8;
-  --ui-success-text: #214d3a;
-  --ui-success-bg: #edf8f1;
-  --ui-error-text: #8d3026;
-  --ui-error-bg: #fff1ef;
-  --ui-warning-text: #70580f;
-  --ui-warning-bg: #fff8df;
-  --ui-focus: #3f563e;
-  --ui-input-border: #7b876e;
+  --color-background: #f7f3e8;
+  --color-surface: #e6ebdd;
+  --color-surface-raised: #fffdf7;
+  --color-surface-hover: #dce4d3;
+  --color-text-primary: #29271f;
+  --color-text-secondary: #626354;
+  --color-border: #d0d8c8;
+  --color-accent: #3f563e;
+  --color-accent-contrast: #f7f3e8;
+  --color-action-primary: #f4c64b;
+  --color-action-primary-text: #29271f;
+  --color-action-primary-hover: #e8b835;
+  --color-action-secondary: #e6ebdd;
+  --color-action-secondary-text: #29271f;
+  --color-focus-ring: #3f563e;
+  --color-input-background: #f7f3e8;
+  --color-input-border: #7b876e;
+  --color-success: #214d3a;
+  --color-success-surface: #edf8f1;
+  --color-warning: #70580f;
+  --color-warning-surface: #fff8df;
+  --color-error: #8d3026;
+  --color-error-surface: #fff1ef;
+}
+/* Existing hero and customer modules remain compatible with the same contract. */
+:root {
+  --hero-paper: var(--color-background);
+  --hero-surface: var(--color-surface);
+  --hero-ink: var(--color-text-primary);
+  --hero-muted: var(--color-text-secondary);
+  --hero-yellow: var(--color-action-primary);
+  --hero-on-yellow: var(--color-action-primary-text);
+  --hero-yellow-hover: var(--color-action-primary-hover);
+  --hero-line: var(--color-border);
+  --hero-hover: var(--color-surface-hover);
+  --hero-active: var(--color-surface);
+  --hero-accent: var(--color-accent);
+  --ui-selected: var(--color-accent);
+  --ui-on-selected: var(--color-accent-contrast);
+  --ui-success-text: var(--color-success);
+  --ui-success-bg: var(--color-success-surface);
+  --ui-error-text: var(--color-error);
+  --ui-error-bg: var(--color-error-surface);
+  --ui-warning-text: var(--color-warning);
+  --ui-warning-bg: var(--color-warning-surface);
+  --ui-focus: var(--color-focus-ring);
+  --ui-input-border: var(--color-input-border);
+  --ui-radius-control: 999px;
+  --ui-radius-field: 8px;
+  --ui-radius-panel: 12px;
+  --ui-control-height: 48px;
+  --ui-touch-target: 44px;
+  --ui-type-caption: 12px;
+  --ui-type-small: 14px;
+  --ui-type-body: 16px;
+  --ui-type-page: clamp(32px, 5vw, 48px);
+  --ui-type-section: clamp(22px, 2.5vw, 28px);
+  --ui-motion-fast: 140ms;
 }
 
 * {
@@ -1529,6 +1567,7 @@ h1 {
 :root {
   --ui-page: var(--hero-paper);
   --ui-surface: var(--hero-surface);
+  --ui-surface-raised: var(--color-surface-raised);
   --ui-text: var(--hero-ink);
   --ui-muted: var(--hero-muted);
   --ui-border: var(--hero-line);

@@ -44,6 +44,7 @@ export function GoogleSignInButton({ next }: GoogleSignInButtonProps) {
       <button
         className={styles.googleButton}
         disabled={isStarting}
+        aria-busy={isStarting}
         onClick={startGoogleSignIn}
         type="button"
       >

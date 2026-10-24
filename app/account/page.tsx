@@ -275,7 +275,7 @@ export default async function AccountPage({
                         <p>The farm reviews preparation and dispatch first. Paid milk is not automatically refunded.</p>
                         <form action={requestPlanCancellation}>
                           <input name="planId" type="hidden" value={currentPlan.id} />
-                          <label>Reason<textarea name="reason" required minLength={3} rows={3} /></label>
+                          <label>Reason<textarea className={styles.reasonField} name="reason" required minLength={3} rows={3} /></label>
                           <button type="submit">Send request</button>
                         </form>
                       </details>
@@ -409,7 +409,7 @@ export default async function AccountPage({
                 <input name="planId" type="hidden" value={deliveryPlan.id} />
                 <label>
                   Reason
-                  <textarea name="reason" required minLength={3} rows={3} />
+                  <textarea className={styles.reasonField} name="reason" required minLength={3} rows={3} />
                 </label>
                 <button type="submit">Send request</button>
               </form>

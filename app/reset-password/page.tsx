@@ -41,6 +41,7 @@ export default async function ResetPasswordPage({
           <label>
             New password
             <input
+              className={styles.textInput}
               autoComplete="new-password"
               minLength={8}
               name="password"
@@ -52,6 +53,7 @@ export default async function ResetPasswordPage({
           <label>
             Confirm new password
             <input
+              className={styles.textInput}
               autoComplete="new-password"
               minLength={8}
               name="confirmation"

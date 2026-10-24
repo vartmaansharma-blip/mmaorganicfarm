@@ -13,7 +13,8 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "test:browser": "node tests/hero.browser.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:customer-ui": "node tests/customer-system.browser.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
