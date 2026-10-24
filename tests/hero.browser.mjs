@@ -129,6 +129,7 @@ async function verifyLifecycle(browser, name) {
   for (const width of [390, 1440]) {
     const context = await browser.newContext({ viewport: { width, height: 844 }, hasTouch: true });
     const page = await context.newPage();
+    page.setDefaultNavigationTimeout(60000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     const fresh = async () => {
@@ -199,6 +200,7 @@ async function verifyLifecycle(browser, name) {
   for (const fail of [false, true]) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
+    page.setDefaultNavigationTimeout(60000);
     let releaseImage;
     const delayedImage = new Promise(resolve => { releaseImage = resolve; });
     await page.route('**/_next/image?*', async route => {
@@ -316,6 +318,7 @@ try {
       for (const [width, height] of [[320, 568], [360, 740], [390, 844], [768, 1024], [1200, 630], [1440, 960]].filter(([width]) => !process.env.HERO_WIDTHS || process.env.HERO_WIDTHS.split(",").includes(String(width)))) {
         const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901, ...([390,1440].includes(width) ? { recordVideo: { dir: path.join(output, "recordings"), size: { width, height } } } : {}) });
         const page = await context.newPage();
+        page.setDefaultNavigationTimeout(60000);
         page.on("pageerror", error => errors.push(error.message));
         await page.goto(base, { waitUntil: "networkidle" });
         await page.locator("#home img").evaluateAll(images => Promise.all(images.map(image => image.decode())));

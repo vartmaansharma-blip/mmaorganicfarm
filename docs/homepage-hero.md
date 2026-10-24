@@ -61,7 +61,7 @@ Browser checks start the optimized production build with an unreachable, non-sec
 
 ## Release boundary for this motion correction
 
-This work targets a focused branch from `main` at `5d819602e686357265ac86d6aa8c766a285af25e`. PR #4 (customer controls/themes) and PR #5 (commerce) were inspected and remain separate. Their code is not included. This task authorizes a reviewable PR and preview only: **do not merge or deploy to production automatically**. Earlier release notes describe earlier work and do not authorize release of this correction.
+This work targets a focused branch from `main` at `5d819602e686357265ac86d6aa8c766a285af25e`. PR #4 (customer controls/themes) and PR #5 (commerce) were inspected and remain separate. Their code is not included. The initial brief requested a PR without automatic merge. On 25 October 2026 the user subsequently authorized direct merge once this correction is complete. Complete local verification and a matching hosted preview check before merging, then verify the deployment triggered by the existing main-branch integration. Earlier release permissions describe earlier work.
 
 ## Approved palette and interaction contract — 24 October 2026
 
