@@ -1,13 +1,20 @@
+import type { RepeatPattern } from "./monthly-schedule";
 import type { ShopCart } from "./shop-cart";
 export type ShopMode = "once" | "plan";
 export type ShopProductId = "milk" | "paneer" | "ghee";
 export type ShopExtra = {
+  repeat?: RepeatPattern;
+  dates?: string[];
+  firstDate?: string;
+  week?: number[];
   enabled: boolean;
   quantity: number;
   frequency: "once" | "weekly";
   days: number[];
 };
 export type ShopDraft = {
+  repeat?: RepeatPattern;
+  dates?: string[];
   quantity: number;
   start: string;
   schedule: [number, number, number, number, number, number, number];
@@ -33,6 +40,7 @@ export function validShopDate(value: unknown): value is string {
 export function createShopDraft(start: string): ShopDraft {
   return {
     quantity: 1,
+    repeat: "custom",
     start,
     schedule: [1, 1, 1, 1, 1, 1, 1],
     extras: {
@@ -76,6 +84,28 @@ export function restoreShopState(
       if (!raw) continue;
       const d = result.drafts[mode][id];
       if (
+        [
+          "daily",
+          "weekly",
+          "fortnightly",
+          "monthly",
+          "days",
+          "once",
+          "custom",
+        ].includes(raw.repeat ?? "")
+      )
+        d.repeat = raw.repeat;
+      if (!raw.repeat && Array.isArray(raw.schedule))
+        d.repeat = id === "milk" ? "days" : "once";
+      if (Array.isArray(raw.dates))
+        d.dates = [
+          ...new Set(
+            raw.dates.filter(
+              (date) => validShopDate(date) && date >= minimumDate,
+            ),
+          ),
+        ].slice(0, 31);
+      if (
         Number.isInteger(raw.quantity) &&
         raw.quantity >= 1 &&
         raw.quantity <= 5
@@ -94,6 +124,36 @@ export function restoreShopState(
         if (!x) continue;
         d.extras[extra] = {
           enabled: x.enabled === true,
+          dates: Array.isArray(x.dates)
+            ? [
+                ...new Set(
+                  x.dates.filter(
+                    (date) => validShopDate(date) && date >= minimumDate,
+                  ),
+                ),
+              ].slice(0, 31)
+            : undefined,
+          repeat: [
+            "daily",
+            "weekly",
+            "fortnightly",
+            "monthly",
+            "days",
+            "once",
+            "custom",
+          ].includes(x.repeat ?? "")
+            ? x.repeat
+            : undefined,
+          firstDate:
+            validShopDate(x.firstDate) && x.firstDate >= minimumDate
+              ? x.firstDate
+              : minimumDate,
+          week:
+            Array.isArray(x.week) &&
+            x.week.length === 7 &&
+            x.week.every((q) => Number.isInteger(q) && q >= 0 && q <= 5)
+              ? [...x.week]
+              : undefined,
           quantity:
             Number.isInteger(x.quantity) && x.quantity >= 1 && x.quantity <= 5
               ? x.quantity
@@ -134,6 +194,36 @@ export function restoreShopState(
       )
         cart[id] = {
           enabled: true,
+          dates: Array.isArray(x.dates)
+            ? [
+                ...new Set(
+                  x.dates.filter(
+                    (date) => validShopDate(date) && date >= cart.start,
+                  ),
+                ),
+              ].slice(0, 31)
+            : undefined,
+          repeat: [
+            "daily",
+            "weekly",
+            "fortnightly",
+            "monthly",
+            "days",
+            "once",
+            "custom",
+          ].includes(x.repeat ?? "")
+            ? x.repeat
+            : undefined,
+          firstDate:
+            validShopDate(x.firstDate) && x.firstDate >= cart.start
+              ? x.firstDate
+              : cart.start,
+          week:
+            Array.isArray(x.week) &&
+            x.week.length === 7 &&
+            x.week.every((q) => Number.isInteger(q) && q >= 0 && q <= 5)
+              ? [...x.week]
+              : undefined,
           quantity: x.quantity,
           frequency:
             mode === "plan" && x.frequency === "weekly" ? "weekly" : "once",
@@ -142,11 +232,7 @@ export function restoreShopState(
               ? [
                   ...new Set(
                     x.days.filter(
-                      (day) =>
-                        Number.isInteger(day) &&
-                        day >= 1 &&
-                        day <= 7 &&
-                        (!cart.milk || cart.milk.schedule[day - 1] > 0),
+                      (day) => Number.isInteger(day) && day >= 1 && day <= 7,
                     ),
                   ),
                 ]
@@ -185,6 +271,7 @@ export function orderReturnPath(params: Record<string, string | undefined>) {
     "extras",
     "schedule",
     "start",
+    "routine",
   ] as const) {
     const value = params[key];
     if (typeof value === "string" && value.length <= 400) query.set(key, value);

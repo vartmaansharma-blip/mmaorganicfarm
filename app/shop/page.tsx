@@ -7,7 +7,7 @@ import styles from "./shop.module.css";
 export const metadata: Metadata = {
   title: "Farm Shop",
   description:
-    "Discover M’ma milk, paneer and ghee. Choose a single delivery or build your milk routine.",
+    "Discover M’ma milk, paneer and ghee. Choose a single delivery or build your delivery routine.",
   alternates: { canonical: "/shop" },
   robots: { index: true, follow: true },
 };
@@ -51,8 +51,8 @@ export default function ShopPage() {
           <summary>One delivery or a routine?</summary>
           <p>
             Choose One-time for a single delivery, or Scheduled to build your
-            milk routine. Paneer and ghee can join your milk plan or be ordered
-            separately for one delivery.
+            delivery routine. Milk, paneer and ghee can each have their own
+            dates within one shared prepaid month. Choose only what you need.
           </p>
         </details>
         <details>

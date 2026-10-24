@@ -1,8 +1,23 @@
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium, webkit } from "playwright";
-const base = process.env.SHOP_BASE_URL ?? "http://127.0.0.1:3210",
+const access = process.env.SHOP_ACCESS_FILE
+  ? JSON.parse(await readFile(process.env.SHOP_ACCESS_FILE, "utf8"))
+  : null;
+async function bootstrap(context) {
+  if (!access?.secret) return;
+  try {
+    const response = await context.request.get(
+      `${access.base}/shop?_vercel_share=${encodeURIComponent(access.secret)}`,
+    );
+    assert.equal(response.status(), 200);
+  } catch {
+    throw new Error("Preview access could not be established.");
+  }
+}
+const base =
+    access?.base ?? process.env.SHOP_BASE_URL ?? "http://127.0.0.1:3210",
   output = path.resolve(
     process.env.SHOP_ARTIFACT_DIR ?? "work/shop-verification",
   );
@@ -16,6 +31,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
         viewport: { width, height: 900 },
         hasTouch: width < 769,
       });
+      await bootstrap(context);
       const page = await context.newPage(),
         errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
@@ -84,10 +100,48 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           .click();
         await mode.check();
         assert.equal(await page.locator("output").first().innerText(), "2");
+        assert.equal(
+          await page
+            .getByRole("combobox", { name: "Delivery repeat" })
+            .inputValue(),
+          "custom",
+        );
+        const calendar = page.getByRole("region", {
+          name: "Shared delivery calendar",
+        });
+        const dateButton = calendar.locator("button:visible").first();
+        const beforePressed = await dateButton.getAttribute("aria-pressed");
+        await dateButton.click();
+        assert.notEqual(
+          await dateButton.getAttribute("aria-pressed"),
+          beforePressed,
+        );
+        await dateButton.click();
         await page
           .getByRole("button", { name: "Add to cart", exact: true })
           .click();
         assert.equal(await dialog.isVisible(), true);
+        await dialog.evaluate((el) =>
+          Promise.all(el.getAnimations().map((a) => a.finished)),
+        );
+        assert.equal(
+          await dialog
+            .getByRole("heading", { name: "Complete your basket." })
+            .isVisible(),
+          true,
+        );
+        assert.equal(
+          await dialog
+            .getByRole("link", { name: /Choose Fresh paneer/ })
+            .isVisible(),
+          true,
+        );
+        assert.equal(
+          await dialog
+            .getByRole("link", { name: /Choose Farm ghee/ })
+            .isVisible(),
+          true,
+        );
         assert.equal(
           await page
             .getByRole("button", { name: "Open cart, 1 product" })
@@ -99,7 +153,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
         });
         assert.match(
           await checkout.getAttribute("href"),
-          /schedule=2%2C2%2C2%2C2%2C2%2C2%2C2/,
+          /routine=milk%3A2%3Acustom/,
         );
         await dialog
           .getByRole("button", { name: "One-time (0)", exact: true })
@@ -122,7 +176,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           .click();
         assert.match(
           await checkout.getAttribute("href"),
-          /schedule=3%2C3%2C3%2C3%2C3%2C3%2C3/,
+          /routine=milk%3A3%3Acustom/,
         );
         await dialog
           .getByRole("button", { name: "Decrease cart milk quantity" })
@@ -219,6 +273,7 @@ try {
       viewport: { width: 390, height: 844 },
     }),
     page = await context.newPage();
+  await bootstrap(context);
   await page.goto(`${base}/shop`, { waitUntil: "networkidle" });
   const photo = page.locator("[class*=heroPhoto]");
   const first = await photo.getAttribute("href");
@@ -243,20 +298,67 @@ try {
   );
   await page.goto(`${base}/shop/milk`, { waitUntil: "networkidle" });
   await page.getByRole("switch", { name: "Scheduled orders" }).check();
-  await page.getByText("Add paneer or ghee", { exact: true }).click();
-  await page.getByRole("checkbox").first().check();
-  await page.getByRole("button", { name: "Weekly", exact: true }).click();
-  await page
-    .getByRole("group", { name: "Fresh paneer delivery days" })
-    .getByRole("button", { name: "Sun", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Weekdays", exact: true }).click();
   assert.equal(
-    await page
-      .getByRole("button", { name: "Add to cart", exact: true })
-      .isDisabled(),
+    await page.getByRole("combobox", { name: "Delivery repeat" }).inputValue(),
+    "custom",
+  );
+  await page.getByRole("button", { name: "Add to cart", exact: true }).click();
+  const cart = page.getByRole("dialog", { name: "Your cart." });
+  const milkHref = await cart
+    .getByRole("link", { name: "Continue to delivery details" })
+    .getAttribute("href");
+  await cart.getByRole("link", { name: /Choose Fresh paneer/ }).click();
+  await page.waitForURL("**/shop/paneer");
+  assert.equal(
+    await page.getByRole("combobox", { name: "Delivery repeat" }).inputValue(),
+    "custom",
+  );
+  assert.equal(
+    await page.getByText(/Already in your calendar: Farm milk/).isVisible(),
     true,
   );
+  await page.getByRole("button", { name: "Add to cart", exact: true }).click();
+  let href = await cart
+    .getByRole("link", { name: "Continue to delivery details" })
+    .getAttribute("href");
+  const milkRule = new URL(milkHref, base).searchParams.get("routine");
+  assert.ok(
+    new URL(href, base).searchParams.get("routine").startsWith(milkRule + ";"),
+  );
+  assert.equal(
+    await cart
+      .getByRole("heading", { name: "Complete your basket." })
+      .isVisible(),
+    true,
+  );
+  assert.equal(
+    await cart.getByRole("link", { name: /Choose Fresh paneer/ }).count(),
+    0,
+  );
+  await cart.getByRole("link", { name: /Choose Farm ghee/ }).click();
+  await page.waitForURL("**/shop/ghee");
+  await page.getByRole("button", { name: "Add to cart", exact: true }).click();
+  assert.equal(
+    await cart.getByRole("heading", { name: "Complete your basket." }).count(),
+    0,
+  );
+  await cart.getByRole("button", { name: "Remove Farm milk" }).click();
+  assert.equal(
+    await cart
+      .getByRole("link", { name: "Continue to delivery details" })
+      .isVisible(),
+    true,
+    "nonmilk schedules need no milk",
+  );
+  href = await cart
+    .getByRole("link", { name: "Continue to delivery details" })
+    .getAttribute("href");
+  assert.doesNotMatch(new URL(href, base).searchParams.get("routine"), /milk/);
+  await cart
+    .getByRole("link", { name: "Continue to delivery details" })
+    .click();
+  await page.waitForURL("**/sign-in?**");
+  assert.ok(new URL(page.url()).searchParams.get("next").includes("routine="));
   assert.equal(
     (
       await page.request.post(`${base}/api/payments/razorpay/order`, {
@@ -268,6 +370,7 @@ try {
   await context.close();
   const reduced = await browser.newContext({ reducedMotion: "reduce" }),
     rp = await reduced.newPage();
+  await bootstrap(reduced);
   await rp.goto(`${base}/shop`, { waitUntil: "networkidle" });
   const before = await rp.locator("[class*=heroPhoto]").getAttribute("href");
   await rp.waitForTimeout(6250);

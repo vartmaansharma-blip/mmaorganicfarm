@@ -331,8 +331,8 @@ test("publishes complete business and policy information", async () => {
   assert.match(terms, /Terms and conditions/);
   assert.match(privacy, /Supabase/);
   assert.match(privacy, /does not store complete card or bank credentials/);
-  assert.match(cancellation, /does not create a cash refund/);
-  assert.match(cancellation, /carried forward/);
+  assert.match(cancellation, /does not create a cash\s+refund/);
+  assert.match(cancellation, /carried\s+forward/);
   assert.match(shell, /Cancellations & refunds/);
   assert.doesNotMatch(shell, /createClient|redirect\(/);
 });

@@ -10,11 +10,13 @@ export function CartCheckoutSync({
   paid = false,
   start,
   items,
+  routine,
 }: {
   orderId: string;
   mode: string;
   paid?: boolean;
   start?: string;
+  routine?: string;
   items?: Array<{
     product_key: string;
     quantity: number;
@@ -41,7 +43,7 @@ export function CartCheckoutSync({
         }
         return;
       }
-      if (start && items && cartMatchesOrder(cart, mode, start, items))
+      if (start && items && cartMatchesOrder(cart, mode, start, items, routine))
         sessionStorage.setItem(
           key,
           JSON.stringify({ orderId, mode, snapshot }),
@@ -49,6 +51,6 @@ export function CartCheckoutSync({
     } catch {
       /* Storage is optional. A failed or unconfirmed payment never clears a basket. */
     }
-  }, [orderId, mode, paid, start, items, state, update, hydrated]);
+  }, [orderId, mode, paid, start, items, routine, state, update, hydrated]);
   return null;
 }

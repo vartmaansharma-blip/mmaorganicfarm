@@ -1,0 +1,79 @@
+.plan {
+  padding: clamp(20px, 4vw, 36px);
+  margin: 24px 0;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.heading h2 {
+  font:
+    400 30px/1.2 var(--font-fraunces),
+    serif;
+  margin: 0;
+}
+.heading span {
+  font-size: 11px;
+  text-transform: capitalize;
+  color: var(--color-text-secondary);
+}
+.plan > p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+.plan summary {
+  min-height: 48px;
+  padding: 15px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+.plan ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.plan li {
+  border-top: 1px solid var(--color-border);
+  padding: 12px 0;
+}
+.plan li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.plan time {
+  font-size: 12px;
+}
+.plan small {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+.plan li p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 8px 0 0;
+}
+.plan > a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.plan a {
+  color: var(--color-accent);
+}
+.plan :is(a, summary):focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}

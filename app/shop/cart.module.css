@@ -357,3 +357,68 @@
   color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
 }
+
+.calendar {
+  margin: 12px 0;
+}
+.calendar summary {
+  cursor: pointer;
+  font-size: 13px;
+  min-height: 44px;
+  padding: 14px 0;
+}
+.suggestions {
+  border-top: 1px solid var(--color-border);
+  margin-top: 16px;
+  padding-top: 22px;
+}
+.suggestions h3 {
+  font:
+    400 25px/1.2 var(--font-fraunces),
+    serif;
+  margin: 0 0 8px;
+}
+.suggestions > p {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+.suggestions > a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 80px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 4px;
+  transition: background 160ms;
+}
+.suggestions > a:hover {
+  background: var(--color-surface);
+}
+.suggestions img {
+  width: 52px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 7px;
+}
+.suggestions strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+.suggestions small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+.suggestions .choose {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  font-size: 12px;
+  color: var(--color-accent);
+}

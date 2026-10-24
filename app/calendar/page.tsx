@@ -1,3 +1,4 @@
+import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -36,7 +37,9 @@ type CalendarPageProps = {
   }>;
 };
 
-export default async function CalendarPage({ searchParams }: CalendarPageProps) {
+export default async function CalendarPage({
+  searchParams,
+}: CalendarPageProps) {
   const params = await searchParams;
   const supabase = await createClient();
   const {
@@ -48,14 +51,58 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   const { data: plans } = await supabase
     .from("delivery_plans")
     .select(
-      "id, status, start_date, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
+      "id, status, start_date, billing_model, period_end_exclusive, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
     .order("created_at", { ascending: false });
 
   if (!plans?.length) redirect("/milk");
-  const plan = plans.find((candidate) => candidate.id === params.plan) ?? plans[0];
+  const plan =
+    plans.find((candidate) => candidate.id === params.plan) ?? plans[0];
+
+  if (plan.billing_model === "calendar_month") {
+    const { data: completed } = await supabase
+      .from("daily_deliveries")
+      .select("delivery_date")
+      .eq("plan_id", plan.id)
+      .eq("user_id", user.id)
+      .eq("status", "delivered");
+    return (
+      <main className={styles.page}>
+        <header className={styles.header}>
+          <Link className={`${styles.brand} customer-header-brand`} href="/">
+            <Image
+              src="/mma-logo.png"
+              alt="M’ma Organic Farm"
+              width={66}
+              height={56}
+            />
+          </Link>
+          <div className="customer-header-actions">
+            <Link href="/account">Profile</Link>
+            <PageNavigationControls />
+          </div>
+        </header>
+        <div className={styles.content}>
+          {params.error ? <p role="alert">{params.error}</p> : null}
+          <MonthlyPlan
+            id={plan.id}
+            start={plan.start_date}
+            end={plan.period_end_exclusive}
+            status={plan.status}
+            items={plan.scheduled_delivery_items.map((x) => ({
+              ...x,
+              quantity: Number(x.quantity),
+            }))}
+            deliveredDates={(completed ?? []).map((x) => x.delivery_date)}
+            preview={plan.status === "pending_confirmation"}
+          />
+          <Link href="/shop">Back to the shop →</Link>
+        </div>
+      </main>
+    );
+  }
 
   const calendar = buildDeliveryCalendar({
     days: 7,
@@ -96,7 +143,11 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
+        <Link
+          className={`${styles.brand} customer-header-brand`}
+          aria-label="M'ma Organic Farm"
+          href="/"
+        >
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
           <span>M&apos;ma Organic Farm</span>
         </Link>
@@ -126,7 +177,8 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             {plans.map((candidate, index) => {
               const candidateRemaining = Math.max(
                 0,
-                Number(candidate.purchased_deliveries) - Number(candidate.delivered_deliveries),
+                Number(candidate.purchased_deliveries) -
+                  Number(candidate.delivered_deliveries),
               );
               return (
                 <Link
@@ -136,7 +188,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                 >
                   <span>Plan {plans.length - index}</span>
                   <strong>{candidateRemaining} remaining</strong>
-                  <small>Started {formatPlanStartDate(candidate.start_date)}</small>
+                  <small>
+                    Started {formatPlanStartDate(candidate.start_date)}
+                  </small>
                 </Link>
               );
             })}
@@ -224,7 +278,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
               <p className={styles.sectionNumber}>02</p>
               <h2 id="date-heading">{formatCalendarDate(selectedDay.date)}</h2>
             </div>
-            <span>{selectedDay.paused ? "Inside a pause" : "Edit this date only"}</span>
+            <span>
+              {selectedDay.paused ? "Inside a pause" : "Edit this date only"}
+            </span>
           </div>
 
           {selectedDay.paused ? (
@@ -234,7 +290,10 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             </p>
           ) : (
             <>
-              <form className={styles.dayActions} action={saveDeliveryDayChange}>
+              <form
+                className={styles.dayActions}
+                action={saveDeliveryDayChange}
+              >
                 <input name="plan_id" type="hidden" value={plan.id} />
                 <input name="date" type="hidden" value={selectedDay.date} />
                 <button name="day_action" type="submit" value="skip">
@@ -302,8 +361,16 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                         </span>
                         <form action={saveDateChange}>
                           <input name="plan_id" type="hidden" value={plan.id} />
-                          <input name="date" type="hidden" value={selectedDay.date} />
-                          <input name="product_key" type="hidden" value={productKey} />
+                          <input
+                            name="date"
+                            type="hidden"
+                            value={selectedDay.date}
+                          />
+                          <input
+                            name="product_key"
+                            type="hidden"
+                            value={productKey}
+                          />
                           <button
                             name="change_action"
                             type="submit"
@@ -321,7 +388,10 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           )}
         </section>
 
-        <section className={styles.pauseSection} aria-labelledby="pause-heading">
+        <section
+          className={styles.pauseSection}
+          aria-labelledby="pause-heading"
+        >
           <div className={styles.sectionHeading}>
             <div>
               <p className={styles.sectionNumber}>03</p>
@@ -332,7 +402,11 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
           <form className={styles.pauseForm} action={savePause}>
             <input name="plan_id" type="hidden" value={plan.id} />
-            <input name="selected_date" type="hidden" value={selectedDay.date} />
+            <input
+              name="selected_date"
+              type="hidden"
+              value={selectedDay.date}
+            />
             <label>
               <span>From</span>
               <input
@@ -367,7 +441,11 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                   <form action={removePause}>
                     <input name="plan_id" type="hidden" value={plan.id} />
                     <input name="pause_id" type="hidden" value={pause.id} />
-                    <input name="selected_date" type="hidden" value={selectedDay.date} />
+                    <input
+                      name="selected_date"
+                      type="hidden"
+                      value={selectedDay.date}
+                    />
                     <button type="submit">Remove pause</button>
                   </form>
                 </div>

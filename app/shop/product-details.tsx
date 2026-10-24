@@ -19,6 +19,7 @@ import { addCartProduct } from "@/lib/shop-cart";
 import { shopProduct } from "@/lib/shop-products";
 import { useShop } from "./shop-state";
 import styles from "./shop.module.css";
+import { ScheduledProductDetails } from "./scheduled-product-details";
 const money = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 function Stepper({
   value,
@@ -56,6 +57,14 @@ function Stepper({
   );
 }
 export function ProductDetails({ id }: { id: ShopProductId }) {
+  const { state } = useShop();
+  return state.mode === "plan" ? (
+    <ScheduledProductDetails key={id} id={id} />
+  ) : (
+    <OneTimeProductDetails key={id} id={id} />
+  );
+}
+function OneTimeProductDetails({ id }: { id: ShopProductId }) {
   const { state, update, firstPlanStart, setCartOpen } = useShop(),
     p = shopProduct(id),
     mode = state.mode,

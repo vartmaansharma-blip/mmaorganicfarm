@@ -1,3 +1,4 @@
+import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -8,7 +9,11 @@ import { buildDeliveryCalendar, productName } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
-import { markNotificationsRead, requestPlanCancellation, signOut } from "./actions";
+import {
+  markNotificationsRead,
+  requestPlanCancellation,
+  signOut,
+} from "./actions";
 import styles from "./account.module.css";
 
 export const metadata: Metadata = {
@@ -40,7 +45,7 @@ export default async function AccountPage({
   const { data: deliveryPlans } = await supabase
     .from("delivery_plans")
     .select(
-      "id, status, start_date, bottle_choice, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
+      "id, status, start_date, bottle_choice, billing_model, period_end_exclusive, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
@@ -72,6 +77,15 @@ export default async function AccountPage({
       .limit(20),
   ]);
 
+  const { data: monthlyCompleted } =
+    deliveryPlans?.[0]?.billing_model === "calendar_month"
+      ? await supabase
+          .from("daily_deliveries")
+          .select("delivery_date")
+          .eq("plan_id", deliveryPlans[0].id)
+          .eq("user_id", user.id)
+          .eq("status", "delivered")
+      : { data: null };
   const name = profile?.full_name ?? user.user_metadata.full_name ?? "Customer";
   const email = profile?.email ?? user.email ?? "";
   const googleConnected = user.identities?.some(
@@ -82,7 +96,12 @@ export default async function AccountPage({
   const hasDeliveryDetails = hasPhone || hasAddress;
   const deliveryPlan = deliveryPlans?.[0] ?? null;
   const totalPlanBalance = (deliveryPlans ?? []).reduce(
-    (total, plan) => total + Math.max(0, Number(plan.purchased_deliveries) - Number(plan.delivered_deliveries)),
+    (total, plan) =>
+      total +
+      Math.max(
+        0,
+        Number(plan.purchased_deliveries) - Number(plan.delivered_deliveries),
+      ),
     0,
   );
   const milkByDay = new Map(
@@ -94,7 +113,9 @@ export default async function AccountPage({
     (total, litres) => total + litres,
     0,
   );
-  const productById = new Map(FARM_PRODUCTS.map((product) => [product.id, product]));
+  const productById = new Map(
+    FARM_PRODUCTS.map((product) => [product.id, product]),
+  );
   const weeklyAddOnMap = new Map<
     FarmProductId,
     { days: number[]; quantity: number; unit: string }
@@ -155,7 +176,11 @@ export default async function AccountPage({
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
+        <Link
+          className={`${styles.brand} customer-header-brand`}
+          aria-label="M'ma Organic Farm"
+          href="/"
+        >
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
           <span>M&apos;ma Organic Farm</span>
         </Link>
@@ -168,13 +193,17 @@ export default async function AccountPage({
       </header>
 
       <section className={styles.content}>
-        {params.message ? <p className={styles.notice}>{params.message}</p> : null}
-        {params.error ? <p className={`${styles.notice} ${styles.noticeError}`}>{params.error}</p> : null}
+        {params.message ? (
+          <p className={styles.notice}>{params.message}</p>
+        ) : null}
+        {params.error ? (
+          <p className={`${styles.notice} ${styles.noticeError}`}>
+            {params.error}
+          </p>
+        ) : null}
         <div className={styles.pageHeading}>
           <div>
-            <p className={styles.eyebrow}>
-              Welcome, {name.split(/\s+/)[0]}
-            </p>
+            <p className={styles.eyebrow}>Welcome, {name.split(/\s+/)[0]}</p>
             <h1>Profile</h1>
             <p className={styles.intro}>
               Your details, delivery routine, and plan in one place.
@@ -185,7 +214,10 @@ export default async function AccountPage({
           </Link>
         </div>
 
-        <section className={styles.accountSection} aria-labelledby="profile-heading">
+        <section
+          className={styles.accountSection}
+          aria-labelledby="profile-heading"
+        >
           <div className={styles.sectionHeading}>
             <h2 id="profile-heading">Profile</h2>
             <p>Your sign-in identity and delivery contact information.</p>
@@ -237,12 +269,32 @@ export default async function AccountPage({
           ) : null}
 
           <Link className={styles.editDetails} href="/order">
-            {hasDeliveryDetails ? "Update delivery details" : "Add delivery details"}
+            {hasDeliveryDetails
+              ? "Update delivery details"
+              : "Add delivery details"}
           </Link>
         </section>
 
-        {deliveryPlan ? (
-          <section className={styles.planSection} aria-labelledby="plan-heading">
+        {deliveryPlan?.billing_model === "calendar_month" ? (
+          <MonthlyPlan
+            id={deliveryPlan.id}
+            start={deliveryPlan.start_date}
+            end={deliveryPlan.period_end_exclusive}
+            status={deliveryPlan.status}
+            deliveredDates={(monthlyCompleted ?? []).map(
+              (x) => x.delivery_date,
+            )}
+            items={deliveryPlan.scheduled_delivery_items.map((x) => ({
+              ...x,
+              quantity: Number(x.quantity),
+            }))}
+            preview={deliveryPlan.status === "pending_confirmation"}
+          />
+        ) : deliveryPlan ? (
+          <section
+            className={styles.planSection}
+            aria-labelledby="plan-heading"
+          >
             <div className={styles.planHeading}>
               <div>
                 <h2 id="plan-heading">Your weekly delivery plan</h2>
@@ -256,26 +308,51 @@ export default async function AccountPage({
             </div>
 
             {(deliveryPlans?.length ?? 0) > 1 ? (
-              <div className={styles.planSwitcher} aria-label="Current paid plans">
+              <div
+                className={styles.planSwitcher}
+                aria-label="Current paid plans"
+              >
                 {deliveryPlans?.map((currentPlan, index) => {
                   const currentRemaining = Math.max(
                     0,
-                    Number(currentPlan.purchased_deliveries) - Number(currentPlan.delivered_deliveries),
+                    Number(currentPlan.purchased_deliveries) -
+                      Number(currentPlan.delivered_deliveries),
                   );
                   return (
                     <article key={currentPlan.id}>
                       <div>
                         <span>Plan {deliveryPlans.length - index}</span>
                         <strong>{currentRemaining} deliveries remaining</strong>
-                        <small>Started {formatPlanStartDate(currentPlan.start_date)} · {currentPlan.status.replaceAll("_", " ")}</small>
+                        <small>
+                          Started {formatPlanStartDate(currentPlan.start_date)}{" "}
+                          · {currentPlan.status.replaceAll("_", " ")}
+                        </small>
                       </div>
-                      <Link href={`/calendar?plan=${currentPlan.id}`}>Open calendar</Link>
+                      <Link href={`/calendar?plan=${currentPlan.id}`}>
+                        Open calendar
+                      </Link>
                       <details className={styles.cancelRequest}>
                         <summary>Request cancellation</summary>
-                        <p>The farm reviews preparation and dispatch first. Paid milk is not automatically refunded.</p>
+                        <p>
+                          The farm reviews preparation and dispatch first. Paid
+                          milk is not automatically refunded.
+                        </p>
                         <form action={requestPlanCancellation}>
-                          <input name="planId" type="hidden" value={currentPlan.id} />
-                          <label>Reason<textarea className={styles.reasonField} name="reason" required minLength={3} rows={3} /></label>
+                          <input
+                            name="planId"
+                            type="hidden"
+                            value={currentPlan.id}
+                          />
+                          <label>
+                            Reason
+                            <textarea
+                              className={styles.reasonField}
+                              name="reason"
+                              required
+                              minLength={3}
+                              rows={3}
+                            />
+                          </label>
                           <button type="submit">Send request</button>
                         </form>
                       </details>
@@ -319,7 +396,9 @@ export default async function AccountPage({
                   <h3 id="upcoming-deliveries-heading">Next 7 days</h3>
                   <p>One-day quantity changes and skips appear here.</p>
                 </div>
-                <Link href={`/calendar?plan=${deliveryPlan.id}`}>Change a date</Link>
+                <Link href={`/calendar?plan=${deliveryPlan.id}`}>
+                  Change a date
+                </Link>
               </div>
               <div className={styles.upcomingGrid}>
                 {upcomingDeliveries.map((day) => {
@@ -361,7 +440,10 @@ export default async function AccountPage({
               </div>
             </section>
 
-            <div className={styles.planWeek} aria-label="Saved weekly milk schedule">
+            <div
+              className={styles.planWeek}
+              aria-label="Saved weekly milk schedule"
+            >
               {MILK_PLAN_DAYS.map((day, index) => {
                 const litres = milkByDay.get(index + 1) ?? 0;
                 return (
@@ -395,30 +477,47 @@ export default async function AccountPage({
               leave your balance unchanged.
             </p>
             <div className={styles.planActions}>
-              <Link className={styles.openCalendar} href={`/calendar?plan=${deliveryPlan.id}`}>
+              <Link
+                className={styles.openCalendar}
+                href={`/calendar?plan=${deliveryPlan.id}`}
+              >
                 Open delivery calendar
               </Link>
               <Link className={styles.editPlan} href="/milk?edit=plan">
                 Edit normal week
               </Link>
             </div>
-            {(deliveryPlans?.length ?? 0) === 1 ? <details className={styles.cancelRequest}>
-              <summary>Request plan cancellation</summary>
-              <p>The farm reviews the request against preparation and dispatch status. Paid milk is not automatically refunded.</p>
-              <form action={requestPlanCancellation}>
-                <input name="planId" type="hidden" value={deliveryPlan.id} />
-                <label>
-                  Reason
-                  <textarea className={styles.reasonField} name="reason" required minLength={3} rows={3} />
-                </label>
-                <button type="submit">Send request</button>
-              </form>
-            </details> : null}
+            {(deliveryPlans?.length ?? 0) === 1 ? (
+              <details className={styles.cancelRequest}>
+                <summary>Request plan cancellation</summary>
+                <p>
+                  The farm reviews the request against preparation and dispatch
+                  status. Paid milk is not automatically refunded.
+                </p>
+                <form action={requestPlanCancellation}>
+                  <input name="planId" type="hidden" value={deliveryPlan.id} />
+                  <label>
+                    Reason
+                    <textarea
+                      className={styles.reasonField}
+                      name="reason"
+                      required
+                      minLength={3}
+                      rows={3}
+                    />
+                  </label>
+                  <button type="submit">Send request</button>
+                </form>
+              </details>
+            ) : null}
           </section>
         ) : null}
 
         {(orders?.length ?? 0) > 0 ? (
-          <section className={styles.ordersSection} aria-labelledby="orders-heading">
+          <section
+            className={styles.ordersSection}
+            aria-labelledby="orders-heading"
+          >
             <div className={styles.sectionHeading}>
               <h2 id="orders-heading">Order history</h2>
               <p>Every order remains attached to this customer profile.</p>
@@ -430,17 +529,20 @@ export default async function AccountPage({
                     <span>
                       <strong>
                         {order.purchase_mode === "plan"
-                          ? "30-delivery plan"
+                          ? "Scheduled plan"
                           : order.purchase_mode === "adjustment"
                             ? "Milk quantity change"
                             : "One-time order"}
                       </strong>
                       <small>
-                        {new Date(order.created_at).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {new Date(order.created_at).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )}
                       </small>
                     </span>
                     <span>
@@ -462,7 +564,7 @@ export default async function AccountPage({
                       </p>
                     ))}
                     <small>
-                      Order MMA-{order.id.slice(0, 8).toUpperCase()} · Delivery {" "}
+                      Order MMA-{order.id.slice(0, 8).toUpperCase()} · Delivery{" "}
                       {formatPlanStartDate(order.start_date)}
                     </small>
                   </div>
@@ -473,18 +575,37 @@ export default async function AccountPage({
         ) : null}
 
         {(notifications?.length ?? 0) > 0 ? (
-          <section className={styles.activitySection} aria-labelledby="activity-heading">
+          <section
+            className={styles.activitySection}
+            aria-labelledby="activity-heading"
+          >
             <div className={styles.activityHeading}>
-              <div><h2 id="activity-heading">Updates</h2><p>Payment and delivery activity from the farm.</p></div>
+              <div>
+                <h2 id="activity-heading">Updates</h2>
+                <p>Payment and delivery activity from the farm.</p>
+              </div>
               {notifications?.some((item) => !item.read_at) ? (
-                <form action={markNotificationsRead}><button type="submit">Mark all read</button></form>
+                <form action={markNotificationsRead}>
+                  <button type="submit">Mark all read</button>
+                </form>
               ) : null}
             </div>
             <div className={styles.activityList}>
               {notifications?.map((item) => (
-                <article className={!item.read_at ? styles.unread : undefined} key={item.id}>
-                  <div><strong>{item.title}</strong><span>{item.message}</span></div>
-                  <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</time>
+                <article
+                  className={!item.read_at ? styles.unread : undefined}
+                  key={item.id}
+                >
+                  <div>
+                    <strong>{item.title}</strong>
+                    <span>{item.message}</span>
+                  </div>
+                  <time dateTime={item.created_at}>
+                    {new Date(item.created_at).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </time>
                 </article>
               ))}
             </div>
@@ -492,10 +613,21 @@ export default async function AccountPage({
         ) : null}
 
         {(cancellationRequests?.length ?? 0) > 0 ? (
-          <section className={styles.requestSection} aria-labelledby="request-heading">
+          <section
+            className={styles.requestSection}
+            aria-labelledby="request-heading"
+          >
             <h2 id="request-heading">Cancellation requests</h2>
             {cancellationRequests?.map((request) => (
-              <article key={request.id}><div><strong>{request.status.replaceAll("_", " ")}</strong><span>{request.reason}</span></div>{request.resolution_note ? <p>{request.resolution_note}</p> : null}</article>
+              <article key={request.id}>
+                <div>
+                  <strong>{request.status.replaceAll("_", " ")}</strong>
+                  <span>{request.reason}</span>
+                </div>
+                {request.resolution_note ? (
+                  <p>{request.resolution_note}</p>
+                ) : null}
+              </article>
             ))}
           </section>
         ) : null}

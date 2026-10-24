@@ -30,6 +30,7 @@ type MilkPageProps = {
 
 export default async function MilkPage({ searchParams }: MilkPageProps) {
   const params = await searchParams;
+  if (params.edit !== "plan") redirect("/shop/milk");
   const supabase = await createClient();
   const {
     data: { user },
@@ -49,6 +50,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
         )
         .eq("user_id", user.id)
         .in("status", ["pending_confirmation", "active", "paused"])
+        .eq("billing_model", "milk_credits")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -112,7 +114,11 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
     <main className={styles.page}>
       <PlanBuilderStartTracking />
       <header className={styles.header}>
-        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
+        <Link
+          className={`${styles.brand} customer-header-brand`}
+          aria-label="M'ma Organic Farm"
+          href="/"
+        >
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
           <span>
             M&apos;ma Organic Farm

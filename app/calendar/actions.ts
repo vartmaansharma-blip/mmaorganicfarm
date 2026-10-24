@@ -17,7 +17,10 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-const productKeys = new Set(["milk", ...FARM_PRODUCTS.map((product) => product.id)]);
+const productKeys = new Set([
+  "milk",
+  ...FARM_PRODUCTS.map((product) => product.id),
+]);
 
 function calendarUrl(
   date: string,
@@ -40,13 +43,22 @@ async function getOwnedPlan(planId: string) {
 
   const { data: plan } = await supabase
     .from("delivery_plans")
-    .select("id, user_id, start_date, bottle_choice")
+    .select("id, user_id, start_date, bottle_choice, billing_model")
     .eq("id", planId)
     .eq("user_id", user.id)
     .in("status", ["pending_confirmation", "active", "paused"])
     .maybeSingle();
 
   if (!plan) redirect("/milk");
+  if (plan.billing_model === "calendar_month")
+    redirect(
+      calendarUrl(
+        "",
+        "error",
+        "Contact the farm to adjust a paid monthly delivery. Your prepaid quantities are preserved.",
+        plan.id,
+      ),
+    );
   return { plan, supabase, user };
 }
 
@@ -87,7 +99,8 @@ async function startMilkIncreasePayment({
     .limit(1)
     .maybeSingle();
 
-  if (existing?.order_id) redirect(`/checkout/review?order=${existing.order_id}`);
+  if (existing?.order_id)
+    redirect(`/checkout/review?order=${existing.order_id}`);
 
   const { data: profile } = await admin
     .from("customer_profiles")
@@ -95,7 +108,14 @@ async function startMilkIncreasePayment({
     .eq("user_id", userId)
     .maybeSingle();
   if (!profile?.phone || !profile.address_line) {
-    redirect(calendarUrl(date, "error", "Add your phone and address before changing paid milk.", plan.id));
+    redirect(
+      calendarUrl(
+        date,
+        "error",
+        "Add your phone and address before changing paid milk.",
+        plan.id,
+      ),
+    );
   }
 
   const extraLitres = requestedQuantity - currentQuantity;
@@ -124,7 +144,14 @@ async function startMilkIncreasePayment({
     .select("id")
     .single();
   if (orderError || !order) {
-    redirect(calendarUrl(date, "error", "We could not prepare the additional payment.", plan.id));
+    redirect(
+      calendarUrl(
+        date,
+        "error",
+        "We could not prepare the additional payment.",
+        plan.id,
+      ),
+    );
   }
 
   const { error: itemError } = await admin.from("order_items").insert({
@@ -152,7 +179,14 @@ async function startMilkIncreasePayment({
       user_id: userId,
     });
   if (itemError || adjustmentError) {
-    redirect(calendarUrl(date, "error", "We could not save this quantity change.", plan.id));
+    redirect(
+      calendarUrl(
+        date,
+        "error",
+        "We could not save this quantity change.",
+        plan.id,
+      ),
+    );
   }
 
   redirect(`/checkout/review?order=${order.id}`);
@@ -218,7 +252,14 @@ async function applyMilkReduction({
     { onConflict: "plan_id,product_key,delivery_date" },
   );
   if (error) {
-    redirect(calendarUrl(date, "error", "We could not carry the milk forward.", planId));
+    redirect(
+      calendarUrl(
+        date,
+        "error",
+        "We could not carry the milk forward.",
+        planId,
+      ),
+    );
   }
 
   const admin = createAdminClient();
@@ -265,7 +306,14 @@ export async function saveDateChange(formData: FormData) {
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
   if (date < plan.start_date) {
-    redirect(calendarUrl(date, "error", "This date is before your plan starts.", planId));
+    redirect(
+      calendarUrl(
+        date,
+        "error",
+        "This date is before your plan starts.",
+        planId,
+      ),
+    );
   }
 
   if (action === "normal") {
@@ -278,7 +326,9 @@ export async function saveDateChange(formData: FormData) {
       .eq("product_key", productKey);
 
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not restore this date.", planId));
+      redirect(
+        calendarUrl(date, "error", "We could not restore this date.", planId),
+      );
     }
   } else {
     const quantity = Number(formData.get("quantity"));
@@ -289,7 +339,9 @@ export async function saveDateChange(formData: FormData) {
         (!Number.isInteger(quantity) || quantity < 1 || quantity > 5)) ||
       (productKey !== "milk" && isOverride)
     ) {
-      redirect(calendarUrl(date, "error", "Choose a valid date change.", planId));
+      redirect(
+        calendarUrl(date, "error", "Choose a valid date change.", planId),
+      );
     }
 
     if (productKey === "milk" && isOverride) {
@@ -330,13 +382,22 @@ export async function saveDateChange(formData: FormData) {
     );
 
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not save this date change.", planId));
+      redirect(
+        calendarUrl(
+          date,
+          "error",
+          "We could not save this date change.",
+          planId,
+        ),
+      );
     }
   }
 
   revalidatePath("/calendar");
   revalidatePath("/account");
-  redirect(calendarUrl(date, "message", "Your delivery calendar was updated.", planId));
+  redirect(
+    calendarUrl(date, "message", "Your delivery calendar was updated.", planId),
+  );
 }
 
 export async function saveDeliveryDayChange(formData: FormData) {
@@ -358,7 +419,14 @@ export async function saveDeliveryDayChange(formData: FormData) {
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
   if (date < plan.start_date) {
-    redirect(calendarUrl(date, "error", "This date is before your plan starts.", planId));
+    redirect(
+      calendarUrl(
+        date,
+        "error",
+        "This date is before your plan starts.",
+        planId,
+      ),
+    );
   }
 
   if (action === "normal") {
@@ -369,7 +437,14 @@ export async function saveDeliveryDayChange(formData: FormData) {
       .eq("user_id", user.id)
       .eq("delivery_date", date);
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not restore this delivery day.", planId));
+      redirect(
+        calendarUrl(
+          date,
+          "error",
+          "We could not restore this delivery day.",
+          planId,
+        ),
+      );
     }
   } else {
     const [
@@ -405,7 +480,14 @@ export async function saveDeliveryDayChange(formData: FormData) {
     const uniqueProductKeys = [...new Set(scheduledProductKeys)];
 
     if (!uniqueProductKeys.length) {
-      redirect(calendarUrl(date, "error", "There is no delivery scheduled on this date.", planId));
+      redirect(
+        calendarUrl(
+          date,
+          "error",
+          "There is no delivery scheduled on this date.",
+          planId,
+        ),
+      );
     }
 
     const { error } = await supabase.from("delivery_exceptions").upsert(
@@ -423,7 +505,14 @@ export async function saveDeliveryDayChange(formData: FormData) {
     );
 
     if (error) {
-      redirect(calendarUrl(date, "error", "We could not skip this delivery day.", planId));
+      redirect(
+        calendarUrl(
+          date,
+          "error",
+          "We could not skip this delivery day.",
+          planId,
+        ),
+      );
     }
   }
 
@@ -472,7 +561,14 @@ export async function savePause(formData: FormData) {
 
   const { plan, supabase, user } = await getOwnedPlan(planId);
   if (startDate < plan.start_date) {
-    redirect(calendarUrl(selectedDate, "error", "The pause cannot begin before your plan.", planId));
+    redirect(
+      calendarUrl(
+        selectedDate,
+        "error",
+        "The pause cannot begin before your plan.",
+        planId,
+      ),
+    );
   }
 
   const { data: overlap } = await supabase
@@ -486,7 +582,14 @@ export async function savePause(formData: FormData) {
     .maybeSingle();
 
   if (overlap) {
-    redirect(calendarUrl(selectedDate, "error", "Those dates are already paused.", planId));
+    redirect(
+      calendarUrl(
+        selectedDate,
+        "error",
+        "Those dates are already paused.",
+        planId,
+      ),
+    );
   }
 
   const { error } = await supabase.from("delivery_pauses").insert({
@@ -497,18 +600,34 @@ export async function savePause(formData: FormData) {
   });
 
   if (error) {
-    redirect(calendarUrl(selectedDate, "error", "We could not pause those dates.", planId));
+    redirect(
+      calendarUrl(
+        selectedDate,
+        "error",
+        "We could not pause those dates.",
+        planId,
+      ),
+    );
   }
 
   revalidatePath("/calendar");
   revalidatePath("/account");
-  redirect(calendarUrl(selectedDate, "message", "Your delivery pause was added.", planId));
+  redirect(
+    calendarUrl(
+      selectedDate,
+      "message",
+      "Your delivery pause was added.",
+      planId,
+    ),
+  );
 }
 
 export async function removePause(formData: FormData) {
   const planId = String(formData.get("plan_id") ?? "");
   const pauseId = String(formData.get("pause_id") ?? "");
-  const selectedDate = normalizePlanStartDate(String(formData.get("selected_date") ?? ""));
+  const selectedDate = normalizePlanStartDate(
+    String(formData.get("selected_date") ?? ""),
+  );
   const { plan, supabase, user } = await getOwnedPlan(planId);
 
   const { error } = await supabase
@@ -519,10 +638,19 @@ export async function removePause(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) {
-    redirect(calendarUrl(selectedDate, "error", "We could not remove this pause.", planId));
+    redirect(
+      calendarUrl(
+        selectedDate,
+        "error",
+        "We could not remove this pause.",
+        planId,
+      ),
+    );
   }
 
   revalidatePath("/calendar");
   revalidatePath("/account");
-  redirect(calendarUrl(selectedDate, "message", "The pause was removed.", planId));
+  redirect(
+    calendarUrl(selectedDate, "message", "The pause was removed.", planId),
+  );
 }
