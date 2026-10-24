@@ -30,7 +30,7 @@ async function ready() {
   throw new Error(`Preview did not start: ${serverLog}`);
 }
 
-async function scrollToProgress(page, progress) {
+async function scrollToFill(page, progress) {
   await page.evaluate(p => {
     const root = document.getElementById("home");
     const panel = root.firstElementChild;
@@ -38,7 +38,188 @@ async function scrollToProgress(page, progress) {
     const header = parseFloat(getComputedStyle(panel).top) || 0;
     window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight), behavior: "instant" });
   }, progress);
-  await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.progress) - p) < .004 && document.getElementById("home").dataset.transitioning === "false", progress);
+  if (progress < .99) await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.fill) - p * p * (3 - 2 * p)) < .01, progress);
+}
+const state = (page, value) => page.waitForFunction(s => document.getElementById('home')?.dataset.state === s, value);
+async function observeFilm(page) {
+  await page.evaluate(() => {
+    window.filmSamples = [];
+    const sample = () => {
+      const root = document.getElementById('home');
+      if (!root) return;
+      const previous = window.filmSamples.at(-1);
+      const current = { state: root.dataset.state, stage: root.dataset.filmStage, time: Number(root.dataset.filmTime), at: performance.now(), top: root.firstElementChild.getBoundingClientRect().top };
+      if (!previous || previous.state !== current.state || previous.stage !== current.stage) window.filmSamples.push(current);
+      window.filmObserver = requestAnimationFrame(sample);
+    };
+    cancelAnimationFrame(window.filmObserver);
+    window.filmObserver = requestAnimationFrame(sample);
+  });
+}
+const stageNames = ['filled-front', 'coffee-treatment', 'elevated', 'macro-push', 'macro-hold', 'overhead-pull', 'settled-overhead'];
+async function verifyHybrid(page, name, width) {
+  const tops = [];
+  for (const progress of [.2, .65, .3]) {
+    await scrollToFill(page, progress);
+    tops.push(await page.locator('#home > div').first().evaluate(e => e.getBoundingClientRect().top));
+    assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front');
+  }
+  assert.ok(Math.max(...tops) - Math.min(...tops) < 2, 'panel stays still throughout fill');
+  await observeFilm(page);
+  await page.mouse.wheel(0, 9000);
+  await state(page, 'PLAYING_FORWARD');
+  assert.equal(await page.locator('#home').getAttribute('data-fill'), '1.000');
+  assert.equal(await page.locator('#home').getAttribute('data-held'), 'true');
+  const heldY = await page.locator('#home > div').first().evaluate(e => e.getBoundingClientRect().top);
+  assert.ok(Math.abs(heldY - tops[0]) < 2, `hold preserves original panel position: ${heldY} vs ${tops[0]}`);
+  assert.ok((await page.locator('header').boundingBox()).y >= -1, 'hold preserves header position');
+  await page.mouse.wheel(0, -8000); // incidental reversal cannot reverse this film
+  await page.mouse.wheel(0, 12000);
+  assert.equal(await page.evaluate(() => {
+    const e = new Event('touchmove', { bubbles: true, cancelable: true });
+    document.dispatchEvent(e);
+    return e.defaultPrevented;
+  }), true, 'touch momentum is consumed only during the hold');
+  await page.keyboard.press('ArrowUp');
+  await page.evaluate(() => document.querySelector('button[aria-label*=" mode"]').click());
+  await page.setViewportSize({ width: width + 1, height: page.viewportSize().height });
+  await page.setViewportSize({ width, height: page.viewportSize().height });
+  await page.waitForFunction(() => document.getElementById('home').dataset.filmStage === 'macro-hold');
+  assert.equal(await page.locator('header').isVisible(), false);
+  assert.equal(await page.locator('#hero-heading').isVisible(), false);
+  await page.screenshot({ path: path.join(output, `${name}-${width}-full-screen-macro.png`) });
+  await state(page, 'COMPLETED'); // No scrolling: clock must finish by itself.
+  const forward = await page.evaluate(() => window.filmSamples.filter(s => s.state === 'PLAYING_FORWARD'));
+  assert.deepEqual(forward.map(s => s.stage), stageNames, 'all forward stages receive screen time despite large deltas');
+  assert.ok(forward.every(s => Math.abs(s.top - heldY) < 2), 'hold does not move panel');
+  for (let i = 1; i < forward.length; i++) assert.ok(forward[i].time > forward[i-1].time, 'theme/resize/input never restarts clock');
+  assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
+  assert.equal(await page.evaluate(() => document.body.style.position), '');
+  assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top');
+  assert.equal(await page.locator('header').isVisible(), true);
+  await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
+  const end = await page.locator('#home').getAttribute('data-film-time');
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('#home').getAttribute('data-film-time'), end);
+  const y = await page.evaluate(() => scrollY);
+  await page.mouse.wheel(0, 350);
+  await page.waitForFunction(y => scrollY > y + 100, y);
+  assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top', 'overhead is retained while leaving');
+  await observeFilm(page);
+  await page.mouse.wheel(0, -9000);
+  await state(page, 'PLAYING_REVERSE');
+  await page.mouse.wheel(0, 8000);
+  await page.mouse.wheel(0, -12000);
+  await state(page, 'FILLING');
+  const reverse = await page.evaluate(() => window.filmSamples.filter(s => s.state === 'PLAYING_REVERSE'));
+  assert.deepEqual(reverse.map(s => s.stage), [...stageNames].reverse(), 'reverse film follows every stage backward');
+  assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front');
+  for (let i = 0; i < 5; i++) {
+    await scrollToFill(page, i % 2 ? 1 : .998);
+    assert.equal(await page.locator('#home').getAttribute('data-state'), 'FILLING', 'trigger hysteresis prevents jitter replay');
+  }
+  await scrollToFill(page, .25);
+  assert.ok(Number(await page.locator('#home').getAttribute('data-fill')) < .2, 'upward scroll empties milk after reverse');
+  await scrollToFill(page, 0);
+  await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
+  return { forward, reverse };
+}
+
+async function verifyLifecycle(browser, name) {
+  for (const width of [390, 1440]) {
+    const context = await browser.newContext({ viewport: { width, height: 844 }, hasTouch: true });
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    const fresh = async () => {
+      await page.goto(base, { waitUntil: 'networkidle' });
+      await page.evaluate(() => { history.replaceState({ ...history.state, mmaHeroCompleted: false }, ''); scrollTo({ top: 0, behavior: 'instant' }); });
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForFunction(() => document.getElementById('home').dataset.assets === 'ready');
+    };
+    await fresh();
+    if (name === 'chromium' && width === 390) {
+      const touch = await context.newCDPSession(page);
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 180, y: 700 }] });
+      for (const y of [620, 520, 420, 300, 180, 80]) {
+        await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 180, y }] });
+        await page.waitForTimeout(25);
+      }
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await state(page, 'PLAYING_FORWARD');
+      await state(page, 'COMPLETED');
+      assert.equal(await page.evaluate(() => document.body.style.position), '', 'native Chromium touch momentum releases cleanly');
+      await touch.detach();
+      await fresh();
+    }
+    await page.mouse.wheel(0, 9000);
+    await state(page, 'PLAYING_FORWARD');
+    // Browser visibility event adapter; time spent hidden must not advance the film.
+    const paused = await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+      return Number(document.getElementById('home').dataset.filmTime);
+    });
+    await page.waitForTimeout(300);
+    assert.equal(Number(await page.locator('#home').getAttribute('data-film-time')), paused);
+    await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
+    await page.waitForFunction(t => Number(document.getElementById('home').dataset.filmTime) > t, paused);
+    await page.waitForFunction(() => document.getElementById('home').dataset.filmStage === 'macro-hold');
+    await page.getByRole('link', { name: /Skip introduction/ }).last().click();
+    await page.waitForFunction(() => !document.body.style.position && document.querySelector('#site-content').getBoundingClientRect().top < 150);
+    assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
+    await fresh();
+    await page.mouse.wheel(0, 9000);
+    await state(page, 'PLAYING_FORWARD');
+    await page.locator('header').getByRole('link', { name: "Shop M'ma", exact: true }).click();
+    await page.waitForURL(/sign-in/);
+    // Let the anonymous redirect commit before traversing its history entry.
+    await page.waitForLoadState('networkidle');
+    assert.equal(await page.evaluate(() => document.body.style.position || document.documentElement.style.overflow), '', 'route navigation releases hold');
+    await page.goBack({ waitUntil: 'networkidle' });
+    await state(page, 'COMPLETED');
+    assert.equal(await page.evaluate(() => document.body.style.position), '', 'back restoration remains unlocked');
+    await page.goForward({ waitUntil: 'networkidle' });
+    assert.equal(await page.evaluate(() => document.body.style.position), '');
+    await page.goto(base + '/#farm', { waitUntil: 'networkidle' });
+    await state(page, 'COMPLETED');
+    assert.equal(await page.evaluate(() => document.body.style.position), '', 'direct anchor has no forced film');
+    await fresh();
+    await page.mouse.wheel(0, 9000);
+    await state(page, 'PLAYING_FORWARD');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await state(page, 'COMPLETED');
+    assert.equal(await page.evaluate(() => document.body.style.position), '', 'changing motion preference immediately releases hold');
+    assert.deepEqual(errors, []);
+    await context.close();
+    console.log(`${name} ${width}: lifecycle passed`);
+    results.push({ engine: name, width, lifecycle: 'visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change' });
+  }
+  // Slow/broken image connections must not reveal blank layers or hold indefinitely.
+  for (const fail of [false, true]) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    let releaseImage;
+    const delayedImage = new Promise(resolve => { releaseImage = resolve; });
+    await page.route('**/_next/image?*', async route => {
+      if (decodeURIComponent(route.request().url()).includes('coffee-side-v2')) {
+        if (fail) await route.abort();
+        else { await delayedImage; await route.continue(); }
+      } else await route.continue();
+    });
+    await page.goto(base, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.getElementById('home').dataset.state === 'FILLING');
+    await page.mouse.wheel(0, 9000);
+    await state(page, 'COMPLETED');
+    assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
+    assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front', 'failed/over-budget decode retains loaded front');
+    if (!fail) {
+      releaseImage();
+      await page.waitForFunction(() => document.getElementById('home').dataset.assets === 'ready');
+      assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front', 'late decode cannot abruptly replace the fallback');
+    }
+    await context.close();
+  }
 }
 
 function contrast(foreground, background) {
@@ -132,8 +313,8 @@ try {
     const browser = await ({ chromium, webkit })[name].launch({ headless: true });
     const errors = [];
     try {
-      for (const [width, height] of [[320, 568], [360, 740], [390, 844], [768, 1024], [1200, 630], [1440, 960]]) {
-        const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901 });
+      for (const [width, height] of [[320, 568], [360, 740], [390, 844], [768, 1024], [1200, 630], [1440, 960]].filter(([width]) => !process.env.HERO_WIDTHS || process.env.HERO_WIDTHS.split(",").includes(String(width)))) {
+        const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901, ...([390,1440].includes(width) ? { recordVideo: { dir: path.join(output, "recordings"), size: { width, height } } } : {}) });
         const page = await context.newPage();
         page.on("pageerror", error => errors.push(error.message));
         await page.goto(base, { waitUntil: "networkidle" });
@@ -166,48 +347,9 @@ try {
         const cue = await page.locator('a').filter({ hasText: 'Scroll to fill' }).boundingBox();
         if (width > 720) assert.ok(Math.abs(cue.x + cue.width / 2 - width / 2) < 1, "laptop scroll indicator is centered");
         else assert.ok(Math.abs(cue.x - 24) < 1, "phone scroll cue keeps the production left alignment");
-        const tops = [];
-        let previousFill = 0;
-        for (const p of [.12, .3, .48, .5, .57, .66, .86, .99, 1]) {
-          await scrollToProgress(page, p);
-          assert.equal(await page.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), String(Math.round(p * 100)));
-          const state = await page.locator("#home").evaluate(root => ({ fill: Number(root.dataset.fill), top: root.firstElementChild.getBoundingClientRect().top }));
-          assert.ok(state.fill >= previousFill);
-          previousFill = state.fill;
-          if (p < .86) tops.push(state.top);
-          if (p === .66 || p === .86 || p === .99) {
-            const expected = p === .66 ? "side" : p === .99 ? "top" : "macro";
-            assert.equal(await page.locator("#home").getAttribute("data-shot"), expected);
-          }
-          if (width === 390 && [.3, .57, .66, .86, .99, 1].includes(p)) await page.screenshot({ path: path.join(output, `${name}-mobile-${p}.png`) });
-        }
-        await scrollToProgress(page, .89);
-        assert.equal(await page.locator("header").isVisible(), false, "macro frame hides navigation");
-        assert.equal(await page.locator("#hero-heading").isVisible(), false, "macro frame hides copy");
-        assert.equal(await page.locator(".whatsapp-float").isVisible(), false, "macro frame hides floating controls");
-        await page.screenshot({ path: path.join(output, `${name}-${width}-full-screen-macro.png`) });
-        await scrollToProgress(page, .99);
-        assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top', 'closing frame is the supplied overhead composition');
-        assert.equal(await page.locator('header').isVisible(), true, 'navigation returns for closing shot');
-        assert.equal(await page.locator('#hero-heading').isVisible(), true, 'copy returns for closing shot');
-        assert.equal(await page.locator('.whatsapp-float').isVisible(), true, 'contact action returns for closing shot');
-        await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
-        await page.evaluate(() => { const r=document.querySelector('#home').getBoundingClientRect(); window.scrollTo({top:scrollY+r.bottom-50,behavior:'instant'}); });
-        await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false');
-        assert.equal(await page.locator("header").isVisible(), true, "site resumes after final frame");
-        assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, "glass panel must stay stationary while filling");
-        await scrollToProgress(page, .2);
-        assert.ok(Number(await page.locator("#home").getAttribute("data-fill")) < .4, "scrolling back must lower the liquid");
-        if (width === 390 || width === 1440) {
-          for (const pause of [.525, .62, .78, .93]) {
-            await scrollToProgress(page, pause);
-            const weights = await page.locator('#home').evaluate(root => ['--coffee-progress','--side-opacity','--top-opacity','--macro-opacity'].map(key => Number(root.style.getPropertyValue(key))));
-            assert.ok(weights.every(value => value === 0 || value === 1), 'stopping between shots must settle on a clean photograph');
-          }
-        }
-        await scrollToProgress(page, 0);
-        await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
-        assert.equal(await page.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), "0");
+        const film = await verifyHybrid(page, name, width);
+        await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+        assert.equal(await page.getByRole("progressbar", { name: "Glass story progress", includeHidden: true }).getAttribute("aria-valuenow"), "0");
 
         const headerShop = page.locator("header").getByRole("link", { name: /^Shop(?: M'ma)?$/ }).first();
         assert.equal(await headerShop.getAttribute("href"), "/milk");
@@ -249,15 +391,18 @@ try {
         await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false' && document.querySelector('#site-content').getBoundingClientRect().top < 150);
         assert.equal(await page.evaluate(() => location.hash), "#site-content");
         assert.ok((await headerShop.boundingBox()).y >= 0, "Shop must remain visible after skipping");
-        results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false, sideAlignmentPixels: alignment });
+        results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false, sideAlignmentPixels: alignment, ...film });
         await context.close();
+        console.log(`${name} ${width}x${height}: hybrid motion and navigation passed`);
       }
+
+      await verifyLifecycle(browser, name);
 
       const reduced = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
       const staticPage = await reduced.newPage();
       await staticPage.goto(base, { waitUntil: "networkidle" });
       await staticPage.waitForFunction(() => document.getElementById("home").dataset.fill === "1.000");
-      assert.equal(await staticPage.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), "100");
+      assert.equal(await staticPage.getByRole("progressbar", { name: "Glass story progress", includeHidden: true }).getAttribute("aria-valuenow"), "100");
       assert.equal(await staticPage.locator("#home").evaluate(root => root.offsetHeight === root.firstElementChild.offsetHeight), true, "reduced motion must not require a scroll sequence");
       await staticPage.screenshot({ path: path.join(output, `${name}-reduced-motion.png`) });
       await reduced.close();
