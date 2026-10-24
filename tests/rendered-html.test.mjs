@@ -216,12 +216,13 @@ test("defines search and social metadata for fresh milk delivery", async () => {
   const layout = await readFile(layoutUrl, "utf8");
 
   assert.match(layout, /Fresh Farm Milk Delivery in Jamshedpur/);
-  assert.match(layout, /fresh milk delivery Jamshedpur/);
-  assert.match(layout, /milk home delivery Jamshedpur/);
+  assert.doesNotMatch(layout, /keywords:/);
   assert.match(layout, /openGraph/);
   assert.match(layout, /twitter/);
   assert.match(layout, /canonical/);
-  assert.match(layout, /hero-milk\.png/);
+  assert.match(layout, /og-milk\.jpg/);
+  assert.match(layout, /width: 1200/);
+  assert.match(layout, /height: 630/);
 });
 
 test("loads the shared editorial and interface typography system", async () => {
@@ -283,31 +284,24 @@ test("uses stable profile and home navigation labels", async () => {
 
 test("keeps the landing page focused on milk conversion and trust", async () => {
   const page = await readFile(pageUrl, "utf8");
-
-  assert.match(page, /RisingGlassHero/);
-  assert.doesNotMatch(page, /order-orbit|bottle-stage/);
+  const content = await readFile(new URL("../lib/landing-content.ts", import.meta.url), "utf8");
+  const film = await readFile(new URL("../app/components/landing-film.tsx", import.meta.url), "utf8");
+  assert.match(page, /LandingFilm/);
+  assert.match(film, /open && <RisingGlassHero/);
+  assert.match(film, /ssr: false/);
   assert.match(page, /₹62 per litre/);
-  assert.match(page, /919818804419/);
-  assert.match(page, /20 years operating/);
-  assert.match(page, /500\+ families/);
-  assert.match(page, /1,000 L\+/);
-  assert.match(page, /Choose your week/);
-  assert.match(page, /Choose your bottle/);
+  assert.match(content, /919818804419/);
+  assert.match(page, /value: "20 years"/);
+  assert.match(page, /value: "500\+"/);
+  assert.match(page, /value: "1,000\+ L"/);
   assert.match(page, /Review your plan/);
-  assert.match(page, /glass bottle/i);
-  assert.doesNotMatch(page, /Comparison metrics/);
-  assert.doesNotMatch(page, /Bone-supporting nutrition/);
-  assert.doesNotMatch(page, /Why people believe it/);
-  assert.doesNotMatch(page, /not in a mystery supply chain/);
+  assert.match(content, /PLAN_DELIVERY_COUNT/);
   assert.match(page, /application\/ld\+json/);
-  assert.match(page, /LocalBusiness/);
-  assert.match(page, /Product/);
-  assert.doesNotMatch(page, /AccountLink/);
-  assert.doesNotMatch(page, /supabase\.auth\.getUser\(\)/);
-  assert.doesNotMatch(page, /redirect\("\/sign-in\?next=%2F"\)/);
-  assert.match(page, /href="\/pricing"/);
-  assert.match(page, /href="\/privacy"/);
-  assert.match(page, /href="\/cancellation-refunds"/);
+  for (const type of ["LocalBusiness", "Product", "FAQPage", "Offer"]) assert.ok(page.includes(type));
+  assert.equal((page.match(/<h1 /g) || []).length, 1);
+  assert.ok(page.indexOf('id="farm"') < page.indexOf('<LandingFilm'));
+  assert.doesNotMatch(page, /supabase\.auth|licensed and certification|\[TODO:/);
+  for (const route of ["/pricing", "/shipping", "/contact", "/terms", "/privacy", "/cancellation-refunds"]) assert.ok(page.includes('"' + route + '"'));
 });
 
 test("publishes complete business and policy information", async () => {

@@ -32,13 +32,13 @@ async function ready() {
 
 async function scrollToProgress(page, progress) {
   await page.evaluate(p => {
-    const root = document.getElementById("home");
+    const root = document.getElementById("glass-story");
     const panel = root.firstElementChild;
     const rect = root.getBoundingClientRect();
     const header = parseFloat(getComputedStyle(panel).top) || 0;
     window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight), behavior: "instant" });
   }, progress);
-  await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.progress) - p) < .004, progress);
+  await page.waitForFunction(p => Math.abs(Number(document.getElementById("glass-story").dataset.progress) - p) < .004, progress);
 }
 
 function contrast(foreground, background) {
@@ -113,131 +113,86 @@ async function verifyConnectedPages(browser, name) {
 
 try {
   await ready();
-  const engines = (process.env.HERO_BROWSERS || "chromium").split(",");
-  for (const name of engines) {
+  for (const name of (process.env.HERO_BROWSERS || "chromium").split(",")) {
     const browser = await ({ chromium, webkit })[name].launch({ headless: true });
-    const errors = [];
     try {
-      for (const [width, height] of [[320, 568], [390, 844], [768, 1024], [1440, 960]]) {
-        const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901 });
-        const page = await context.newPage();
-        page.on("pageerror", error => errors.push(error.message));
-        await page.goto(base, { waitUntil: "networkidle" });
-        await page.locator("#home img").evaluateAll(images => Promise.all(images.map(image => image.decode())));
-        assert.equal(await page.locator("h1").count(), 1);
-        assert.equal(await page.locator("#hero-heading").innerText(), "Every glass\nhas a beginning.");
-        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${name} ${width}: horizontal overflow`);
-        const heroBox = await page.locator("#hero-heading").boundingBox();
-        assert.ok(heroBox.x >= 0 && heroBox.x + heroBox.width <= width + 1);
-        assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
-        await page.getByRole("button", { name: "Switch to light mode" }).click();
-        assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
-        await page.reload({ waitUntil: "networkidle" });
-        assert.equal(await page.locator("html").getAttribute("data-theme"), "light", "saved light choice must survive reload");
-        await page.screenshot({ path: path.join(output, `${name}-${width}-light.png`) });
-        await page.getByRole("button", { name: "Switch to dark mode" }).click();
-        const initial = await page.locator("#home").getAttribute("data-fill");
-        assert.equal(initial, "0.000");
-        const tops = [];
-        let previousFill = 0;
-        for (const p of [.12, .3, .48, .57, .66, .86, .99, 1]) {
-          await scrollToProgress(page, p);
-          const state = await page.locator("#home").evaluate(root => ({ fill: Number(root.dataset.fill), top: root.firstElementChild.getBoundingClientRect().top }));
-          assert.ok(state.fill >= previousFill);
-          previousFill = state.fill;
-          if (p < .86) tops.push(state.top);
-          if (p === .66 || p === .86 || p === .99) {
-            const expected = p === .66 ? "side" : p === .99 ? "top" : "macro";
-            assert.equal(await page.locator("#home").getAttribute("data-shot"), expected);
-          }
-          if (width === 390 && [.3, .57, .66, .86, .99, 1].includes(p)) await page.screenshot({ path: path.join(output, `${name}-mobile-${p}.png`) });
+      for (const [width,height] of [[320,568],[360,740],[390,844],[768,1024],[1440,960]]) {
+        const context = await browser.newContext({viewport:{width,height},hasTouch:width<901});
+        const page = await context.newPage(); const errors=[];const requests=[];
+        page.on("pageerror",e=>errors.push(e.message));page.on("request",r=>requests.push(r.url()));
+        await page.goto(base,{waitUntil:"networkidle"});await page.evaluate(()=>document.fonts.ready);
+        assert.equal(await page.locator('h1').count(),1);
+        assert.match(await page.locator('h1').innerText(),/Farm-fresh milk/);
+        assert.equal(await page.locator('#glass-story').count(),0);
+        assert.equal(requests.some(url=>/coffee-(front|side|top|macro)|glass-empty/.test(decodeURIComponent(url))),false,'optional film must not download before opening');
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        const heroCTA=page.locator('[data-conversion="hero_cta_click"]');
+        const box=await heroCTA.boundingBox();assert.ok(box.y+box.height<height,'plan CTA fits first screen');
+        assert.equal(await heroCTA.getAttribute('href'),'/milk');
+        assert.match(await page.locator('#home').innerText(),/Jamshedpur/);
+        assert.match(await page.locator('#home').innerText(),/₹62 per litre/);
+        assert.equal(await page.locator('[lang="hi"]').count(),1);
+        assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
+        for (const theme of ['dark','light']) {
+          if(theme==='light')await page.getByRole('button',{name:'Switch to light mode'}).click();
+          await page.screenshot({path:path.join(output,`${name}-${width}-${theme}.png`)});
+          const colors=await page.evaluate(()=>{const s=getComputedStyle(document.documentElement);return {ink:s.getPropertyValue('--hero-ink'),muted:s.getPropertyValue('--hero-muted'),paper:s.getPropertyValue('--hero-paper')};});
+          assert.ok(contrast(colors.ink,colors.paper)>=4.5);assert.ok(contrast(colors.muted,colors.paper)>=4.5);
         }
-        await scrollToProgress(page, .89);
-        assert.equal(await page.locator("header").isVisible(), false, "macro frame hides navigation");
-        assert.equal(await page.locator("#hero-heading").isVisible(), false, "macro frame hides copy");
-        assert.equal(await page.locator(".whatsapp-float").isVisible(), false, "macro frame hides floating controls");
-        await page.screenshot({ path: path.join(output, `${name}-${width}-full-screen-macro.png`) });
-        await scrollToProgress(page, .99);
-        assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top', 'closing frame is the supplied overhead composition');
-        assert.equal(await page.locator('header').isVisible(), true, 'navigation returns for closing shot');
-        assert.equal(await page.locator('#hero-heading').isVisible(), true, 'copy returns for closing shot');
-        assert.equal(await page.locator('.whatsapp-float').isVisible(), true, 'contact action returns for closing shot');
-        await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
-        await page.evaluate(() => { const r=document.querySelector('#home').getBoundingClientRect(); window.scrollTo({top:scrollY+r.bottom-50,behavior:'instant'}); });
-        await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false');
-        assert.equal(await page.locator("header").isVisible(), true, "site resumes after final frame");
-        assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, "glass panel must stay stationary while filling");
-        await scrollToProgress(page, .2);
-        assert.ok(Number(await page.locator("#home").getAttribute("data-fill")) < .4, "scrolling back must lower the liquid");
-        await scrollToProgress(page, 0);
-        await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
-
-        const headerShop = page.locator("header").getByRole("link", { name: /^Shop(?: M'ma)?$/ }).first();
-        assert.equal(await headerShop.getAttribute("href"), "/milk");
-        if (width < 901) {
-          const toggle = page.getByRole("button", { name: "Open navigation menu" });
-          await toggle.click();
-          const dialog = page.getByRole("dialog");
-          assert.equal(await dialog.isVisible(), true);
-          assert.equal(await dialog.getByRole("navigation").getByRole("link").count(), 5);
-          for (let i = 0; i < 10; i++) {
-            await page.keyboard.press("Tab");
-            assert.equal(await page.evaluate(() => !!document.activeElement.closest("dialog")), true, "focus escaped modal");
-          }
-          await page.keyboard.press("Escape");
-          assert.equal(await dialog.isVisible(), false);
-          assert.equal(await toggle.evaluate(element => document.activeElement === element), true);
-          await toggle.click();
-          await page.screenshot({ path: path.join(output, `${name}-${width}-menu.png`) });
-          await page.mouse.click(4, 180);
-          assert.equal(await dialog.isVisible(), false, "backdrop must close navigation");
-          await toggle.click();
-          await dialog.getByRole("link", { name: "Farm", exact: false }).click();
-          await page.waitForFunction(() => location.hash === "#farm");
-          assert.equal(await dialog.isVisible(), false);
-          await page.waitForFunction(() => document.querySelector('nav a[href="#farm"][aria-current="location"]'));
-          await toggle.click();
-          assert.equal(await dialog.getByRole("link", { name: /Farm/ }).getAttribute("aria-current"), "location");
-          await dialog.getByRole("link", { name: /Home/ }).click();
-          await page.waitForFunction(() => document.getElementById("home").dataset.progress === "0.000");
-        } else {
-          assert.equal(await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link").count(), 5);
+        await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('html').getAttribute('data-theme'),'light');
+        await page.getByRole('button',{name:'Switch to dark mode'}).click();
+        if(width<901){
+          const toggle=page.getByRole('button',{name:'Open navigation menu'});await toggle.click();const dialog=page.getByRole('dialog');
+          assert.equal(await dialog.isVisible(),true);assert.equal(await dialog.getByRole('navigation').getByRole('link').count(),5);
+          assert.equal(await dialog.getByRole('link',{name:/Plans/}).getAttribute('href'),'/milk');
+          assert.equal(await dialog.getByRole('link',{name:/Sign in/}).getAttribute('href'),'/sign-in');
+          for(let i=0;i<10;i++){await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>!!document.activeElement.closest('dialog')),true);}
+          await page.screenshot({path:path.join(output,`${name}-${width}-menu.png`)});
+          await page.keyboard.press('Escape');assert.equal(await dialog.isVisible(),false);assert.equal(await toggle.evaluate(e=>e===document.activeElement),true);
+          await toggle.click();await page.mouse.click(4,180);assert.equal(await dialog.isVisible(),false);
+          await toggle.click();await dialog.getByRole('link',{name:/Our Story/}).click();await page.waitForFunction(()=>location.hash==='#about');
+          await page.waitForFunction(()=>document.querySelector('nav a[href="#about"][aria-current]'));
+          await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
         }
-        await page.goto(base, { waitUntil: "networkidle" });
-        await page.getByRole("link", { name: /Skip introduction/ }).click();
-        await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false' && document.querySelector('#site-content').getBoundingClientRect().top < 150);
-        assert.equal(await page.evaluate(() => location.hash), "#site-content");
-        assert.ok((await headerShop.boundingBox()).y >= 0, "Shop must remain visible after skipping");
-        results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false });
-        await context.close();
+        if(width<=720){const bar=page.getByRole('navigation',{name:'Quick milk plan actions'});assert.equal(await bar.isVisible(),true);const b=await bar.boundingBox();assert.ok(b.y+b.height<=height+1);}
+        const faq=page.locator('details').first();await faq.locator('summary').focus();await page.keyboard.press('Enter');assert.equal(await faq.getAttribute('open'),'');await page.keyboard.press('Enter');
+        const schema=JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
+        const questions=schema['@graph'].find(item=>item['@type']==='FAQPage').mainEntity;
+        assert.equal(questions.length,await page.locator('details').count());
+        for(let i=0;i<questions.length;i++){assert.equal((await page.locator('details').nth(i).locator('summary').innerText()).replace(/\s*\+$/,''),questions[i].name);assert.equal(await page.locator('details').nth(i).locator('p').textContent(),questions[i].acceptedAnswer.text);}
+        await page.evaluate(()=>{window.conversions=[];window.addEventListener('mma:conversion',e=>window.conversions.push(e.detail));document.addEventListener('click',e=>{if(e.target.closest('[data-conversion]'))e.preventDefault();},{capture:true});});
+        await heroCTA.click();assert.ok((await page.evaluate(()=>window.conversions)).some(e=>e.event==='hero_cta_click'));
+        assert.equal((await page.evaluate(()=>window.conversions)).some(e=>e.event==='plan_builder_start'),false);
+        await page.getByRole('button',{name:'Watch the glass story'}).click();await page.locator('#glass-story').waitFor();
+        await page.locator('#glass-story img').evaluateAll(images=>Promise.all(images.map(img=>img.decode())));
+        assert.equal(await page.locator('h1').count(),1);
+        assert.equal(await page.locator('#glass-story a').first().innerText(),'Skip introduction');
+        let previous=0;const tops=[];
+        for(const p of [.12,.3,.48,.57,.66,.86,.99,1]){
+          await scrollToProgress(page,p);const state=await page.locator('#glass-story').evaluate(root=>({fill:Number(root.dataset.fill),top:root.firstElementChild.getBoundingClientRect().top}));assert.ok(state.fill>=previous);previous=state.fill;if(width<=720)assert.equal(await page.getByRole('navigation',{name:'Quick milk plan actions'}).isVisible(),false,'film controls must stay unobstructed');if(p<.86)tops.push(state.top);
+          if(p===.66||p===.86||p===.99)assert.equal(await page.locator('#glass-story').getAttribute('data-shot'),p===.66?'side':p===.86?'macro':'top');
+          if([360,390,1440].includes(width)&&[.57,.66,.86,.99].includes(p))await page.screenshot({path:path.join(output,`${name}-${width}-frame-${p}.png`)});
+        }
+        assert.ok(Math.max(...tops)-Math.min(...tops)<2,'panel stays pinned');
+        // Compare photographed silhouette bounds after the uniform side-view calibration.
+        const alignment=await page.locator('#glass-story').evaluate(root=>{
+          const front=root.querySelector('img[src*="coffee-front"]');const side=root.querySelector('img[src*="coffee-side"]');const f=front.getBoundingClientRect();const s=side.getBoundingClientRect();
+          return {rim:Math.abs((f.y+f.height*139/1200)-(s.y+s.height*164/1200)),base:Math.abs((f.y+f.height*1074/1200)-(s.y+s.height*1020/1200))};
+        });assert.ok(alignment.rim<2&&alignment.base<2,JSON.stringify(alignment));
+        await scrollToProgress(page,.86);assert.equal(await page.locator('header').isVisible(),false);assert.equal(await page.locator('#glass-story-heading').isVisible(),false);
+        if(width<=720)assert.equal(await page.getByRole('navigation',{name:'Quick milk plan actions'}).isVisible(),false);
+        await scrollToProgress(page,.99);assert.equal(await page.locator('header').isVisible(),true);
+        await scrollToProgress(page,.2);assert.ok(Number(await page.locator('#glass-story').getAttribute('data-fill'))<.4);
+        await scrollToProgress(page,0);await page.getByRole('link',{name:'Skip introduction',exact:true}).click();await page.waitForFunction(()=>location.hash==='#after-glass-story'&&document.documentElement.dataset.heroImmersive==='false');
+        await page.getByRole('button',{name:'Close the glass story'}).click();assert.equal(await page.locator('#glass-story').count(),0);assert.equal(await page.locator('html').getAttribute('data-hero-immersive'),null);
+        assert.equal(requests.some(url=>/[?&]w=3840/.test(url)),false);
+        assert.deepEqual(errors,[]);results.push({engine:name,width,height,film:'optional, forward/reverse, skip, cleanup',sideAlignmentPixels:alignment,runtimeErrors:errors.length});await context.close();
       }
-
-      const reduced = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
-      const staticPage = await reduced.newPage();
-      await staticPage.goto(base, { waitUntil: "networkidle" });
-      await staticPage.waitForFunction(() => document.getElementById("home").dataset.fill === "1.000");
-      assert.equal(await staticPage.locator("#home").evaluate(root => root.offsetHeight === root.firstElementChild.offsetHeight), true, "reduced motion must not require a scroll sequence");
-      await staticPage.screenshot({ path: path.join(output, `${name}-reduced-motion.png`) });
-      await reduced.close();
-
-      // Local fixture checks only: verify existing anonymous auth gates without customer data or writes.
-      if (!process.env.BASE_URL) {
-        const anonymous = await browser.newPage();
-        const shop = await anonymous.goto(`${base}/milk`);
-        assert.equal(shop.status(), 200);
-        assert.match(anonymous.url(), /\/sign-in\?next=%2Fmilk/);
-        const account = await anonymous.goto(`${base}/account`);
-        assert.equal(account.status(), 200);
-        assert.match(anonymous.url(), /\/sign-in$/);
-        await anonymous.close();
-      }
-      await verifyConnectedPages(browser, name);
-      assert.deepEqual(errors, [], `${name}: browser runtime errors`);
-      results.push({ engine: name, reducedMotion: "static", runtimeErrors: errors.length });
-    } finally { await browser.close(); }
+      const reduced=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});const p=await reduced.newPage();await p.goto(base,{waitUntil:'networkidle'});await p.getByRole('button',{name:'Watch the glass story'}).click();await p.waitForFunction(()=>document.getElementById('glass-story')?.dataset.fill==='1.000');assert.equal(await p.locator('#glass-story').evaluate(r=>r.offsetHeight===r.firstElementChild.offsetHeight),true);await reduced.close();
+      const nojs=await browser.newContext({viewport:{width:390,height:844},javaScriptEnabled:false});const n=await nojs.newPage();await n.goto(base);assert.equal(await n.locator('h1').count(),1);assert.equal(await n.locator('[data-conversion="hero_cta_click"]').getAttribute('href'),'/milk');await n.locator('summary').first().click();assert.equal(await n.locator('details').first().getAttribute('open'),'');await nojs.close();
+      if(!process.env.BASE_URL){const anonymous=await browser.newPage();await anonymous.goto(base+'/milk');assert.match(anonymous.url(),/\/sign-in\?next=%2Fmilk/);await anonymous.close();}
+      await verifyConnectedPages(browser,name);
+    }finally{await browser.close();}
   }
-  await writeFile(path.join(output, "results.json"), JSON.stringify(results, null, 2));
-  console.log(JSON.stringify(results, null, 2));
-} finally {
-  server?.kill("SIGTERM");
-}
+  await writeFile(path.join(output,'results.json'),JSON.stringify(results,null,2));console.log(JSON.stringify(results.map(r=>({...r,measured:undefined})),null,2));
+}finally{server?.kill('SIGTERM');}
