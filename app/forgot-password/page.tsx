@@ -46,6 +46,7 @@ export default async function ForgotPasswordPage({
           <label>
             Email address
             <input
+              className={styles.textInput}
               autoComplete="email"
               inputMode="email"
               name="email"

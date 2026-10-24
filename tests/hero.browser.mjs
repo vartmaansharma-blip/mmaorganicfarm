@@ -108,6 +108,13 @@ async function verifyConnectedPages(browser, name) {
       assert.equal(face(state.bodyFont), face(state.interfaceContract), `${route} shares the interface face`);
       assert.ok(contrast(state.headingColor, state.headingBackground) >= 4.5, `${route} heading contrast`);
       if (route === '/sign-in') {
+        const email = page.getByLabel('Email address', { exact: true });
+        await email.fill('visual-fixture@example.invalid');
+        await page.getByRole('button', { name: /Switch to .* mode/ }).click();
+        assert.equal(await email.inputValue(), 'visual-fixture@example.invalid', 'theme changes preserve form input');
+        await page.getByRole('button', { name: /Switch to .* mode/ }).click();
+        const field = await email.evaluate(element => ({ size: parseFloat(getComputedStyle(element).fontSize), height: element.getBoundingClientRect().height }));
+        assert.ok(field.size >= 16 && field.height >= 48, 'customer fields stay readable and comfortable on mobile');
         const pairs = [['text','page'],['muted','page'],['muted','surface'],['on-action','action'],['on-selected','selected'],['success-text','success-bg'],['error-text','error-bg'],['warning-text','warning-bg']];
         for (const [fg,bg] of pairs) {
           const ratio = contrast(state.tokens[fg], state.tokens[bg]);
@@ -132,7 +139,7 @@ try {
     const browser = await ({ chromium, webkit })[name].launch({ headless: true });
     const errors = [];
     try {
-      for (const [width, height] of [[320, 568], [360, 740], [390, 844], [768, 1024], [1200, 630], [1440, 960]]) {
+      for (const [width, height] of [[320, 568], [360, 740], [375, 812], [390, 844], [430, 932], [768, 1024], [1024, 768], [1200, 630], [1440, 960]]) {
         const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901 });
         const page = await context.newPage();
         page.on("pageerror", error => errors.push(error.message));
@@ -198,6 +205,15 @@ try {
         assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, "glass panel must stay stationary while filling");
         await scrollToProgress(page, .2);
         assert.ok(Number(await page.locator("#home").getAttribute("data-fill")) < .4, "scrolling back must lower the liquid");
+        if (width === 390) {
+          await page.waitForFunction(() => document.getElementById('home').dataset.progress === '0.200');
+          const fill = await page.locator('#home').getAttribute('data-fill');
+          const position = await page.evaluate(() => scrollY);
+          await page.getByRole('button', { name: 'Switch to light mode' }).click();
+          assert.ok(Math.abs(Number(await page.locator('#home').getAttribute('data-fill')) - Number(fill)) < .004, 'theme change preserves the settled fill');
+          assert.equal(await page.evaluate(() => scrollY), position, 'theme change does not reset hero scroll');
+          await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+        }
         if (width === 390 || width === 1440) {
           for (const pause of [.525, .62, .78, .93]) {
             await scrollToProgress(page, pause);

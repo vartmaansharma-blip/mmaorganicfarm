@@ -634,6 +634,7 @@ export function MilkPlanBuilder({
                   <small>Earliest delivery is tomorrow.</small>
                 </span>
                 <input
+                  className={styles.dateInput}
                   min={minimumStartDate}
                   type="date"
                   value={startDate}

@@ -219,6 +219,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <label>
             <span className={styles.fieldLabel}>Delivery address</span>
             <textarea
+              className={styles.addressField}
               aria-describedby="address-help"
               autoComplete="street-address"
               defaultValue={profile?.address_line ?? ""}
@@ -268,7 +269,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             <input name="bottle" type="hidden" value="none" />
           )}
 
-          <button type="submit">
+          <button className={styles.submitButton} type="submit">
             Save &amp; review order <span>→</span>
           </button>
           <p className={styles.note}>

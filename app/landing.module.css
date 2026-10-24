@@ -14,7 +14,7 @@
 .content :global(.closing-section .eyebrow) { color: var(--green); }
 .content :global(.ticker) { color: #f7f3e8; background: var(--green); }
 .content :global(.site-footer) { color: #f5f0e4; background: #1e231d; }
-.content :global(.button) { transition: transform 140ms ease, background-color 160ms ease; }
+.content :global(.button) { border-radius: var(--ui-radius-control); transition: transform 140ms ease, background-color 160ms ease; }
 .content :global(.button:hover) { transform: translateY(-1px); box-shadow: none; }
 .content :global(.button:active) { transform: scale(.98); }
 .content :global(.button:focus-visible) { outline: 2px solid var(--ui-focus); outline-offset: 4px; }

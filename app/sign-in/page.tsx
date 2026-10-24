@@ -90,6 +90,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               <label>
                 Full name
                 <input
+                  className={styles.textInput}
                   autoComplete="name"
                   name="fullName"
                   placeholder="Your name"
@@ -101,6 +102,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             <label>
               Email address
               <input
+                className={styles.textInput}
                 autoComplete="email"
                 inputMode="email"
                 name="email"
@@ -112,6 +114,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             <label>
               Password
               <input
+                className={styles.textInput}
                 autoComplete={isSignUp ? "new-password" : "current-password"}
                 minLength={8}
                 name="password"
