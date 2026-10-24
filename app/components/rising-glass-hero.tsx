@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
 import { dampProgress, heroFrame, heroProgress, liquidGeometry, macroPresentation } from "@/lib/hero-motion";
+import { PRIMARY_CTA_LABEL } from "@/lib/landing-content";
 import styles from "./rising-glass-hero.module.css";
 
 export function RisingGlassHero() {
@@ -37,6 +38,7 @@ export function RisingGlassHero() {
       root.style.setProperty("--macro-opacity", String(curtain.opacity));
       root.style.setProperty("--macro-offset", `${curtain.offsetY}px`);
       root.dataset.immersive = String(curtain.immersive);
+      document.documentElement.dataset.heroActive = String(rect.top <= headerHeight + 1 && rect.bottom > headerHeight + 22);
       root.dataset.macroVisible = String(curtain.opacity > .001);
       document.documentElement.dataset.heroImmersive = String(curtain.immersive);
       document.documentElement.style.setProperty("--hero-chrome-opacity", String(1 - curtain.opacity));
@@ -65,6 +67,7 @@ export function RisingGlassHero() {
     motion.addEventListener("change", reset);
     return () => {
       delete document.documentElement.dataset.heroImmersive;
+      delete document.documentElement.dataset.heroActive;
       document.documentElement.style.removeProperty("--hero-chrome-opacity");
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule);
@@ -75,22 +78,22 @@ export function RisingGlassHero() {
   }, []);
 
   return (
-    <section ref={section} className={styles.sequence} id="home" aria-labelledby="hero-heading">
+    <section ref={section} className={styles.sequence} id="glass-story" aria-labelledby="glass-story-heading">
       <div className={styles.panel}>
+        <a className={styles.skip} href="#after-glass-story">Skip introduction</a>
         <div className={styles.copy}>
           <p className={styles.label}>M&apos;MA ORGANIC FARM</p>
           <span className={styles.rule} aria-hidden="true" />
-          <h1 id="hero-heading">Every glass<br />has a beginning<span className={styles.period} aria-hidden="true">.</span></h1>
+          <h2 id="glass-story-heading">Every glass<br />has a beginning<span className={styles.period} aria-hidden="true">.</span></h2>
           <p className={styles.description}>Discover the farm behind<br className={styles.desktopBreak} /> your everyday milk.</p>
           <div className={styles.actions}>
-            <Link className={styles.primary} href="/milk" prefetch={false}>Shop M&apos;ma <span aria-hidden="true">→</span></Link>
-            <a className={styles.secondary} href="#farm">Explore the Farm</a>
+            <Link className={styles.primary} href="/milk" prefetch={false}>{PRIMARY_CTA_LABEL}</Link>
           </div>
         </div>
 
         <div className={styles.visual}>
           <div className={styles.glass} role="img" aria-label="A traditional grooved glass fills with milk, reveals coffee ribbons, then reveals side and top-down views as you scroll">
-            <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={1024} height={1536} priority sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
             <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
               <defs>
                 <clipPath id={maskId} clipPathUnits="objectBoundingBox">
@@ -99,19 +102,19 @@ export function RisingGlassHero() {
               </defs>
             </svg>
             <div className={styles.milk} style={{ clipPath: `url(#${maskId})` }}>
-              <Image src="/hero/glass-milk.webp" alt="" width={1024} height={1536} priority sizes="(max-width: 720px) 240px, 38vw" />
+              <Image src="/hero/glass-milk.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
             </div>
             <span className={styles.surface} />
-            <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={1024} height={1536} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.side} src="/hero/coffee-side.webp" alt="" width={1024} height={1536} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={1024} height={1536} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
+            <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.side} src="/hero/coffee-side.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
           </div>
         </div>
 
         <div className={styles.macro} aria-hidden="true">
           <Image src="/hero/coffee-macro.webp" alt="" fill loading="eager" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" />
         </div>
-        <a ref={immersiveExit} className={styles.immersiveExit} href="#site-content" tabIndex={-1}>Continue to the site</a>
+        <a ref={immersiveExit} className={styles.immersiveExit} href="#after-glass-story" tabIndex={-1}>Continue to delivery information</a>
 
         <ol className={styles.chapters} aria-label="From the glass to your home">
           <li className={styles.current}><span>01</span><small>The glass</small></li>
@@ -119,12 +122,11 @@ export function RisingGlassHero() {
           <li><a href="#milk"><span>03</span><small>Your home</small></a></li>
         </ol>
 
-        <a className={styles.scroll} href="#site-content">
+        <a className={styles.scroll} href="#after-glass-story">
           <span className={styles.mouse} aria-hidden="true"><i /></span>
           <span>Scroll to fill<small>Discover the story</small></span>
           <span className={styles.down} aria-hidden="true">↓</span>
         </a>
-        <a className={styles.skip} href="#site-content">Skip introduction <span aria-hidden="true">↘</span></a>
       </div>
     </section>
   );

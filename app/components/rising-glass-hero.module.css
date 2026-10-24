@@ -19,7 +19,7 @@
 .copy { z-index: 2; padding-bottom: 20px; }
 .label { margin: 0; font-size: clamp(12px, 1.1vw, 16px); letter-spacing: .12em; font-weight: 600; }
 .rule { display: block; width: 45px; height: 3px; background: var(--hero-yellow); margin: 20px 0 28px; }
-.copy h1 { max-width: none; margin: 0; font-family: var(--font-editorial); font-weight: 500; font-size: clamp(56px, 5.6vw, 96px); letter-spacing: -.065em; line-height: 1.02; text-wrap: balance; }
+.copy h2 { max-width: none; margin: 0; font-family: var(--font-editorial); font-weight: 500; font-size: clamp(56px, 5.6vw, 96px); letter-spacing: -.065em; line-height: 1.02; text-wrap: balance; }
 .period { color: #edaf00; }
 .description { margin: 26px 0 32px; max-width: 30ch; font-size: clamp(17px, 1.6vw, 24px); line-height: 1.4; letter-spacing: -.025em; color: var(--hero-muted); }
 .actions { display: flex; flex-wrap: wrap; gap: 14px; }
@@ -57,7 +57,7 @@
 @media (max-width: 1100px) {
   .panel { grid-template-columns: 1.15fr 1fr; gap: 4px; }
   .chapters { display: none; }
-  .copy h1 { font-size: clamp(50px, 6.3vw, 72px); }
+  .copy h2 { font-size: clamp(50px, 6.3vw, 72px); }
   .primary, .secondary { min-height: 50px; padding-inline: 22px; font-size: 14px; }
 }
 @media (max-width: 720px) {
@@ -66,7 +66,7 @@
   .copy { padding: 0; }
   .label { font-size: 11px; }
   .rule { margin: 12px 0 18px; width: 34px; }
-  .copy h1 { font-size: clamp(40px, 10.8vw, 64px); letter-spacing: -.06em; line-height: 1.02; text-wrap: initial; }
+  .copy h2 { font-size: clamp(40px, 10.8vw, 64px); letter-spacing: -.06em; line-height: 1.02; text-wrap: initial; }
   .description { margin: 16px 0 18px; font-size: 16px; max-width: 32ch; }
   .desktopBreak { display: none; }
   .actions { flex-wrap: nowrap; gap: 10px; }
@@ -90,7 +90,7 @@
 @media (scripting: none) { .sequence { height: auto; --fill-progress: 1; } .panel { position: relative; top: 0; } }
 
 .coffee { position: absolute; inset: 0; opacity: calc(var(--coffee-progress) * (1 - var(--angle-opacity))); }
-.side { position: absolute; inset: 0; opacity: var(--side-opacity); }
+.side { position: absolute; inset: 0; opacity: var(--side-opacity); transform-origin: 0 0; transform: translate(-4.955827%, -3.344626%) scale(1.09229); }
 .top { position: absolute; inset: 0; opacity: var(--top-opacity); transform: scale(1.12); }
 .macro { position: fixed; inset: 0; z-index: 60; width: 100vw; height: 100dvh; opacity: var(--macro-opacity); transform: translateY(var(--macro-offset)); pointer-events: none; }
 .macro img { object-fit: cover; }
@@ -104,7 +104,7 @@
 @media (max-width: 720px) and (max-height: 700px) {
   .panel { min-height: calc(100svh - var(--home-header-height)); padding-top: 16px; padding-bottom: 52px; }
   .rule { margin: 9px 0 12px; }
-  .copy h1 { font-size: clamp(34px, 9.8vw, 48px); }
+  .copy h2 { font-size: clamp(34px, 9.8vw, 48px); }
   .description { margin: 12px 0; font-size: 14px; }
   .primary, .secondary { padding-inline: 16px; min-height: 44px; font-size: 12px; }
   .glass { height: min(29svh, 195px); }

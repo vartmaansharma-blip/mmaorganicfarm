@@ -3,15 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { PRIMARY_CTA_LABEL } from "@/lib/landing-content";
 import { ThemeToggle } from "./theme-toggle";
 import styles from "./capsule-navigation.module.css";
 
 const links = [
   { label: "Home", href: "#home" },
-  { label: "Shop", href: "/milk" },
+  { label: "Plans", href: "/milk" },
   { label: "Farm", href: "#farm" },
   { label: "Our Story", href: "#about" },
-  { label: "My M’ma", href: "/account" },
+  { label: "Sign in", href: "/sign-in" },
 ];
 
 export function CapsuleNavigation() {
@@ -39,7 +40,7 @@ export function CapsuleNavigation() {
       const farm = document.getElementById("farm");
       const story = document.getElementById("about");
       const threshold = window.innerHeight * 0.45;
-      setActive(farm && farm.getBoundingClientRect().top < threshold ? "#farm" : story && story.getBoundingClientRect().top < threshold ? "#about" : "#home");
+      setActive(story && story.getBoundingClientRect().top < threshold ? "#about" : farm && farm.getBoundingClientRect().top < threshold ? "#farm" : "#home");
     };
     update();
     window.addEventListener("scroll", update, { passive: true });
@@ -49,14 +50,14 @@ export function CapsuleNavigation() {
   return (
     <header className={styles.header}>
       <a className={styles.brand} href="#home" aria-label="M'ma Organic Farm home">
-        <Image src="/mma-logo.png" alt="M'ma Organic Farm" width={362} height={301} priority />
+        <Image src="/mma-logo.png" alt="M'ma Organic Farm" width={362} height={301} />
       </a>
       <nav className={styles.capsule} aria-label="Primary navigation">
         {links.map(({ label, href }) => (
           <Link key={href} href={href} prefetch={false} aria-current={href === active ? "location" : undefined}>{label}</Link>
         ))}
       </nav>
-      <Link className={styles.shop} href="/milk" prefetch={false}><span className={styles.desktopShop}>Shop M&apos;ma</span><span className={styles.mobileShop}>Shop</span> <span aria-hidden="true">→</span></Link>
+      <Link className={styles.shop} href="/milk" prefetch={false} data-conversion="plan_cta_click" data-location="header">Plans</Link>
       <ThemeToggle />
       <button
         ref={menuToggle}
@@ -98,13 +99,13 @@ export function CapsuleNavigation() {
         <nav aria-label="Mobile navigation" className={styles.drawerLinks}>
           {links.map(({ label, href }, index) => (
             <Link key={href} href={href} prefetch={false} aria-current={href === active ? "location" : undefined} onClick={() => menu.current?.close()}>
-              <small aria-hidden="true">0{index + 1}</small><span>{label}</span><span aria-hidden="true">↗</span>
+              <small aria-hidden="true">0{index + 1}</small><span>{label}</span>
             </Link>
           ))}
         </nav>
         <div className={styles.drawerFooter}>
-          <p>Discover the farm behind<br />your everyday milk.</p>
-          <Link href="/milk" prefetch={false} onClick={() => menu.current?.close()}>Shop M&apos;ma <span aria-hidden="true">→</span></Link>
+          <p>Milk plans for Jamshedpur homes.</p>
+          <Link href="/milk" prefetch={false} data-conversion="plan_cta_click" data-location="mobile_menu" onClick={() => menu.current?.close()}>{PRIMARY_CTA_LABEL}</Link>
         </div>
       </dialog>
       <noscript>

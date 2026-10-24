@@ -31,7 +31,7 @@
   .shop { padding-inline: 18px; gap: 12px; }
 }
 /* Mobile uses a dedicated modal navigation, keeping one clear Shop action. */
-.menuButton, .mobileShop { display: none; }
+.menuButton { display: none; }
 .drawer { border: 0; padding: 24px; width: min(420px, 90vw); height: 100dvh; max-height: none; max-width: none; margin: 0 0 0 auto; background: var(--hero-paper); color: var(--hero-ink); }
 .drawer[open] { display: flex; flex-direction: column; animation: drawer-enter 220ms ease-out; }
 .drawer::backdrop { background: rgb(41 27 15 / .25); }
@@ -40,7 +40,7 @@
 .drawerHeader button { display: flex; align-items: center; gap: 12px; border: 0; background: transparent; color: inherit; min-height: 44px; padding: 8px; font-size: 12px; cursor: pointer; }
 .drawerHeader button span { font-size: 28px; font-weight: 400; }
 .drawerLinks { display: grid; margin-top: 36px; }
-.drawerLinks a { display: grid; grid-template-columns: 28px 1fr 24px; align-items: center; gap: 12px; min-height: 72px; padding: 12px 8px; border-bottom: 1px solid var(--hero-line); font-size: 23px; letter-spacing: -.025em; }
+.drawerLinks a { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 12px; min-height: 72px; padding: 12px 8px; border-bottom: 1px solid var(--hero-line); font-size: 23px; letter-spacing: -.025em; }
 .drawerLinks a small { font-size: 11px; color: var(--hero-muted); }
 .drawerLinks a[aria-current] { background: var(--hero-active); border-radius: 10px; border-bottom-color: transparent; }
 .drawerLinks a > span:last-child { font-size: 18px; }
@@ -55,8 +55,7 @@
   .header { grid-template-columns: 1fr auto auto auto; min-height: var(--home-header-height); padding-block: 10px; gap: 8px; }
   .brand { width: 68px; }
   .shop { min-height: 44px; padding-inline: 16px; gap: 12px; font-size: 14px; }
-  .desktopShop, .capsule { display: none; }
-  .mobileShop { display: inline; }
+  .capsule { display: none; }
   .menuButton { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border: 1px solid var(--hero-line); border-radius: 50%; color: inherit; background: transparent; cursor: pointer; }
   .menuButton > span { display: grid; gap: 5px; width: 17px; }
   .menuButton i { display: block; height: 1.5px; background: currentColor; }

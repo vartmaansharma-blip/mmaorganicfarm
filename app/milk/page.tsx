@@ -1,3 +1,4 @@
+import { PlanBuilderStartTracking } from "@/app/components/landing-conversion-tracking";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -107,6 +108,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
 
   return (
     <main className={styles.page}>
+      <PlanBuilderStartTracking />
       <header className={styles.header}>
         <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
