@@ -55,3 +55,7 @@ Covered: authentication/recovery, existing `/milk` builder, delivery details, re
 - `npm run test:customer-ui`: local-only fixtures exercise the real client milk builder and unready checkout control, with representative protected-page markup using the actual scoped CSS. Covers seven widths, both engines/themes, whole-litre order URL, selected products/date/quantity preservation, touch targets and overflow.
 
 The fixture uses Next image/link adapters and synthetic data. It is not a deployed route, an authentication bypass, a real customer record or authenticated checkout acceptance. Authenticated server-rendered account/order/calendar content and successful payments still need separate permissioned acceptance coverage. No customer or calendar writes are made by these tests.
+
+## Before/after screenshots
+
+The [versioned screenshot index](screenshots/customer-system/README.md) includes real sign-in pages in both themes at 390px and 1440px. The before screenshots are the current production baseline; after screenshots are the candidate optimized Next build. Synthetic protected-page fixtures are kept separately in the delivery evidence.
