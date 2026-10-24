@@ -81,7 +81,9 @@ async function verifyConnectedPages(browser, name) {
       await page.goto(base + route, { waitUntil: 'networkidle' });
       await page.evaluate(() => document.fonts.ready);
       assert.equal(await page.locator('html').getAttribute('data-theme'), theme, `${route} retains theme`);
-      assert.equal(await page.getByRole('button', { name: `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` }).count(), 1);
+      const focusedAuth=["/sign-in","/forgot-password","/reset-password"].includes(route);
+      assert.equal(await page.getByRole('button', { name: `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` }).count(), focusedAuth?0:1);
+      assert.equal(await page.getByRole("button",{name:"Open navigation menu"}).count(),focusedAuth?0:1);
       const state = await page.evaluate(() => {
         const style = getComputedStyle(document.documentElement);
         const bodyStyle = getComputedStyle(document.body);
@@ -108,6 +110,11 @@ async function verifyConnectedPages(browser, name) {
       assert.equal(face(state.bodyFont), face(state.interfaceContract), `${route} shares the interface face`);
       assert.ok(contrast(state.headingColor, state.headingBackground) >= 4.5, `${route} heading contrast`);
       if (route === '/sign-in') {
+        const email = page.getByLabel('Email address', { exact: true });
+        await email.fill('visual-fixture@example.invalid');
+        assert.equal(await email.inputValue(), 'visual-fixture@example.invalid');
+        const field = await email.evaluate(element => ({ size: parseFloat(getComputedStyle(element).fontSize), height: element.getBoundingClientRect().height }));
+        assert.ok(field.size >= 16 && field.height >= 48, 'customer fields stay readable and comfortable on mobile');
         const pairs = [['text','page'],['muted','page'],['muted','surface'],['on-action','action'],['on-selected','selected'],['success-text','success-bg'],['error-text','error-bg'],['warning-text','warning-bg']];
         for (const [fg,bg] of pairs) {
           const ratio = contrast(state.tokens[fg], state.tokens[bg]);
@@ -132,7 +139,7 @@ try {
     const browser = await ({ chromium, webkit })[name].launch({ headless: true });
     const errors = [];
     try {
-      for (const [width, height] of [[320, 568], [360, 740], [390, 844], [768, 1024], [1200, 630], [1440, 960]]) {
+      for (const [width, height] of [[320, 568], [360, 740], [375, 812], [390, 844], [430, 932], [768, 1024], [1024, 768], [1200, 630], [1440, 960]]) {
         const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901 });
         const page = await context.newPage();
         page.on("pageerror", error => errors.push(error.message));
@@ -198,6 +205,15 @@ try {
         assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, "glass panel must stay stationary while filling");
         await scrollToProgress(page, .2);
         assert.ok(Number(await page.locator("#home").getAttribute("data-fill")) < .4, "scrolling back must lower the liquid");
+        if (width === 390) {
+          await page.waitForFunction(() => document.getElementById('home').dataset.progress === '0.200');
+          const fill = await page.locator('#home').getAttribute('data-fill');
+          const position = await page.evaluate(() => scrollY);
+          await page.getByRole('button', { name: 'Switch to light mode' }).click();
+          assert.ok(Math.abs(Number(await page.locator('#home').getAttribute('data-fill')) - Number(fill)) < .004, 'theme change preserves the settled fill');
+          assert.equal(await page.evaluate(() => scrollY), position, 'theme change does not reset hero scroll');
+          await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+        }
         if (width === 390 || width === 1440) {
           for (const pause of [.525, .62, .78, .93]) {
             await scrollToProgress(page, pause);
@@ -209,8 +225,8 @@ try {
         await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
         assert.equal(await page.getByRole("progressbar", { name: "Glass story scroll progress", includeHidden: true }).getAttribute("aria-valuenow"), "0");
 
-        const headerShop = page.locator("header").getByRole("link", { name: /^Shop(?: M'ma)?$/ }).first();
-        assert.equal(await headerShop.getAttribute("href"), "/milk");
+        const headerShop = page.locator("header").getByRole("button", { name: /^Open cart,/ }).first();
+        assert.equal(await headerShop.getAttribute("aria-haspopup"), "dialog");
         if (width < 901) {
           const toggle = page.getByRole("button", { name: "Open navigation menu" });
           await toggle.click();
@@ -248,7 +264,7 @@ try {
         await page.getByRole("link", { name: /Skip introduction/ }).click();
         await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false' && document.querySelector('#site-content').getBoundingClientRect().top < 150);
         assert.equal(await page.evaluate(() => location.hash), "#site-content");
-        assert.ok((await headerShop.boundingBox()).y >= 0, "Shop must remain visible after skipping");
+        assert.ok((await headerShop.boundingBox()).y >= 0, "Cart must remain visible after skipping");
         results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false, sideAlignmentPixels: alignment });
         await context.close();
       }

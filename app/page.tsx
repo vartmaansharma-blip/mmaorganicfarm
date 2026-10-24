@@ -4,7 +4,7 @@ import { CapsuleNavigation } from "@/app/components/capsule-navigation";
 import { RisingGlassHero } from "@/app/components/rising-glass-hero";
 import landingStyles from "./landing.module.css";
 
-const orderPath = "/milk";
+const orderPath = "/shop";
 const whatsappContact =
   "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%20have%20a%20question%20about%20fresh%20milk%20delivery.";
 
@@ -104,7 +104,7 @@ const structuredData = {
         price: "62",
         priceCurrency: "INR",
         priceSpecification: { "@type": "UnitPriceSpecification", price: "62", priceCurrency: "INR", unitText: "litre" },
-        url: `${siteUrl}/milk`,
+        url: `${siteUrl}/shop/milk`,
         eligibleRegion: {
           "@type": "City",
           name: "Jamshedpur",

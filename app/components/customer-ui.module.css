@@ -1,0 +1,65 @@
+/* Compose these visual primitives in scoped modules; they add no client runtime. */
+.surface { accent-color: var(--color-accent); }
+.surface :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+.surface :is(input, select, textarea):disabled { cursor: not-allowed; }
+.surface :is(output, dd, time) { font-variant-numeric: tabular-nums; }
+.action {
+  min-height: var(--ui-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control);
+  font: 600 var(--ui-type-small) / 1.4 var(--font-sans);
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--ui-motion-fast) ease, transform var(--ui-motion-fast) ease;
+}
+.primary {
+  composes: action;
+  color: var(--color-action-primary-text);
+  background: var(--color-action-primary);
+  --control-hover: var(--color-action-primary-hover);
+}
+.secondary {
+  composes: action;
+  color: var(--color-action-secondary-text);
+  background: transparent;
+  border-color: var(--color-input-border);
+  --control-hover: var(--color-surface-hover);
+}
+.action:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--control-hover); }
+.action:active:not(:disabled):not([aria-disabled="true"]) { transform: scale(.98); }
+.action:disabled, .action[aria-disabled="true"] {
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+.action[aria-busy="true"] { cursor: wait; }
+.field {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--ui-control-height);
+  padding: 12px 14px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--ui-radius-field);
+  color: var(--color-text-primary);
+  background: var(--color-input-background);
+  font: 400 var(--ui-type-body) / 1.5 var(--font-sans);
+}
+.field::placeholder { color: var(--color-text-secondary); opacity: 1; }
+.field[aria-invalid="true"] { border-color: var(--color-error); }
+.action:focus-visible, .field:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .action { transition: none; }
+  .action:active { transform: none; }
+}

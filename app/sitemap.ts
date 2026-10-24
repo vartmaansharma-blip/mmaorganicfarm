@@ -6,6 +6,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     "",
     "/pricing",
+    "/shop",
+    "/shop/milk",
+    "/shop/paneer",
+    "/shop/ghee",
     "/shipping",
     "/contact",
     "/terms",

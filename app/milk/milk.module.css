@@ -1,4 +1,5 @@
 .page {
+  composes: surface from "../components/customer-ui.module.css";
   min-height: 100svh;
   padding: 0 24px 132px;
   color:var(--ui-text);
@@ -37,7 +38,7 @@
 
 .brand small {
   color:var(--ui-muted);
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -64,9 +65,9 @@
 .headerActions > span {
   padding: 7px 9px;
   border:1px solid var(--ui-border);
-  border-radius:3px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-muted);
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -105,7 +106,7 @@
   margin: 0;
   color:#fff;
   background:rgba(20, 20, 20, 0.72);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   font-weight: 750;
   text-transform: uppercase;
 }
@@ -146,7 +147,7 @@
   max-width: 10ch;
   margin: 18px 0 0;
   font-size: 64px;
-  font-weight: 760;
+  font-weight: 500;
   line-height: 0.98;
 }
 
@@ -225,7 +226,7 @@
   align-items: center;
   padding: 12px 18px;
   border:1px solid var(--ui-border);
-  border-radius:6px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-on-action);
   background:var(--ui-action);
   box-shadow:0 14px 34px rgba(20, 20, 20, 0.24);
@@ -235,7 +236,7 @@
 .basketStatus span,
 .basketStatus small {
   color:var(--ui-page);
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
 }
 
 .basketStatus span {
@@ -280,7 +281,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 38px 0 48px 220px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-surface);
 }
 
@@ -288,7 +289,7 @@
   min-height: 52px;
   padding: 0 16px;
   border:0;
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-muted);
   background:transparent;
   font: inherit;
@@ -312,7 +313,7 @@
 .bottleChoice legend {
   margin-bottom: 10px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -331,21 +332,21 @@
   align-items: center;
   padding: 13px 14px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
   cursor: pointer;
 }
 
 .bottleOptions label:has(input:checked) {
-  border-color:var(--ui-success-text);
-  background:var(--ui-success-bg);
+  border-color:var(--color-accent);
+  background:var(--color-surface);
 }
 
 .bottleOptions input {
   width: 17px;
   height: 17px;
   margin: 0;
-  accent-color:var(--ui-success-text);
+  accent-color:var(--color-accent);
 }
 
 .bottleOptions strong,
@@ -360,7 +361,7 @@
 .bottleOptions small {
   margin-top: 4px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   line-height: 1.4;
 }
 
@@ -400,7 +401,7 @@
   align-items: flex-start;
   padding: 18px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-text);
   background:var(--ui-page);
   font: inherit;
@@ -410,8 +411,8 @@
 
 .recommendedGrid button:hover,
 .recommendedGrid button:focus-visible {
-  border-color:var(--ui-success-text);
-  background:var(--ui-success-bg);
+  border-color:var(--color-accent);
+  background:var(--color-surface);
 }
 
 .recommendedGrid strong {
@@ -421,14 +422,14 @@
 .recommendedGrid span {
   margin-top: 8px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   line-height: 1.5;
 }
 
 .recommendedGrid small {
   margin-top: auto;
   padding-top: 18px;
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
   font-weight: 700;
 }
 
@@ -497,7 +498,7 @@
   padding: 6px 8px;
   color:var(--ui-on-action);
   background:var(--ui-action);
-  font-size: 9px;
+  font-size: var(--ui-type-caption);
   font-weight: 750;
   text-transform: uppercase;
 }
@@ -514,7 +515,7 @@
 
 .productPlaceholder small,
 .productPlaceholder span {
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -536,14 +537,14 @@
 .productMarker span,
 .productMarker small {
   color:var(--ui-muted);
-  font-size: 9px;
+  font-size: var(--ui-type-caption);
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .extraGrid .extraSelected {
-  border-color:var(--ui-success-text);
-  box-shadow:inset 0 0 0 1px var(--ui-success-text);
+  border-color:var(--color-accent);
+  box-shadow:inset 0 0 0 1px var(--color-accent);
 }
 
 .extraGrid label {
@@ -578,19 +579,19 @@
 .productIdentity small {
   margin-top: 5px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
 }
 
 .productIdentity b {
   color:var(--ui-success-text);
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
   text-transform: uppercase;
 }
 
 .extraGrid label > b {
   align-self: start;
   color:var(--ui-success-text);
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
   text-transform: uppercase;
 }
 
@@ -598,7 +599,7 @@
   width: 17px;
   height: 17px;
   margin: 2px 0 0;
-  accent-color:var(--ui-success-text);
+  accent-color:var(--color-accent);
 }
 
 .extraGrid strong,
@@ -614,7 +615,7 @@
 .extraGrid small {
   margin-top: 4px;
   color:var(--ui-muted);
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
   line-height: 1.35;
 }
 
@@ -637,7 +638,7 @@
   grid-template-columns: 34px minmax(0, 1fr) 34px;
   align-items: center;
   border:1px solid var(--ui-border);
-  border-radius:3px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
 }
 
@@ -646,16 +647,10 @@
 }
 
 .configureLink {
-  min-height: 36px;
-  display: flex;
-  align-items: center;
+  composes: secondary from "../components/customer-ui.module.css";
+
   justify-content: space-between;
   margin: 0 16px 16px;
-  padding: 0 12px;
-  border:1px solid var(--ui-border);
-  border-radius:3px;
-  font-size: 11px;
-  font-weight: 700;
 }
 
 .extraQuantity button {
@@ -669,29 +664,31 @@
 
 .extraQuantity button:disabled {
   cursor: not-allowed;
-  opacity: 0.35;
+  opacity: 1;
+  color: var(--ui-muted);
+  background: var(--ui-surface);
 }
 
 .extraQuantity strong {
   text-align: center;
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
 }
 
 .extraFrequency button {
   min-height: 32px;
   padding: 4px;
   border:1px solid var(--ui-border);
-  border-radius:3px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-muted);
   background:var(--ui-page);
   font: inherit;
-  font-size: 9px;
+  font-size: var(--ui-type-caption);
   font-weight: 650;
   cursor: pointer;
 }
 
 .extraFrequency button[aria-pressed="true"] {
-  border-color:var(--ui-success-text);
+  border-color:var(--color-accent);
   color:var(--ui-on-selected);
   background:var(--ui-selected);
 }
@@ -704,7 +701,7 @@
 
 .extraDays > span {
   color:var(--ui-muted);
-  font-size: 9px;
+  font-size: var(--ui-type-caption);
   font-weight: 650;
 }
 
@@ -719,17 +716,17 @@
   min-height: 28px;
   padding: 0;
   border:1px solid var(--ui-border);
-  border-radius:3px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-muted);
   background:var(--ui-page);
   font: inherit;
-  font-size: 8px;
+  font-size: var(--ui-type-caption);
   font-weight: 700;
   cursor: pointer;
 }
 
 .extraDays button[aria-pressed="true"] {
-  border-color:var(--ui-success-text);
+  border-color:var(--color-accent);
   color:var(--ui-on-selected);
   background:var(--ui-selected);
 }
@@ -768,7 +765,7 @@
   display: grid;
   align-items: center;
   border:1px solid var(--ui-border);
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
 }
 
@@ -805,7 +802,9 @@
 .stepper button:disabled,
 .primaryAction:disabled {
   cursor: not-allowed;
-  opacity: 0.35;
+  opacity: 1;
+  color: var(--ui-muted);
+  background: var(--ui-surface);
 }
 
 .largeStepper strong {
@@ -833,25 +832,15 @@
 .extrasPriceNote {
   margin: -10px 0 20px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   line-height: 1.5;
 }
 
 .primaryAction {
+  composes: primary from "../components/customer-ui.module.css";
   width: 100%;
-  min-height: 54px;
-  display: flex;
-  align-items: center;
+
   justify-content: space-between;
-  padding: 0 18px;
-  border:1px solid var(--ui-border);
-  border-radius:4px;
-  color:var(--ui-on-action);
-  background:var(--ui-action);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 650;
-  cursor: pointer;
 }
 
 .planLayout {
@@ -913,7 +902,7 @@
 
 .dayName span {
   color:var(--ui-muted);
-  font-size: 9px;
+  font-size: var(--ui-type-caption);
   text-transform: uppercase;
 }
 
@@ -929,7 +918,7 @@
 
 .stepper output {
   overflow: hidden;
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   font-weight: 650;
   text-align: center;
   text-overflow: ellipsis;
@@ -955,27 +944,16 @@
 
 .dateCopy small {
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   line-height: 1.45;
-}
-
-.dateSection input {
-  min-height: 46px;
-  padding: 0 12px;
-  border:1px solid var(--ui-input-border);
-  border-radius:4px;
-  color:var(--ui-text);
-  background:var(--ui-page);
-  font: inherit;
-  font-size: 13px;
 }
 
 .summary {
   align-self: start;
   padding: 28px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
-  background:var(--ui-warning-bg);
+  border-radius: var(--ui-radius-field);
+  background:var(--color-surface);
 }
 
 .summaryMetric {
@@ -1026,7 +1004,7 @@
 .summaryNote {
   margin: 14px 0 0;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   line-height: 1.5;
 }
 
@@ -1075,6 +1053,7 @@
   .summary {
     position: static;
   }
+
 }
 
 @media (max-width: 720px) {
@@ -1260,6 +1239,7 @@
   .summary {
     padding: 24px;
   }
+
 }
 
 @media (max-width: 390px) {
@@ -1291,4 +1271,23 @@
   .day {
     grid-template-columns: minmax(0, 1fr) 138px;
   }
+
 }
+
+.dateInput { composes: field from "../components/customer-ui.module.css"; }
+
+/* All scheduling controls remain comfortable on touch screens. */
+.modeSwitch { padding: 4px; border-radius: var(--ui-radius-control); }
+.modeSwitch button, .extraFrequency button, .extraDays button { min-height: var(--ui-touch-target); border-radius: var(--ui-radius-control); }
+.extraDays > div { grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); gap: 6px; }
+.extraQuantity { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+.extraQuantity button, .stepper button { min-height: var(--ui-touch-target); }
+.stepper { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+.resetButton { min-height: var(--ui-touch-target); }
+.basketStatus span, .basketStatus small { color: var(--ui-on-action); }
+.builderHeading h2 { font-weight: 500; }
+.panelHeading h3, .onceCopy h3, .extrasHeading h3 { font-family: var(--font-sans); font-weight: 600; }
+.extraGrid article { border-radius: var(--ui-radius-panel); background: var(--color-surface-raised); }
+.summary { border-radius: var(--ui-radius-panel); }
+@media (min-width: 721px) { .week { grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .modeSwitch button, .extraFrequency button, .extraDays button { transition: none; } }

@@ -94,7 +94,7 @@ export function RisingGlassHero() {
           <h1 id="hero-heading">Every glass<br />has a beginning<span className={styles.period} aria-hidden="true">.</span></h1>
           <p className={styles.description}>Discover the farm behind<br className={styles.desktopBreak} /> your everyday milk.</p>
           <div className={styles.actions}>
-            <Link className={styles.primary} href="/milk" prefetch={false} data-conversion="hero_cta_click" data-location="hero">Shop M&apos;ma <span aria-hidden="true">→</span></Link>
+            <Link className={styles.primary} href="/shop" prefetch={false} data-conversion="hero_cta_click" data-location="hero">Shop M&apos;ma <span aria-hidden="true">→</span></Link>
             <a className={styles.secondary} href="#farm">Explore the Farm</a>
           </div>
         </div>

@@ -185,3 +185,5 @@
     padding: 0;
   }
 }
+
+.pageControls{display:flex;justify-content:flex-end;padding:16px 0;}

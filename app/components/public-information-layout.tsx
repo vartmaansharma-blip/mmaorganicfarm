@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import styles from "./public-information.module.css";
@@ -36,7 +36,7 @@ export function PublicInformationLayout({
           <Link className={styles.back} href="/">
             Back to farm <span aria-hidden="true">↗</span>
           </Link>
-          <ThemeToggle />
+          <PageNavigationControls />
         </div>
       </header>
 

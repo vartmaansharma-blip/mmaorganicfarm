@@ -11,31 +11,57 @@ export default function TermsPage() {
     <PublicInformationLayout
       eyebrow="Terms and conditions"
       title="Simple terms for daily delivery."
-      intro="These terms explain how orders, schedules, payments, and farm delivery work. Last updated 13 August 2026."
+      intro="These terms explain how orders, schedules, payments, and farm delivery work. Last updated 25 October 2026."
     >
       <section>
         <h2>Using this website</h2>
-        <p>Customers must provide accurate contact and delivery information. Account access is personal and should not be shared.</p>
+        <p>
+          Customers must provide accurate contact and delivery information.
+          Account access is personal and should not be shared.
+        </p>
       </section>
       <section>
         <h2>Orders and availability</h2>
-        <p>Products are fresh and availability can vary. An order or recurring plan is accepted after the required details and payment are successfully confirmed.</p>
+        <p>
+          Products are fresh and availability can vary. An order or recurring
+          plan is accepted after the required details and payment are
+          successfully confirmed.
+        </p>
       </section>
       <section>
         <h2>Schedules</h2>
-        <p>Customers are responsible for reviewing selected dates, quantities, products, and the delivery address. Schedule changes apply only after they are saved and accepted by the system.</p>
+        <p>
+          Customers are responsible for reviewing selected dates, quantities,
+          products, and the delivery address. New scheduled baskets cover one
+          prepaid calendar month without automatic renewal. Existing paid
+          milk-credit plans retain their purchased terms. Contact the farm for
+          changes to a paid monthly delivery; changes apply only after
+          confirmation.
+        </p>
       </section>
       <section>
         <h2>Price and payment</h2>
-        <p>The payable amount shown at checkout is based on the selected milk quantity, add-ons, schedule, and bottle choice. An increase after payment may require an additional payment.</p>
+        <p>
+          The payable amount shown at checkout is based on the selected milk
+          quantity, add-ons, schedule, and bottle choice. An increase after
+          payment may require an additional payment.
+        </p>
       </section>
       <section>
         <h2>Fresh products</h2>
-        <p>Milk and other farm products are perishable. Customers should inspect delivery promptly and report a wrong, damaged, or unusable item on the day of delivery.</p>
+        <p>
+          Milk and other farm products are perishable. Customers should inspect
+          delivery promptly and report a wrong, damaged, or unusable item on the
+          day of delivery.
+        </p>
       </section>
       <section>
         <h2>Questions</h2>
-        <p>Contact <a href="tel:+919818804419">+91 98188 04419</a> before ordering if any term is unclear. These terms do not limit rights that cannot be excluded under applicable law.</p>
+        <p>
+          Contact <a href="tel:+919818804419">+91 98188 04419</a> before
+          ordering if any term is unclear. These terms do not limit rights that
+          cannot be excluded under applicable law.
+        </p>
       </section>
     </PublicInformationLayout>
   );

@@ -1,4 +1,8 @@
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { parseRoutines, quoteMonthlySchedule } from "@/lib/monthly-schedule";
+import { SharedCalendar } from "@/app/shop/shared-calendar";
+import { orderReturnPath } from "@/lib/shop-draft";
+import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,6 +38,7 @@ type OrderPageProps = {
     purchase?: "once" | "plan";
     schedule?: string;
     start?: string;
+    routine?: string;
   }>;
 };
 
@@ -45,7 +50,9 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/sign-in?next=%2Forder&message=Sign+in+to+continue+your+order.");
+    redirect(
+      `/sign-in?next=${encodeURIComponent(orderReturnPath(params))}&message=Sign+in+to+continue+your+order.`,
+    );
   }
 
   const { data: profile } = await supabase
@@ -64,41 +71,62 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
   const weeklySchedule = parseWeeklyMilkSchedule(params.schedule ?? "");
   const planSchedule = params.purchase === "plan" ? weeklySchedule : null;
   const purchase = params.purchase === "plan" ? "plan" : "once";
+  const monthlyRules =
+    purchase === "plan" && params.routine
+      ? parseRoutines(params.start ?? "", params.routine)
+      : null;
   const parsedMilk = Number(params.milk ?? "0");
   const milkLitres = Number.isFinite(parsedMilk) ? Math.max(0, parsedMilk) : 0;
-  const bottleChoice: BottleChoice =
-    milkLitres === 0
-      ? "none"
-      : params.bottle === "new"
-        ? "new"
-        : "return";
-  const pricing =
-    purchase === "plan" && planSchedule
+  const bottleChoice: BottleChoice = (
+    monthlyRules ? !monthlyRules.some((r) => r.id === "milk") : milkLitres === 0
+  )
+    ? "none"
+    : params.bottle === "new"
+      ? "new"
+      : "return";
+  const firstPlanStart =
+    params.purchase === "plan"
+      ? await firstScheduledPlanStart(supabase, user.id)
+      : null;
+  const pricing = monthlyRules
+    ? quoteMonthlySchedule({
+        start: params.start ?? "",
+        rules: monthlyRules,
+        bottleChoice,
+        firstPlanStart: firstPlanStart ?? params.start,
+      })
+    : purchase === "plan" && planSchedule
       ? calculatePlanPricing({
           bottleChoice,
           products: selectedProducts,
           schedule: planSchedule,
           startDate: params.start ?? "",
+          firstPlanStart: firstPlanStart ?? params.start ?? "",
         })
       : calculateOrderPricing({
           bottleChoice,
           milkLitres,
           products: selectedProducts,
         });
-  const hasOrder = milkLitres > 0 || selectedProducts.length > 0;
+  const hasOrder =
+    Boolean(monthlyRules) || milkLitres > 0 || selectedProducts.length > 0;
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
+        <Link
+          className={`${styles.brand} customer-header-brand`}
+          aria-label="M'ma Organic Farm"
+          href="/"
+        >
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
           <span>M&apos;ma Organic Farm</span>
         </Link>
         <div className="customer-header-actions">
-          <Link className={styles.back} href="/milk">
+          <Link className={styles.back} href="/shop">
             Back to products
           </Link>
-          <ThemeToggle />
+          <PageNavigationControls />
         </div>
       </header>
 
@@ -107,23 +135,31 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <p className={styles.eyebrow}>Step 2 of 4</p>
           <h1>Where should we bring your order, {firstName}?</h1>
           <p>
-            Add a contact number and delivery address. You can review every detail before payment.
+            Add a contact number and delivery address. You can review every
+            detail before payment.
           </p>
           <div className={styles.steps} aria-label="Order progress">
             <span className={styles.complete}>Account</span>
             <span className={styles.active}>Delivery details</span>
-            <span>Review &amp; pay</span><span>Confirmed</span>
+            <span>Review &amp; pay</span>
+            <span>Confirmed</span>
           </div>
           {hasOrder ? (
             <div className={styles.orderSummary}>
               <strong>Your farm order</strong>
+              {monthlyRules ? (
+                <SharedCalendar start={params.start!} rules={monthlyRules} />
+              ) : null}
               {planSchedule ? (
                 <div className={styles.planReview}>
                   <div>
                     <span>Starts</span>
                     <b>{formatPlanStartDate(params.start ?? "")}</b>
                   </div>
-                  <div className={styles.weekReview} aria-label="Weekly milk schedule">
+                  <div
+                    className={styles.weekReview}
+                    aria-label="Weekly milk schedule"
+                  >
                     {MILK_PLAN_DAYS.map((day, index) => (
                       <span key={day.label}>
                         <small>{day.short}</small>
@@ -163,7 +199,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                 </div>
                 {pricing.recurringAddOnsTotal > 0 ? (
                   <div>
-                    <dt>Scheduled add-ons</dt>
+                    <dt>{monthlyRules ? "Paneer & ghee" : "Scheduled add-ons"}</dt>
                     <dd>₹{pricing.recurringAddOnsTotal}</dd>
                   </div>
                 ) : null}
@@ -173,8 +209,22 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                     <dd>₹{pricing.oneTimeAddOnsTotal}</dd>
                   </div>
                 ) : null}
+                <div>
+                  <dt>Delivery</dt>
+                  <dd>
+                    {pricing.deliveryCharge
+                      ? `₹${pricing.deliveryCharge}`
+                      : "Free"}
+                  </dd>
+                </div>
                 <div className={styles.priceTotal}>
-                  <dt>{purchase === "plan" ? "30-delivery plan total" : "Order total"}</dt>
+                  <dt>
+                    {monthlyRules
+                      ? "Monthly plan total"
+                      : purchase === "plan"
+                        ? "30-delivery plan total"
+                        : "Order total"}
+                  </dt>
                   <dd>₹{pricing.total}</dd>
                 </div>
               </dl>
@@ -187,6 +237,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <input name="milk" type="hidden" value={params.milk ?? "0"} />
           <input name="purchase" type="hidden" value={purchase} />
           <input name="schedule" type="hidden" value={params.schedule ?? ""} />
+          <input name="routine" type="hidden" value={params.routine ?? ""} />
           <input name="start" type="hidden" value={params.start ?? ""} />
           {params.error ? (
             <p className={styles.error} role="alert">
@@ -219,6 +270,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <label>
             <span className={styles.fieldLabel}>Delivery address</span>
             <textarea
+              className={styles.addressField}
               aria-describedby="address-help"
               autoComplete="street-address"
               defaultValue={profile?.address_line ?? ""}
@@ -232,7 +284,11 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             </span>
           </label>
 
-          {milkLitres > 0 ? (
+          {(
+            monthlyRules
+              ? monthlyRules.some((r) => r.id === "milk")
+              : milkLitres > 0
+          ) ? (
             <fieldset className={styles.bottleChoice}>
               <legend>Bottle for this delivery</legend>
               <p>Choose your bottle option before reviewing payment.</p>
@@ -268,7 +324,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             <input name="bottle" type="hidden" value="none" />
           )}
 
-          <button type="submit">
+          <button className={styles.submitButton} type="submit">
             Save &amp; review order <span>→</span>
           </button>
           <p className={styles.note}>
