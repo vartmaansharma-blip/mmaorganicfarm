@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
 import { advanceFilm, clamp01, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
+import { condensationFrame, GLASS_BEADS } from "@/lib/hero-condensation";
 import styles from "./rising-glass-hero.module.css";
 
 export function RisingGlassHero() {
@@ -21,7 +22,12 @@ export function RisingGlassHero() {
     const body = document.body;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let film: HeroFilm = { state: history.state?.mmaHeroCompleted ? "COMPLETED" : "FILLING", time: history.state?.mmaHeroCompleted ? FILM_DURATION_MS : 0 };
-    let frame = 0, lastTime = 0, waitingSince = 0;
+    let frame = 0, lastTime = 0, waitingSince = 0, wetTime = 0, wetLast = 0;
+    const beads = Array.from(root.querySelectorAll<SVGGElement>("[data-condensation-drop]")).map(group => ({
+      bead: group.querySelector<SVGGElement>("[data-bead]")!,
+      satellite: group.querySelector<SVGEllipseElement>("[data-satellite]")!,
+      trail: group.querySelector<SVGPathElement>("[data-trail]")!,
+    }));
     let disposed = false, initialized = false, armed = true, visitedContent = false, anchorNavigation = false, staticFallback = false;
     let assets: "loading" | "ready" | "failed" = "loading";
     let hold: { y: number; restore: () => void } | undefined;
@@ -137,7 +143,7 @@ export function RisingGlassHero() {
       const fill = film.state === "FILLING" && !hold ? milkFill(fillScroll) : 1;
       const values = filmFrame(film.time);
       // Failed imagery never reveals a blank camera layer.
-      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, side: 0, top: 0, macro: 0 });
+      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 1 });
       const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
       const liquid = liquidGeometry(fill);
       const curtain = macroPresentation(g.rect.bottom, window.innerHeight, values.macro, g.header);
@@ -149,10 +155,26 @@ export function RisingGlassHero() {
       root.style.setProperty("--top-opacity", String(values.top));
       root.style.setProperty("--macro-opacity", String(curtain.opacity));
       root.style.setProperty("--macro-offset", `${curtain.offsetY}px`);
+      root.style.setProperty("--macro-drift", String(values.macroDrift));
+      root.style.setProperty("--overhead-settle", String(values.overheadSettle));
       root.style.setProperty("--liquid-y", `${liquid.y * 100}%`);
       root.style.setProperty("--liquid-left", `${liquid.left * 100}%`);
       root.style.setProperty("--liquid-depth", `${liquid.depth * 100}%`);
       liquidMask.current?.setAttribute("d", liquid.path);
+      const wetVisible = !motion.matches && fill > .06 && values.top < .999 && values.macro < .999 && g.rect.bottom > g.header + 22 && g.rect.top < innerHeight;
+      root.style.setProperty("--condensation-opacity", String(wetVisible ? Math.min(1, fill * 2) * (1 - values.top) * (1 - values.macro) : 0));
+      if (wetVisible) {
+        if (wetLast) wetTime += Math.min(50, now - wetLast);
+        condensationFrame(wetTime).forEach((drop, i) => {
+          const elements = beads[i];
+          elements.bead.setAttribute("transform", `translate(0 ${drop.distance}) scale(${drop.radius} ${drop.radius * 1.32})`);
+          elements.bead.setAttribute("opacity", String(drop.opacity));
+          elements.satellite.setAttribute("opacity", String(drop.satelliteOpacity));
+          elements.trail.setAttribute("d", `M 0 ${Math.max(0, drop.distance - 42)} L 0 ${Math.max(0, drop.distance - drop.radius)}`);
+          elements.trail.setAttribute("opacity", String(drop.trailOpacity));
+        });
+      }
+      wetLast = wetVisible ? now : 0;
       root.dataset.state = film.state;
       root.dataset.filmTime = String(Math.round(film.time));
       root.dataset.filmStage = values.stage;
@@ -170,7 +192,7 @@ export function RisingGlassHero() {
       const description = motion.matches ? "Introduction complete. Scroll to explore the farm." : hold && !playing(film) ? "Milk full. Preparing the introduction." : film.state === "FILLING" ? `Milk ${Math.round(fill * 100)}% full. Scroll to fill; a short film follows.` : film.state === "COMPLETED" ? "Introduction complete. Scroll to explore the farm." : film.state === "PLAYING_REVERSE" ? "Introduction playing backward. Scroll upward afterward to empty the glass." : "Introduction playing automatically. Scroll to explore afterward, or skip at any time.";
       storyProgress.current?.setAttribute("aria-valuenow", String(Math.round(clamp01(progress) * 100)));
       storyProgress.current?.setAttribute("aria-valuetext", description);
-      if (playing(film) || hold) schedule();
+      if (playing(film) || hold || wetVisible) schedule();
     };
     const scroll = () => { if (hold && window.scrollY !== 0) window.scrollTo({ top: 0, behavior: "instant" }); schedule(); };
     const resize = () => {
@@ -182,10 +204,33 @@ export function RisingGlassHero() {
       cancelAnimationFrame(frame);
       frame = 0;
       lastTime = 0;
+      wetLast = 0;
       if (!document.hidden) { waitingSince = 0; schedule(); }
     };
+    let lastTouchY: number | undefined;
+    const touchStart = (event: TouchEvent) => { lastTouchY = event.touches.length === 1 ? event.touches[0].clientY : undefined; };
+    const touchEnd = () => { lastTouchY = undefined; };
     const input = (event: Event) => {
       anchorNavigation = false;
+      let delta = 0;
+      if (event instanceof WheelEvent) delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
+      if (event.type === "touchmove") {
+        const y = (event as TouchEvent).touches?.[0]?.clientY;
+        if (y !== undefined && lastTouchY !== undefined) delta = lastTouchY - y;
+        lastTouchY = y;
+      }
+      if (!hold && !motion.matches && event.cancelable) {
+        const g = geometry();
+        const forwardBoundary = film.state === "FILLING" && armed && delta > 0 && g.y <= g.trigger && g.y + delta >= g.trigger;
+        const reverseBoundary = film.state === "COMPLETED" && delta < 0 && g.y > g.trigger && g.y + delta <= g.trigger && (visitedContent || g.y > g.trigger + 24) && assets === "ready" && !staticFallback;
+        if (forwardBoundary || reverseBoundary) {
+          // Take the crossing gesture at the boundary before the compositor can
+          // paint an overshoot. Ordinary filling/content scrolling stays native.
+          if (reverseBoundary) visitedContent = true;
+          lock(g.trigger);
+          schedule();
+        }
+      }
       if (hold && event.cancelable) event.preventDefault();
     };
     const key = (event: KeyboardEvent) => {
@@ -230,6 +275,9 @@ export function RisingGlassHero() {
     window.addEventListener("popstate", restore);
     window.addEventListener("wheel", input, { passive: false });
     window.addEventListener("touchmove", input, { passive: false });
+    window.addEventListener("touchstart", touchStart, { passive: true });
+    window.addEventListener("touchend", touchEnd, { passive: true });
+    window.addEventListener("touchcancel", touchEnd, { passive: true });
     document.addEventListener("keydown", key);
     document.addEventListener("click", navigate, true);
     document.addEventListener("visibilitychange", visibility);
@@ -247,6 +295,9 @@ export function RisingGlassHero() {
       window.removeEventListener("popstate", restore);
       window.removeEventListener("wheel", input);
       window.removeEventListener("touchmove", input);
+      window.removeEventListener("touchstart", touchStart);
+      window.removeEventListener("touchend", touchEnd);
+      window.removeEventListener("touchcancel", touchEnd);
       document.removeEventListener("keydown", key);
       document.removeEventListener("click", navigate, true);
       document.removeEventListener("visibilitychange", visibility);
@@ -285,6 +336,32 @@ export function RisingGlassHero() {
             <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
             <Image className={styles.side} src="/hero/coffee-side-v2.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
             <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
+            <svg className={styles.condensation} viewBox="0 0 800 1200" aria-hidden="true" focusable="false" data-condensation>
+              <defs>
+                <clipPath id={`${maskId}-glass-surface`}><path d="M 125 200 Q 400 155 675 200 L 600 1015 Q 400 1050 200 1015 Z" /></clipPath>
+                <radialGradient id={`${maskId}-water`} cx="35%" cy="25%" r="75%">
+                  <stop offset="0" stopColor="#fff" stopOpacity=".05" />
+                  <stop offset=".6" stopColor="#fff" stopOpacity=".015" />
+                  <stop offset=".86" stopColor="#08130d" stopOpacity=".25" />
+                  <stop offset="1" stopColor="#fff" stopOpacity=".58" />
+                </radialGradient>
+                <linearGradient id={`${maskId}-trail`} x1="0" y1="0" x2="0" y2="1">
+                  <stop stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#fff" />
+                </linearGradient>
+              </defs>
+              <g clipPath={`url(#${maskId}-glass-surface)`}>
+                {GLASS_BEADS.map((drop, i) => (
+                  <g key={i} data-condensation-drop transform={`translate(${drop.x} ${drop.y})`}>
+                    <path data-trail stroke={`url(#${maskId}-trail)`} strokeWidth="1.2" strokeLinecap="round" opacity="0" />
+                    <ellipse data-satellite cx=".7" cy="55" rx={drop.radius * .7} ry={drop.radius * .8} fill={`url(#${maskId}-water)`} opacity="0" />
+                    <g data-bead opacity="0">
+                      <ellipse rx="1" ry="1" fill={`url(#${maskId}-water)`} stroke="#08130d" strokeOpacity=".16" strokeWidth=".12" />
+                      <path d="M -.58 -.25 Q -.55 -.65 -.12 -.73" fill="none" stroke="#fff" strokeOpacity=".86" strokeWidth=".24" strokeLinecap="round" />
+                    </g>
+                  </g>
+                ))}
+              </g>
+            </svg>
           </div>
         </div>
 

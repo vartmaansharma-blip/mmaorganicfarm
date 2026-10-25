@@ -12,16 +12,27 @@ export function heroProgress(top: number, height: number, panelHeight: number, h
   return clamp01((headerHeight - top) / Math.max(1, height - panelHeight));
 }
 
-/** One clock owns the complete film. Scroll never selects a photographic target. */
-export const FILM_DURATION_MS = 1900;
+/** A short product film: anticipation, a crisp angle change, a lingering macro payoff. */
+export const FILM_CUES = {
+  coffeeStart: 300,
+  coffeeEnd: 620,
+  elevatedStart: 940,
+  elevatedEnd: 1080,
+  macroStart: 1580,
+  macroFull: 1900,
+  overheadStart: 3160,
+  overheadFull: 3520,
+  end: 4100,
+} as const;
+export const FILM_DURATION_MS = FILM_CUES.end;
 export const FILM_STAGES = [
   { at: 0, name: "filled-front" },
-  { at: 60, name: "coffee-treatment" },
-  { at: 180, name: "elevated" },
-  { at: 520, name: "macro-push" },
-  { at: 900, name: "macro-hold" },
-  { at: 1280, name: "overhead-pull" },
-  { at: 1650, name: "settled-overhead" },
+  { at: FILM_CUES.coffeeStart, name: "coffee-treatment" },
+  { at: FILM_CUES.elevatedStart, name: "elevated" },
+  { at: FILM_CUES.macroStart, name: "macro-push" },
+  { at: FILM_CUES.macroFull, name: "macro-hold" },
+  { at: FILM_CUES.overheadStart, name: "overhead-pull" },
+  { at: FILM_CUES.overheadFull, name: "settled-overhead" },
 ] as const;
 export type HeroState = "FILLING" | "PLAYING_FORWARD" | "COMPLETED" | "PLAYING_REVERSE";
 export type HeroFilm = { state: HeroState; time: number };
@@ -44,12 +55,17 @@ export function milkFill(scrollProgress: number): number {
 }
 export function filmFrame(time: number) {
   const t = Math.max(0, Math.min(FILM_DURATION_MS, time));
-  const top = easeBetween(t, 1280, 1460);
+  const cue = FILM_CUES;
+  const top = easeBetween(t, cue.overheadStart, cue.overheadFull);
   return {
-    coffee: easeBetween(t, 60, 180),
-    side: easeBetween(t, 180, 290) * (1 - top),
+    coffee: easeBetween(t, cue.coffeeStart, cue.coffeeEnd),
+    side: easeBetween(t, cue.elevatedStart, cue.elevatedEnd) * (1 - top),
     top,
-    macro: easeBetween(t, 520, 740) * (1 - easeBetween(t, 1280, 1460)),
+    macro: easeBetween(t, cue.macroStart, cue.macroFull) * (1 - top),
+    // A restrained 2.5% creep keeps the full-screen photograph alive, while
+    // the final overhead relaxes by 2%. Both retrace the exact path in reverse.
+    macroDrift: easeBetween(t, cue.macroFull, cue.overheadStart) * (1 - top),
+    overheadSettle: easeBetween(t, cue.overheadFull, cue.end),
     stage: [...FILM_STAGES].reverse().find(stage => t >= stage.at)!.name,
   };
 }

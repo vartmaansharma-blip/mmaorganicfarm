@@ -24,7 +24,11 @@ if (!process.env.BASE_URL) {
 
 async function ready() {
   for (let i = 0; i < 100; i++) {
-    try { if ((await fetch(base)).ok) return; } catch { /* Wait for startup. */ }
+    if (server && server.exitCode !== null) throw new Error(`Owned preview exited: ${serverLog}`);
+    // Do not accidentally validate an older process already listening on this port.
+    if (!server || /Ready in/.test(serverLog)) {
+      try { if ((await fetch(base)).ok) return; } catch { /* Wait for startup. */ }
+    }
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   throw new Error(`Preview did not start: ${serverLog}`);
@@ -65,8 +69,14 @@ async function verifyHybrid(page, name, width) {
     assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front');
   }
   assert.ok(Math.max(...tops) - Math.min(...tops) < 2, 'panel stays still throughout fill');
+  assert.equal(await page.locator('[data-condensation-drop]').count(), 8, 'condensation stays sparse');
+  assert.ok(await page.locator('[data-condensation]').evaluate(e => Number(getComputedStyle(e).opacity)) > 0);
+  const beadBefore = await page.locator('[data-bead]').first().getAttribute('transform');
+  await page.waitForTimeout(120);
+  assert.notEqual(await page.locator('[data-bead]').first().getAttribute('transform'), beadBefore, 'beads continue flowing while fill scroll pauses');
   await observeFilm(page);
   await page.mouse.wheel(0, 9000);
+  assert.ok(await page.locator('#home > div').first().evaluate(e => e.getBoundingClientRect().top) >= 0, 'crossing wheel cannot paint an overshoot into content');
   await state(page, 'PLAYING_FORWARD');
   assert.equal(await page.locator('#home').getAttribute('data-fill'), '1.000');
   assert.equal(await page.locator('#home').getAttribute('data-held'), 'true');
@@ -87,6 +97,7 @@ async function verifyHybrid(page, name, width) {
   await page.waitForFunction(() => document.getElementById('home').dataset.filmStage === 'macro-hold');
   assert.equal(await page.locator('header').isVisible(), false);
   assert.equal(await page.locator('#hero-heading').isVisible(), false);
+  assert.equal(await page.locator('[data-condensation]').evaluate(e => Number(getComputedStyle(e).opacity)), 0, 'macro stays free of condensation overlays');
   await page.screenshot({ path: path.join(output, `${name}-${width}-full-screen-macro.png`) });
   await state(page, 'COMPLETED'); // No scrolling: clock must finish by itself.
   const forward = await page.evaluate(() => window.filmSamples.filter(s => s.state === 'PLAYING_FORWARD'));
@@ -122,6 +133,8 @@ async function verifyHybrid(page, name, width) {
   assert.ok(Number(await page.locator('#home').getAttribute('data-fill')) < .2, 'upward scroll empties milk after reverse');
   await scrollToFill(page, 0);
   await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
+  const first = forward[0].at;
+  assert.ok(forward.at(-1).at - first >= 3450, 'the new film must actually give its shots more time');
   return { forward, reverse };
 }
 
@@ -159,10 +172,12 @@ async function verifyLifecycle(browser, name) {
     const paused = await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { configurable: true, value: true });
       document.dispatchEvent(new Event('visibilitychange'));
+      window.hiddenBeadPose = document.querySelector('[data-bead]').getAttribute('transform');
       return Number(document.getElementById('home').dataset.filmTime);
     });
     await page.waitForTimeout(300);
     assert.equal(Number(await page.locator('#home').getAttribute('data-film-time')), paused);
+    assert.equal(await page.locator('[data-bead]').first().getAttribute('transform'), await page.evaluate(() => window.hiddenBeadPose), 'hidden time pauses the condensation too');
     await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
     await page.waitForFunction(t => Number(document.getElementById('home').dataset.filmTime) > t, paused);
     await page.waitForFunction(() => document.getElementById('home').dataset.filmStage === 'macro-hold');
@@ -407,6 +422,7 @@ try {
       await staticPage.waitForFunction(() => document.getElementById("home").dataset.fill === "1.000");
       assert.equal(await staticPage.getByRole("progressbar", { name: "Glass story progress", includeHidden: true }).getAttribute("aria-valuenow"), "100");
       assert.equal(await staticPage.locator("#home").evaluate(root => root.offsetHeight === root.firstElementChild.offsetHeight), true, "reduced motion must not require a scroll sequence");
+      assert.equal(await staticPage.locator('[data-condensation]').isVisible(), false, 'reduced motion removes the ambient droplets');
       await staticPage.screenshot({ path: path.join(output, `${name}-reduced-motion.png`) });
       await reduced.close();
 
