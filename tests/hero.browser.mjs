@@ -62,6 +62,7 @@ async function observeFilm(page) {
 }
 const stageNames = ['filled-front', 'coffee-treatment', 'elevated', 'macro-push', 'macro-hold', 'overhead-pull', 'settled-overhead'];
 async function verifyHybrid(page, name, width) {
+  const front = await page.locator('img[src*="coffee-front"]').boundingBox();
   const tops = [];
   for (const progress of [.2, .65, .3]) {
     await scrollToFill(page, progress);
@@ -94,6 +95,13 @@ async function verifyHybrid(page, name, width) {
   await page.evaluate(() => document.querySelector('button[aria-label*=" mode"]').click());
   await page.setViewportSize({ width: width + 1, height: page.viewportSize().height });
   await page.setViewportSize({ width, height: page.viewportSize().height });
+  await page.waitForFunction(() => {
+    const root = document.getElementById('home');
+    return root.style.getPropertyValue('--side-opacity') === '1' && root.dataset.filmStage === 'elevated';
+  });
+  const elevated = await page.locator('img[src*="coffee-side"]').boundingBox();
+  assert.ok(Math.abs(front.y + front.height * 139 / 1200 - elevated.y - elevated.height * 108 / 1200) < 2, 'camera lift lands on the matched rim');
+  assert.ok(Math.abs(front.y + front.height * 1074 / 1200 - elevated.y - elevated.height * 1092 / 1200) < 2, 'camera lift lands on the matched base');
   await page.waitForFunction(() => document.getElementById('home').dataset.filmStage === 'macro-hold');
   assert.equal(await page.locator('header').isVisible(), false);
   assert.equal(await page.locator('#hero-heading').isVisible(), false);
@@ -360,7 +368,7 @@ try {
           const s = root.querySelector('img[src*="coffee-side"]').getBoundingClientRect();
           return { rim: Math.abs(f.y + f.height * 139 / 1200 - s.y - s.height * 108 / 1200), base: Math.abs(f.y + f.height * 1074 / 1200 - s.y - s.height * 1092 / 1200), height: f.height };
         });
-        assert.ok(alignment.rim < 2 && alignment.base < 2, "front and side have matching glass heights");
+        assert.ok(alignment.rim < 8 && alignment.base < 8, "incoming camera starts within its restrained glide distance");
         if (width === 390) assert.ok(alignment.height >= 340, "mobile glass is larger than the production 295px canvas");
         const cue = await page.locator('a').filter({ hasText: 'Scroll to fill' }).boundingBox();
         if (width > 720) assert.ok(Math.abs(cue.x + cue.width / 2 - width / 2) < 1, "laptop scroll indicator is centered");

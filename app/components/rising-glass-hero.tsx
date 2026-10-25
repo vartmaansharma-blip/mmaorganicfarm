@@ -143,13 +143,14 @@ export function RisingGlassHero() {
       const fill = film.state === "FILLING" && !hold ? milkFill(fillScroll) : 1;
       const values = filmFrame(film.time);
       // Failed imagery never reveals a blank camera layer.
-      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 1 });
+      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, elevation: 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 1 });
       const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
       const liquid = liquidGeometry(fill);
       const curtain = macroPresentation(g.rect.bottom, window.innerHeight, values.macro, g.header);
       root.style.setProperty("--scroll-progress", String(progress));
       root.style.setProperty("--fill-progress", String(fill));
       root.style.setProperty("--coffee-progress", String(values.coffee));
+      root.style.setProperty("--elevation-progress", String(values.elevation));
       root.style.setProperty("--angle-opacity", String(Math.min(1, values.side + values.top + values.macro)));
       root.style.setProperty("--side-opacity", String(values.side));
       root.style.setProperty("--top-opacity", String(values.top));
