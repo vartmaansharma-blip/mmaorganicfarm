@@ -1,84 +1,55 @@
-import { PageNavigationControls } from "@/app/components/page-navigation-controls";
-import type { ReactNode } from "react";
 import Image from "next/image";
+import type { ReactNode } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { requireFarmStaff } from "@/lib/farm-dashboard";
+import { FarmNavigation } from "./farm-navigation";
+import { FarmWorkspaceShell } from "./farm-workspace-shell";
 import styles from "./farm-shell.module.css";
-
 export const dynamic = "force-dynamic";
-
-export default async function FarmLayout({ children }: { children: ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: staff } = user
-    ? await supabase
-        .from("farm_staff")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("active", true)
-        .maybeSingle()
-    : { data: null };
-  const driverView = staff?.role === "driver";
-  const farmHome = driverView ? "/farm/delivery-sheet" : "/farm";
-
+export default async function FarmLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const { role } = await requireFarmStaff("/farm");
+  const driverView = role === "driver";
   return (
-    <div className={styles.shell}>
-      <aside className={styles.sidebar}>
-        <Link className={styles.brand} href={farmHome}>
-          <Image src="/mma-logo.png" alt="" width={44} height={38} />
-          <span>
-            <strong>M&apos;ma Farm</strong>
-            <small>Operations</small>
+    <FarmWorkspaceShell driver={driverView} brand={
+        <Link
+          prefetch={false}
+          className={styles.brand}
+          href={driverView ? "/farm/delivery-sheet" : "/farm"}
+        >
+          <span className={styles.brandMark}>
+            <Image
+              src="/mma-logo.png"
+              alt="M’ma Farms"
+              width={88}
+              height={74}
+              priority
+            />
           </span>
+          <span className={styles.brandCaption}>Farm operations</span>
         </Link>
-
-        <nav className={styles.nav} aria-label="Farm operations">
-          {driverView ? (
-            <Link href="/farm/delivery-sheet">My route</Link>
-          ) : (
-            <>
-              <Link href="/farm">Overview</Link>
-              <Link href="/farm/routes">Routes</Link>
-              <Link href="/farm/staff">Staff</Link>
-              <Link href="/farm/delivery-sheet">Deliveries</Link>
-              <Link href="/farm/locations">Customers</Link>
-              <Link href="/farm/capacity">Capacity</Link>
-              <Link href="/farm/payments">Payments</Link>
-              <Link href="/farm/cancellations">Requests</Link>
-            </>
-          )}
-        </nav>
-
+      } navigation={
+        <Suspense fallback={<p>Loading navigation…</p>}>
+          <FarmNavigation role={role} />
+        </Suspense>
+      } staff={
         <div className={styles.staff}>
           <span>Signed in as</span>
-          <strong>{staff?.role ?? "Farm staff"}</strong>
-          <Link href="/">Back to website</Link>
+          <strong>
+            {role === "admin"
+              ? "Owner / admin"
+              : role === "driver"
+                ? "Delivery staff"
+                : "Operations manager"}
+          </strong>
+          <Link prefetch={false} href="/">Back to website ↗</Link>
         </div>
-      </aside>
-
-      <div className={styles.workspace}><div className={styles.pageControls}><PageNavigationControls/></div>{children}</div>
-
-      <nav
-        className={`${styles.mobileNav} ${driverView ? styles.driverMobileNav : ""}`}
-        aria-label="Farm operations"
-      >
-        {driverView ? (
-          <Link href="/farm/delivery-sheet">My route</Link>
-        ) : (
-          <>
-            <Link href="/farm">Overview</Link>
-            <Link href="/farm/routes">Routes</Link>
-            <Link href="/farm/staff">Staff</Link>
-            <Link href="/farm/delivery-sheet">Deliveries</Link>
-            <Link href="/farm/locations">Customers</Link>
-            <Link href="/farm/capacity">Capacity</Link>
-            <Link href="/farm/payments">Payments</Link>
-            <Link href="/farm/cancellations">Requests</Link>
-          </>
-        )}
-      </nav>
-    </div>
+      }>
+        {children}
+    </FarmWorkspaceShell>
   );
 }

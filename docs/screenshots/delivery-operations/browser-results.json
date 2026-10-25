@@ -1,0 +1,29 @@
+{
+  "boundary": "Production Next pages and server actions with native PostgreSQL; test-only auth/REST HTTP adapter. Hosted GoTrue/PostgREST not exercised.",
+  "results": [
+    {
+      "engine": "chromium",
+      "widths": [
+        320,
+        375,
+        390,
+        430,
+        1440
+      ],
+      "journey": "passed",
+      "runtimeErrors": []
+    },
+    {
+      "engine": "webkit",
+      "widths": [
+        320,
+        375,
+        390,
+        430,
+        1440
+      ],
+      "journey": "passed",
+      "runtimeErrors": []
+    }
+  ]
+}

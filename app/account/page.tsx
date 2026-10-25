@@ -1,5 +1,6 @@
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
+import { CustomerDeliveryHistory } from "@/app/farm/customer-delivery-history";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -573,6 +574,8 @@ export default async function AccountPage({
             </div>
           </section>
         ) : null}
+
+        <CustomerDeliveryHistory userId={user.id} />
 
         {(notifications?.length ?? 0) > 0 ? (
           <section

@@ -1,0 +1,46 @@
+.section {
+  border: 1px solid #8fa494;
+  border-radius: 12px;
+  padding: 22px;
+  margin: 24px 0;
+  color: inherit;
+  min-width: 0;
+}
+.section h2 {
+  font-size: 22px;
+  margin: 0 0 10px;
+}
+.section > p {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.8;
+  margin: 0 0 16px;
+}
+.section article {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-top: 1px solid #8fa494;
+}
+.section article > div {
+  display: grid;
+  gap: 7px;
+}
+.section strong {
+  font-size: 14px;
+}
+.section span {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.section article > div + div {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 430px) {
+  .section {
+    padding: 16px;
+  }
+}

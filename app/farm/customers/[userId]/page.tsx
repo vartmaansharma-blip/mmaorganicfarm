@@ -1,3 +1,4 @@
+import { CustomerDeliveryHistory } from "@/app/farm/customer-delivery-history";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -207,15 +208,17 @@ export default async function CustomerPage({
       .eq("is_test", false)
       .eq("status", "paid")
       .order("created_at", { ascending: false }),
-    admin
-      .from("payments")
-      .select(
-        "id, order_id, status, is_test, amount_paise, provider, provider_payment_id, paid_at, created_at",
-      )
-      .eq("user_id", userId)
-      .eq("is_test", false)
-      .eq("status", "captured")
-      .order("created_at", { ascending: false }),
+    role === "admin"
+      ? admin
+          .from("payments")
+          .select(
+            "id, order_id, status, is_test, amount_paise, provider, provider_payment_id, paid_at, created_at",
+          )
+          .eq("user_id", userId)
+          .eq("is_test", false)
+          .eq("status", "captured")
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
     admin
       .from("delivery_plans")
       .select(
@@ -400,6 +403,11 @@ export default async function CustomerPage({
       : paidOrders.length
         ? "Paid customer"
         : "New customer";
+  const upcomingVisits = deliveryVisits.filter(
+    (visit) =>
+      visit.delivery_date >= today &&
+      ["planned", "ready", "out_for_delivery"].includes(visit.status),
+  );
   const canManage = canManageLocations(role);
   const canDelete = role === "admin";
   const returnTo = `/farm/customers/${userId}`;
@@ -450,11 +458,14 @@ export default async function CustomerPage({
         <a href="#orders">
           Paid orders <span>{paidOrders.length}</span>
         </a>
-        <a href="#payments">
-          Payments <span>{livePayments.length}</span>
-        </a>
+        {role === "admin" ? (
+          <a href="#payments">
+            Payments <span>{livePayments.length}</span>
+          </a>
+        ) : null}
+        <a href="#delivery-outcomes">Delivery outcomes</a>
         <a href="#deliveries">
-          Deliveries <span>{deliveryVisits.length}</span>
+          Upcoming visits <span>{upcomingVisits.length}</span>
         </a>
         <a href="#profile">Customer details</a>
       </nav>
@@ -469,11 +480,13 @@ export default async function CustomerPage({
           <strong>{paidOrders.length}</strong>
           <small>Completed live purchases only</small>
         </article>
-        <article>
-          <span>Lifetime paid</span>
-          <strong>{formatCheckoutAmount(lifetimePaid)}</strong>
-          <small>From paid live orders</small>
-        </article>
+        {role === "admin" ? (
+          <article>
+            <span>Lifetime paid</span>
+            <strong>{formatCheckoutAmount(lifetimePaid)}</strong>
+            <small>From paid live orders</small>
+          </article>
+        ) : null}
         <article>
           <span>Next delivery</span>
           <strong>{nextDeliveryLabel}</strong>
@@ -707,91 +720,96 @@ export default async function CustomerPage({
         )}
       </section>
 
-      <section className={styles.section} id="payments">
-        <div className={styles.sectionHeading}>
-          <div>
-            <span>Finance ledger</span>
-            <h2>Payments</h2>
-          </div>
-          <Link href={`/farm/payments?customer=${userId}`}>
-            Open finance view
-          </Link>
-        </div>
-        {livePayments.length ? (
-          <details className={styles.disclosure}>
-            <summary>
-              <span>
-                <strong>View payment ledger</strong>
-                <small>
-                  {livePayments.length} live transaction
-                  {livePayments.length === 1 ? "" : "s"} · newest first
-                </small>
-              </span>
-              <b aria-hidden="true">⌄</b>
-            </summary>
-            <div
-              className={styles.paymentTable}
-              role="table"
-              aria-label="Customer payments"
-            >
-              <div className={styles.tableHeader} role="row">
-                <span>Date</span>
-                <span>Order</span>
-                <span>Reference</span>
-                <span>Status</span>
-                <span>Amount</span>
-              </div>
-              {livePayments.map((payment) => (
-                <div className={styles.tableRow} role="row" key={payment.id}>
-                  <span data-label="Date">
-                    {formatDateTime(payment.paid_at ?? payment.created_at)}
-                  </span>
-                  <span data-label="Order">
-                    MMA-{payment.order_id.slice(0, 8).toUpperCase()}
-                  </span>
-                  <span data-label="Reference">
-                    {payment.provider_payment_id ?? titleCase(payment.provider)}
-                  </span>
-                  <span data-label="Status">
-                    <b data-state={payment.status}>
-                      {titleCase(payment.status)}
-                    </b>
-                  </span>
-                  <strong data-label="Amount">
-                    {formatCheckoutAmount(payment.amount_paise)}
-                  </strong>
-                </div>
-              ))}
+      {role === "admin" ? (
+        <section className={styles.section} id="payments">
+          <div className={styles.sectionHeading}>
+            <div>
+              <span>Finance ledger</span>
+              <h2>Payments</h2>
             </div>
-          </details>
-        ) : (
-          <div className={styles.empty}>
-            No payment records for this customer.
+            <Link href={`/farm/payments?customer=${userId}`}>
+              Open finance view
+            </Link>
           </div>
-        )}
-      </section>
+          {livePayments.length ? (
+            <details className={styles.disclosure}>
+              <summary>
+                <span>
+                  <strong>View payment ledger</strong>
+                  <small>
+                    {livePayments.length} live transaction
+                    {livePayments.length === 1 ? "" : "s"} · newest first
+                  </small>
+                </span>
+                <b aria-hidden="true">⌄</b>
+              </summary>
+              <div
+                className={styles.paymentTable}
+                role="table"
+                aria-label="Customer payments"
+              >
+                <div className={styles.tableHeader} role="row">
+                  <span>Date</span>
+                  <span>Order</span>
+                  <span>Reference</span>
+                  <span>Status</span>
+                  <span>Amount</span>
+                </div>
+                {livePayments.map((payment) => (
+                  <div className={styles.tableRow} role="row" key={payment.id}>
+                    <span data-label="Date">
+                      {formatDateTime(payment.paid_at ?? payment.created_at)}
+                    </span>
+                    <span data-label="Order">
+                      MMA-{payment.order_id.slice(0, 8).toUpperCase()}
+                    </span>
+                    <span data-label="Reference">
+                      {payment.provider_payment_id ??
+                        titleCase(payment.provider)}
+                    </span>
+                    <span data-label="Status">
+                      <b data-state={payment.status}>
+                        {titleCase(payment.status)}
+                      </b>
+                    </span>
+                    <strong data-label="Amount">
+                      {formatCheckoutAmount(payment.amount_paise)}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : (
+            <div className={styles.empty}>
+              No payment records for this customer.
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      <CustomerDeliveryHistory userId={userId} />
 
       <section className={styles.section} id="deliveries">
         <div className={styles.sectionHeading}>
           <div>
             <span>Service timeline</span>
-            <h2>Deliveries</h2>
+            <h2>Upcoming deliveries</h2>
           </div>
           <Link href="/farm/delivery-sheet">Open delivery sheet</Link>
         </div>
-        {deliveryVisits.length ? (
+        {upcomingVisits.length ? (
           <details className={styles.disclosure}>
             <summary>
               <span>
-                <strong>View delivery timeline</strong>
+                <strong>View upcoming delivery timeline</strong>
                 <small>
-                  {deliveryVisits.length} doorstep visits · newest first
+                  {upcomingVisits.length} doorstep visits · newest first
                 </small>
               </span>
               <b aria-hidden="true">⌄</b>
             </summary>
             <div className={styles.deliveryTimeline}>
-              {deliveryVisits.map((delivery) => (
+              {upcomingVisits.map((delivery) => (
                 <article key={delivery.visit_key}>
                   <span
                     className={styles.timelineMark}
