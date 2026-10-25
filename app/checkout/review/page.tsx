@@ -11,6 +11,7 @@ import {
   formatOrderItemSchedule,
 } from "@/lib/checkout-display";
 import { hasSupabaseAdminConfig } from "@/lib/supabase/admin";
+import { paymentModeError } from "@/lib/payment-mode";
 import { hasRazorpayConfig } from "@/lib/razorpay";
 import { createClient } from "@/lib/supabase/server";
 import { RazorpayCheckoutButton } from "./razorpay-checkout-button";
@@ -39,7 +40,7 @@ export default async function ReviewPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id,status,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
+      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
     )
     .eq("id", orderId)
     .eq("user_id", user.id)
@@ -72,6 +73,7 @@ export default async function ReviewPage({
     `Hello M'ma Organic Farm, I need help with order ${order.id.slice(0, 8).toUpperCase()}.`,
   );
   const adminReady = hasSupabaseAdminConfig();
+  const modeError = paymentModeError(order.is_test);
   return (
     <main className={styles.page}>
       <CartCheckoutSync
@@ -219,7 +221,9 @@ export default async function ReviewPage({
           <RazorpayCheckoutButton
             amount={formatCheckoutAmount(order.total_paise)}
             orderId={order.id}
-            ready={hasRazorpayConfig() && adminReady}
+            ready={hasRazorpayConfig() && adminReady && !modeError}
+            unavailableReason={modeError ?? undefined}
+            isTest={order.is_test}
           />
           <p className={styles.note}>
             Your order and delivery calendar stay with M&apos;ma Organic Farm.

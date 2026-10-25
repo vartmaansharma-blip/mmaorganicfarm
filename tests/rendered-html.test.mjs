@@ -448,7 +448,7 @@ test("provides Google and email account creation without delivery friction", asy
   assert.match(googleSignIn, /disabled=\{isStarting\}/);
   assert.match(googleSignIn, /searchParams\.set\("next", next\)/);
   assert.doesNotMatch(actions, /signInWithOAuth/);
-  assert.match(callback, /: "\/"/);
+  assert.match(callback, /safeAuthReturn/);
   assert.match(signIn, /if \(user\) \{\s*redirect\(next\)/);
   assert.match(proxy, /searchParams\.has\("code"\)/);
   assert.match(proxy, /callbackUrl\.pathname = "\/auth\/callback"/);

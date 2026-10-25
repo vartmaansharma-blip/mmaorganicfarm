@@ -1,4 +1,5 @@
 import "server-only";
+import { databaseErrorMessage } from "./database-errors";
 import type { createClient } from "@/lib/supabase/server";
 import { validShopDate } from "@/lib/shop-draft";
 export async function firstScheduledPlanStart(
@@ -28,7 +29,7 @@ export async function firstScheduledPlanStart(
   ]);
   if (orders.error || legacy.error)
     throw new Error(
-      "We could not verify your scheduled-delivery offer. Please try again.",
+      databaseErrorMessage(orders.error ?? legacy.error, "We could not verify your scheduled-delivery offer. Please try again."),
     );
   const dates = [orders.data?.start_date, legacy.data?.start_date]
     .filter(validShopDate)
