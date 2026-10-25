@@ -20,7 +20,7 @@ export function ShopHero() {
     const timer = setInterval(() => {
       if (!document.hidden && !pressed.current)
         setIndex((current) => (current + 1) % SHOP_PRODUCTS.length);
-    }, 6000);
+    }, 3000);
     return () => clearInterval(timer);
   }, [reduced]);
   const product = SHOP_PRODUCTS[index];

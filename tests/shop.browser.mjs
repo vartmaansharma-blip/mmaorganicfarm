@@ -279,7 +279,7 @@ try {
   const first = await photo.getAttribute("href");
   await page.getByRole("switch", { name: "Scheduled orders" }).uncheck();
   await page.getByRole("button", { name: /Open cart,/ }).click();
-  await page.waitForTimeout(6250);
+  await page.waitForTimeout(3250);
   assert.notEqual(
     await photo.getAttribute("href"),
     first,
@@ -290,7 +290,7 @@ try {
   await photo.click();
   await page.waitForURL(`**${destination}`);
   await page.goBack();
-  await page.waitForTimeout(6250);
+  await page.waitForTimeout(3250);
   assert.notEqual(
     await photo.getAttribute("href"),
     "/shop/milk",
@@ -373,7 +373,7 @@ try {
   await bootstrap(reduced);
   await rp.goto(`${base}/shop`, { waitUntil: "networkidle" });
   const before = await rp.locator("[class*=heroPhoto]").getAttribute("href");
-  await rp.waitForTimeout(6250);
+  await rp.waitForTimeout(3250);
   assert.equal(
     await rp.locator("[class*=heroPhoto]").getAttribute("href"),
     before,

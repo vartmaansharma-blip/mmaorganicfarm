@@ -4,7 +4,7 @@ The public `/shop` counter and `/shop/milk`, `/shop/paneer`, `/shop/ghee` pages 
 
 ## Customer flow
 
-- The shop photograph advances every six seconds with a 420 ms horizontal transition. Tapping it opens that product. There are no hero buttons or slideshow selectors. Opening the cart, changing the theme or switching order mode does not stop autoplay. Reduced motion disables automatic advancement and transitions; all three products remain available below the hero.
+- The shop photograph advances every three seconds with a 420 ms horizontal transition. Tapping it opens that product. There are no hero buttons or slideshow selectors. Opening the cart, changing the theme or switching order mode does not stop autoplay. Reduced motion disables automatic advancement and transitions; all three products remain available below the hero.
 - Scheduled is the initial mode. One-time and scheduled drafts and carts are separate. Changes remain in the current browser tab through navigation, reload and sign-in. Storage failure leaves an in-memory cart usable. No personal contact information is stored in the cart.
 - Add to cart takes a snapshot of the chosen product, quantity and schedule. Subsequent draft changes require Update cart. The header shows added product lines, rather than unadded configuration drafts or the number of future milk deliveries.
 - The cart drawer supports quantities, removal and one common delivery/start date. Every added product has independent dates within one shared prepaid month. Custom opens with editable recommended dates (daily milk, Saturdays paneer, one ghee date). Changing the shared period shifts all selected products together. An empty or incomplete schedule cannot continue.
