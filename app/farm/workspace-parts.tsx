@@ -24,19 +24,19 @@ export function WorkspaceHeader({
 export function InboxTabs({ active }: { active: "exceptions" | "requests" }) {
   return (
     <nav className={styles.tabs} aria-label="Inbox views">
-      <Link
+      <Link prefetch={false}
         href="/farm/exceptions"
         aria-current={active === "exceptions" ? "page" : undefined}
       >
         Delivery exceptions
       </Link>
-      <Link
+      <Link prefetch={false}
         href="/farm/cancellations"
         aria-current={active === "requests" ? "page" : undefined}
       >
         Customer requests
       </Link>
-      <Link href="/farm/activity">System activity</Link>
+      <Link prefetch={false} href="/farm/activity">System activity</Link>
     </nav>
   );
 }
@@ -54,11 +54,11 @@ export function PageLinks({
   return (
     <nav className={styles.pager} aria-label="Result pages">
       {page > 0 ? (
-        <Link href={`${path}?${query}&page=${page - 1}`}>← Previous</Link>
+        <Link prefetch={false} href={`${path}?${query}&page=${page - 1}`}>← Previous</Link>
       ) : null}
       <span>Page {page + 1}</span>
       {hasMore ? (
-        <Link href={`${path}?${query}&page=${page + 1}`}>Next →</Link>
+        <Link prefetch={false} href={`${path}?${query}&page=${page + 1}`}>Next →</Link>
       ) : null}
     </nav>
   );

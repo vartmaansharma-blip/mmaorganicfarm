@@ -80,6 +80,10 @@
   letter-spacing: 0.05em;
 }
 .navGroup a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
   border-radius: 7px;
   color: #e3eade;
   font-size: 13px;
@@ -92,6 +96,15 @@
   background: #ffffff18;
   color: #fff;
 }
+.navGroup a[aria-current="page"] {
+  background: #dce9b6;
+  color: #213e2e;
+  font-weight: 600;
+}
+.navIcon { flex: 0 0 18px; }
+.navTooltip { display: none; }
+.sidebarHeader { position: relative; }
+.collapseButton { display: none; }
 .staff {
   display: none;
 }
@@ -151,7 +164,8 @@
 @media (min-width: 1000px) {
   .shell {
     display: grid;
-    grid-template-columns: 206px minmax(0, 1fr);
+    grid-template-columns: 234px minmax(0, 1fr);
+    transition: grid-template-columns 180ms ease;
   }
   .sidebar {
     padding: 25px 13px;
@@ -172,6 +186,22 @@
     display: block;
     margin-top: 7px;
   }
+  .sidebarHeader { padding-top: 2px; }
+  .collapseButton {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    right: 2px;
+    top: 4px;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #60745d;
+    border-radius: 9px;
+    background: #ffffff0a;
+    color: #eef3e7;
+    cursor: pointer;
+  }
+  .collapseButton:hover { background: #ffffff20; }
   .nav {
     display: block;
     margin-top: 12px;
@@ -200,9 +230,43 @@
     margin-top: 8px;
   }
   .driverShell {
-    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+  .collapsed { grid-template-columns: 80px minmax(0, 1fr); }
+  .collapsed .sidebar { padding: 16px 10px; }
+  .collapsed .sidebarHeader { padding-top: 48px; }
+  .collapsed .brand { padding: 0; justify-items: center; }
+  .collapsed .brandMark { width: 58px; padding: 4px; border-radius: 10px; }
+  .collapsed .brandMark img { width: 50px; }
+  .collapsed .brandCaption, .collapsed .staff, .collapsed .navGroup h2 { display: none; }
+  .collapsed .collapseButton { right: 12px; top: 0; }
+  .collapsed .navGroup { padding: 7px 0; border-bottom: 1px solid #ffffff18; }
+  .collapsed .navGroup:last-child { border-bottom: 0; }
+  .collapsed .navGroup a { justify-content: center; min-height: 42px; padding: 10px; }
+  .collapsed .navLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .collapsed .navGroup a:is(:hover, :focus-visible) .navTooltip {
+    display: block;
+    position: fixed;
+    left: 76px;
+    z-index: 50;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: #213e2e;
+    color: #fffef9;
+    box-shadow: 0 4px 16px #18271b26;
+    white-space: nowrap;
+    pointer-events: none;
   }
 }
+@media (prefers-reduced-motion: reduce) { .shell { transition: none; } }
 @media (max-width: 430px) {
   .sidebar {
     padding: 16px 12px;

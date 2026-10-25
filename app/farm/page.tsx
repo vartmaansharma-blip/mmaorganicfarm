@@ -238,7 +238,7 @@ export default async function FarmDashboardPage({
               </FormSubmitButton>
             </form>
           ) : (
-            <Link
+            <Link prefetch={false}
               className={styles.primary}
               href={
                 closed
@@ -343,7 +343,7 @@ export default async function FarmDashboardPage({
         <span>Draft → Review → Released → In progress → Closeout → Closed</span>
       </div>
       <section className={styles.metrics} aria-label="Delivery progress">
-        <Link href={`/farm/delivery-sheet?${scope}&outcome=delivered`}>
+        <Link prefetch={false} href={`/farm/delivery-sheet?${scope}&outcome=delivered`}>
           <span>Fully delivered visits</span>
           <strong>
             {summary.delivered}
@@ -354,7 +354,7 @@ export default async function FarmDashboardPage({
             {summary.pending} pending
           </small>
         </Link>
-        <Link href={`/farm/delivery-sheet?${scope}`}>
+        <Link prefetch={false} href={`/farm/delivery-sheet?${scope}`}>
           <span>Milk delivered</span>
           <strong>
             {formatCapacityQuantity(summary.milkDelivered)}
@@ -362,12 +362,12 @@ export default async function FarmDashboardPage({
           </strong>
           <small>Confirmed actual / planned</small>
         </Link>
-        <Link href={`/farm/exceptions?${scope}`} data-attention={decisions > 0}>
+        <Link prefetch={false} href={`/farm/exceptions?${scope}`} data-attention={decisions > 0}>
           <span>Decisions due</span>
           <strong>{decisions}</strong>
           <small>Recorded service exceptions</small>
         </Link>
-        <Link href={`/farm/routes?date=${date}`}>
+        <Link prefetch={false} href={`/farm/routes?date=${date}`}>
           <span>Routes with work</span>
           <strong>{routes.length}</strong>
           <small>
@@ -389,14 +389,14 @@ export default async function FarmDashboardPage({
       {failedPreparation ? (
         <p className={styles.warning}>
           Automatic preparation needs attention.{" "}
-          <Link href="/farm/activity">Review the failed run and retry →</Link>
+          <Link prefetch={false} href="/farm/activity">Review the failed run and retry →</Link>
         </p>
       ) : null}
       <div className={styles.mainGrid}>
         <section className={styles.panel}>
           <div className={styles.sectionHeading}>
             <h2>Routes this morning</h2>
-            <Link href={`/farm/routes?date=${date}`}>All routes →</Link>
+            <Link prefetch={false} href={`/farm/routes?date=${date}`}>All routes →</Link>
           </div>
           {routes.length ? (
             routes.map((route) => {
@@ -422,7 +422,7 @@ export default async function FarmDashboardPage({
                       {s.unsuccessful} exceptions · {s.pending} pending
                     </small>
                   </div>
-                  <Link
+                  <Link prefetch={false}
                     href={`/farm/delivery-sheet?date=${date}&route=${route.id}`}
                   >
                     Open →
@@ -436,7 +436,7 @@ export default async function FarmDashboardPage({
           {unassigned > 0 ? (
             <p className={styles.warning}>
               {unassigned} visits need a route or driver.{" "}
-              <Link href={`/farm/delivery-sheet?date=${date}`}>
+              <Link prefetch={false} href={`/farm/delivery-sheet?date=${date}`}>
                 Review assignments →
               </Link>
             </p>
@@ -448,14 +448,14 @@ export default async function FarmDashboardPage({
             <span>{decisions} in selected scope</span>
           </div>
           <div className={styles.attention}>
-            <Link href={`/farm/exceptions?${scope}`}>
+            <Link prefetch={false} href={`/farm/exceptions?${scope}`}>
               <strong>
                 Delivery exceptions <b>{decisions}</b>
               </strong>
               <small>Review shortfalls and preserve outstanding service.</small>
               <span>Operations manager · service day {date}</span>
             </Link>
-            <Link href={`/farm/reconciliation?date=${date}`}>
+            <Link prefetch={false} href={`/farm/reconciliation?date=${date}`}>
               <strong>
                 Closeout blockers <b>{reconciliation.blockers.length}</b>
               </strong>
@@ -463,7 +463,7 @@ export default async function FarmDashboardPage({
                 All zones · {reconciliation.follow_ups} tracked follow-ups
               </small>
             </Link>
-            <Link href="/farm/cancellations">
+            <Link prefetch={false} href="/farm/cancellations">
               <strong>
                 Customer requests{" "}
                 <b>
@@ -491,7 +491,7 @@ export default async function FarmDashboardPage({
               against capacity
             </p>
           </div>
-          <Link href="/farm/capacity">Review capacity →</Link>
+          <Link prefetch={false} href="/farm/capacity">Review capacity →</Link>
         </div>
         <div className={styles.capacityGrid}>
           {CAPACITY_PRODUCTS.map((product, i) => {
@@ -535,7 +535,7 @@ export default async function FarmDashboardPage({
                 ) : (
                   <p>
                     Capacity unavailable.{" "}
-                    <Link href="/farm/capacity">Check limits</Link>
+                    <Link prefetch={false} href="/farm/capacity">Check limits</Link>
                   </p>
                 )}
               </article>

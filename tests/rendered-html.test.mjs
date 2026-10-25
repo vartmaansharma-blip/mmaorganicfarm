@@ -853,10 +853,11 @@ test("provides protected customer and daily delivery exports", async () => {
   assert.match(sheet, /Customer information is provided only for completing farm deliveries/);
   assert.doesNotMatch(sheet, /7-day milk plan/);
   assert.match(farmLayout, /FarmNavigation/);
-  assert.match(farmLayout, /farm-workspace/);
+  const workspaceShell = await readFile(new URL("../app/farm/farm-workspace-shell.tsx", import.meta.url), "utf8");
+  assert.match(workspaceShell, /farm-workspace/);
   assert.match(farmLayout, /driverView/);
   assert.match(farmLayout, /Delivery staff/);
-  assert.match(farmLayout, /driverShell/);
+  assert.match(workspaceShell, /driverShell/);
   assert.match(dashboard, /requireFarmManager/);
   assert.match(sheetStyles, /@media print/);
   assert.match(shellStyles, /@media print/);

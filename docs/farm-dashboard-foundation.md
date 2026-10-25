@@ -1,6 +1,6 @@
 # Farm dashboard foundation
 
-Implementation review · 25 October 2026 · production release not authorized
+Implementation and approved release · 25 October 2026
 
 ## Design starts from the work
 
@@ -12,7 +12,7 @@ The real `public/mma-logo.png` orange-heart M’ma Farms mark is used without re
 
 ## Implemented surfaces
 
-- Authenticated, role-aware shell with grouped desktop navigation, mobile page menu, active page, keyboard focus, and skip link. Drivers have a separate restricted entry point.
+- Authenticated, role-aware shell with grouped desktop navigation, a collapsible icon rail with labelled tooltips, a mobile page menu that closes on selection, an explicit active page, keyboard focus, reduced-motion support, and skip link. Drivers have a separate restricted entry point.
 - Overview leads with the service-day goal and a clearly labelled current status. A vibrant green goal panel and warm yellow status marker sit above service date/zone, operational stage, grouped doorstep counts, actual milk quantities, route progress, decision links, tomorrow's paid commitments/capacity/holds, and 30-second refresh that pauses during form entry.
 - Routes now starts with the chosen workday's actual route progress/load. Permanent setup and routing rules are a secondary disclosure. Stops, driver overrides, release, and ordering continue through the authoritative dispatch workspace.
 - Deliveries includes route/outcome filters, original dispatch functions, driver outcomes, partial quantities, bottle-return recording, and permission-scoped contact details. Drivers have a focused current-stop workspace with the required quantities, customer instructions, call/navigation actions and a compact stop queue. Filtered manager views do not offer all-day release controls.
@@ -34,13 +34,17 @@ The new reconciliation migration preserves original scheduled quantities, projec
 This is a working implementation foundation, not a claim that every future capability is complete:
 
 - A quantity-based bottle/finished-stock ledger still needs dated opening counts, custody transfers, and audited movements. Existing boolean return records cannot establish that balance.
-- Nightly preparation is implemented with a 21:05 IST target, a secret-protected server endpoint, a default-off environment flag, idempotent database work, failure records and manual retries. It prepares tomorrow's draft and default assignments; staff still review and release dispatch. It has not been activated in production. Recorded runs establish operation; configuration alone does not.
+- Nightly preparation is implemented with a 21:05 IST target, a secret-protected server endpoint, a default-off environment flag, idempotent database work, failure records and manual retries. It prepares tomorrow's draft and default assignments; staff still review and release dispatch. Production scheduling is configured for the approved release. Recorded runs establish operation; configuration alone does not.
 - Outbound messaging delivery receipts, embedded maps, GPS, and ETA computation are not integrated. The app does not fabricate their status.
 - The merged calendar-month schema is integrated for dated generation, ordinary/partial fulfilment, finite completion and capacity. Monthly deliveries never consume legacy milk credits. Automatic monthly reschedules, skips and financial changes remain unavailable; keep those requests in explicit manager follow-up.
 - Current reports are service-day reports, not a validated profit or historical on-time analytics product.
 - Farm surfaces use the deliberate light cream operational palette. This change does not create a fully reviewed alternate dark farm theme.
-- Hosted Supabase Auth/PostgREST and a production-equivalent preview still require separate verification. The local browser adapter is test infrastructure, not a second business backend.
+- The local browser adapter is test infrastructure, not a second business backend. Hosted empty-schema migration rehearsal verifies PostgreSQL migration compatibility; it does not replace a full hosted authenticated operational journey.
 
-## Release gate
+## Approved release verification
 
-Review the screenshots and the migration, validate a preview against an isolated production-equivalent Supabase environment, and obtain explicit approval before production migration or deployment. Do not merge merely because a build succeeds. No production database mutation, merge, or live deployment is included in this work.
+The user explicitly requested completion, merge to main and deployment. TypeScript, the Webpack production build, unit checks, native PostgreSQL integration checks and Chromium/WebKit browser journeys cover this release. The browser journey includes the collapsible desktop rail, narrow mobile widths, mobile menu selection, driver requests, manager review and closeout. Current command results and deployed revision are recorded in the release handoff.
+
+The three application migrations were applied in order after a schema-only hosted rehearsal. Existing plans, orders, payments and delivery-outcome fingerprints matched before and after migration. A recovery snapshot remains inside the same Supabase database in `dashboard_recovery_20261025`, with application-role schema access revoked. It contains application tables, function/policy/index/constraint definitions and migration history. This is an application recovery snapshot; it is not a platform-managed backup of Auth, Storage objects or the complete Supabase project. No customer records were exported locally or deleted.
+
+The rehearsal used empty, nonexposed schemas rather than an independent Supabase project. Full hosted authenticated workflow acceptance remains a narrower evidence boundary than local browser coverage. Routine preparation may create tomorrow's drafts; human dispatch release and sensitive changes still require staff decisions.

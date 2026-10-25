@@ -281,8 +281,10 @@ try {
       .getByRole("status")
       .filter({ hasText: "Request saved" })
       .waitFor();
-    await page.goto(`${base}/farm/exceptions`, { waitUntil: "networkidle" });
-    assert.match(page.url(), /delivery-sheet/, "driver manager-route guard");
+    const driverGuard=await context.newPage();
+    await driverGuard.goto(`${base}/farm/exceptions`, { waitUntil: "networkidle" });
+    assert.match(driverGuard.url(), /delivery-sheet/, "driver manager-route guard");
+    await driverGuard.close();
     const managerContext = await contextFor(browser, manager, 1440);
     const mp = await managerContext.newPage();
     activePage = mp;
@@ -341,18 +343,33 @@ try {
       await noOverflow(mp);
       await mp.setViewportSize({ width: 1440, height: 900 });
     }
-    await mp.goto(`${base}/farm/payments`, { waitUntil: "networkidle" });
-    assert.equal(
-      new URL(mp.url()).pathname,
-      "/farm",
-      "manager cannot open owner finance",
-    );
+    const managerGuard=await managerContext.newPage();
+    await managerGuard.goto(`${base}/farm/payments`, {waitUntil:"networkidle"});
+    assert.equal(new URL(managerGuard.url()).pathname,"/farm","manager cannot open owner finance");
+    await managerGuard.close();
     await mp.goto(`${base}/farm`, { waitUntil: "networkidle" });
     await mp.screenshot({
       path: path.join(output, `${name}-dashboard-overview.png`),
       fullPage: true,
     });
+    const workspaceBefore = await mp.locator("#farm-workspace").boundingBox();
+    await mp.getByRole("button", { name: "Collapse navigation", exact: true }).click();
+    await mp.getByRole("button", { name: "Expand navigation", exact: true }).waitFor();
+    await mp.waitForFunction(() => document.querySelector("#farm-workspace").getBoundingClientRect().left < 100);
+    const workspaceAfter = await mp.locator("#farm-workspace").boundingBox();
+    assert.ok(workspaceAfter.width > workspaceBefore.width + 100, "collapsing navigation returns workspace width");
+    assert.equal(await mp.getByRole("navigation", { name: "Farm operations", exact: true }).getByRole("link", { name: "Routes", exact: true }).count(), 1);
+    await noOverflow(mp);
+    await mp.screenshot({ path: path.join(output, `${name}-dashboard-collapsed.png`), fullPage: true });
+    await mp.getByRole("button", { name: "Expand navigation", exact: true }).click();
     await mp.setViewportSize({ width: 390, height: 900 });
+    await mp.locator("summary").filter({ hasText: "Switch page" }).click();
+    await mp.getByRole("navigation", { name: "Farm pages", exact: true }).getByRole("link", { name: "Routes", exact: true }).click();
+    await mp.getByRole("heading", { name: "Routes", exact: true }).waitFor();
+    await mp.waitForLoadState("networkidle");
+    assert.equal(await mp.locator("details[open]").filter({ has: mp.getByRole("navigation", { name: "Farm pages", exact: true }) }).count(), 0, "mobile navigation closes after selection");
+    await mp.goto(`${base}/farm`, { waitUntil: "networkidle" });
+    await noOverflow(mp);
     await mp.screenshot({
       path: path.join(output, `${name}-dashboard-mobile.png`),
       fullPage: true,

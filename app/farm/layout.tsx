@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { requireFarmStaff } from "@/lib/farm-dashboard";
 import { FarmNavigation } from "./farm-navigation";
+import { FarmWorkspaceShell } from "./farm-workspace-shell";
 import styles from "./farm-shell.module.css";
 export const dynamic = "force-dynamic";
 export default async function FarmLayout({
@@ -14,12 +15,9 @@ export default async function FarmLayout({
   const { role } = await requireFarmStaff("/farm");
   const driverView = role === "driver";
   return (
-    <div className={`${styles.shell} ${driverView ? styles.driverShell : ""}`}>
-      <a className={styles.skip} href="#farm-workspace">
-        Skip to workspace
-      </a>
-      <aside className={styles.sidebar}>
+    <FarmWorkspaceShell driver={driverView} brand={
         <Link
+          prefetch={false}
           className={styles.brand}
           href={driverView ? "/farm/delivery-sheet" : "/farm"}
         >
@@ -34,9 +32,11 @@ export default async function FarmLayout({
           </span>
           <span className={styles.brandCaption}>Farm operations</span>
         </Link>
+      } navigation={
         <Suspense fallback={<p>Loading navigation…</p>}>
           <FarmNavigation role={role} />
         </Suspense>
+      } staff={
         <div className={styles.staff}>
           <span>Signed in as</span>
           <strong>
@@ -46,12 +46,10 @@ export default async function FarmLayout({
                 ? "Delivery staff"
                 : "Operations manager"}
           </strong>
-          <Link href="/">Back to website ↗</Link>
+          <Link prefetch={false} href="/">Back to website ↗</Link>
         </div>
-      </aside>
-      <div id="farm-workspace" tabIndex={-1} className={styles.workspace}>
+      }>
         {children}
-      </div>
-    </div>
+    </FarmWorkspaceShell>
   );
 }

@@ -14,7 +14,7 @@ Public operational functions delegate to role-checked private implementations. D
 
 ## Automatic preparation
 
-The Vercel schedule invokes `/api/cron/prepare-dispatch` at a target of 21:05 IST (`15:35 UTC`). Provider plan and timing constraints must be verified in the preview; the schedule is not an exact-time delivery guarantee. Configure a server-only `CRON_SECRET` of at least 32 characters and set `FARM_AUTOMATION_ENABLED=true` only after review. `.env.example` keeps the feature off by default; no live secret or environment setting is changed by this task.
+The Vercel schedule invokes `/api/cron/prepare-dispatch` at a target of 21:05 IST (`15:35 UTC`). Provider plan and timing constraints must be verified in the preview; the schedule is not an exact-time delivery guarantee. Configure a server-only `CRON_SECRET` of at least 32 characters and set `FARM_AUTOMATION_ENABLED=true` only after review. `.env.example` keeps the feature off by default; production now has a server-only secret and the preparation flag configured for the approved release.
 
 The endpoint validates its bearer secret and invokes a service-role-only database command. The job prepares tomorrow's paid delivery draft and default driver assignments, logs completed attempts, retains failed runs and rolls back partial preparation. It does not release dispatch, charge customers or send messages. Released/closed days are preserved. A manager can retry failed preparation from Activity; successful repeated calls reuse the existing run. System work uses a null actor rather than impersonating a member of staff.
 
@@ -43,7 +43,7 @@ Full skip preserves the original service and moves it to a valid plan-end date; 
 
 The daily bottle reconciliation uses documented legacy return expectations. It does not verify physical farm/customer stock balances. Calendar-month fulfilment preserves dated quantities and finite plan completion without consuming a milk-credit count. Billing and entitlement models must agree. Monthly rescheduling and carry-forward through the legacy adapter remain blocked.
 
-No migration has been applied to production by this task. Review migration history and take the normal database backup before an approved release; do not apply a legacy baseline blindly over an existing production schema.
+The three additive migrations were applied to production on 25 October 2026 after the user approved merge and deployment. A private application recovery snapshot is retained in `dashboard_recovery_20261025`; application-role access is revoked. Existing business-record fingerprints matched before and after migration. A schema-only hosted rehearsal completed first. This does not constitute a platform-managed project backup or a complete hosted authenticated acceptance run. Do not apply a legacy baseline blindly over an existing production schema.
 
 ## Current main integration
 
