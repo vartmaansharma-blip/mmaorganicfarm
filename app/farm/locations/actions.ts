@@ -30,6 +30,7 @@ import {
   releaseOrderCapacity,
   reserveOrderCapacity,
 } from "@/lib/production-capacity";
+import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function textValue(formData: FormData, key: string) {
@@ -432,8 +433,9 @@ export async function recordCustomerOrder(formData: FormData) {
     redirectWithMessage(returnTo, "error", `The customer is saved, but automatic routing failed: ${routeRefreshError.message}`);
   }
 
+  const firstPlanStart = purchaseMode === "plan" ? await firstScheduledPlanStart(admin, userId) : null;
   const pricing = purchaseMode === "plan"
-    ? calculatePlanPricing({ bottleChoice, products, schedule, startDate })
+    ? calculatePlanPricing({ bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
     : calculateOrderPricing({ bottleChoice, milkLitres: onceMilk, products });
 
   let deliveryPlanId: string | null = null;
@@ -504,7 +506,7 @@ export async function recordCustomerOrder(formData: FormData) {
       purchase_mode: purchaseMode,
       start_date: startDate,
       status: "pending_payment",
-      subtotal_paise: (pricing.total - pricing.bottleCharge) * 100,
+      subtotal_paise: (pricing.total - pricing.bottleCharge - pricing.deliveryCharge) * 100,
       total_paise: pricing.total * 100,
       user_id: userId,
     })

@@ -1,1 +1,42 @@
-.page{min-height:100svh;padding:0 20px 64px;color:var(--ui-text);background:var(--ui-page)}.header{width:min(100%,920px);min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin:auto;border-bottom:1px solid var(--ui-border);font-size:13px;font-weight:600}.brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700}.brand img{width:52px;height:44px;object-fit:contain}.shell{width:min(100%,680px);margin:46px auto 0}.heading>p,.sectionHeading p,.paymentHeading p{margin:0 0 9px;font-size:12px;font-weight:700;text-transform:uppercase}.heading h1{margin:0;font-size:clamp(36px,9vw,50px);line-height:1.06}.heading>span,.paymentHeading>span{display:block;margin-top:14px;color:var(--ui-muted);font-size:15px;line-height:1.55}.section{margin-top:42px;padding-top:24px;border-top:1px solid var(--ui-border)}.sectionHeading{display:flex;justify-content:space-between;gap:18px}.sectionHeading h2,.paymentHeading h2{margin:0;font-size:22px}.sectionHeading>span{padding:6px 8px;border:1px solid var(--ui-border);border-radius:4px;color:var(--ui-muted);font-size:11px}.items{margin-top:22px;border-top:1px solid var(--ui-border)}.item{display:flex;justify-content:space-between;gap:20px;padding:18px 0;border-bottom:1px solid var(--ui-border)}.item>div{display:grid;gap:5px}.item strong{font-size:15px}.item span,.item small{color:var(--ui-muted);font-size:13px}.item b{font-size:14px}.totals,.delivery{display:grid;gap:12px;margin:18px 0 0}.totals div,.delivery div{display:flex;justify-content:space-between;gap:20px}.totals dt,.totals dd,.delivery dt,.delivery dd{margin:0}.total{padding-top:14px;border-top:1px solid var(--ui-border);font-size:17px;font-weight:750}.delivery dt{color:var(--ui-muted)}.delivery dd{max-width:42ch;text-align:right}.checkout{display:grid;gap:16px;margin-top:24px}.checkout label{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:13px;line-height:1.5}.checkout input{width:18px;height:18px;accent-color:var(--ui-action)}.checkout a,.note a{text-decoration:underline}.checkout button{min-height:56px;border:1px solid var(--ui-border);border-radius:5px;color:var(--ui-on-action);background:var(--ui-action);font:inherit;font-weight:700}.checkout button:disabled{border-color:var(--ui-border);color:var(--ui-muted);background:var(--ui-surface)}.setup,.message,.note{margin:0;color:var(--ui-muted);font-size:12px;line-height:1.55}.setup{padding:11px 12px;border:1px solid var(--ui-border);border-radius:4px;color:var(--ui-warning-text);background:var(--ui-warning-bg)}.note{margin-top:14px}@media(max-width:480px){.brand span{display:none}.delivery div{display:grid;gap:5px}.delivery dd{text-align:left}}
+.page {
+  composes: surface from "../../components/customer-ui.module.css";min-height:100svh;padding:0 20px 64px;color:var(--ui-text);background:var(--ui-page)
+}
+.header{width:min(100%,920px);min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin:auto;border-bottom:1px solid var(--ui-border);font-size:13px;font-weight:600}
+.brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700}
+.brand img{width:52px;height:44px;object-fit:contain}
+.shell{width:min(100%,680px);margin:46px auto 0}
+.heading>p,.sectionHeading p,.paymentHeading p{margin:0 0 9px;font-size:12px;font-weight:700;text-transform:uppercase}
+.heading h1 {margin:0;font-size: var(--ui-type-page);line-height:1.06}
+.heading>span,.paymentHeading>span{display:block;margin-top:14px;color:var(--ui-muted);font-size:15px;line-height:1.55}
+.section{margin-top:42px;padding-top:24px;border-top:1px solid var(--ui-border)}
+.sectionHeading{display:flex;justify-content:space-between;gap:18px}
+.sectionHeading h2,.paymentHeading h2{margin:0;font-size:22px}
+.sectionHeading>span{padding:6px 8px;border:1px solid var(--ui-border);border-radius: var(--ui-radius-field);color:var(--ui-muted);font-size:11px}
+.items{margin-top:22px;border-top:1px solid var(--ui-border)}
+.item{display:flex;justify-content:space-between;gap:20px;padding:18px 0;border-bottom:1px solid var(--ui-border)}
+.item>div{display:grid;gap:5px}
+.item strong{font-size:15px}
+.item span,.item small{color:var(--ui-muted);font-size:13px}
+.item b{font-size:14px}
+.totals,.delivery{display:grid;gap:12px;margin:18px 0 0}
+.totals div,.delivery div{display:flex;justify-content:space-between;gap:20px}
+.totals dt,.totals dd,.delivery dt,.delivery dd{margin:0}
+.total{padding-top:14px;border-top:1px solid var(--ui-border);font-size:17px;font-weight:750}
+.delivery dt{color:var(--ui-muted)}
+.delivery dd{max-width:42ch;text-align:right}
+.checkout{display:grid;gap:16px;margin-top:24px}
+.checkout label{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:13px;line-height:1.5}
+.checkout input{width:18px;height:18px;accent-color:var(--ui-action)}
+.checkout a,.note a{text-decoration:underline}
+.checkout button:disabled{border-color:var(--ui-border);color:var(--ui-muted);background:var(--ui-surface)}
+.setup,.message,.note{margin:0;color:var(--ui-muted);font-size:12px;line-height:1.55}
+.setup{padding:11px 12px;border:1px solid var(--ui-border);border-radius: var(--ui-radius-field);color:var(--ui-warning-text);background:var(--ui-warning-bg)}
+.note{margin-top:14px}
+@media(max-width:480px){.brand span{display:none}
+.delivery div{display:grid;gap:5px}
+.delivery dd{text-align:left}
+}
+
+.payButton { composes: primary from "../../components/customer-ui.module.css"; }
+.sectionHeading h2, .paymentHeading h2 { font-family: var(--font-sans); font-weight: 600; }
+.checkout label { align-items: center; min-height: var(--ui-touch-target); }

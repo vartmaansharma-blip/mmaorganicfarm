@@ -8,6 +8,12 @@ type PlanRow = {
   delivered_deliveries: number;
   is_test: boolean;
   purchased_deliveries: number;
+  billing_model: string;
+  scheduled_delivery_items: Array<{
+    delivery_date: string;
+    product_key: string;
+    quantity: number;
+  }>;
   start_date: string;
   status: string;
   updated_at: string;
@@ -20,9 +26,7 @@ type PlanRow = {
 };
 
 export async function GET() {
-  const { role, supabase } = await requireFarmStaff(
-    "/farm/exports/customers",
-  );
+  const { role, supabase } = await requireFarmStaff("/farm/exports/customers");
 
   if (!canManageLocations(role)) {
     return new Response("Manager access is required.", { status: 403 });
@@ -41,7 +45,7 @@ export async function GET() {
       supabase
         .from("delivery_plans")
         .select(
-          "user_id, status, is_test, start_date, purchased_deliveries, delivered_deliveries, updated_at, weekly_delivery_items(day_of_week, product_key, quantity)",
+          "user_id, status, is_test, start_date, billing_model, scheduled_delivery_items(delivery_date,product_key,quantity), purchased_deliveries, delivered_deliveries, updated_at, weekly_delivery_items(day_of_week, product_key, quantity)",
         )
         .order("updated_at", { ascending: false }),
     ]);
@@ -87,18 +91,21 @@ export async function GET() {
       "Plan status",
       "Mode",
       "Plan start",
-      "Deliveries remaining",
+      "Deliveries remaining (legacy milk credits)",
+      "Billing model",
+      "Monthly dated items",
       ...MILK_PLAN_DAYS.map((day) => `${day.label} milk (L)`),
     ],
     ...(profilesResult.data ?? []).map((profile) => {
       const plan = latestPlanByUser.get(profile.user_id);
-      const remaining = plan
-        ? Math.max(
-            0,
-            Number(plan.purchased_deliveries) -
-              Number(plan.delivered_deliveries),
-          )
-        : "";
+      const remaining =
+        plan && plan.billing_model !== "calendar_month"
+          ? Math.max(
+              0,
+              Number(plan.purchased_deliveries) -
+                Number(plan.delivered_deliveries),
+            )
+          : "";
       const milkByDay = new Map(
         (plan?.weekly_delivery_items ?? [])
           .filter((item) => item.product_key === "milk")
@@ -113,9 +120,7 @@ export async function GET() {
         profile.locality,
         profile.landmark,
         profile.postal_code,
-        profile.delivery_area_id
-          ? areaById.get(profile.delivery_area_id)
-          : "",
+        profile.delivery_area_id ? areaById.get(profile.delivery_area_id) : "",
         profile.delivery_route_id
           ? routeById.get(profile.delivery_route_id)
           : "",
@@ -124,7 +129,17 @@ export async function GET() {
         plan ? (plan.is_test ? "Test" : "Live") : "",
         plan?.start_date ?? "",
         remaining,
-        ...MILK_PLAN_DAYS.map((_, index) => milkByDay.get(index + 1) ?? 0),
+        plan?.billing_model ?? "",
+        plan?.billing_model === "calendar_month"
+          ? plan.scheduled_delivery_items
+              .map((i) => `${i.delivery_date} ${i.product_key} ${i.quantity}`)
+              .join("; ")
+          : "",
+        ...MILK_PLAN_DAYS.map((_, index) =>
+          plan?.billing_model === "calendar_month"
+            ? ""
+            : (milkByDay.get(index + 1) ?? 0),
+        ),
       ];
     }),
   ];

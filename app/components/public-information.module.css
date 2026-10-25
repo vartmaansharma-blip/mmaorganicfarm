@@ -1,4 +1,5 @@
 .page {
+  composes: surface from "./customer-ui.module.css";
   min-height: 100vh;
   color:var(--ui-text);
   background:var(--ui-page);
@@ -129,6 +130,7 @@
 .content a {
   color:var(--ui-text);
   font-weight: 700;
+  text-decoration: underline;
   text-underline-offset: 4px;
 }
 
@@ -230,4 +232,5 @@
   .footer nav {
     justify-content: flex-start;
   }
+
 }

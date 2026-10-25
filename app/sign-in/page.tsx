@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -51,7 +51,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         </Link>
         <div className="customer-header-actions">
           <span className={styles.location}>Fresh milk in Jamshedpur</span>
-          <ThemeToggle />
+          <PageNavigationControls />
         </div>
       </header>
 
@@ -90,6 +90,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               <label>
                 Full name
                 <input
+                  className={styles.textInput}
                   autoComplete="name"
                   name="fullName"
                   placeholder="Your name"
@@ -101,6 +102,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             <label>
               Email address
               <input
+                className={styles.textInput}
                 autoComplete="email"
                 inputMode="email"
                 name="email"
@@ -112,6 +114,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             <label>
               Password
               <input
+                className={styles.textInput}
                 autoComplete={isSignUp ? "new-password" : "current-password"}
                 minLength={8}
                 name="password"

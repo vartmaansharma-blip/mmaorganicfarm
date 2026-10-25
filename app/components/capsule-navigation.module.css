@@ -4,7 +4,7 @@
   top: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto;
+  grid-template-columns: 1fr auto 1fr auto auto;
   align-items: center;
   gap: var(--space-5);
   min-height: var(--home-header-height);
@@ -31,7 +31,9 @@
   .shop { padding-inline: 18px; gap: 12px; }
 }
 /* Mobile uses a dedicated modal navigation, keeping one clear Shop action. */
-.menuButton, .mobileShop { display: none; }
+.mobileShop { display: none; }
+.menuButton {display:grid;place-items:center;width:44px;height:44px;padding:10px;border:1px solid var(--hero-line);border-radius:50%;color:inherit;background:transparent;cursor:pointer;flex-shrink:0;}
+.menuButton:focus-visible{outline:2px solid var(--hero-ink);outline-offset:3px;}
 .drawer { border: 0; padding: 24px; width: min(420px, 90vw); height: 100dvh; max-height: none; max-width: none; margin: 0 0 0 auto; background: var(--hero-paper); color: var(--hero-ink); }
 .drawer[open] { display: flex; flex-direction: column; animation: drawer-enter 220ms ease-out; }
 .drawer::backdrop { background: rgb(30 35 29 / .25); }

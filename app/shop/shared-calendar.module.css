@@ -1,0 +1,182 @@
+.calendar {
+  container-type: inline-size;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 12px;
+  color: var(--color-text-primary);
+  background: var(--color-background);
+}
+.heading h3 {
+  font:
+    400 24px/1.15 var(--font-fraunces),
+    serif;
+  letter-spacing: -0.025em;
+  margin: 0 0 8px;
+}
+.heading > p {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.note {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin: 12px 0 18px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+}
+.weekday {
+  min-height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+.grid button {
+  min-height: 50px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  background: transparent;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font:
+    13px var(--font-space-grotesk),
+    sans-serif;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.grid button[aria-pressed="true"] {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+}
+.markers {
+  height: 11px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  color: var(--color-text-secondary);
+}
+.day {
+  margin-top: 18px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+}
+.day h4 {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+.day ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.day li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  min-height: 38px;
+}
+.day li > span {
+  flex: 1;
+}
+.day strong {
+  font-weight: 500;
+}
+.day > p {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+.agenda {
+  display: none;
+}
+.calendar button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+@media (max-width: 380px) {
+  .grid {
+    display: none;
+  }
+  .agenda {
+    display: grid;
+    max-height: 240px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    gap: 4px;
+  }
+  .agenda button {
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: inherit;
+    min-height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    font:
+      11px var(--font-space-grotesk),
+      sans-serif;
+    text-align: left;
+  }
+  .agenda button[aria-pressed="true"] {
+    border-color: var(--color-accent);
+    background: var(--color-surface);
+  }
+  .agenda button > span:first-child {
+    white-space: nowrap;
+    min-width: 42px;
+  }
+}
+
+@container (max-width: 320px) {
+  .grid {
+    display: none;
+  }
+  .agenda {
+    display: grid;
+    max-height: 240px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    gap: 4px;
+  }
+  .agenda button {
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: inherit;
+    min-height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    font:
+      11px var(--font-space-grotesk),
+      sans-serif;
+    text-align: left;
+  }
+  .agenda button[aria-pressed="true"] {
+    border-color: var(--color-accent);
+    background: var(--color-surface);
+  }
+  .agenda button > span:first-child {
+    white-space: nowrap;
+    min-width: 42px;
+  }
+}

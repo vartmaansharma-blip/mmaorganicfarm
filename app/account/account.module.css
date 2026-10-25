@@ -1,4 +1,5 @@
 .page {
+  composes: surface from "../components/customer-ui.module.css";
   min-height: 100svh;
   padding: 0 24px 72px;
   color:var(--ui-text);
@@ -75,7 +76,7 @@
 
 .content h1 {
   margin: 0;
-  font-size: 40px;
+  font-size: var(--ui-type-page);
   font-weight: 500;
   line-height: 1.15;
 }
@@ -88,17 +89,8 @@
 }
 
 .startOrder {
+  composes: primary from "../components/customer-ui.module.css";
   flex: 0 0 auto;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  border-radius:4px;
-  color:var(--ui-on-action);
-  background:var(--ui-action);
-  font-size: 14px;
-  font-weight: 600;
 }
 
 .accountSection {
@@ -248,7 +240,7 @@
 .planStatus {
   flex: 0 0 auto;
   padding: 5px 9px;
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-warning-text);
   background:var(--ui-warning-bg);
   font-size: 12px;
@@ -268,7 +260,7 @@
   gap: 12px;
   padding: 14px 16px;
   border:1px solid var(--ui-border);
-  border-radius:6px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-surface);
 }
 
@@ -317,15 +309,15 @@
   justify-content: center;
   padding: 0 14px;
   border:1px solid var(--ui-border);
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   font-size: 13px;
   font-weight: 650;
 }
 
 .openCalendar {
-  color:var(--ui-on-action);
+  composes: primary from "../components/customer-ui.module.css";
+
   border-color:var(--ui-border);
-  background:var(--ui-action);
 }
 
 .planSummary div {
@@ -394,14 +386,14 @@
   flex-direction: column;
   padding: 12px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
 }
 
 .upcomingGrid time,
 .upcomingGrid small {
   color:var(--ui-muted);
-  font-size: 10px;
+  font-size: var(--ui-type-caption);
 }
 
 .upcomingGrid strong {
@@ -442,7 +434,7 @@
 .planDay span {
   margin-bottom: 6px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   font-weight: 600;
 }
 
@@ -473,7 +465,7 @@
   gap: 5px 12px;
   padding: 13px 14px;
   border:1px solid var(--ui-border);
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-surface);
 }
 
@@ -485,7 +477,7 @@
 .addOnSchedule article small {
   grid-column: 1 / -1;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
 }
 
 .planNote {
@@ -529,19 +521,11 @@
   font-weight: 600;
 }
 
-.cancelRequest textarea {
-  border:1px solid var(--ui-input-border);
-  border-radius:4px;
-  font: inherit;
-  padding: 10px;
-  resize: vertical;
-}
-
 .cancelRequest button,
 .activityHeading button {
   background:var(--ui-page);
   border:1px solid var(--ui-border);
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -714,7 +698,7 @@
   }
 
   .content h1 {
-    font-size: 32px;
+    font-size: var(--ui-type-page);
   }
 
   .startOrder {
@@ -780,6 +764,18 @@
     flex-direction: column;
     gap: 12px;
   }
+
 }
 
 .cancelRequest textarea::placeholder { color:var(--ui-muted); opacity:1; }
+
+.editPlan { composes: secondary from "../components/customer-ui.module.css"; }
+
+.reasonField { composes: field from "../components/customer-ui.module.css"; resize: vertical; }
+
+.openCalendar, .editPlan { min-height: var(--ui-control-height); border-radius: var(--ui-radius-control); }
+.cancelRequest button, .activityHeading button, .editDetails, .planSwitcher a, .upcomingHeading > a, .cancelRequest summary, .signOut { min-height: var(--ui-touch-target); display: inline-flex; align-items: center; }
+.accountSection h2, .planHeading h2, .sectionHeading h2 { font-family: var(--font-sans); font-weight: 600; }
+
+.accountSection h2, .sectionHeading h2 { font-size: var(--ui-type-section); }
+.cancelRequest button, .activityHeading button { color: var(--ui-text); border-radius: var(--ui-radius-control); }

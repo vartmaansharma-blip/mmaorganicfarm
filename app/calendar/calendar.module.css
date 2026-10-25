@@ -1,4 +1,5 @@
 .page {
+  composes: surface from "../components/customer-ui.module.css";
   min-height: 100svh;
   padding: 0 18px 72px;
   color:var(--ui-text);
@@ -60,7 +61,7 @@
 
 .heading h1 {
   margin: 0;
-  font-size: clamp(34px, 11vw, 50px);
+  font-size: var(--ui-type-page);
   line-height: 1.05;
 }
 
@@ -75,7 +76,7 @@
 .status {
   width: fit-content;
   padding: 5px 8px;
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-warning-text);
   background:var(--ui-warning-bg);
   font-size: 12px;
@@ -100,7 +101,7 @@
 .balance dt {
   margin-bottom: 6px;
   color:var(--ui-muted);
-  font-size: 11px;
+  font-size: var(--ui-type-caption);
   font-weight: 600;
 }
 
@@ -115,7 +116,7 @@
 .error {
   margin: 20px 0 0;
   padding: 12px 14px;
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -177,7 +178,7 @@
   gap: 12px;
   padding: 13px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
 }
 
@@ -193,7 +194,7 @@
   gap: 4px;
   padding: 12px 14px;
   border:1px solid var(--ui-border);
-  border-radius:5px;
+  border-radius: var(--ui-radius-field);
   background:var(--ui-page);
 }
 
@@ -264,7 +265,7 @@
 .pauseList button {
   min-height: 42px;
   border:1px solid var(--ui-border);
-  border-radius:4px;
+  border-radius: var(--ui-radius-field);
   color:var(--ui-text);
   background:var(--ui-page);
   font: inherit;
@@ -312,19 +313,6 @@
   color:var(--ui-muted);
   font-size: 12px;
   font-weight: 600;
-}
-
-.itemEditor select,
-.pauseForm input {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px;
-  border:1px solid var(--ui-border);
-  border-radius:4px;
-  color:var(--ui-text);
-  background:var(--ui-page);
-  font: inherit;
-  font-size: 15px;
 }
 
 .itemEditor form > div {
@@ -427,6 +415,7 @@
   .pauseForm > button {
     grid-column: 1 / -1;
   }
+
 }
 
 @media (min-width: 900px) {
@@ -443,4 +432,14 @@
   .pauseSection {
     width: min(100%, 720px);
   }
+
 }
+
+.inputField { composes: field from "../components/customer-ui.module.css"; }
+
+.daySelected, .planSelector a[aria-current="page"] { background: var(--color-surface); border-color: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); }
+.sectionHeading h2 { font-family: var(--font-sans); font-size: var(--ui-type-section); font-weight: 600; }
+.dayActions button, .itemEditor button, .addOnRow button, .pauseForm button, .pauseList button { min-height: var(--ui-control-height); border-radius: var(--ui-radius-control); transition: background-color var(--ui-motion-fast) ease; }
+.dayActions button:hover, .itemEditor button:hover, .addOnRow button:hover, .pauseForm button:hover, .pauseList button:hover { background: var(--color-surface-hover); }
+.dayActions button:first-of-type:hover, .itemEditor form > div button:first-child:hover, .pauseForm > button:hover { background: var(--color-action-primary-hover); }
+@media (prefers-reduced-motion: reduce) { .dayActions button, .itemEditor button, .addOnRow button, .pauseForm button, .pauseList button { transition: none; } }

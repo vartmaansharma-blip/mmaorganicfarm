@@ -3,7 +3,8 @@ import { PublicInformationLayout } from "@/app/components/public-information-lay
 
 export const metadata: Metadata = {
   title: "Delivery Policy",
-  description: "Delivery area, scheduling, and fulfilment information for M'ma Organic Farm.",
+  description:
+    "Delivery area, scheduling, and fulfilment information for M'ma Organic Farm.",
 };
 
 export default function ShippingPage() {
@@ -15,19 +16,36 @@ export default function ShippingPage() {
     >
       <section>
         <h2>Where we deliver</h2>
-        <p>Delivery is currently available in selected areas of Jamshedpur, Jharkhand. Availability is checked during ordering, and a successfully paid and accepted order is scheduled automatically.</p>
+        <p>
+          Delivery is currently available in selected areas of Jamshedpur,
+          Jharkhand. Availability is checked during ordering, and a successfully
+          paid and accepted order is scheduled automatically.
+        </p>
       </section>
       <section>
         <h2>When delivery starts</h2>
-        <p>The earliest selectable start date is the next delivery day. The customer sees and confirms the schedule before the order proceeds.</p>
+        <p>
+          The earliest selectable start date is the next delivery day. The
+          customer sees and confirms the schedule before the order proceeds.
+        </p>
       </section>
       <section>
         <h2>Scheduled plans</h2>
-        <p>Customers can choose delivery days and quantities. A skipped paid milk delivery is carried forward to the end of the active plan instead of being lost.</p>
+        <p>
+          New baskets cover one prepaid calendar month, with independent milk,
+          paneer and ghee dates shown together. Contact the farm before
+          preparation to change a paid monthly delivery. Existing milk-credit
+          plans retain their purchased terms: a full skipped milk day moves to
+          the end of that plan.
+        </p>
       </section>
       <section>
         <h2>Delivery updates</h2>
-        <p>If weather, access, product availability, or another operational issue affects delivery, the farm will contact the customer using their saved phone number.</p>
+        <p>
+          If weather, access, product availability, or another operational issue
+          affects delivery, the farm will contact the customer using their saved
+          phone number.
+        </p>
       </section>
     </PublicInformationLayout>
   );

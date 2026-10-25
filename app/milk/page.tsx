@@ -1,5 +1,5 @@
 import { PlanBuilderStartTracking } from "@/app/components/landing-conversion-tracking";
-import { ThemeToggle } from "@/app/components/theme-toggle";
+import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import {
 } from "@/lib/farm-products";
 import { MILK_PLAN_DAYS, type WeeklyMilkSchedule } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
+import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
 import { MilkPlanBuilder } from "./milk-plan-builder";
 import styles from "./milk.module.css";
 
@@ -29,6 +30,7 @@ type MilkPageProps = {
 
 export default async function MilkPage({ searchParams }: MilkPageProps) {
   const params = await searchParams;
+  if (params.edit !== "plan") redirect("/shop/milk");
   const supabase = await createClient();
   const {
     data: { user },
@@ -38,6 +40,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
     redirect("/sign-in?next=%2Fmilk");
   }
 
+  const firstPlanStart = await firstScheduledPlanStart(supabase, user.id);
   const isEditing = params.edit === "plan";
   const { data: savedPlan } = isEditing
     ? await supabase
@@ -47,6 +50,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
         )
         .eq("user_id", user.id)
         .in("status", ["pending_confirmation", "active", "paused"])
+        .eq("billing_model", "milk_credits")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -110,7 +114,11 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
     <main className={styles.page}>
       <PlanBuilderStartTracking />
       <header className={styles.header}>
-        <Link className={`${styles.brand} customer-header-brand`} aria-label="M'ma Organic Farm" href="/">
+        <Link
+          className={`${styles.brand} customer-header-brand`}
+          aria-label="M'ma Organic Farm"
+          href="/"
+        >
           <Image src="/mma-logo.png" alt="" width={66} height={56} />
           <span>
             M&apos;ma Organic Farm
@@ -124,7 +132,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
               Back to farm
             </Link>
           </div>
-          <ThemeToggle />
+          <PageNavigationControls />
         </div>
       </header>
 
@@ -165,6 +173,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
       </section>
 
       <MilkPlanBuilder
+        firstPlanStart={firstPlanStart}
         initialExtras={savedExtras}
         initialSchedule={savedSchedule}
         initialStartDate={savedPlan?.start_date ?? ""}

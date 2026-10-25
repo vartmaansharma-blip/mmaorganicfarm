@@ -24,6 +24,7 @@ type CapacityDay = {
 };
 
 type ManualOrderFormProps = {
+  firstPlanStart: string | null;
   capacityDays: CapacityDay[];
   customerName: string;
   minimumStartDate: string;
@@ -44,6 +45,7 @@ function litreLabel(quantity: number) {
 }
 
 function OrderEditor({
+  firstPlanStart,
   capacityDays,
   customerName,
   minimumStartDate,
@@ -72,9 +74,9 @@ function OrderEditor({
   );
   const pricing = useMemo(
     () => purchaseMode === "plan"
-      ? calculatePlanPricing({ bottleChoice, products, schedule, startDate })
+      ? calculatePlanPricing({ bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
       : calculateOrderPricing({ bottleChoice, milkLitres, products }),
-    [bottleChoice, milkLitres, products, purchaseMode, schedule, startDate],
+    [bottleChoice, milkLitres, products, purchaseMode, schedule, startDate, firstPlanStart],
   );
   const capacityImpact = useMemo(() => {
     if (purchaseMode === "once") {
@@ -240,6 +242,7 @@ function OrderEditor({
           <div><dt>Farm products</dt><dd>{products.length ? products.map((product) => `${product.name} × ${product.quantity} · ${formatCheckoutAmount((pricing.productTotals[product.id] ?? 0) * 100)}`).join(", ") : "None"}</dd></div>
           <div><dt>Add-ons total</dt><dd>{formatCheckoutAmount((pricing.oneTimeAddOnsTotal + pricing.recurringAddOnsTotal) * 100)}</dd></div>
           <div><dt>Bottle charge</dt><dd>{formatCheckoutAmount(pricing.bottleCharge * 100)}</dd></div>
+          <div><dt>Delivery</dt><dd>{formatCheckoutAmount(pricing.deliveryCharge * 100)}</dd></div>
           <div className={styles.previewTotal}><dt>Payment received</dt><dd>{formatCheckoutAmount(pricing.total * 100)}</dd></div>
         </dl>
 
