@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { validOperationalDate } from "@/lib/delivery-operations";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
@@ -26,10 +28,13 @@ function paymentMethodLabel(value: string | null) {
   return value ? value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Online";
 }
 
-export default async function FarmPaymentsPage({ searchParams }: { searchParams: Promise<{ customer?: string; error?: string; message?: string }> }) {
+export default async function FarmPaymentsPage({ searchParams }: { searchParams: Promise<{ customer?: string; error?: string; message?: string; from?:string; to?:string }> }) {
   const { role } = await requireFarmManager("/farm/payments");
+  if(role !== "admin") redirect("/farm");
   const admin = createAdminClient();
   const parameters = await searchParams;
+  const from = validOperationalDate(parameters.from);
+  const to = validOperationalDate(parameters.to);
   const customerId = /^[0-9a-f-]{36}$/i.test(parameters.customer ?? "") ? parameters.customer! : null;
   let paymentQuery = admin
     .from("payments")
@@ -38,6 +43,8 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
     .eq("status", "captured")
     .order("paid_at", { ascending: false })
     .limit(100);
+  if(from) paymentQuery=paymentQuery.gte("paid_at",`${from}T00:00:00+05:30`);
+  if(to) paymentQuery=paymentQuery.lte("paid_at",`${to}T23:59:59.999+05:30`);
   if (customerId) paymentQuery = paymentQuery.eq("user_id", customerId);
 
   const [{ data: paymentData, error }, { data: customer }, { data: customerOrders }] = await Promise.all([
@@ -65,11 +72,13 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
   const farmRecordedCount = payments.filter((payment) => payment.provider === "manual").length;
 
   return <main className={styles.page}>
-    <header><div><p>Finance</p><h1>{customer ? `${customer.full_name ?? "Customer"} payments` : "Confirmed payments"}</h1><span>Only money received by the farm is included. Reversed farm-recorded entries remain in the correction log.</span></div><div>{customerId ? <Link href={`/farm/customers/${customerId}`}>Back to customer</Link> : <Link href="/farm">Overview</Link>}</div></header>
+    <header><div><p>Finance</p><h1>{customer ? `${customer.full_name ?? "Customer"} payments` : "Finance"}</h1><span>Only money received by the farm is included. Reversed farm-recorded entries remain in the correction log.</span></div><div>{customerId ? <Link href={`/farm/customers/${customerId}`}>Back to customer</Link> : <Link href="/farm">Overview</Link>}</div></header>
 
     {parameters.message ? <p className={styles.notice}>{parameters.message}</p> : null}
     {parameters.error ? <p className={`${styles.notice} ${styles.error}`} role="alert">{parameters.error}</p> : null}
 
+    <form className={styles.filters} method="get">{customerId?<input type="hidden" name="customer" value={customerId}/>:null}<label>Payment date from<input name="from" type="date" defaultValue={from??""}/></label><label>Through<input name="to" type="date" defaultValue={to??""}/></label><button>Apply dates</button></form>
+    <p className={styles.scope}>Latest 100 captured payments in this scope. Totals below cover only the records shown, not lifetime revenue.</p>
     <section className={styles.metrics} aria-label="Payment summary">
       <article><span>Confirmed</span><strong>{payments.length}</strong></article>
       <article><span>Received</span><strong>{formatCheckoutAmount(capturedTotal)}</strong></article>

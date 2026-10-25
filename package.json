@@ -15,7 +15,9 @@
     "test:browser": "node tests/hero.browser.mjs",
     "typecheck": "tsc --noEmit",
     "test:customer-ui": "node tests/customer-system.browser.mjs",
-    "test:shop": "node tests/shop.browser.mjs"
+    "test:shop": "node tests/shop.browser.mjs",
+    "test:db": "node --test --test-concurrency=1 tests/database/*.integration.mjs",
+    "test:operations:browser": "node tests/delivery-operations.browser.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
@@ -36,8 +38,10 @@
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
     "drizzle-kit": "0.31.10",
+    "embedded-postgres": "18.4.0-beta.17",
     "eslint": "9.39.4",
     "eslint-config-next": "16.4.3",
+    "pg": "8.16.3",
     "playwright": "1.64.1",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",

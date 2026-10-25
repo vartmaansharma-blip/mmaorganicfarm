@@ -42,3 +42,7 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# Local operational verification artifacts
+/supabase/.temp/
+/work-browser-failure.log

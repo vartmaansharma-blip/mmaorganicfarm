@@ -1,0 +1,483 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { spawn } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { chromium, webkit } from "playwright";
+import { createDatabase, callAs } from "./database/runtime.mjs";
+import {
+  startFixtureServer,
+  sessionFor,
+} from "./database/supabase-fixture-server.mjs";
+const runtime = await createDatabase();
+const { db } = runtime;
+const bridge = await startFixtureServer(runtime.config);
+const output = path.resolve("docs/screenshots/delivery-operations");
+await mkdir(output, { recursive: true });
+const port = 3165,
+  base = `http://127.0.0.1:${port}`;
+let serverLog = "";
+let activeBrowser, activePage;
+const server = spawn(
+  process.execPath,
+  [
+    "node_modules/next/dist/bin/next",
+    "start",
+    "--hostname",
+    "127.0.0.1",
+    "--port",
+    String(port),
+  ],
+  {
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_SUPABASE_URL: bridge.url,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "fixture-publishable",
+      SUPABASE_SECRET_KEY: "local-service-fixture",
+      CRON_SECRET: "local-browser-fixture-secret-at-least-32-characters",
+      FARM_AUTOMATION_ENABLED: "true",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  },
+);
+server.stdout.on("data", (c) => (serverLog += c));
+server.stderr.on("data", (c) => (serverLog += c));
+const today = (
+  await db.query("select (now() at time zone 'Asia/Kolkata')::date::text date")
+).rows[0].date;
+const tomorrow = (
+  await db.query(
+    "select ((now() at time zone 'Asia/Kolkata')::date+1)::text date",
+  )
+).rows[0].date;
+const manager = randomUUID(),
+  driver = randomUUID(),
+  other = randomUUID(),
+  owner = randomUUID();
+const results = [];
+await db.query(
+  "insert into auth.users(id,email) select x,x::text||'@fixture.invalid' from unnest($1::uuid[]) x",
+  [[manager, driver, other, owner]],
+);
+for (const [id, role] of [
+  [manager, "manager"],
+  [driver, "driver"],
+  [other, "driver"],
+  [owner, "admin"],
+])
+  await db.query("insert into farm_staff(user_id,role) values($1,$2)", [
+    id,
+    role,
+  ]);
+const area = (
+  await db.query(
+    "insert into delivery_areas(name,slug) values('Synthetic zone','browser-fixture') returning id",
+  )
+).rows[0].id;
+const route = (
+  await db.query(
+    "insert into delivery_routes(area_id,name,code,stop_capacity) values($1,'Synthetic route','BROWSER',100) returning id",
+    [area],
+  )
+).rows[0].id;
+await db.query(
+  "insert into delivery_dispatches(delivery_date,status,prepared_by,released_by,released_at) values($1,'released',$2,$2,now())",
+  [today, manager],
+);
+await db.query(
+  "insert into daily_route_assignments(delivery_date,route_id,driver_id,updated_by) values($1,$2,$3,$4)",
+  [today, route, driver, manager],
+);
+async function seed(label, assigned = driver) {
+  const user = randomUUID(),
+    plan = randomUUID(),
+    order = randomUUID();
+  await db.query(
+    "insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3)",
+    [user, `${user}@fixture.invalid`, { full_name: label }],
+  );
+  await db.query(
+    "update customer_profiles set address_line='Synthetic address, Test locality',phone='0000000000',delivery_instructions='Hand over only to the named recipient',delivery_area_id=$2,delivery_route_id=$3 where user_id=$1",
+    [user, area, route],
+  );
+  await db.query(
+    "insert into delivery_plans(id,user_id,status,start_date,bottle_choice) values($1,$2,'paused',$3,'return')",
+    [plan, user, today],
+  );
+  await db.query(
+    "insert into orders(id,user_id,delivery_plan_id,purchase_mode,status,bottle_choice,subtotal_paise,total_paise,phone_snapshot,address_snapshot,start_date) values($1,$2,$3,'plan','paid','return',100,100,'0000000000','Synthetic address',$4)",
+    [order, user, plan, today],
+  );
+  await db.query(
+    "insert into payments(order_id,user_id,amount_paise,provider,status,provider_order_id) values($1,$2,100,'manual','captured',$3)",
+    [order, user, order],
+  );
+  await db.query(
+    "insert into weekly_delivery_items(plan_id,user_id,day_of_week,product_key,quantity,unit) values($1,$2,extract(isodow from $3::date)::int,'milk',2,'L')",
+    [plan, user, tomorrow],
+  );
+  await db.query("update delivery_plans set status='active' where id=$1", [
+    plan,
+  ]);
+  const delivery = (
+    await db.query(
+      "insert into daily_deliveries(plan_id,user_id,delivery_date,status,delivery_area_id,delivery_route_id,assigned_driver_id,customer_name,address_snapshot,phone_snapshot,bottle_choice,generated_by) values($1,$2,$3,'ready',$4,$5,$6,$7,'Synthetic address, Test locality','0000000000','return',$8) returning id",
+      [plan, user, today, area, route, assigned, label, manager],
+    )
+  ).rows[0].id;
+  await db.query(
+    "insert into daily_delivery_items(delivery_id,product_key,quantity,unit) values($1,'milk',2,'L')",
+    [delivery],
+  );
+  return { user, plan, id: delivery, label };
+}
+async function contextFor(browser, user, width = 390) {
+  const context = await browser.newContext({
+    viewport: { width, height: 900 },
+  });
+  const session = sessionFor(user);
+  await context.addCookies([
+    {
+      name: "sb-127-auth-token",
+      value:
+        "base64-" + Buffer.from(JSON.stringify(session)).toString("base64url"),
+      domain: "127.0.0.1",
+      path: "/",
+    },
+  ]);
+  return context;
+}
+async function noOverflow(page) {
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+    false,
+    `document overflow at ${page.viewportSize().width}`,
+  );
+}
+try {
+  for (let i = 0; i < 120; i++) {
+    try {
+      const r = await fetch(base);
+      if (r.ok) break;
+    } catch {}
+    if (i === 119) throw Error(`Next start failed: ${serverLog}`);
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  assert.equal((await fetch(`${base}/api/cron/prepare-dispatch`)).status, 401);
+  const nightly = await fetch(`${base}/api/cron/prepare-dispatch`, {
+    headers: {
+      Authorization:
+        "Bearer local-browser-fixture-secret-at-least-32-characters",
+    },
+  });
+  assert.equal(nightly.status, 200);
+  assert.equal((await nightly.json()).status, "succeeded");
+  for (const [name, engine] of [
+    ["chromium", chromium],
+    ["webkit", webkit],
+  ]) {
+    if (name === "webkit")
+      await callAs(
+        db,
+        manager,
+        "select close_delivery_day($1,'correction_required','Next synthetic browser scenario',$2)",
+        [today, randomUUID()],
+      );
+    const failure = await seed(`Synthetic ${name} issue`),
+      success = await seed(`Synthetic ${name} delivery`),
+      foreign = await seed(`Private ${name} other route`, other);
+    await callAs(
+      db,
+      manager,
+      "select record_delivery_outcome($1,'delivered',null,null,0,null,$2)",
+      [[foreign.id], randomUUID()],
+    );
+    const browser = await engine.launch({ headless: true });
+    activeBrowser = browser;
+    const context = await contextFor(browser, driver);
+    const page = await context.newPage();
+    activePage = page;
+    const errors = [];
+    page.on("pageerror", (e) =>
+      errors.push(`${name} ${new URL(page.url()).pathname}: ${e.message}`),
+    );
+    await page.goto(`${base}/farm/delivery-sheet?date=${today}`, {
+      waitUntil: "networkidle",
+    });
+    await page.getByText(failure.label, { exact: false }).first().waitFor();
+    await page.keyboard.press("Tab");
+    assert.equal(await page.locator(":focus").innerText(), "Skip to workspace");
+    assert.equal(
+      (await page.locator("main").innerText()).includes(foreign.label),
+      false,
+    );
+    for (const width of [320, 375, 390, 430]) {
+      await page.setViewportSize({ width, height: 900 });
+      await noOverflow(page);
+    }
+    await page.setViewportSize({ width: 390, height: 900 });
+    await mkdir("work", { recursive: true });
+    await writeFile("work/driver-debug.html", await page.content());
+    await page.goto(
+      `${base}/farm/delivery-sheet?date=${today}&stop=${failure.id}`,
+      { waitUntil: "networkidle" },
+    );
+    const failedStop = page
+      .locator("li")
+      .filter({ has: page.getByText(failure.label, { exact: true }) });
+    assert.equal(await failedStop.count(), 1);
+    await failedStop
+      .locator("select[name=outcome]")
+      .selectOption("attempt_failed");
+    await failedStop.getByLabel("Issue reason").selectOption("gate_locked");
+    await failedStop
+      .getByLabel("Short note (optional)")
+      .fill("Synthetic locked gate report");
+    await page.screenshot({
+      path: path.join(output, `${name}-driver-issue.png`),
+      fullPage: true,
+    });
+    await failedStop
+      .getByRole("button", { name: "Save issue", exact: true })
+      .click();
+    await failedStop
+      .getByRole("status")
+      .filter({ hasText: "Issue saved" })
+      .waitFor();
+    await page.goto(
+      `${base}/farm/delivery-sheet?date=${today}&stop=${success.id}`,
+      { waitUntil: "networkidle" },
+    );
+    const doneStop = page.locator(`#stop-${success.id}`);
+    await doneStop.getByLabel(/Bottles collected/).fill("1");
+    await doneStop
+      .getByRole("button", { name: "Save delivered", exact: true })
+      .click();
+    await doneStop
+      .getByRole("status")
+      .filter({ hasText: "Delivery saved" })
+      .waitFor();
+    await doneStop
+      .getByText("Customer asked for a change?", { exact: true })
+      .click();
+    await doneStop
+      .getByLabel("Customer’s exact request")
+      .fill("No milk tomorrow; please resume the following day.");
+    await page.screenshot({
+      path: path.join(output, `${name}-driver-request.png`),
+      fullPage: true,
+    });
+    await doneStop
+      .getByRole("button", { name: "Save customer request", exact: true })
+      .click();
+    await doneStop
+      .getByRole("status")
+      .filter({ hasText: "Request saved" })
+      .waitFor();
+    await page.goto(`${base}/farm/exceptions`, { waitUntil: "networkidle" });
+    assert.match(page.url(), /delivery-sheet/, "driver manager-route guard");
+    const managerContext = await contextFor(browser, manager, 1440);
+    const mp = await managerContext.newPage();
+    activePage = mp;
+    mp.on("pageerror", (e) =>
+      errors.push(`${name} ${new URL(mp.url()).pathname}: ${e.message}`),
+    );
+    await mp.goto(`${base}/farm/cancellations`, { waitUntil: "networkidle" });
+    const spoken = mp
+      .locator("article")
+      .filter({ has: mp.getByText(success.label, { exact: true }) });
+    await spoken
+      .getByText("No milk tomorrow; please resume the following day.", {
+        exact: false,
+      })
+      .waitFor();
+    await spoken
+      .getByLabel("Decision note")
+      .fill("Customer confirmed: skip milk tomorrow only");
+    await mp.screenshot({
+      path: path.join(output, `${name}-request-review.png`),
+      fullPage: true,
+    });
+    await spoken
+      .getByRole("button", { name: "Save review", exact: true })
+      .click();
+    await spoken.waitFor({ state: "detached" });
+    assert.equal(
+      (
+        await db.query(
+          "select status from delivery_customer_requests where user_id=$1",
+          [success.user],
+        )
+      ).rows[0].status,
+      "approved",
+    );
+    for (const [routePath, heading] of [
+      ["/farm", "Today at the farm"],
+      ["/farm/routes", "Routes"],
+      ["/farm/orders", "Orders"],
+      ["/farm/subscriptions", "Subscriptions"],
+      ["/farm/bottles", "Bottles"],
+      ["/farm/reports", "Operations report"],
+      ["/farm/activity", "Automation & activity"],
+      ["/farm/settings", "Settings"],
+    ]) {
+      await mp.goto(`${base}${routePath}`, { waitUntil: "networkidle" });
+      await mp.getByRole("heading", { name: heading, exact: true }).waitFor();
+      await noOverflow(mp);
+      assert.doesNotMatch(
+        await mp.locator("main").innerText(),
+        /NaN|Invalid Date/,
+      );
+      await mp.setViewportSize({ width: 320, height: 900 });
+      await noOverflow(mp);
+      await mp.setViewportSize({ width: 1440, height: 900 });
+    }
+    await mp.goto(`${base}/farm/payments`, { waitUntil: "networkidle" });
+    assert.equal(
+      new URL(mp.url()).pathname,
+      "/farm",
+      "manager cannot open owner finance",
+    );
+    await mp.goto(`${base}/farm`, { waitUntil: "networkidle" });
+    await mp.screenshot({
+      path: path.join(output, `${name}-dashboard-overview.png`),
+      fullPage: true,
+    });
+    await mp.setViewportSize({ width: 390, height: 900 });
+    await mp.screenshot({
+      path: path.join(output, `${name}-dashboard-mobile.png`),
+      fullPage: true,
+    });
+    await mp.setViewportSize({ width: 1440, height: 900 });
+    await mp.goto(`${base}/farm/exceptions?date=${today}`, {
+      waitUntil: "networkidle",
+    });
+    await mp
+      .getByRole("heading", { name: failure.label, exact: true })
+      .waitFor();
+    await noOverflow(mp);
+    await mp.screenshot({
+      path: path.join(output, `${name}-exception-queue.png`),
+      fullPage: true,
+    });
+    const item = mp.locator("article").filter({
+      has: mp.getByRole("heading", { name: failure.label, exact: true }),
+    });
+    await item.getByLabel("Future follow-up date").fill(tomorrow);
+    await item
+      .getByLabel("Decision reason")
+      .fill("Retain prepaid obligation and follow up tomorrow");
+    await item
+      .getByRole("button", { name: "Save decision", exact: true })
+      .click();
+    await mp.getByText("No visits match these filters.").waitFor();
+    await mp.goto(`${base}/farm/reconciliation?date=${today}`, {
+      waitUntil: "networkidle",
+    });
+    await mp
+      .getByRole("heading", {
+        name: /Ready for manager review|Correction review open/,
+        exact: true,
+      })
+      .waitFor();
+    await mp.screenshot({
+      path: path.join(output, `${name}-reconciliation-ready.png`),
+      fullPage: true,
+    });
+    await mp
+      .getByLabel("Closeout note and acknowledged follow-ups")
+      .fill(
+        "Reviewed deliveries, documented bottles and tracked prepaid follow-up",
+      );
+    await mp.getByRole("button", { name: "Close day", exact: true }).click();
+    await mp
+      .getByRole("heading", { name: "Day closed", exact: true })
+      .waitFor();
+    await mp.locator("summary").filter({ hasText: "closed" }).first().click();
+    await mp.screenshot({
+      path: path.join(output, `${name}-closed-history.png`),
+      fullPage: true,
+    });
+    await mp.setViewportSize({ width: 320, height: 900 });
+    await noOverflow(mp);
+    const ownerContext = await contextFor(browser, owner, 1440);
+    const ownerPage = await ownerContext.newPage();
+    await ownerPage.goto(`${base}/farm/payments`, { waitUntil: "networkidle" });
+    await ownerPage
+      .getByRole("heading", { name: "Finance", exact: true })
+      .waitFor();
+    await noOverflow(ownerPage);
+    await ownerContext.close();
+    const customerContext = await contextFor(browser, failure.user);
+    const cp = await customerContext.newPage();
+    await cp.goto(`${base}/account`, { waitUntil: "networkidle" });
+    await cp
+      .getByRole("region", { name: "Confirmed delivery outcomes" })
+      .getByText(/Attempt failed/)
+      .waitFor();
+    await cp
+      .getByRole("region", { name: "Confirmed delivery outcomes" })
+      .getByText(/retained/)
+      .waitFor();
+    assert.equal(
+      (
+        await db.query(
+          "select delivered_deliveries from delivery_plans where id=$1",
+          [failure.plan],
+        )
+      ).rows[0].delivered_deliveries,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select delivered_deliveries from delivery_plans where id=$1",
+          [success.plan],
+        )
+      ).rows[0].delivered_deliveries,
+      1,
+    );
+    assert.deepEqual(errors, []);
+    results.push({
+      engine: name,
+      widths: [320, 375, 390, 430, 1440],
+      journey: "passed",
+      runtimeErrors: errors,
+    });
+    await customerContext.close();
+    await managerContext.close();
+    await context.close();
+    await browser.close();
+  }
+  await writeFile(
+    path.join(output, "browser-results.json"),
+    JSON.stringify(
+      {
+        boundary:
+          "Production Next pages and server actions with native PostgreSQL; test-only auth/REST HTTP adapter. Hosted GoTrue/PostgREST not exercised.",
+        results,
+      },
+      null,
+      2,
+    ),
+  );
+  console.log(JSON.stringify(results));
+} catch (error) {
+  console.error(error);
+  await writeFile(
+    "work-browser-failure.log",
+    String(error.stack) + "\n" + serverLog,
+  );
+  if (activePage)
+    await writeFile("work/driver-debug.html", await activePage.content()).catch(
+      () => {},
+    );
+  if (activeBrowser) await activeBrowser.close();
+  throw error;
+} finally {
+  server.kill("SIGTERM");
+  await bridge.stop();
+  await runtime.stop();
+}
