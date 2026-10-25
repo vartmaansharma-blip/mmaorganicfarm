@@ -118,7 +118,7 @@ export default async function ReconciliationPage({
       </section>
       <section className={styles.metrics} aria-label="Visit reconciliation">
         {metrics.map(([label, value]) => (
-          <article key={String(label)}>
+          <article key={String(label)} data-attention={Number(value) > 0 && ["Failed attempts", "Open exceptions"].includes(String(label)) || undefined}>
             <strong>{value}</strong>
             <span>{label}</span>
           </article>

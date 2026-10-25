@@ -266,8 +266,8 @@ export default async function FarmDashboardPage({
       >
         <div className={styles.missionCopy}>
           <p>Your next step</p>
-          <h2>{!dispatchResult.data ? "Prepare a good day." : closed ? "A day accounted for." : !released ? unassigned ? `Give ${unassigned} ${unassigned === 1 ? "visit" : "visits"} a clear route.` : "Give the day its final review." : summary.pending ? "Keep the morning moving." : decisions ? "Account for every shortfall." : "Bring the day to a close."}</h2>
-          <span>{!dispatchResult.data ? "Prepare the paid delivery draft, check supply and assign the team. You’ll review the work before release." : closed ? "The closed review is preserved. Open the report to see what was delivered and what remains owed." : !released ? `${summary.expected} visits are prepared. ${unassigned ? `${unassigned} still need a route or driver before release.` : "Review the route, load and assignments before releasing dispatch."}` : summary.pending ? `${summary.pending} visits still need a recorded outcome. The team can continue from the next stop.` : decisions ? `${decisions} recorded ${decisions === 1 ? "exception needs" : "exceptions need"} a manager’s decision. Keep every outstanding quantity visible.` : "All visits have a recorded outcome. Review quantities and unresolved service before closing."}</span>
+          <h2>{!dispatchResult.data ? "Prepare a good day." : closed ? "A day accounted for." : summary.expected === 0 ? "Plan the next service day." : !released ? unassigned ? `Give ${unassigned} ${unassigned === 1 ? "visit" : "visits"} a clear route.` : "Give the day its final review." : summary.pending ? "Keep the morning moving." : decisions ? "Account for every shortfall." : "Bring the day to a close."}</h2>
+          <span>{!dispatchResult.data ? "Prepare the paid delivery draft, check supply and assign the team. You’ll review the work before release." : closed ? "The closed review is preserved. Open the report to see what was delivered and what remains owed." : summary.expected === 0 ? "There are no active visits in this day and zone. Review upcoming supply or choose another service date." : !released ? `${summary.expected} visits are prepared. ${unassigned ? `${unassigned} still need a route or driver before release.` : "Review the route, load and assignments before releasing dispatch."}` : summary.pending ? `${summary.pending} visits still need a recorded outcome. The team can continue from the next stop.` : decisions ? `${decisions} recorded ${decisions === 1 ? "exception needs" : "exceptions need"} a manager’s decision. Keep every outstanding quantity visible.` : "All visits have a recorded outcome. Review quantities and unresolved service before closing."}</span>
         <div className={styles.headerActions}>
           {!dispatchResult.data ? (
             <FarmForm action={prepareDailyDispatch}>
@@ -282,6 +282,8 @@ export default async function FarmDashboardPage({
               href={
                 closed
                   ? `/farm/reconciliation?date=${date}`
+                  : summary.expected === 0
+                    ? "/farm/capacity"
                   : !released
                     ? `/farm/delivery-sheet?${scope}`
                     : decisions
@@ -291,6 +293,8 @@ export default async function FarmDashboardPage({
             >
               {closed
                 ? "View closed report"
+                : summary.expected === 0
+                  ? "Review upcoming capacity"
                 : !released
                   ? "Review dispatch"
                   : decisions
@@ -310,6 +314,8 @@ export default async function FarmDashboardPage({
               ? "Start with a prepared draft"
               : closed
                 ? "This day’s review is preserved"
+                : summary.expected === 0
+                  ? "No active visits in this view"
                 : !released
                   ? "Review assignments before dispatch"
                   : summary.pending
