@@ -66,7 +66,7 @@ export async function DailyRouteBoard({
       .map((row) => row.visit_key),
   ).size;
   return (
-    <section className={styles.panel}>
+    <section className={`${styles.panel} ${styles.routeBoard}`}>
       <div className={styles.panelHeader}>
         <div>
           <h2>Routes for {date}</h2>
@@ -78,7 +78,7 @@ export async function DailyRouteBoard({
           </p>
         </div>
         <div className={styles.links}>
-          <Link href={`/farm/delivery-sheet?date=${date}`}>
+          <Link prefetch={false} href={`/farm/delivery-sheet?date=${date}`}>
             Review dispatch & manifest →
           </Link>
         </div>
@@ -106,7 +106,7 @@ export async function DailyRouteBoard({
                 .map(([label, quantity]) => `${quantity} ${label}`)
                 .join(" · ") || "No active product lines"}
             </span>
-            <Link href={`/farm/delivery-sheet?date=${date}&route=${route.id}`}>
+            <Link prefetch={false} href={`/farm/delivery-sheet?date=${date}&route=${route.id}`}>
               Open ordered stops & driver assignment →
             </Link>
           </div>
@@ -120,9 +120,7 @@ export async function DailyRouteBoard({
         </p>
       ) : null}
       <p className={styles.hint}>
-        Address navigation is available at each stop. Embedded maps, GPS
-        tracking, and estimated arrival times are unavailable until a verified
-        provider and location feed are connected.
+        Open a route to review its ordered stops, assigned driver and delivery outcomes. Address navigation is available at each stop.
       </p>
     </section>
   );

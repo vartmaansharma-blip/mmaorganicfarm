@@ -1,4 +1,5 @@
 "use client";
+import { FarmForm } from "../farm-form";
 
 import { useMemo, useState } from "react";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
@@ -110,7 +111,7 @@ function OrderEditor({
   }
 
   return (
-    <form action={recordCustomerOrder} className={styles.orderWorkspace}>
+    <FarmForm action={recordCustomerOrder} className={styles.orderWorkspace}>
       <input name="userId" type="hidden" value={userId} />
       {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
       <div className={styles.orderEditor}>
@@ -301,7 +302,7 @@ function OrderEditor({
           {orderReady ? <FormSubmitButton pendingLabel="Recording paid order…">Record paid order</FormSubmitButton> : <button disabled type="button">Record paid order</button>}
         </div>
       </aside>
-    </form>
+    </FarmForm>
   );
 }
 

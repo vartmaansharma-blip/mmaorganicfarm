@@ -1,3 +1,4 @@
+import { FarmForm } from "./farm-form";
 import { readAllRows } from "@/lib/farm-data";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -229,14 +230,52 @@ export default async function FarmDashboardPage({
               : "All zones"}
           </span>
         </div>
+
+      </header>
+      {p.message ? (
+        <p className={styles.notice} role="status">
+          {p.message}
+        </p>
+      ) : null}
+      {p.error ? (
+        <p className={styles.error} role="alert">
+          {p.error}
+        </p>
+      ) : null}
+      <FarmForm className={styles.filters} method="get">
+        <label>
+          Service date
+          <input type="date" name="date" defaultValue={date} />
+        </label>
+        <label>
+          Zone
+          <select name="area" defaultValue={area}>
+            <option value="">All zones</option>
+            {areasResult.data?.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button>Apply</button>
+      </FarmForm>
+      <section
+        className={styles.mission}
+        aria-label="Daily goal and current status"
+      >
+        <div className={styles.missionCopy}>
+          <p>Your next step</p>
+          <h2>{!dispatchResult.data ? "Prepare a good day." : closed ? "A day accounted for." : !released ? unassigned ? `Give ${unassigned} ${unassigned === 1 ? "visit" : "visits"} a clear route.` : "Give the day its final review." : summary.pending ? "Keep the morning moving." : decisions ? "Account for every shortfall." : "Bring the day to a close."}</h2>
+          <span>{!dispatchResult.data ? "Prepare the paid delivery draft, check supply and assign the team. You’ll review the work before release." : closed ? "The closed review is preserved. Open the report to see what was delivered and what remains owed." : !released ? `${summary.expected} visits are prepared. ${unassigned ? `${unassigned} still need a route or driver before release.` : "Review the route, load and assignments before releasing dispatch."}` : summary.pending ? `${summary.pending} visits still need a recorded outcome. The team can continue from the next stop.` : decisions ? `${decisions} recorded ${decisions === 1 ? "exception needs" : "exceptions need"} a manager’s decision. Keep every outstanding quantity visible.` : "All visits have a recorded outcome. Review quantities and unresolved service before closing."}</span>
         <div className={styles.headerActions}>
           {!dispatchResult.data ? (
-            <form action={prepareDailyDispatch}>
+            <FarmForm action={prepareDailyDispatch}>
               <input type="hidden" name="deliveryDate" value={date} />
               <FormSubmitButton pendingLabel="Preparing…">
                 Prepare draft
               </FormSubmitButton>
-            </form>
+            </FarmForm>
           ) : (
             <Link prefetch={false}
               className={styles.primary}
@@ -260,50 +299,6 @@ export default async function FarmDashboardPage({
             </Link>
           )}
         </div>
-      </header>
-      {p.message ? (
-        <p className={styles.notice} role="status">
-          {p.message}
-        </p>
-      ) : null}
-      {p.error ? (
-        <p className={styles.error} role="alert">
-          {p.error}
-        </p>
-      ) : null}
-      <form className={styles.filters} method="get">
-        <label>
-          Service date
-          <input type="date" name="date" defaultValue={date} />
-        </label>
-        <label>
-          Zone
-          <select name="area" defaultValue={area}>
-            <option value="">All zones</option>
-            {areasResult.data?.map((row) => (
-              <option key={row.id} value={row.id}>
-                {row.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button>Apply</button>
-      </form>
-      <section
-        className={styles.mission}
-        aria-label="Daily goal and current status"
-      >
-        <div className={styles.missionCopy}>
-          <p>The goal for this service day</p>
-          <h2>
-            Every doorstep served.
-            <br />
-            Every shortfall accounted for.
-          </h2>
-          <span>
-            Prepare the right quantities, complete the route, and preserve every
-            customer’s outstanding service.
-          </span>
         </div>
         <div className={styles.currentStatus}>
           <span className={styles.statusPill}>
@@ -340,10 +335,10 @@ export default async function FarmDashboardPage({
       </section>
       <div className={styles.stage}>
         <strong>{stage}</strong>
-        <span>Draft → Review → Released → In progress → Closeout → Closed</span>
+        <ol className={styles.process} aria-label="Service-day process">{["Prepare", "Review & release", "Deliver", "Reconcile"].map((step,index) => { const current = closed ? 4 : !dispatchResult.data ? 0 : !released ? 1 : summary.pending ? 2 : 3; return <li key={step} data-state={index < current ? "complete" : index === current ? "current" : "upcoming"}><span>{index < current ? "✓" : index + 1}</span>{step}</li>; })}</ol>
       </div>
       <section className={styles.metrics} aria-label="Delivery progress">
-        <Link prefetch={false} href={`/farm/delivery-sheet?${scope}&outcome=delivered`}>
+        <Link prefetch={false} data-tone="mint" href={`/farm/delivery-sheet?${scope}&outcome=delivered`}>
           <span>Fully delivered visits</span>
           <strong>
             {summary.delivered}
@@ -354,7 +349,7 @@ export default async function FarmDashboardPage({
             {summary.pending} pending
           </small>
         </Link>
-        <Link prefetch={false} href={`/farm/delivery-sheet?${scope}`}>
+        <Link prefetch={false} data-tone="sky" href={`/farm/delivery-sheet?${scope}`}>
           <span>Milk delivered</span>
           <strong>
             {formatCapacityQuantity(summary.milkDelivered)}
@@ -367,7 +362,7 @@ export default async function FarmDashboardPage({
           <strong>{decisions}</strong>
           <small>Recorded service exceptions</small>
         </Link>
-        <Link prefetch={false} href={`/farm/routes?date=${date}`}>
+        <Link prefetch={false} data-tone="mango" href={`/farm/routes?date=${date}`}>
           <span>Routes with work</span>
           <strong>{routes.length}</strong>
           <small>
@@ -395,8 +390,8 @@ export default async function FarmDashboardPage({
       <div className={styles.mainGrid}>
         <section className={styles.panel}>
           <div className={styles.sectionHeading}>
-            <h2>Routes this morning</h2>
-            <Link prefetch={false} href={`/farm/routes?date=${date}`}>All routes →</Link>
+            <h2>Routes for this service day</h2>
+            <Link prefetch={false} data-tone="mango" href={`/farm/routes?date=${date}`}>All routes →</Link>
           </div>
           {routes.length ? (
             routes.map((route) => {

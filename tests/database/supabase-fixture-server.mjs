@@ -154,13 +154,13 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
           where = [];
         let order = "";
         for (const [key, v] of url.searchParams) {
-          if (["select", "limit", "offset", "order"].includes(key)) continue;
+          if (["select", "limit", "offset", "order", "on_conflict"].includes(key)) continue;
           const op = v.slice(0, v.indexOf(".")),
             value = v.slice(v.indexOf(".") + 1);
-          if (op === "eq" || op === "neq") {
+          if (["eq", "neq", "gte", "lte"].includes(op)) {
             values.push(value);
             where.push(
-              `t.${name(key)} ${op === "eq" ? "=" : "<>"} $${values.length}`,
+              `t.${name(key)} ${({eq:"=",neq:"<>",gte:">=",lte:"<="})[op]} $${values.length}`,
             );
           } else if (op === "in") {
             values.push(value.slice(1, -1).split(","));
@@ -183,8 +183,22 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
           Number(url.searchParams.get("limit") || 1000),
         );
         const offset = Number(url.searchParams.get("offset") || 0);
+        if (req.method === "POST" || req.method === "DELETE") {
+          if (!service || !["production_capacity", "production_capacity_overrides"].includes(table)) throw Error("Fixture table write not permitted");
+          if (req.method === "DELETE") {
+            if (!where.length) throw Error("Fixture delete requires a key");
+            result = (await client.query(`delete from public.${name(table)} t where ${where.join(" and ")} returning *`,values)).rows;
+          } else {
+            let raw="";for await(const chunk of req) raw+=chunk;
+            const row=JSON.parse(raw);const keys=Object.keys(row);
+            if(keys.some(key=>!["product_key","delivery_date","daily_limit","updated_at","updated_by"].includes(key))) throw Error("Fixture write field not permitted");
+            const conflict=table==="production_capacity"?["product_key"]:["product_key","delivery_date"];
+            result=(await client.query(`insert into public.${name(table)} (${keys.map(name).join(",")}) values (${keys.map((_,i)=>`$${i+1}`).join(",")}) on conflict (${conflict.map(name).join(",")}) do update set ${keys.filter(k=>!conflict.includes(k)).map(k=>`${name(k)}=excluded.${name(k)}`).join(",")} returning *`,keys.map(k=>row[k]))).rows;
+          }
+        } else {
         const sql = `select ${selection(url.searchParams.get("select") || "*")} from public.${name(table)} t ${where.length ? "where " + where.join(" and ") : ""}${order} limit ${limit} offset ${offset}`;
         result = (await client.query(sql, values)).rows;
+        }
         if (req.headers.accept?.includes("application/vnd.pgrst.object+json"))
           result = result.length === 1 ? result[0] : null;
       }

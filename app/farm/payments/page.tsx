@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import { redirect } from "next/navigation";
 import { validOperationalDate } from "@/lib/delivery-operations";
 import type { Metadata } from "next";
@@ -72,12 +73,12 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
   const farmRecordedCount = payments.filter((payment) => payment.provider === "manual").length;
 
   return <main className={styles.page}>
-    <header><div><p>Finance</p><h1>{customer ? `${customer.full_name ?? "Customer"} payments` : "Finance"}</h1><span>Only money received by the farm is included. Reversed farm-recorded entries remain in the correction log.</span></div><div>{customerId ? <Link href={`/farm/customers/${customerId}`}>Back to customer</Link> : <Link href="/farm">Overview</Link>}</div></header>
+    <header><div><p>Finance</p><h1>{customer ? `${customer.full_name ?? "Customer"} payments` : "Finance"}</h1><span>Only money received by the farm is included. Reversed farm-recorded entries remain in the correction log.</span></div>{customerId ? <div><Link prefetch={false} href={`/farm/customers/${customerId}`}>Back to customer</Link></div> : null}</header>
 
     {parameters.message ? <p className={styles.notice}>{parameters.message}</p> : null}
     {parameters.error ? <p className={`${styles.notice} ${styles.error}`} role="alert">{parameters.error}</p> : null}
 
-    <form className={styles.filters} method="get">{customerId?<input type="hidden" name="customer" value={customerId}/>:null}<label>Payment date from<input name="from" type="date" defaultValue={from??""}/></label><label>Through<input name="to" type="date" defaultValue={to??""}/></label><button>Apply dates</button></form>
+    <FarmForm className={styles.filters} method="get">{customerId?<input type="hidden" name="customer" value={customerId}/>:null}<label>Payment date from<input name="from" type="date" defaultValue={from??""}/></label><label>Through<input name="to" type="date" defaultValue={to??""}/></label><button>Apply dates</button></FarmForm>
     <p className={styles.scope}>Latest 100 captured payments in this scope. Totals below cover only the records shown, not lifetime revenue.</p>
     <section className={styles.metrics} aria-label="Payment summary">
       <article><span>Confirmed</span><strong>{payments.length}</strong></article>
@@ -90,8 +91,8 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
         <div className={styles.rowHeading}><div><strong>{customerNames.get(payment.user_id) ?? "Customer"}</strong><span>Order MMA-{payment.order_id.slice(0, 8).toUpperCase()}</span></div><b>Confirmed</b></div>
         <p>{formatCheckoutAmount(payment.amount_paise)}</p>
         <small>{paymentMethodLabel(payment.payment_method)} · {payment.provider_payment_id ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
-        {!customerId ? <Link href={`/farm/customers/${payment.user_id}`}>Open customer</Link> : null}
-        {role === "admin" && payment.provider === "manual" ? <details className={styles.correction}><summary>Correct this payment</summary><form action={resetManualPayment}><input name="paymentId" type="hidden" value={payment.id} /><input name="userId" type="hidden" value={payment.user_id} /><label>Reason for reset<textarea maxLength={300} minLength={3} name="reason" placeholder="For example: cash entry recorded twice" required rows={2} /></label><p>This removes the payment from totals and cancels the related order and future service. The correction remains recorded.</p><FormSubmitButton pendingLabel="Resetting…">Reset payment</FormSubmitButton></form></details> : null}
+        {!customerId ? <Link prefetch={false} href={`/farm/customers/${payment.user_id}`}>Open customer</Link> : null}
+        {role === "admin" && payment.provider === "manual" ? <details className={styles.correction}><summary>Correct this payment</summary><FarmForm action={resetManualPayment}><input name="paymentId" type="hidden" value={payment.id} /><input name="userId" type="hidden" value={payment.user_id} /><label>Reason for reset<textarea maxLength={300} minLength={3} name="reason" placeholder="For example: cash entry recorded twice" required rows={2} /></label><p>This removes the payment from totals and cancels the related order and future service. The correction remains recorded.</p><FormSubmitButton pendingLabel="Resetting…">Reset payment</FormSubmitButton></FarmForm></details> : null}
       </article>) : <div className={styles.empty}>No confirmed payments yet.</div>}
     </section>
 

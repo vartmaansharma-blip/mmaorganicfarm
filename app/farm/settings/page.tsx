@@ -19,10 +19,10 @@ export default async function SettingsPage() {
       <section className={styles.panel}>
         <h2>Operations</h2>
         <div className={styles.links}>
-          <Link href="/farm/routes">Service zones & route defaults</Link>
-          <Link href="/farm/capacity">Product capacity & date overrides</Link>
+          <Link prefetch={false} href="/farm/routes">Service zones & route defaults</Link>
+          <Link prefetch={false} href="/farm/capacity">Product capacity & date overrides</Link>
           {role === "admin" ? (
-            <Link href="/farm/staff">Staff & access</Link>
+            <Link prefetch={false} href="/farm/staff">Staff & access</Link>
           ) : null}
         </div>
       </section>
@@ -53,9 +53,7 @@ export default async function SettingsPage() {
           no automatic refunds.
         </p>
         <p className={styles.hint}>
-          The proposed pilot cutoff and service window are not configured
-          scheduler guarantees. Review operational readiness before publishing
-          customer promises.
+          Customer requests go to the Inbox for review before their service is changed.
         </p>
       </section>
     </main>

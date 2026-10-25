@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
@@ -21,14 +22,14 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
   const drivers = (staff ?? []).filter((person) => person.role === "driver");
 
   return <main className={styles.page}>
-    <header><div><p>Access control</p><h1>Farm staff</h1><span>Invite drivers, control access, then assign each active route from the Routes page.</span></div><Link href="/farm/routes">Open routes</Link></header>
+    <header><div><p>Access control</p><h1>Farm staff</h1><span>Invite drivers, control access, then assign each active route from the Routes page.</span></div><Link prefetch={false} href="/farm/routes">Open routes</Link></header>
     {params.message ? <p className={styles.notice}>{params.message}</p> : null}
     {params.error ? <p className={`${styles.notice} ${styles.error}`} role="alert">{params.error}</p> : null}
 
     <section className={styles.summary}><article><strong>{drivers.filter((driver) => driver.active).length}</strong><span>Active drivers</span></article><article><strong>{drivers.filter((driver) => !driver.active).length}</strong><span>Inactive drivers</span></article></section>
 
-    {role === "admin" ? <section className={styles.invite}><div><p>Driver onboarding</p><h2>Invite a driver securely</h2><span>The driver receives an email to create their password. No shared password is stored or shown to the manager.</span></div><form action={inviteDriver}><label>Driver name<input name="fullName" required /></label><label>Email address<input name="email" required type="email" /></label><FormSubmitButton pendingLabel="Sending invitation…">Send driver invitation</FormSubmitButton></form></section> : null}
+    {role === "admin" ? <section className={styles.invite}><div><p>Driver onboarding</p><h2>Invite a driver securely</h2><span>The driver receives an email to create their password. No shared password is stored or shown to the manager.</span></div><FarmForm action={inviteDriver}><label>Driver name<input name="fullName" required /></label><label>Email address<input name="email" required type="email" /></label><FormSubmitButton pendingLabel="Sending invitation…">Send driver invitation</FormSubmitButton></FarmForm></section> : null}
 
-    <section className={styles.list} aria-label="Driver accounts">{drivers.length ? drivers.map((driver) => { const profile = profileById.get(driver.user_id); return <article data-inactive={!driver.active} key={driver.user_id}><div><strong>{profile?.full_name ?? "Driver"}</strong><span>{profile?.email ?? "Email unavailable"}</span></div><b>{driver.active ? "Active" : "Inactive"}</b>{role === "admin" ? <form action={setDriverActive}><input name="userId" type="hidden" value={driver.user_id} /><input name="active" type="hidden" value={driver.active ? "false" : "true"} /><FormSubmitButton pendingLabel="Updating…">{driver.active ? "Deactivate" : "Restore access"}</FormSubmitButton></form> : null}</article>; }) : <p className={styles.empty}>No driver accounts yet. Invite the first driver before preparing morning dispatch.</p>}</section>
+    <section className={styles.list} aria-label="Driver accounts">{drivers.length ? drivers.map((driver) => { const profile = profileById.get(driver.user_id); return <article data-inactive={!driver.active} key={driver.user_id}><div><strong>{profile?.full_name ?? "Driver"}</strong><span>{profile?.email ?? "Email unavailable"}</span></div><b>{driver.active ? "Active" : "Inactive"}</b>{role === "admin" ? <FarmForm action={setDriverActive}><input name="userId" type="hidden" value={driver.user_id} /><input name="active" type="hidden" value={driver.active ? "false" : "true"} /><FormSubmitButton pendingLabel="Updating…">{driver.active ? "Deactivate" : "Restore access"}</FormSubmitButton></FarmForm> : null}</article>; }) : <p className={styles.empty}>No driver accounts yet. Invite the first driver before preparing morning dispatch.</p>}</section>
   </main>;
 }

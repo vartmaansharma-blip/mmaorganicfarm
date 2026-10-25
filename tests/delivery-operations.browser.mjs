@@ -325,6 +325,10 @@ try {
     for (const [routePath, heading] of [
       ["/farm", "Today at the farm"],
       ["/farm/routes", "Routes"],
+      ["/farm/capacity", "Production capacity"],
+      ["/farm/locations", "Customers"],
+      ["/farm/staff", "Farm staff"],
+      ["/farm/cancellations", "Open requests"],
       ["/farm/orders", "Orders"],
       ["/farm/subscriptions", "Subscriptions"],
       ["/farm/bottles", "Bottles"],
@@ -333,7 +337,9 @@ try {
       ["/farm/settings", "Settings"],
     ]) {
       await mp.goto(`${base}${routePath}`, { waitUntil: "networkidle" });
-      await mp.getByRole("heading", { name: heading, exact: true }).waitFor();
+      await mp.getByRole("heading", { name: heading, exact: true, level:1 }).waitFor();
+      assert.ok(await mp.getByRole("img", {name:"M’ma Farms",exact:true}).isVisible(), "brand visible on every farm page");
+      await mp.screenshot({ path:path.join(output,`${name}-page-${routePath.split("/").at(-1)||"overview"}.png`),fullPage:true });
       await noOverflow(mp);
       assert.doesNotMatch(
         await mp.locator("main").innerText(),
@@ -341,8 +347,85 @@ try {
       );
       await mp.setViewportSize({ width: 320, height: 900 });
       await noOverflow(mp);
+      await mp.setViewportSize({width:390,height:900});
+      await mp.screenshot({ path:path.join(output,`${name}-mobile-page-${routePath.split("/").at(-1)||"overview"}.png`),fullPage:true });
       await mp.setViewportSize({ width: 1440, height: 900 });
     }
+    await mp.goto(`${base}/farm/customers/${success.user}`,{waitUntil:"networkidle"});
+    await mp.getByRole("heading",{level:1}).waitFor();
+    await noOverflow(mp);
+    await mp.screenshot({path:path.join(output,`${name}-page-customer.png`),fullPage:true});
+    await mp.setViewportSize({width:320,height:900});
+    await noOverflow(mp);
+    await mp.setViewportSize({width:1440,height:900});
+    await mp.goto(`${base}/farm/capacity?product=milk`,{waitUntil:"networkidle"});
+    const normalEditor=mp.locator("details").filter({has:mp.locator("summary").getByText("Edit normal limit",{exact:true})});
+    await normalEditor.locator("summary").click();
+    const normalInput=mp.getByLabel("Litres per day",{exact:true}).first();
+    await normalInput.fill("1001");
+    await mp.getByRole("button",{name:"Update limit",exact:true}).click();
+    await normalEditor.getByRole("status").filter({hasText:"Normal daily capacity updated"}).waitFor();
+    assert.equal(new URL(mp.url()).search,"?product=milk","capacity save must not navigate");
+    assert.equal(Number((await db.query("select daily_limit from production_capacity where product_key='milk'")).rows[0].daily_limit),1001);
+    await normalInput.fill("100001");
+    await mp.getByRole("button",{name:"Update limit",exact:true}).click();
+    await normalEditor.getByRole("alert").waitFor();
+    assert.equal(await normalInput.inputValue(),"100001","server error preserves entered capacity");
+    await normalInput.fill("1001");
+    await mp.getByRole("button",{name:"Update limit",exact:true}).click();
+    await normalEditor.getByRole("status").waitFor();
+    await mp.getByRole("button",{name:/Edit capacity for/}).nth(5).click();
+    const dateInput=mp.getByRole("spinbutton",{name:/Capacity for/});
+    const editForm=mp.locator("form").filter({has:dateInput});
+    await dateInput.fill("777");
+    await editForm.getByRole("button",{name:"Save day limit",exact:true}).scrollIntoViewIfNeeded();
+    const beforeSave=await mp.evaluate(()=>scrollY);
+    await editForm.getByRole("button",{name:"Save day limit",exact:true}).click();
+    await editForm.getByRole("status").filter({hasText:"Capacity for that date was saved"}).waitFor();
+    const afterSave=await mp.evaluate(()=>scrollY);
+    assert.ok(beforeSave>100 && Math.abs(afterSave-beforeSave)<60,`capacity row save preserves scroll (${beforeSave} -> ${afterSave})`);
+    assert.equal(Number(await dateInput.inputValue()),777);
+    assert.equal(new URL(mp.url()).search,"?product=milk");
+    await mp.screenshot({path:path.join(output,`${name}-capacity-edit.png`),fullPage:true});
+    await mp.getByRole("button",{name:"Use normal limit",exact:true}).first().click();
+    await mp.getByRole("status").filter({hasText:"The normal daily limit is active again"}).waitFor();
+    await mp.setViewportSize({width:390,height:900});
+    await noOverflow(mp);
+    await mp.evaluate(()=>scrollTo({top:0,behavior:"instant"}));
+    const pull=async(repeat=1)=>mp.evaluate(repeat=>{
+      const target=document.querySelector("main h1");
+      const point=y=>({identifier:1,target,clientX:130,clientY:y});
+      const dispatch=(type,touches)=>{
+        const event=new Event(type,{bubbles:true,cancelable:true});
+        Object.defineProperty(event,"touches",{value:touches});
+        target.dispatchEvent(event);
+      };
+      for(let i=0;i<repeat;i++) {
+        dispatch("touchstart",[point(140)]);
+        dispatch("touchmove",[point(280)]);
+        dispatch("touchend",[]);
+      }
+    },repeat);
+    let refreshRequests=0;
+    const countRefresh=request=>{if(request.method()==="GET" && new URL(request.url()).pathname==="/farm/capacity" && request.headers().rsc==="1") refreshRequests++;};
+    mp.on("request",countRefresh);
+    await pull(2);
+    await mp.getByRole("status").filter({hasText:"Page updated"}).waitFor();
+    assert.equal(refreshRequests,1,"repeated gestures coalesce into one refresh");
+    mp.off("request",countRefresh);
+    await managerContext.setOffline(true);
+    await pull();
+    await mp.getByRole("status").filter({hasText:"You’re offline"}).waitFor();
+    await managerContext.setOffline(false);
+    assert.equal(new URL(mp.url()).pathname,"/farm/capacity","pull refresh stays on current page");
+    assert.equal(new URL(mp.url()).search,"?product=milk","pull refresh preserves product scope");
+    await normalInput.fill("999");
+    await mp.evaluate(()=>scrollTo({top:0,behavior:"instant"}));
+    await pull();
+    await mp.getByRole("status").filter({hasText:"Save your unfinished edit"}).waitFor();
+    assert.equal(await normalInput.inputValue(),"999","pull does not erase unsaved edit");
+    await mp.screenshot({path:path.join(output,`${name}-capacity-mobile.png`),fullPage:true});
+    await mp.setViewportSize({width:1440,height:900});
     const managerGuard=await managerContext.newPage();
     await managerGuard.goto(`${base}/farm/payments`, {waitUntil:"networkidle"});
     assert.equal(new URL(managerGuard.url()).pathname,"/farm","manager cannot open owner finance");
@@ -363,11 +446,15 @@ try {
     await mp.screenshot({ path: path.join(output, `${name}-dashboard-collapsed.png`), fullPage: true });
     await mp.getByRole("button", { name: "Expand navigation", exact: true }).click();
     await mp.setViewportSize({ width: 390, height: 900 });
-    await mp.locator("summary").filter({ hasText: "Switch page" }).click();
-    await mp.getByRole("navigation", { name: "Farm pages", exact: true }).getByRole("link", { name: "Routes", exact: true }).click();
+    await mp.getByRole("button", {name:"Open navigation",exact:true}).click();
+    await mp.keyboard.press("Escape");
+    await mp.getByRole("button", {name:"Open navigation",exact:true}).waitFor();
+    assert.ok(await mp.getByRole("button", {name:"Open navigation",exact:true}).evaluate(element=>document.activeElement===element),"Escape returns focus to mobile menu button");
+    await mp.getByRole("button", {name:"Open navigation",exact:true}).click();
+    await mp.getByRole("navigation", { name: "Farm operations", exact: true }).getByRole("link", { name: "Routes", exact: true }).click();
     await mp.getByRole("heading", { name: "Routes", exact: true }).waitFor();
     await mp.waitForLoadState("networkidle");
-    assert.equal(await mp.locator("details[open]").filter({ has: mp.getByRole("navigation", { name: "Farm pages", exact: true }) }).count(), 0, "mobile navigation closes after selection");
+    assert.equal(await mp.getByRole("button", {name:"Open navigation",exact:true}).getAttribute("aria-expanded"),"false", "mobile navigation closes after selection");
     await mp.goto(`${base}/farm`, { waitUntil: "networkidle" });
     await noOverflow(mp);
     await mp.screenshot({
@@ -432,6 +519,9 @@ try {
     await ownerPage
       .getByRole("heading", { name: "Finance", exact: true })
       .waitFor();
+    await noOverflow(ownerPage);
+    await ownerPage.screenshot({path:path.join(output,`${name}-page-finance.png`),fullPage:true});
+    await ownerPage.setViewportSize({width:320,height:900});
     await noOverflow(ownerPage);
     await ownerContext.close();
     const customerContext = await contextFor(browser, failure.user);

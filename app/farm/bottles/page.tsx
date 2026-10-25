@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { todayInIndia } from "@/lib/delivery-calendar";
@@ -30,13 +31,13 @@ export default async function BottlesPage({
         title="Bottles"
         description="Documented visit returns, with a clear boundary between today's records and a verified physical stock count."
       />
-      <form className={styles.filters}>
+      <FarmForm className={styles.filters}>
         <label>
           Service date
           <input name="date" type="date" defaultValue={date} />
         </label>
         <button>Apply</button>
-      </form>
+      </FarmForm>
       <section className={styles.metrics}>
         <article>
           <strong>{data.bottle_returns_expected}</strong>
@@ -55,7 +56,7 @@ export default async function BottlesPage({
           establish the number of physical bottles loaded, delivered, held by
           customers, damaged, or in farm stock.
         </p>
-        <Link href={`/farm/delivery-sheet?date=${date}`}>
+        <Link prefetch={false} href={`/farm/delivery-sheet?date=${date}`}>
           Record returns on the assigned visit →
         </Link>
       </section>
@@ -66,7 +67,7 @@ export default async function BottlesPage({
           before displaying a trustworthy farm or customer balance. No balance
           or write-off is inferred from missing history.
         </p>
-        <Link href={`/farm/reconciliation?date=${date}`}>
+        <Link prefetch={false} href={`/farm/reconciliation?date=${date}`}>
           Review documented discrepancies →
         </Link>
       </section>

@@ -1,5 +1,5 @@
 .page {
-  color: #191919;
+  color: #2d4938;
   margin: 0 auto;
   max-width: 1180px;
   padding: 28px 18px 92px;
@@ -7,7 +7,7 @@
 
 .header {
   align-items: flex-start;
-  border-bottom: 2px solid #191919;
+  border-bottom: 2px solid #2d4938;
   display: flex;
   flex-wrap: wrap;
   gap: 18px;
@@ -22,8 +22,8 @@
 }
 
 .header p {
-  font-size: 11px;
-  font-weight: 720;
+  font-size:13px;
+  font-weight:600;
   text-transform: uppercase;
 }
 
@@ -53,14 +53,14 @@
 .assignForm button,
 .dispatchActions button,
 .doorstepForm button {
-  background: #fff;
-  border: 1px solid #191919;
+  background: #fffefb;
+  border: 1px solid #2d4938;
   border-radius: 4px;
-  color: #191919;
+  color: #2d4938;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
-  font-weight: 680;
+  font-weight:600;
   min-height: 42px;
   padding: 10px 12px;
   text-align: center;
@@ -90,8 +90,8 @@
 
 .dispatchControl p {
   color: #59625b;
-  font-size: 9px;
-  font-weight: 760;
+  font-size:12px;
+  font-weight:600;
   letter-spacing: .08em;
   margin-bottom: 5px;
   text-transform: uppercase;
@@ -104,7 +104,7 @@
 .dispatchControl span {
   color: #5f625e;
   display: block;
-  font-size: 11px;
+  font-size:13px;
   line-height: 1.5;
   margin-top: 6px;
 }
@@ -120,7 +120,7 @@
 }
 
 .dispatchActions button {
-  background: #191919;
+  background: #2d4938;
   color: #fff;
 }
 
@@ -131,13 +131,13 @@
 }
 
 .dispatchActions .secondaryButton {
-  background: #fff;
-  color: #191919;
+  background: #fffefb;
+  color: #2d4938;
 }
 
 .printButton,
 .doorstepForm button {
-  background: #191919;
+  background: #2d4938;
   color: #fff;
 }
 
@@ -158,7 +158,7 @@
 }
 
 .filters {
-  background: #f7f7f5;
+  background: #f0f4e9;
   display: grid;
   gap: 10px;
   margin-top: 20px;
@@ -174,8 +174,8 @@
 
 .filters span,
 .noteField span {
-  font-size: 11px;
-  font-weight: 680;
+  font-size:13px;
+  font-weight:600;
 }
 
 .filters input,
@@ -183,10 +183,10 @@
 .assignForm select,
 .noteField input {
   appearance: none;
-  background: #fff;
+  background: #fffefb;
   border: 1px solid #d8d7d3;
   border-radius: 4px;
-  color: #191919;
+  color: #2d4938;
   font: inherit;
   font-size: 13px;
   min-height: 42px;
@@ -195,7 +195,7 @@
 }
 
 .summary {
-  border-bottom: 1px solid #deddd9;
+  border-bottom: 1px solid #e2e8dd;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 10px 0;
@@ -219,7 +219,7 @@
 
 .summary span {
   color: #6c6b67;
-  font-size: 10px;
+  font-size:12px;
 }
 
 .areaList {
@@ -234,7 +234,7 @@
 
 .area > header {
   align-items: center;
-  background: #f6cb4f;
+  background: #f0dfab;
   display: flex;
   justify-content: space-between;
   padding: 14px 16px;
@@ -251,7 +251,7 @@
 }
 
 .area > header span {
-  font-size: 11px;
+  font-size:13px;
 }
 
 .route + .route {
@@ -260,8 +260,8 @@
 
 .routeHeader {
   align-items: flex-start;
-  background: #f7f7f5;
-  border-bottom: 1px solid #deddd9;
+  background: #f0f4e9;
+  border-bottom: 1px solid #e2e8dd;
   display: grid;
   gap: 12px;
   padding: 12px;
@@ -283,7 +283,7 @@
 .routeHeader span,
 .routeHeader small {
   color: #65645f;
-  font-size: 10px;
+  font-size:12px;
 }
 
 .assignForm {
@@ -317,7 +317,7 @@
 
 .routeLoad[data-overloaded="true"] small {
   color: #9b2e22;
-  font-weight: 700;
+  font-weight:600;
 }
 
 .defaultDriver {
@@ -327,7 +327,7 @@
 }
 
 .defaultDriver input {
-  accent-color: #191919;
+  accent-color: #2d4938;
   height: 16px;
   margin: 0;
   width: 16px;
@@ -335,7 +335,7 @@
 
 .defaultDriver span {
   color: #4f514e;
-  font-size: 10px;
+  font-size:12px;
 }
 
 .stopList {
@@ -353,7 +353,7 @@
 }
 
 .stopCard + .stopCard {
-  border-top: 1px solid #e8e7e3;
+  border-top: 1px solid #e2e8dd;
 }
 
 .stopTop {
@@ -364,12 +364,12 @@
 
 .stopNumber {
   align-items: center;
-  background: #191919;
+  background: #2d4938;
   border-radius: 50%;
   color: #fff;
   display: inline-flex;
   font-size: 12px;
-  font-weight: 750;
+  font-weight:600;
   height: 30px;
   justify-content: center;
   width: 30px;
@@ -379,8 +379,8 @@
   background: #f0efec;
   border-radius: 999px;
   color: #595854;
-  font-size: 10px;
-  font-weight: 700;
+  font-size:12px;
+  font-weight:600;
   padding: 5px 8px;
   text-transform: uppercase;
 }
@@ -409,15 +409,15 @@
 }
 
 .customer a {
-  color: #191919;
-  font-weight: 650;
+  color: #2d4938;
+  font-weight:600;
   text-underline-offset: 3px;
 }
 
 .mapLink small {
   color: #62615d;
   display: block;
-  font-size: 10px;
+  font-size:12px;
   margin-top: 3px;
 }
 
@@ -426,12 +426,12 @@
 }
 
 .items {
-  background: #f7f7f5;
+  background: #f0f4e9;
   padding: 12px;
 }
 
 .items span {
-  color: #191919;
+  color: #2d4938;
   font-weight: 620;
 }
 
@@ -444,15 +444,15 @@
 }
 
 .doorstepForm > p {
-  font-size: 11px;
-  font-weight: 760;
+  font-size:13px;
+  font-weight:600;
   margin: 0 0 2px;
   text-transform: uppercase;
 }
 
 .checkLabel {
   align-items: center;
-  background: #fff;
+  background: #fffefb;
   border: 1px solid #d8d7d3;
   border-radius: 4px;
   cursor: pointer;
@@ -463,7 +463,7 @@
 }
 
 .checkLabel input {
-  accent-color: #191919;
+  accent-color: #2d4938;
   height: 20px;
   margin: 0;
   width: 20px;
@@ -471,21 +471,21 @@
 
 .checkLabel span {
   font-size: 13px;
-  font-weight: 680;
+  font-weight:600;
 }
 
 .notRequired {
   color: #777570;
-  font-size: 11px;
+  font-size:13px;
   margin: 0;
 }
 
 .noteField input {
-  background: #fff;
+  background: #fffefb;
 }
 
 .empty {
-  background: #f7f7f5;
+  background: #f0f4e9;
   margin-top: 28px;
   padding: 24px;
 }
@@ -494,7 +494,7 @@
 .footer,
 .allClear {
   color: #6d6c68;
-  font-size: 11px;
+  font-size:13px;
   line-height: 1.5;
 }
 
@@ -503,13 +503,13 @@
 }
 
 .endReport {
-  border: 1px solid #191919;
+  border: 1px solid #2d4938;
   margin-top: 32px;
 }
 
 .endReport > header {
   align-items: flex-start;
-  background: #191919;
+  background: #2d4938;
   color: #fff;
   display: flex;
   gap: 16px;
@@ -524,8 +524,8 @@
 
 .endReport header p {
   color: #c9c8c4;
-  font-size: 9px;
-  font-weight: 720;
+  font-size:12px;
+  font-weight:600;
   margin-bottom: 5px;
   text-transform: uppercase;
 }
@@ -535,9 +535,9 @@
 }
 
 .endReport header > span {
-  color: #f6cb4f;
-  font-size: 10px;
-  font-weight: 700;
+  color: #f0dfab;
+  font-size:12px;
+  font-weight:600;
 }
 
 .reportMetrics {
@@ -546,14 +546,14 @@
 }
 
 .reportMetrics article {
-  border-bottom: 1px solid #deddd9;
+  border-bottom: 1px solid #e2e8dd;
   display: grid;
   gap: 3px;
   padding: 14px;
 }
 
 .reportMetrics article:nth-child(even) {
-  border-left: 1px solid #deddd9;
+  border-left: 1px solid #e2e8dd;
 }
 
 .reportMetrics strong {
@@ -562,7 +562,7 @@
 
 .reportMetrics span {
   color: #666561;
-  font-size: 10px;
+  font-size:12px;
 }
 
 .exceptionList {
@@ -572,8 +572,8 @@
 }
 
 .exceptionList span {
-  background: #f7f7f5;
-  font-size: 11px;
+  background: #f0f4e9;
+  font-size:13px;
   line-height: 1.5;
   padding: 9px 10px;
 }
@@ -584,7 +584,7 @@
 }
 
 .footer {
-  border-top: 1px solid #deddd9;
+  border-top: 1px solid #e2e8dd;
   margin-top: 28px;
   padding-top: 12px;
 }
@@ -681,7 +681,7 @@
 
   .reportMetrics article,
   .reportMetrics article:nth-child(even) {
-    border-left: 1px solid #deddd9;
+    border-left: 1px solid #e2e8dd;
   }
 
   .reportMetrics article:first-child {
@@ -725,5 +725,5 @@
   }
 }
 
-.routeStopEditor{border-top:1px solid #e4e6e5;grid-column:1/-1}.routeStopEditor>summary{color:#176d66;cursor:pointer;font-size:11px;font-weight:700;list-style:none;padding:11px 0}.routeStopEditor>summary::-webkit-details-marker{display:none}.routeStopForm{background:#f5fbfa;border:1px solid #cce3df;border-radius:8px;display:grid;gap:10px;padding:12px}.routeStopForm label{color:#4d5c66;display:grid;font-size:11px;font-weight:650;gap:5px}.routeStopForm select,.routeStopForm input:not([type=checkbox]){background:#fff;border:1px solid #bdcfcc;border-radius:6px;color:#17212b;font:inherit;font-size:12px;min-height:38px;padding:8px}.routeStopForm .applyDefault{align-items:flex-start;display:flex;gap:8px;line-height:1.4}.routeStopForm .applyDefault input{accent-color:#0f766e;margin:1px 0 0}.routeStopForm p{color:#667780;font-size:10px;line-height:1.45;margin:0}.routeStopForm button{background:#0f766e;border:0;border-radius:6px;color:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:700;justify-self:start;padding:9px 12px}.routeStopForm button:disabled{cursor:wait;opacity:.65}.routeMoveSuccess,.routeMoveError{font-size:11px;line-height:1.4}.routeMoveSuccess{color:#147a6f}.routeMoveError{color:#a92d23}
+.routeStopEditor{border-top:1px solid #e4e6e5;grid-column:1/-1}.routeStopEditor>summary{color:#176d66;cursor:pointer;font-size:13px;font-weight:600;list-style:none;padding:11px 0}.routeStopEditor>summary::-webkit-details-marker{display:none}.routeStopForm{background:#f5fbfa;border:1px solid #cce3df;border-radius:8px;display:grid;gap:10px;padding:12px}.routeStopForm label{color:#4d5c66;display:grid;font-size:13px;font-weight:600;gap:5px}.routeStopForm select,.routeStopForm input:not([type=checkbox]){background:#fffefb;border:1px solid #bdcfcc;border-radius:6px;color:#263b33;font:inherit;font-size:12px;min-height:38px;padding:8px}.routeStopForm .applyDefault{align-items:flex-start;display:flex;gap:8px;line-height:1.4}.routeStopForm .applyDefault input{accent-color:#285942;margin:1px 0 0}.routeStopForm p{color:#667780;font-size:12px;line-height:1.45;margin:0}.routeStopForm button{background:#285942;border:0;border-radius:6px;color:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:600;justify-self:start;padding:9px 12px}.routeStopForm button:disabled{cursor:wait;opacity:.65}.routeMoveSuccess,.routeMoveError{font-size:13px;line-height:1.4}.routeMoveSuccess{color:#147a6f}.routeMoveError{color:#a92d23}
 .page{color:var(--farm-ink)}.header{border-bottom:1px solid var(--farm-line)}.header h1{font-family:var(--font-fraunces),Georgia,serif;font-weight:500}.route{background:var(--farm-surface)}.filters{flex-wrap:wrap}.filters label{min-width:0;max-width:100%;flex:1 1 140px}.filters :is(input,select){min-height:44px;max-width:100%;font-size:16px}.driverView{max-width:760px}.driverView .summary{display:none}.driverView .header p{font-weight:500;font-size:12px;text-transform:none}.driverView .actions{display:none}

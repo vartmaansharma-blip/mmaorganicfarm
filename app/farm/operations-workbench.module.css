@@ -7,7 +7,7 @@
   max-width: 1320px;
   margin: 0 auto;
   padding: 32px 20px 100px;
-  background: #fafbf8;
+  background: #f6f7f0;
   min-height: 100svh;
 }
 .page h1 {
@@ -44,7 +44,7 @@
 .header > div > span {
   font-size: 13px;
   color: var(--op-green);
-  font-weight: 700;
+  font-weight:600;
 }
 .links {
   display: flex;
@@ -57,7 +57,7 @@
   padding: 12px 14px;
   border-radius: 9px;
   font-size: 13px;
-  background: #fff;
+  background: #fffefb;
 }
 .filters {
   display: flex;
@@ -81,7 +81,7 @@
 .actionForm textarea {
   width: 100%;
   border: 1px solid #9eafa3;
-  background: #fff;
+  background: #fffefb;
   color: #172c23;
   border-radius: 7px;
   font: inherit;
@@ -109,7 +109,7 @@
   min-height: 44px;
   font: inherit;
   font-size: 14px;
-  font-weight: 650;
+  font-weight:600;
   cursor: pointer;
 }
 .actionForm button:disabled {
@@ -132,7 +132,7 @@
 }
 .metrics strong {
   font-size: 30px;
-  font-weight: 650;
+  font-weight:600;
   font-variant-numeric: tabular-nums;
 }
 .metrics span {
@@ -207,7 +207,7 @@
 }
 .actionForm legend {
   font-size: 14px;
-  font-weight: 700;
+  font-weight:600;
   margin-bottom: 12px;
 }
 .actionForm button {
@@ -250,7 +250,7 @@
   white-space: nowrap;
 }
 .table th {
-  font-weight: 650;
+  font-weight:600;
   font-size: 12px;
   color: var(--op-muted);
 }
@@ -457,3 +457,42 @@
   font-weight: 600;
   min-height: 34px;
 }
+/* Shared working surfaces for inbox, closeout, records and configuration. */
+.page { --op-ink: var(--farm-ink); --op-muted: var(--farm-muted); --op-line: var(--farm-line); --op-green: var(--farm-green); }
+.header { padding-bottom: 23px; }
+.header > div > span { color: #77876c; font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
+.header p { font-size: 13px; max-width: 600px; }
+.panel { background: var(--farm-surface); border-color: var(--farm-line); border-radius: 14px; padding: 22px; }
+.metrics { gap: 12px; }
+.metrics article { background: var(--farm-surface); border-radius: 13px; padding: 20px; }
+.metrics article strong { font-size: 29px; font-weight: 500; letter-spacing: -.04em; }
+.metrics article span { color: var(--farm-muted); font-size: 12px; }
+.reportRow { padding: 17px 0; }
+.reportRow strong { font-size: 14px; font-weight: 500; }
+.badge { border-radius: 99px; font-size: 11px; font-weight: 500; padding: 6px 9px; }
+.requestPanel { background: #faf5e7; border-color: #e7d8b5; }
+.tabs { border-bottom: 1px solid var(--farm-line); gap: 18px; padding-bottom: 0; }
+.tabs a { background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: var(--farm-muted); padding: 10px 0 13px; }
+.tabs a[aria-current="page"] { background: transparent; border-color: #729456; color: var(--farm-green); }
+.empty { background: #eef3e8; border-radius: 12px; color: var(--farm-muted); padding: 24px; }
+@media(max-width:540px) { .panel { padding: 18px; } .metrics { gap: 8px; } .metrics article { padding: 15px; } .metrics article strong { font-size: 25px; } }
+
+/* Coloured summaries, quiet record surfaces. */
+.page { --op-green:var(--farm-green); }
+.metrics article:nth-child(3n+1) { background:var(--farm-mint); border-color:#a9e5c9; }
+.metrics article:nth-child(3n+2) { background:var(--farm-sky-soft); border-color:#a7def5; }
+.metrics article:nth-child(3n) { background:#fff5da; border-color:#f2dc9b; }
+.metrics article[data-attention="true"] { background:var(--farm-coral-soft); border-color:#f6baad; }
+.recordList { display:grid; gap:12px; margin-top:8px; }
+.recordList .record { margin:0; padding:20px; }
+.record .panelHeader { margin-bottom:8px; }
+.record h2 { font-size:17px; margin:0 0 4px; }
+.record .items:empty { display:none; }
+.record > p { margin:8px 0; }
+.record > a { color:var(--farm-green); display:inline-block; font-size:13px; margin-top:10px; }
+.record .badge { background:var(--farm-mint); color:#145b42; }
+.record .badge[data-status="pending_payment"],.record .badge[data-status="pending_confirmation"] { background:var(--farm-mango-soft); color:#704600; }
+.record .badge[data-status="failed"],.record .badge[data-status="cancelled"] { background:var(--farm-coral-soft); color:#9c3527; }
+
+.routeBoard { border:1px solid #a7def5; }
+.routeBoard > .panelHeader { background:var(--farm-sky-soft); border-radius:9px; padding:16px; }

@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -287,7 +288,7 @@ export default async function LocationsPage({
           ) : null}
           {canManage ? <a href="#import-customers">Import file</a> : null}
           {canManage ? <a href="/farm/exports/customers">Export</a> : null}
-          <Link href="/farm/routes">Routes</Link>
+          <Link prefetch={false} href="/farm/routes">Routes</Link>
         </div>
       </header>
 
@@ -371,22 +372,22 @@ export default async function LocationsPage({
             <p className={styles.eyebrow}>Operator queue</p>
             <h2 id="attention-title">What needs attention</h2>
           </div>
-          <Link href="/farm/capacity?product=milk">Open capacity control</Link>
+          <Link prefetch={false} href="/farm/capacity?product=milk">Open capacity control</Link>
         </div>
         <div className={styles.attentionList}>
-          <Link href="/farm/routes">
+          <Link prefetch={false} href="/farm/routes">
             <strong>{unroutedCount}</strong>
             <span>Customers needing a route</span>
             <small>
               Review only exceptions the automatic rules could not match.
             </small>
           </Link>
-          <Link href="/farm/locations?filter=missing">
+          <Link prefetch={false} href="/farm/locations?filter=missing">
             <strong>{missingAddressCount}</strong>
             <span>Profiles missing an address</span>
             <small>Complete these before routing a delivery.</small>
           </Link>
-          <Link href="/farm/capacity?product=milk">
+          <Link prefetch={false} href="/farm/capacity?product=milk">
             <strong>{capacityRiskCount}</strong>
             <span>Capacity-risk days</span>
             <small>
@@ -403,7 +404,7 @@ export default async function LocationsPage({
               <span>Add customer</span>
               <small>Create a profile manually</small>
             </summary>
-            <form
+            <FarmForm
               action={createCustomerProfile}
               className={styles.customerForm}
             >
@@ -465,7 +466,7 @@ export default async function LocationsPage({
               <FormSubmitButton pendingLabel="Saving customer…">
                 Save customer
               </FormSubmitButton>
-            </form>
+            </FarmForm>
           </details>
 
           <details className={styles.actionPanel} id="import-customers">
@@ -478,7 +479,7 @@ export default async function LocationsPage({
                 Use name, phone or email, address, locality, landmark, postal
                 code, and area columns.
               </p>
-              <form
+              <FarmForm
                 action={importCustomerProfiles}
                 className={styles.importForm}
               >
@@ -493,7 +494,7 @@ export default async function LocationsPage({
                 <FormSubmitButton pendingLabel="Importing customers…">
                   Import customers
                 </FormSubmitButton>
-              </form>
+              </FarmForm>
               {parameters.importError ? (
                 <p className={styles.importError} role="alert">
                   {String(parameters.importError)}
@@ -523,7 +524,7 @@ export default async function LocationsPage({
           <span>{filteredProfiles.length} shown</span>
         </div>
 
-        <form className={styles.directoryToolbar} method="get">
+        <FarmForm className={styles.directoryToolbar} method="get">
           <label>
             <span className={styles.visuallyHidden}>Search customers</span>
             <input
@@ -544,9 +545,9 @@ export default async function LocationsPage({
           </label>
           <button type="submit">Apply</button>
           {searchQuery || filter !== "all" ? (
-            <Link href="/farm/locations">Clear</Link>
+            <Link prefetch={false} href="/farm/locations">Clear</Link>
           ) : null}
-        </form>
+        </FarmForm>
 
         {filteredProfiles.length ? (
           <div className={styles.customerList}>
@@ -592,7 +593,7 @@ export default async function LocationsPage({
                     <span className={styles.initial} aria-hidden="true">
                       {(profile.full_name ?? "C").charAt(0).toUpperCase()}
                     </span>
-                    <Link
+                    <Link prefetch={false}
                       className={styles.customerIdentity}
                       href={`/farm/customers/${profile.user_id}`}
                     >
@@ -639,7 +640,7 @@ export default async function LocationsPage({
                   </summary>
 
                   <div className={styles.customerBody}>
-                    <Link
+                    <Link prefetch={false}
                       className={styles.workspaceLink}
                       href={`/farm/customers/${profile.user_id}`}
                     >
