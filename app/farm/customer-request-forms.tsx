@@ -1,6 +1,5 @@
 "use client";
-import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState, useState } from "react";
 import {
   recordCustomerRequest,
   reviewCustomerRequest,
@@ -25,10 +24,6 @@ export function DriverCustomerRequestForm({
   const [date, setDate] = useState(tomorrow);
   const [kind, setKind] = useState("skip_milk");
   const [words, setWords] = useState("");
-  const router = useRouter();
-  useEffect(() => {
-    if (state?.ok) router.refresh();
-  }, [router, state]);
   return (
     <details className={styles.requestPanel}>
       <summary>Customer asked for a change?</summary>
@@ -113,10 +108,6 @@ export function CustomerRequestReviewForm({
   );
   const [note, setNote] = useState("");
   const [key] = useState(() => crypto.randomUUID());
-  const router = useRouter();
-  useEffect(() => {
-    if (state?.ok) router.refresh();
-  }, [router, state]);
   return (
     <form action={action} className={styles.actionForm}>
       <input type="hidden" name="requestId" value={id} />
@@ -125,7 +116,7 @@ export function CustomerRequestReviewForm({
         <legend>Manager review</legend>
         <p className={styles.hint}>
           {kind === "skip_milk"
-            ? "Approval skips milk only, keeps other products, preserves prepaid service, and refreshes an unlocked draft. Released days require a separate dispatch review."
+            ? "For a verified milk-credit plan, approval skips milk only, keeps other products, and preserves prepaid service. Calendar-month plans need follow-up; released days need a dispatch review."
             : "Review quantities with the customer’s plan. Additional milk requires payment; reduced prepaid milk goes to the next calendar day. Record follow-up here until that change is completed."}
         </p>
         <label>

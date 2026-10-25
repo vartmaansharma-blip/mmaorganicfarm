@@ -81,8 +81,7 @@ begin
     join public.customer_profiles as profiles
       on profiles.user_id = plans.user_id
     where plans.status = 'active'
-      and plans.entitlement_model = 'legacy_delivery_count'
-      and plans.delivered_deliveries < plans.purchased_deliveries
+      and ((plans.entitlement_model='legacy_delivery_count' and plans.delivered_deliveries<plans.purchased_deliveries) or (plans.entitlement_model='calendar_period' and plans.billing_model='calendar_month' and p_delivery_date<plans.period_end_exclusive))
       and not plans.is_test
       and not exists (select 1 from public.daily_deliveries d where d.plan_id=plans.id and d.delivery_date=p_delivery_date and d.replacement_of_delivery_id is null)
       and plans.start_date <= p_delivery_date

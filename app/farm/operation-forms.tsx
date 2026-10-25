@@ -18,11 +18,8 @@ function useSave(
     form: FormData,
   ) => Promise<OperationState>,
 ) {
-  const router = useRouter();
+  // Server actions revalidate their pages and return the updated tree.
   const [state, submit, pending] = useActionState(action, null);
-  useEffect(() => {
-    if (state?.ok) router.refresh();
-  }, [router, state]);
   return { state, submit, pending };
 }
 function Feedback({ state }: { state: OperationState | null }) {

@@ -85,6 +85,7 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
         .filter(([, path]) => role === "admin" || path !== "/farm/payments")
         .map(([label, path]) => (
           <Link
+            prefetch={false}
             key={path}
             href={
               date && dated.has(path)

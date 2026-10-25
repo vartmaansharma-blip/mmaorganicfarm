@@ -161,7 +161,11 @@ export async function DriverDay({
                 />
               ) : null}
               {next ? (
-                <Link className={styles.next} href={href(next.id)}>
+                <Link
+                  prefetch={false}
+                  className={styles.next}
+                  href={href(next.id)}
+                >
                   Next stop →
                 </Link>
               ) : null}
@@ -173,6 +177,7 @@ export async function DriverDay({
               {stops.map((stop, i) => (
                 <li key={stop.visit_key}>
                   <Link
+                    prefetch={false}
                     href={href(stop.id)}
                     aria-current={current.id === stop.id ? "step" : undefined}
                   >

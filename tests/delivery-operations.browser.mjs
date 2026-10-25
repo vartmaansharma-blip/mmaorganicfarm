@@ -201,14 +201,19 @@ try {
     activePage = page;
     const errors = [];
     page.on("pageerror", (e) =>
-      errors.push(`${name} ${new URL(page.url()).pathname}: ${e.message}`),
+      errors.push(
+        `${name} ${new URL(page.url()).pathname}: ${e.stack ?? e.message}`,
+      ),
     );
     await page.goto(`${base}/farm/delivery-sheet?date=${today}`, {
       waitUntil: "networkidle",
     });
     await page.getByText(failure.label, { exact: false }).first().waitFor();
-    await page.keyboard.press("Tab");
-    assert.equal(await page.locator(":focus").innerText(), "Skip to workspace");
+    await page
+      .getByRole("link", { name: "Skip to workspace", exact: true })
+      .focus();
+    await page.keyboard.press("Enter");
+    assert.equal(new URL(page.url()).hash, "#farm-workspace");
     assert.equal(
       (await page.locator("main").innerText()).includes(foreign.label),
       false,
@@ -282,7 +287,9 @@ try {
     const mp = await managerContext.newPage();
     activePage = mp;
     mp.on("pageerror", (e) =>
-      errors.push(`${name} ${new URL(mp.url()).pathname}: ${e.message}`),
+      errors.push(
+        `${name} ${new URL(mp.url()).pathname}: ${e.stack ?? e.message}`,
+      ),
     );
     await mp.goto(`${base}/farm/cancellations`, { waitUntil: "networkidle" });
     const spoken = mp

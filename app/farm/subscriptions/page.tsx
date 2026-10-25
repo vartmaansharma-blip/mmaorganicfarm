@@ -27,7 +27,7 @@ export default async function SubscriptionsPage({
   const result = await createAdminClient()
     .from("delivery_plans")
     .select(
-      "id,user_id,status,start_date,purchased_deliveries,delivered_deliveries,entitlement_model,weekly_delivery_items(day_of_week,product_key,quantity)",
+      "id,user_id,status,start_date,purchased_deliveries,delivered_deliveries,entitlement_model,billing_model,period_end_exclusive,weekly_delivery_items(day_of_week,product_key,quantity)",
     )
     .eq("is_test", false)
     .eq("status", status)
@@ -94,9 +94,11 @@ export default async function SubscriptionsPage({
                       : ""}
                   </p>
                 ) : (
-                  <p className={styles.error}>
-                    Calendar-period service needs its own verified entitlement
-                    adapter. Financial changes are unavailable here.
+                  <p>
+                    <strong>Prepaid calendar month</strong> · {row.start_date}{" "}
+                    to {row.period_end_exclusive} (end exclusive). Dated
+                    fulfilment does not consume milk credits. Schedule changes
+                    require farm review.
                   </p>
                 )}
                 <div className={styles.items}>
@@ -121,8 +123,9 @@ export default async function SubscriptionsPage({
                   )}
                 </div>
                 <p className={styles.hint}>
-                  Skips and partial deliveries do not erase prepaid service.
-                  Remaining entitlement is not an expiry date.
+                  {row.billing_model === "calendar_month"
+                    ? "The original paid dates and quantities remain authoritative; exceptions require an explicit review."
+                    : "Skips and partial deliveries do not erase prepaid service. Remaining entitlement is not an expiry date."}
                 </p>
                 <Link href={`/farm/customers/${row.user_id}`}>
                   Review plan and upcoming service →

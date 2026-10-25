@@ -34,6 +34,7 @@ export const baselineFiles = [
   "next_day_delivery_start",
   "route_dispatch_workbench",
   "route_retirement_audit",
+  "monthly_product_schedules",
 ];
 export async function createDatabase() {
   const require = createRequire(import.meta.url);

@@ -81,6 +81,7 @@ begin
   if v_request.plan_id is null then raise exception 'No single milk plan is identified. Review the customer before applying changes';end if;
   if v_request.requested_date<private.operational_today() then raise exception 'This service date has passed; coordinate a follow-up instead';end if;
   perform private.lock_operational_day(v_request.requested_date);
+  if exists(select 1 from public.delivery_plans where id=v_request.plan_id and billing_model='calendar_month') then raise exception 'Calendar-month schedule changes require a reviewed plan adjustment; choose follow-up';end if;
   perform 1 from public.delivery_plans where id=v_request.plan_id and user_id=v_request.user_id and status='active' and not is_test and entitlement_model='legacy_delivery_count' and delivered_deliveries<purchased_deliveries for update;
   if not found or not exists(select 1 from public.orders o join public.payments p on p.order_id=o.id where o.delivery_plan_id=v_request.plan_id and o.status='paid' and not o.is_test and p.status='captured' and not p.is_test) then raise exception 'A verified active paid milk plan is required';end if;
   if exists(select 1 from public.delivery_dispatches where delivery_date=v_request.requested_date and status='released')

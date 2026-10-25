@@ -1,4 +1,3 @@
-import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
@@ -51,9 +50,6 @@ export default async function FarmLayout({
         </div>
       </aside>
       <div id="farm-workspace" tabIndex={-1} className={styles.workspace}>
-        <div className={styles.pageControls}>
-          <PageNavigationControls />
-        </div>
         {children}
       </div>
     </div>

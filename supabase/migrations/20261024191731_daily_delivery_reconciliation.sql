@@ -4,6 +4,16 @@ begin;
 
 alter table public.delivery_plans add column entitlement_model text not null default 'legacy_delivery_count'
   check (entitlement_model in ('legacy_delivery_count', 'calendar_period'));
+-- The current main includes monthly_product_schedules.sql; apply it first.
+update public.delivery_plans set entitlement_model='calendar_period' where billing_model='calendar_month';
+create function private.classify_plan_entitlement() returns trigger language plpgsql set search_path='' as $$
+begin
+ if new.billing_model='calendar_month' then new.entitlement_model:='calendar_period'; end if;
+ return new;
+end $$;
+revoke all on function private.classify_plan_entitlement() from public,anon,authenticated;
+create trigger classify_plan_entitlement before insert or update of billing_model on public.delivery_plans for each row execute function private.classify_plan_entitlement();
+alter table public.delivery_plans add constraint delivery_plan_entitlement_matches_billing check ((billing_model='calendar_month' and entitlement_model='calendar_period') or (billing_model='milk_credits' and entitlement_model='legacy_delivery_count'));
 alter table public.daily_deliveries
   add column replacement_of_delivery_id uuid unique references public.daily_deliveries(id) on delete restrict,
   add column fulfilment_root_id uuid references public.daily_deliveries(id) on delete restrict;
@@ -226,7 +236,7 @@ begin
   ) then raise exception 'Fulfilment requires the original paid obligation'; end if;
   -- Lock affected plans in stable order before changing any entitlement counters.
   perform 1 from public.delivery_plans where id in(select plan_id from public.daily_deliveries where id=any(v_ids)) order by id for update;
-  if exists(select 1 from public.daily_deliveries d join public.delivery_plans p on p.id=d.plan_id where d.id=any(v_ids) and p.entitlement_model<>'legacy_delivery_count') and p_outcome in ('delivered','partial') then raise exception 'Calendar-period entitlement adapter is not activated; keep this visit pending resolution'; end if;
+  if exists(select 1 from public.daily_deliveries d join public.delivery_plans p on p.id=d.plan_id where d.id=any(v_ids) and (p.entitlement_model<>'legacy_delivery_count' and not(p.entitlement_model='calendar_period' and p.billing_model='calendar_month'))) and p_outcome in ('delivered','partial') then raise exception 'Calendar-period entitlement adapter is not activated; keep this visit pending resolution'; end if;
   if exists(select 1 from public.daily_deliveries d where d.id=any(v_ids) and d.status<>'cancelled' and not exists(select 1 from public.daily_delivery_items i where i.delivery_id=d.id)) then raise exception 'Missing scheduled product quantities'; end if;
   select count(*) filter(where bottle_return_required and status<>'cancelled') into v_expected from public.daily_deliveries where id=any(v_ids);
   if p_bottles_returned>v_expected then raise exception 'Returns exceed the documented visit expectation'; end if;
@@ -265,6 +275,7 @@ begin
     on conflict(delivery_date,visit_key) do update set event_id=excluded.event_id,outcome=excluded.outcome,reason_code=excluded.reason_code,note=excluded.note,resolution=excluded.resolution,follow_up_date=null;
   for v_root_id in select distinct coalesce(fulfilment_root_id,id) from public.daily_deliveries where id=any(v_ids) and plan_id is not null order by 1 loop
     select d.*,p.entitlement_model into v_root from public.daily_deliveries d join public.delivery_plans p on p.id=d.plan_id where d.id=v_root_id;
+    if v_root.entitlement_model='calendar_period' then continue; end if;
     perform 1 from public.delivery_plans where id=v_root.plan_id for update;
     insert into public.delivery_entitlement_baselines(plan_id,fulfilled_count) select id,delivered_deliveries from public.delivery_plans where id=v_root.plan_id on conflict do nothing;
     select quantity into v_milk from public.daily_delivery_items where delivery_id=v_root_id and product_key='milk';
@@ -405,7 +416,7 @@ begin
     union all select 'missing_quantities',l.id::text,'A recorded outcome has missing actual product quantities' from lines l join public.daily_delivery_items i on i.delivery_id=l.id where l.outcome is not null and i.fulfilled_quantity is null
     union all select 'entitlement_mismatch',p.id::text,'Plan count differs from baseline and recorded fulfilment movements' from public.delivery_plans p where p.id in(select plan_id from lines) and p.delivered_deliveries<>(coalesce((select fulfilled_count from public.delivery_entitlement_baselines b where b.plan_id=p.id),0)+(select coalesce(sum(consumed),0) from public.delivery_entitlement_movements m where m.plan_id=p.id))
     union all select 'premature_entitlement',m.root_delivery_id::text,'A consumed milk entitlement has unfulfilled quantities' from public.delivery_entitlement_movements m join public.daily_delivery_items root on root.delivery_id=m.root_delivery_id and root.product_key='milk' where m.plan_id in(select plan_id from lines) and root.quantity>(select coalesce(sum(i.fulfilled_quantity),0) from public.daily_deliveries d join public.daily_delivery_items i on i.delivery_id=d.id and i.product_key='milk' where coalesce(d.fulfilment_root_id,d.id)=m.root_delivery_id)
-    union all select 'unsupported_entitlement',p.id::text,'Calendar-period accounting is not activated' from public.delivery_plans p where p.id in(select plan_id from lines) and p.entitlement_model<>'legacy_delivery_count'
+    union all select 'unsupported_entitlement',p.id::text,'Calendar-period accounting is not activated' from public.delivery_plans p where p.id in(select plan_id from lines) and p.entitlement_model<>'legacy_delivery_count' and p.billing_model<>'calendar_month'
     union all select 'follow_up_missing',visit_key,'Approved follow-up requires a future obligation/review date' from lines where resolution in ('retained','rescheduled','carry_forward') and follow_up_date is null
     union all select 'replacement_missing',visit_key,'Approved reschedule has no linked replacement obligation' from lines l where resolution='rescheduled' and not exists(select 1 from public.daily_deliveries r where r.replacement_of_delivery_id=l.id) and exists(select 1 from public.daily_delivery_items i where i.delivery_id=l.id and i.fulfilled_quantity<i.quantity)
   ) select jsonb_build_object(
@@ -610,8 +621,7 @@ begin
     join public.customer_profiles as profiles
       on profiles.user_id = plans.user_id
     where plans.status = 'active'
-      and plans.entitlement_model = 'legacy_delivery_count'
-      and plans.delivered_deliveries < plans.purchased_deliveries
+      and ((plans.entitlement_model='legacy_delivery_count' and plans.delivered_deliveries<plans.purchased_deliveries) or (plans.entitlement_model='calendar_period' and plans.billing_model='calendar_month' and p_delivery_date<plans.period_end_exclusive))
       and not plans.is_test
       and not exists (select 1 from public.daily_deliveries d where d.plan_id=plans.id and d.delivery_date=p_delivery_date and d.replacement_of_delivery_id is null)
       and plans.start_date <= p_delivery_date
@@ -841,6 +851,7 @@ declare
   v_pending_holds numeric(8, 2);
   v_reserved_dates integer := 0;
   v_offset integer;
+  v_monthly_end date;
 begin
   if current_user not in ('service_role', 'postgres') then
     raise exception 'Service role required' using errcode = '42501';
@@ -872,6 +883,7 @@ begin
     raise exception 'A delivery plan is required';
   end if;
 
+  select period_end_exclusive into v_monthly_end from public.delivery_plans where id=v_order.delivery_plan_id and billing_model='calendar_month';
   -- Lock every tracked product in a fixed order so two checkouts cannot oversell.
   for v_product_key in
     select capacity.product_key
@@ -901,7 +913,7 @@ begin
     where capacity.product_key in ('milk', 'paneer', 'ghee')
     order by capacity.product_key
   loop
-    for v_offset in 0..(case when v_order.purchase_mode = 'plan' then 6 else 0 end)
+    for v_offset in 0..(case when v_monthly_end is not null then (v_monthly_end-v_order.start_date)-1 when v_order.purchase_mode = 'plan' then 6 else 0 end)
     loop
       v_delivery_date := v_order.start_date + v_offset;
 
@@ -942,7 +954,7 @@ begin
       from public.delivery_plans as plan
       where plan.status = 'active'
         and plan.start_date <= v_delivery_date
-        and plan.delivered_deliveries < plan.purchased_deliveries
+        and (plan.billing_model='calendar_month' or plan.delivered_deliveries < plan.purchased_deliveries)
         and plan.id is distinct from v_order.delivery_plan_id
         and not exists (
           select 1
@@ -1070,7 +1082,7 @@ begin
         from public.delivery_plans as plan
         where plan.status = 'active'
           and plan.start_date <= dates.day
-          and plan.delivered_deliveries < plan.purchased_deliveries
+          and (plan.billing_model='calendar_month' or plan.delivered_deliveries < plan.purchased_deliveries)
           and not exists (
             select 1
             from public.delivery_pauses as pause

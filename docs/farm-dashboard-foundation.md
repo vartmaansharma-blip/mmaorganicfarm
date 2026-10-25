@@ -36,7 +36,7 @@ This is a working implementation foundation, not a claim that every future capab
 - A quantity-based bottle/finished-stock ledger still needs dated opening counts, custody transfers, and audited movements. Existing boolean return records cannot establish that balance.
 - Nightly preparation is implemented with a 21:05 IST target, a secret-protected server endpoint, a default-off environment flag, idempotent database work, failure records and manual retries. It prepares tomorrow's draft and default assignments; staff still review and release dispatch. It has not been activated in production. Recorded runs establish operation; configuration alone does not.
 - Outbound messaging delivery receipts, embedded maps, GPS, and ETA computation are not integrated. The app does not fabricate their status.
-- Calendar-month entitlement behaviour is not activated; the legacy prepaid delivery-count adapter is verified separately.
+- The merged calendar-month schema is integrated for dated generation, ordinary/partial fulfilment, finite completion and capacity. Monthly deliveries never consume legacy milk credits. Automatic monthly reschedules, skips and financial changes remain unavailable; keep those requests in explicit manager follow-up.
 - Current reports are service-day reports, not a validated profit or historical on-time analytics product.
 - Farm surfaces use the deliberate light cream operational palette. This change does not create a fully reviewed alternate dark farm theme.
 - Hosted Supabase Auth/PostgREST and a production-equivalent preview still require separate verification. The local browser adapter is test infrastructure, not a second business backend.

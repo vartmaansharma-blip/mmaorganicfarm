@@ -357,10 +357,11 @@ try {
       /expectation/i,
     );
   });
-  await test("O: monthly delivery adapter refuses unsupported consumption", async () => {
-    const f = await fixture({ model: "calendar_period" });
-    await assert.rejects(outcome(f), /not activated/i);
-    assert.equal((await count(f)).delivered_deliveries, 0);
+  await test("O: billing and entitlement models cannot disagree", async () => {
+    await assert.rejects(
+      fixture({ model: "calendar_period" }),
+      /entitlement_matches_billing/i,
+    );
   });
   await test("P: one-time fulfilment creates no subscription movement", async () => {
     const f = await fixture({ once: true });
@@ -582,8 +583,19 @@ try {
       )
     ).rows[0].q;
     assert.ok(queue.rows.some((r) => r.visit_key === f.visit));
-    const excluded=(await callAs(db,manager,"select get_delivery_exceptions(p_date=>$1,p_resolution=>'pending',p_area=>$2) q",[today,randomUUID()])).rows[0].q;
-    assert.equal(excluded.total,0,"zone filters must apply before pagination and totals");
+    const excluded = (
+      await callAs(
+        db,
+        manager,
+        "select get_delivery_exceptions(p_date=>$1,p_resolution=>'pending',p_area=>$2) q",
+        [today, randomUUID()],
+      )
+    ).rows[0].q;
+    assert.equal(
+      excluded.total,
+      0,
+      "zone filters must apply before pagination and totals",
+    );
     const summary = (
       await callAs(db, manager, "select get_delivery_reconciliation($1) r", [
         today,
