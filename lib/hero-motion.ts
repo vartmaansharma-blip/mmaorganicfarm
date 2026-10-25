@@ -1,4 +1,4 @@
-/** Native-scroll choreography, evaluated from absolute progress in either direction. */
+/** Continuous native-scroll fill and a reversible, time-based photographic film. */
 export function clamp01(value: number): number {
   return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
 }
@@ -12,49 +12,46 @@ export function heroProgress(top: number, height: number, panelHeight: number, h
   return clamp01((headerHeight - top) / Math.max(1, height - panelHeight));
 }
 
-/** Time-based damping behaves consistently at 30, 60 and 120 Hz. */
-export function dampProgress(current: number, target: number, elapsedMs: number): number {
-  const next = current + (clamp01(target) - current) * (1 - Math.exp(-Math.max(0, elapsedMs) / 65));
-  return Math.abs(next - target) < 0.0001 ? clamp01(target) : clamp01(next);
+/** One clock owns the complete film. Scroll never selects a photographic target. */
+export const FILM_DURATION_MS = 1900;
+export const FILM_STAGES = [
+  { at: 0, name: "filled-front" },
+  { at: 60, name: "coffee-treatment" },
+  { at: 180, name: "elevated" },
+  { at: 520, name: "macro-push" },
+  { at: 900, name: "macro-hold" },
+  { at: 1280, name: "overhead-pull" },
+  { at: 1650, name: "settled-overhead" },
+] as const;
+export type HeroState = "FILLING" | "PLAYING_FORWARD" | "COMPLETED" | "PLAYING_REVERSE";
+export type HeroFilm = { state: HeroState; time: number };
+export const playing = (film: HeroFilm) => film.state === "PLAYING_FORWARD" || film.state === "PLAYING_REVERSE";
+export function startFilm(film: HeroFilm, reverse = false): HeroFilm {
+  if (playing(film) || (reverse ? film.state !== "COMPLETED" : film.state !== "FILLING")) return film;
+  return { state: reverse ? "PLAYING_REVERSE" : "PLAYING_FORWARD", time: reverse ? FILM_DURATION_MS : 0 };
 }
-
-export type HeroCamera = { coffee: number; side: number; top: number; macro: number };
-export type CameraTransition = { from: HeroCamera; to: HeroCamera; startedAt: number; durationMs: number };
-export const CAMERA_TRANSITION_MS = 110;
-const cameraKeys = ["coffee", "side", "top", "macro"] as const;
-
-/** Select a clean photograph; a small deadband prevents threshold flicker. */
-export function heroFrame(progress: number, reducedMotion = false, previous?: HeroCamera) {
-  const p = reducedMotion ? 1 : clamp01(progress);
-  const past = (threshold: number, wasPast: boolean) => p >= threshold + (previous ? (wasPast ? -.004 : .004) : 0);
-  const top = !reducedMotion && past(.93, previous?.top === 1);
-  const macro = !reducedMotion && past(.78, !!previous && previous.macro + previous.top > 0);
-  const side = !reducedMotion && past(.62, !!previous && previous.side + previous.macro + previous.top > 0);
+export function advanceFilm(film: HeroFilm, elapsedMs: number): HeroFilm {
+  if (!playing(film)) return film;
+  // A long main-thread stall cannot jump across a stage. Hidden time is excluded
+  // by the browser adapter. Large foreground stalls stretch the film, never skip it.
+  const delta = Math.min(50, Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0));
+  const reverse = film.state === "PLAYING_REVERSE";
+  const time = Math.min(FILM_DURATION_MS, Math.max(0, film.time + (reverse ? -delta : delta)));
+  return { state: !reverse && time === FILM_DURATION_MS ? "COMPLETED" : reverse && time === 0 ? "FILLING" : film.state, time };
+}
+export function milkFill(scrollProgress: number): number {
+  return easeBetween(scrollProgress, 0, 1);
+}
+export function filmFrame(time: number) {
+  const t = Math.max(0, Math.min(FILM_DURATION_MS, time));
+  const top = easeBetween(t, 1280, 1460);
   return {
-    fill: easeBetween(p, 0, .48),
-    coffee: past(.525, previous?.coffee === 1) ? 1 : 0,
-    side: side && !macro && !top ? 1 : 0,
-    top: top ? 1 : 0,
-    macro: macro && !top ? 1 : 0,
+    coffee: easeBetween(t, 60, 180),
+    side: easeBetween(t, 180, 290) * (1 - top),
+    top,
+    macro: easeBetween(t, 520, 740) * (1 - easeBetween(t, 1280, 1460)),
+    stage: [...FILM_STAGES].reverse().find(stage => t >= stage.at)!.name,
   };
-}
-
-function cameraAt(state: CameraTransition, now: number): HeroCamera {
-  if (now - state.startedAt >= state.durationMs) return state.to;
-  const t = easeBetween(now - state.startedAt, 0, state.durationMs);
-  const blend = (key: keyof HeroCamera) => state.from[key] + (state.to[key] - state.from[key]) * t;
-  return { coffee: blend("coffee"), side: blend("side"), top: blend("top"), macro: blend("macro") };
-}
-
-/** A dissolve finishes in clock time even if scrolling stops between photographs. */
-export function stepCamera(previous: CameraTransition | undefined, target: HeroCamera, now: number, immediate = false) {
-  const clean = { coffee: target.coffee, side: target.side, top: target.top, macro: target.macro };
-  const state: CameraTransition = !previous || immediate
-    ? { from: clean, to: clean, startedAt: now - CAMERA_TRANSITION_MS, durationMs: CAMERA_TRANSITION_MS }
-    : cameraKeys.some(key => previous.to[key] !== clean[key])
-      ? { from: cameraAt(previous, now), to: clean, startedAt: now, durationMs: previous.to.macro !== clean.macro ? (clean.macro ? 220 : 180) : CAMERA_TRANSITION_MS }
-      : previous;
-  return { state, values: cameraAt(state, now), active: now - state.startedAt < state.durationMs };
 }
 
 /** A curved meniscus inside tapered photographic glass walls, in normalized coordinates. */
