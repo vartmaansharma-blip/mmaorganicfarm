@@ -1,7 +1,7 @@
 "use client";
+import { FarmForm } from "../farm-form";
 
-import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState } from "react";
 import { moveDeliveryVisit, type RouteMoveActionState } from "./actions";
 import styles from "./sheet.module.css";
 
@@ -26,17 +26,13 @@ export function RouteStopEditor({
   routes: RouteOption[];
   visitKey: string;
 }) {
-  const router = useRouter();
   const [state, formAction, pending] = useActionState(moveDeliveryVisit, initialState);
 
-  useEffect(() => {
-    if (state?.ok) router.refresh();
-  }, [router, state]);
 
   return (
     <details className={styles.routeStopEditor}>
       <summary>Move or reorder this stop</summary>
-      <form action={formAction} className={styles.routeStopForm}>
+      <FarmForm action={formAction} managed feedback={state} className={styles.routeStopForm}>
         <input name="deliveryDate" type="hidden" value={deliveryDate} />
         <input name="visitKey" type="hidden" value={visitKey} />
         <label>
@@ -57,7 +53,7 @@ export function RouteStopEditor({
         <p>The current dispatch must be unreleased. A route at capacity cannot accept another stop.</p>
         <button disabled={pending} type="submit">{pending ? "Updating route…" : "Update route"}</button>
         {state ? <span aria-live="polite" className={state.ok ? styles.routeMoveSuccess : styles.routeMoveError}>{state.message ?? state.error}</span> : null}
-      </form>
+      </FarmForm>
     </details>
   );
 }

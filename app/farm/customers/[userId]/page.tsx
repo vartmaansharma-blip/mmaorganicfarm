@@ -1,3 +1,4 @@
+import { FarmForm } from "../../farm-form";
 import { CustomerDeliveryHistory } from "@/app/farm/customer-delivery-history";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -415,7 +416,7 @@ export default async function CustomerPage({
   return (
     <main className={styles.page}>
       <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-        <Link href="/farm/locations">Customers</Link>
+        <Link prefetch={false} href="/farm/locations">Customers</Link>
         <span>/</span>
         <span>{profile.full_name ?? "Customer"}</span>
       </nav>
@@ -697,13 +698,13 @@ export default async function CustomerPage({
                       </div>
                     </dl>
                     {canDelete ? (
-                      <form action={setOrderMode} className={styles.inlineForm}>
+                      <FarmForm action={setOrderMode} className={styles.inlineForm}>
                         <input name="orderId" type="hidden" value={order.id} />
                         <input name="userId" type="hidden" value={userId} />
                         <input name="returnTo" type="hidden" value={returnTo} />
                         <input name="mode" type="hidden" value="test" />
                         <button type="submit">Move to test records</button>
-                      </form>
+                      </FarmForm>
                     ) : null}
                   </article>
                 );
@@ -727,7 +728,7 @@ export default async function CustomerPage({
               <span>Finance ledger</span>
               <h2>Payments</h2>
             </div>
-            <Link href={`/farm/payments?customer=${userId}`}>
+            <Link prefetch={false} href={`/farm/payments?customer=${userId}`}>
               Open finance view
             </Link>
           </div>
@@ -795,7 +796,7 @@ export default async function CustomerPage({
             <span>Service timeline</span>
             <h2>Upcoming deliveries</h2>
           </div>
-          <Link href="/farm/delivery-sheet">Open delivery sheet</Link>
+          <Link prefetch={false} href="/farm/delivery-sheet">Open delivery sheet</Link>
         </div>
         {upcomingVisits.length ? (
           <details className={styles.disclosure}>
@@ -898,7 +899,7 @@ export default async function CustomerPage({
             </div>
             <details className={styles.profileEditor}>
               <summary>Edit customer</summary>
-              <form
+              <FarmForm
                 action={assignCustomerLocation}
                 className={styles.profileForm}
               >
@@ -999,11 +1000,11 @@ export default async function CustomerPage({
                     Save changes
                   </FormSubmitButton>
                 </div>
-              </form>
+              </FarmForm>
               {canDelete ? (
                 <details className={styles.dangerZone}>
                   <summary>More account actions</summary>
-                  <form action={deleteCustomerProfile}>
+                  <FarmForm action={deleteCustomerProfile}>
                     <input name="userId" type="hidden" value={userId} />
                     <div>
                       <strong>Delete customer profile</strong>
@@ -1021,7 +1022,7 @@ export default async function CustomerPage({
                       I understand this removes the active profile.
                     </label>
                     <button type="submit">Delete profile</button>
-                  </form>
+                  </FarmForm>
                 </details>
               ) : null}
             </details>

@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import { todayInIndia, nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { retryPreparation } from "./actions";
 import { FormSubmitButton } from "../form-submit-button";
@@ -99,12 +100,12 @@ export default async function ActivityPage({
               {run.status === "failed" &&
               run.service_date >= todayInIndia() &&
               run.service_date <= nextDeliveryDateInIndia() ? (
-                <form action={retryPreparation}>
+                <FarmForm action={retryPreparation}>
                   <input type="hidden" name="date" value={run.service_date} />
                   <FormSubmitButton pendingLabel="Retrying preparation…">
                     Retry preparation
                   </FormSubmitButton>
-                </form>
+                </FarmForm>
               ) : null}
             </article>
           ))

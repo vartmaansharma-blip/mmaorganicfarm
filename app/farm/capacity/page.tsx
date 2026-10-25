@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -23,6 +24,7 @@ import {
   updateDefaultCapacity,
 } from "./actions";
 import styles from "./capacity.module.css";
+import { CapacityDayRows } from "./capacity-day-rows";
 
 export const metadata: Metadata = {
   title: "Production capacity",
@@ -111,201 +113,41 @@ export default async function CapacityPage({
     : ((snapshotResult.data ?? []) as CapacityDay[]);
   const overrides = overridesResult.data ?? [];
   const tomorrowLimit = Number(days[0]?.capacity_limit ?? defaultLimit);
-  const tomorrowUsesOverride = tomorrowLimit !== defaultLimit;
+  const overrideDates = new Set(overrides.map(row => row.delivery_date));
+  const shortageDays = days.filter(day => Number(day.available_quantity) < 0);
+  const tomorrowPaid = Number(days[0]?.active_plan_quantity ?? 0) + Number(days[0]?.paid_once_quantity ?? 0);
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Order control</p>
-          <h1>Production capacity</h1>
-          <p>
-            New orders are accepted only after paid commitments and temporary
-            online reservations are subtracted from each day.
-          </p>
-        </div>
-        <Link href="/farm">Back to deliveries</Link>
+        <div><p className={styles.eyebrow}>Plan the farm’s supply</p><h1>Production capacity</h1><p>Know what’s promised, what’s available, and which days need attention.</p></div>
+        <span className={styles.scopeLabel}>Next seven service days</span>
       </header>
-
       <nav className={styles.productTabs} aria-label="Capacity product">
-        {CAPACITY_PRODUCTS.map((product) => {
-          const limit = capacityByProduct.get(product.id)?.daily_limit ?? 0;
-          return (
-            <Link
-              aria-current={product.id === selectedKey ? "page" : undefined}
-              className={product.id === selectedKey ? styles.activeTab : undefined}
-              href={`/farm/capacity?product=${product.id}`}
-              key={product.id}
-            >
-              <span>{product.name}</span>
-              <strong>
-                {formatCapacityQuantity(limit)} {product.shortUnit}
-              </strong>
-            </Link>
-          );
-        })}
+        {CAPACITY_PRODUCTS.map(product => <Link prefetch={false} scroll={false} aria-current={product.id === selectedKey ? "page" : undefined} href={`/farm/capacity?product=${product.id}`} key={product.id}><span>{product.name}</span><strong>{formatCapacityQuantity(capacityByProduct.get(product.id)?.daily_limit ?? 0)} <small>{product.shortUnit} / day</small></strong></Link>)}
       </nav>
-
       {params.message ? <p className={styles.notice} role="status">{params.message}</p> : null}
-      {params.error ? <p className={`${styles.notice} ${styles.error}`} role="alert">{params.error}</p> : null}
-
-      {migrationPending ? (
-        <p className={styles.migrationNotice}>
-          Preview mode: multi-product capacity is ready in code but is not active
-          in the database yet. Editing remains locked until the migration is approved.
-        </p>
-      ) : null}
-
-      <section className={styles.summary} aria-labelledby="normal-limit-title">
-        <div>
-          <span>{selectedProduct.name} · normal daily limit</span>
-          <strong id="normal-limit-title">
-            {formatCapacityQuantity(defaultLimit)} {selectedProduct.shortUnit}
-          </strong>
-          <p>
-            This is the quantity available before paid plans, paid one-time
-            orders, and short-lived online reservations are deducted.
-          </p>
-          {defaultLimit === 0 ? (
-            <p className={styles.setupNotice}>
-              Set a limit before this product can be accepted online.
-            </p>
-          ) : null}
-          {tomorrowUsesOverride ? (
-            <p className={styles.overrideNotice}>
-              Tomorrow uses a one-day limit of {formatCapacityQuantity(tomorrowLimit)}{" "}
-              {selectedProduct.shortUnit}. The normal daily limit remains{" "}
-              {formatCapacityQuantity(defaultLimit)} {selectedProduct.shortUnit}.
-            </p>
-          ) : null}
-        </div>
-        {canManage ? (
-          <form action={updateDefaultCapacity}>
-            <input name="productKey" type="hidden" value={selectedKey} />
-            <label htmlFor="default-capacity">{selectedProduct.inputLabel}</label>
-            <div>
-              <input
-                defaultValue={defaultLimit}
-                id="default-capacity"
-                min="0"
-                name="dailyLimit"
-                required
-                step={selectedProduct.step}
-                type="number"
-              />
-              <FormSubmitButton pendingLabel="Updating…">Update limit</FormSubmitButton>
-            </div>
-          </form>
-        ) : null}
+      {params.error ? <p className={styles.error} role="alert">{params.error}</p> : null}
+      {migrationPending ? <p className={styles.error}>Capacity records are unavailable. Editing is paused until the data connection is ready.</p> : null}
+      <section className={styles.summary} aria-label="Capacity at a glance">
+        <div><span>Normal daily capacity</span><strong>{formatCapacityQuantity(defaultLimit)} <small>{selectedProduct.shortUnit}</small></strong><p>{selectedProduct.name} · dates with a one-day limit keep their own setting.</p></div>
+        <div><span>Tomorrow’s paid commitments</span><strong>{formatCapacityQuantity(tomorrowPaid)} <small>{selectedProduct.shortUnit}</small></strong><p>Against a limit of {formatCapacityQuantity(tomorrowLimit)} {selectedProduct.shortUnit}.</p></div>
+        <div data-attention={shortageDays.length > 0 || undefined}><span>Days needing attention</span><strong>{shortageDays.length}</strong><p>{shortageDays.length ? "Recorded demand exceeds the current limit." : "No capacity shortfalls in this view."}</p></div>
       </section>
-
+      <section className={styles.settingsStrip} aria-labelledby="normal-limit-title">
+        <div><h2 id="normal-limit-title">The farm’s normal limit</h2><p>{defaultLimit === 0 ? "Set a capacity before accepting this product online." : "Set the usual daily supply; adjust individual dates below."}</p></div>
+        {canManage ? <details className={styles.defaultEditor}><summary>Edit normal limit</summary><FarmForm action={updateDefaultCapacity} className={styles.defaultForm}><input name="productKey" type="hidden" value={selectedKey} /><label htmlFor="default-capacity">{selectedProduct.inputLabel}<input defaultValue={defaultLimit} id="default-capacity" min="0" name="dailyLimit" required step={selectedProduct.step} type="number" /></label><p>Applies to future dates without a one-day limit. Paid commitments are preserved.</p><FormSubmitButton pendingLabel="Saving…">Update limit</FormSubmitButton></FarmForm></details> : null}
+      </section>
       <section className={styles.week} aria-labelledby="week-title">
-        <div className={styles.sectionHeading}>
-          <p>Next seven days · {selectedProduct.name}</p>
-          <h2 id="week-title">Available to accept</h2>
-        </div>
-        <div className={styles.dayList}>
-          {days.map((day) => {
-            const accepted =
-              Number(day.active_plan_quantity) + Number(day.paid_once_quantity);
-            const checkout = Number(day.checkout_holds_quantity);
-            return (
-              <article className={styles.day} key={day.delivery_date}>
-                <div className={styles.dayTitle}>
-                  <strong>{formatCalendarDate(day.delivery_date)}</strong>
-                  <span>
-                    {formatCapacityQuantity(day.available_quantity)}{" "}
-                    {selectedProduct.shortUnit} remaining
-                  </span>
-                </div>
-                <dl>
-                  <div>
-                    <dt>Daily limit</dt>
-                    <dd>
-                      {formatCapacityQuantity(day.capacity_limit)}{" "}
-                      {selectedProduct.shortUnit}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Accepted</dt>
-                    <dd>
-                      {formatCapacityQuantity(accepted)} {selectedProduct.shortUnit}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Temporarily reserved</dt>
-                    <dd>
-                      {formatCapacityQuantity(checkout)} {selectedProduct.shortUnit}
-                    </dd>
-                  </div>
-                </dl>
-                <div className={styles.meter} aria-hidden="true">
-                  <span
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        ((accepted + checkout) /
-                          Math.max(Number(day.capacity_limit), 1)) *
-                          100,
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </article>
-            );
-          })}
-        </div>
+        <div className={styles.sectionHeading}><div><p>{selectedProduct.name} · {selectedProduct.shortUnit}</p><h2 id="week-title">Seven-day availability</h2></div><span>Paid service + temporary holds + available supply</span></div>
+        <div className={styles.tableWrap}><table className={styles.capacityTable}><thead><tr><th scope="col">Service day</th><th scope="col">Daily limit</th><th scope="col">Paid</th><th scope="col">Held</th><th scope="col">Available</th><th scope="col"><span className={styles.srOnly}>Change capacity</span></th></tr></thead><tbody>{days.map(day => <CapacityDayRows key={day.delivery_date} day={day} productKey={selectedKey} unit={selectedProduct.shortUnit} step={selectedProduct.step} override={overrideDates.has(day.delivery_date)} canManage={canManage} />)}</tbody></table></div>
+        <p className={styles.footnote}>Paid includes plans and one-time orders. Holds are temporary checkout reservations. A shortfall is a supply decision to resolve; it does not cancel paid service.</p>
       </section>
-
-      {canManage ? (
-        <section className={styles.override} aria-labelledby="override-title">
-          <div className={styles.sectionHeading}>
-            <p>Specific dates · {selectedProduct.name}</p>
-            <h2 id="override-title">Change one day</h2>
-          </div>
-          <form action={saveCapacityOverride} className={styles.overrideForm}>
-            <input name="productKey" type="hidden" value={selectedKey} />
-            <label>
-              Delivery date
-              <input min={startDate} name="deliveryDate" required type="date" />
-            </label>
-            <label>
-              {selectedProduct.inputLabel}
-              <input
-                min="0"
-                name="dailyLimit"
-                required
-                step={selectedProduct.step}
-                type="number"
-              />
-            </label>
-            <FormSubmitButton pendingLabel="Saving day…">Save day limit</FormSubmitButton>
-          </form>
-
-          {overrides.length ? (
-            <div className={styles.overrideList}>
-              {overrides.map((override) => (
-                <div key={override.delivery_date}>
-                  <span>{formatCalendarDate(override.delivery_date)}</span>
-                  <strong>
-                    {formatCapacityQuantity(override.daily_limit)}{" "}
-                    {selectedProduct.shortUnit}
-                  </strong>
-                  <form action={removeCapacityOverride}>
-                    <input name="productKey" type="hidden" value={selectedKey} />
-                    <input
-                      name="deliveryDate"
-                      type="hidden"
-                      value={override.delivery_date}
-                    />
-                    <FormSubmitButton pendingLabel="Removing…">Use normal limit</FormSubmitButton>
-                  </form>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+      {canManage ? <section className={styles.override} aria-labelledby="override-title">
+        <div className={styles.sectionHeading}><div><p>Plan further ahead</p><h2 id="override-title">One-day limits</h2></div><span>{overrides.length} upcoming {overrides.length === 1 ? "date" : "dates"}</span></div>
+        <details className={styles.newOverride}><summary>Set a limit for another date</summary><FarmForm action={saveCapacityOverride} className={styles.overrideForm}><input name="productKey" type="hidden" value={selectedKey} /><label>Delivery date<input min={startDate} name="deliveryDate" required type="date" /></label><label>{selectedProduct.inputLabel}<input min="0" name="dailyLimit" required step={selectedProduct.step} type="number" /></label><FormSubmitButton pendingLabel="Saving…">Save day limit</FormSubmitButton></FarmForm></details>
+        {overrides.length ? <details className={styles.allOverrides}><summary>Review all upcoming one-day limits</summary><div className={styles.overrideList}>{overrides.map(override => <div key={override.delivery_date}><span>{formatCalendarDate(override.delivery_date)}</span><strong>{formatCapacityQuantity(override.daily_limit)} {selectedProduct.shortUnit}</strong><FarmForm action={removeCapacityOverride}><input name="productKey" type="hidden" value={selectedKey} /><input name="deliveryDate" type="hidden" value={override.delivery_date} /><FormSubmitButton pendingLabel="Restoring…" className={styles.quietButton}>Use normal limit</FormSubmitButton></FarmForm></div>)}</div></details> : <p className={styles.footnote}>Every upcoming date currently follows the normal limit.</p>}
+      </section> : null}
     </main>
   );
 }

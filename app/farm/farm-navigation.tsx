@@ -90,10 +90,6 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
         : pathname.startsWith("/farm/customers/")
           ? "/farm/locations"
           : pathname;
-  const current =
-    visibleGroups
-      .flatMap((group) => group.items)
-      .find((item) => item[1] === currentPath)?.[0] ?? "Farm operations";
   const links = visibleGroups.map((group) => (
     <section key={group.label} className={styles.navGroup}>
       <h2>{group.label}</h2>
@@ -119,18 +115,5 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
         ))}
     </section>
   ));
-  return (
-    <>
-      <nav id="farm-navigation" className={styles.nav} aria-label="Farm operations">
-        {links}
-      </nav>
-      <details className={styles.mobileMenu}>
-        <summary>
-          {current}
-          <span>Switch page</span>
-        </summary>
-        <nav aria-label="Farm pages" onClick={(event) => { if ((event.target as HTMLElement).closest("a")) event.currentTarget.closest("details")?.removeAttribute("open"); }}>{links}</nav>
-      </details>
-    </>
-  );
+  return <nav id="farm-navigation" className={styles.nav} aria-label="Farm operations">{links}</nav>;
 }

@@ -405,10 +405,10 @@ test("accepts orders only when daily production capacity is available", async ()
   assert.match(capacity, /Milk capacity is full/);
   assert.match(capacity, /order_capacity_reservations/);
   assert.match(capacity, /status = 'active'/);
-  assert.match(capacityPage, /Next seven days/);
-  assert.match(capacityPage, /Temporarily reserved/);
+  assert.match(capacityPage, /Seven-day availability/);
+  assert.match(capacityPage, /temporary checkout reservations/);
   assert.match(capacityPage, /product_capacity_snapshot/);
-  assert.match(capacityPage, /Tomorrow uses a one-day limit/);
+  assert.match(capacityPage, /overrideDates/);
   assert.match(capacityActions, /createAdminClient/);
   assert.match(capacityActions, /requireCapacityManager/);
   assert.match(capacityActions, /admin\s*\.from\("production_capacity"\)/);

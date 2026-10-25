@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -52,7 +53,7 @@ export default async function SubscriptionsPage({
         title="Subscriptions"
         description="Paid service, recurring schedules, and remaining entitlements. Plan changes preserve the customer's original purchased terms."
       />
-      <form className={styles.filters}>
+      <FarmForm className={styles.filters}>
         <label>
           Plan status
           <select name="status" defaultValue={status}>
@@ -64,8 +65,8 @@ export default async function SubscriptionsPage({
           </select>
         </label>
         <button>Apply filters</button>
-      </form>
-      <section aria-label="Subscription plans">
+      </FarmForm>
+      <section className={styles.recordList} aria-label="Subscription plans">
         {result.data.length ? (
           result.data.map((row) => {
             const remaining = Math.max(
@@ -74,7 +75,7 @@ export default async function SubscriptionsPage({
                 Number(row.delivered_deliveries),
             );
             return (
-              <article className={styles.panel} key={row.id}>
+              <article className={`${styles.panel} ${styles.record}`} key={row.id}>
                 <div className={styles.panelHeader}>
                   <div>
                     <h2>{byId.get(row.user_id) ?? "Customer"}</h2>
@@ -82,7 +83,7 @@ export default async function SubscriptionsPage({
                       Plan {row.id.slice(0, 8)} · starts {row.start_date}
                     </p>
                   </div>
-                  <span className={styles.badge}>{row.status}</span>
+                  <span className={styles.badge} data-status={row.status}>{row.status.replaceAll("_", " ")}</span>
                 </div>
                 {row.entitlement_model === "legacy_delivery_count" ? (
                   <p>
@@ -127,7 +128,7 @@ export default async function SubscriptionsPage({
                     ? "The original paid dates and quantities remain authoritative; exceptions require an explicit review."
                     : "Skips and partial deliveries do not erase prepaid service. Remaining entitlement is not an expiry date."}
                 </p>
-                <Link href={`/farm/customers/${row.user_id}`}>
+                <Link prefetch={false} href={`/farm/customers/${row.user_id}`}>
                   Review plan and upcoming service →
                 </Link>
               </article>

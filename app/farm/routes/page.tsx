@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import { DailyRouteBoard } from "./daily-route-board";
 import { todayInIndia } from "@/lib/delivery-calendar";
 import { validOperationalDate } from "@/lib/delivery-operations";
@@ -150,7 +151,7 @@ export default async function RoutesPage({
             locality terms, or the customer&apos;s service area.
           </span>
         </div>
-        <Link href="/farm/delivery-sheet">Open delivery routes</Link>
+        <Link prefetch={false} href="/farm/delivery-sheet">Open delivery routes</Link>
       </header>
 
       {params.message ? (
@@ -160,7 +161,7 @@ export default async function RoutesPage({
         <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
       ) : null}
 
-      <form className={styles.dateFilter} method="get">
+      <FarmForm className={styles.dateFilter} method="get">
         {selectedArea ? (
           <input type="hidden" name="area" value={selectedArea} />
         ) : null}
@@ -169,7 +170,7 @@ export default async function RoutesPage({
           <input name="date" type="date" defaultValue={date} />
         </label>
         <button>Apply</button>
-      </form>
+      </FarmForm>
       <DailyRouteBoard date={date} area={selectedArea} />
       <details className={styles.configuration}>
         <summary>Route setup, drivers & service zones</summary>
@@ -203,11 +204,11 @@ export default async function RoutesPage({
               remain in the exception queue for a manager.
             </span>
           </div>
-          <form action={runAutomaticRouting}>
+          <FarmForm action={runAutomaticRouting}>
             <FormSubmitButton pendingLabel="Routing customers…">
               Run routing now
             </FormSubmitButton>
-          </form>
+          </FarmForm>
         </section>
 
         <section className={styles.setup} aria-labelledby="farm-setup-title">
@@ -281,7 +282,7 @@ export default async function RoutesPage({
                       <summary aria-label={`Edit ${area.name}`}>
                         Edit area
                       </summary>
-                      <form action={updateArea} className={styles.areaForm}>
+                      <FarmForm action={updateArea} className={styles.areaForm}>
                         <input name="areaId" type="hidden" value={area.id} />
                         <label>
                           Area name
@@ -317,7 +318,7 @@ export default async function RoutesPage({
                         <FormSubmitButton pendingLabel="Saving area…">
                           Save area
                         </FormSubmitButton>
-                      </form>
+                      </FarmForm>
                     </details>
                   </header>
                   <div className={styles.routes}>
@@ -348,7 +349,7 @@ export default async function RoutesPage({
                             rules
                           </b>
                         </summary>
-                        <form
+                        <FarmForm
                           action={updateDeliveryRoute}
                           className={styles.routeForm}
                         >
@@ -426,7 +427,7 @@ export default async function RoutesPage({
                           <FormSubmitButton pendingLabel="Saving route…">
                             Save routing rules
                           </FormSubmitButton>
-                        </form>
+                        </FarmForm>
                         {drivers.length ? (
                           <RouteDriverAssignment
                             driverId={assignments.get(route.id) ?? null}
@@ -461,7 +462,7 @@ export default async function RoutesPage({
         <div className={actionStyles.actions}>
           <details className={styles.createRoute}>
             <summary>Add service area</summary>
-            <form action={createArea} className={styles.routeForm}>
+            <FarmForm action={createArea} className={styles.routeForm}>
               <label className={styles.wide}>
                 Area name
                 <input name="name" placeholder="Bistupur" required />
@@ -469,11 +470,11 @@ export default async function RoutesPage({
               <FormSubmitButton pendingLabel="Creating area…">
                 Create area
               </FormSubmitButton>
-            </form>
+            </FarmForm>
           </details>
           <details className={styles.createRoute}>
             <summary>Add delivery route</summary>
-            <form action={createDeliveryRoute} className={styles.routeForm}>
+            <FarmForm action={createDeliveryRoute} className={styles.routeForm}>
               <label>
                 Service area
                 <select name="areaId" required>
@@ -523,7 +524,7 @@ export default async function RoutesPage({
               <FormSubmitButton pendingLabel="Creating route…">
                 Create route
               </FormSubmitButton>
-            </form>
+            </FarmForm>
           </details>
         </div>
       </details>

@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import Link from "next/link";
 import {
   formatCalendarDate,
@@ -77,13 +78,13 @@ export async function DriverDay({
           {stops.length - pending.length} of {stops.length} recorded
         </span>
       </header>
-      <form className={styles.dateFilter}>
+      <FarmForm className={styles.dateFilter}>
         <label>
           Service date
           <input name="date" type="date" defaultValue={date} />
         </label>
         <button>Apply</button>
-      </form>
+      </FarmForm>
       {current ? (
         <>
           <section className={styles.context}>

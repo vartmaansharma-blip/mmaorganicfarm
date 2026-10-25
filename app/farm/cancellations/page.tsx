@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
@@ -53,7 +54,7 @@ export default async function CancellationRequestsPage({
           </span>
         </div>
         <div>
-          <Link
+          <Link prefetch={false}
             href={
               showHistory
                 ? "/farm/cancellations"
@@ -100,7 +101,7 @@ export default async function CancellationRequestsPage({
                 })}
               </small>
               {request.status === "requested" ? (
-                <form action={resolveCancellationRequest}>
+                <FarmForm action={resolveCancellationRequest}>
                   <input name="requestId" type="hidden" value={request.id} />
                   <label>
                     Farm note
@@ -122,11 +123,11 @@ export default async function CancellationRequestsPage({
                       Decline
                     </FormSubmitButton>
                   </div>
-                </form>
+                </FarmForm>
               ) : request.resolution_note ? (
                 <p className={styles.resolution}>{request.resolution_note}</p>
               ) : null}
-              <Link href={`/farm/customers/${request.user_id}`}>
+              <Link prefetch={false} href={`/farm/customers/${request.user_id}`}>
                 Open customer
               </Link>
             </article>

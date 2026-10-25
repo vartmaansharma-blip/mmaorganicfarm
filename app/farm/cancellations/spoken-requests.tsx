@@ -72,7 +72,7 @@ export async function SpokenRequests({ history }: { history: boolean }) {
               kind={r.kind}
             />
           ) : null}
-          <Link href={`/farm/customers/${r.user_id}`}>Open customer →</Link>
+          <Link prefetch={false} href={`/farm/customers/${r.user_id}`}>Open customer →</Link>
         </article>
       ))}
       {!data?.length ? (

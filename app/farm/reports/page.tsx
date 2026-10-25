@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { todayInIndia, productName } from "@/lib/delivery-calendar";
@@ -30,13 +31,13 @@ export default async function ReportsPage({
         title="Operations report"
         description="Service-day results calculated from authoritative delivery and reconciliation records."
       />
-      <form className={styles.filters}>
+      <FarmForm className={styles.filters}>
         <label>
           Service date
           <input name="date" type="date" defaultValue={date} />
         </label>
         <button>Apply</button>
-      </form>
+      </FarmForm>
       <section className={styles.metrics}>
         <article>
           <strong>
@@ -82,7 +83,7 @@ export default async function ReportsPage({
             prepared.
           </p>
         )}
-        <Link href={`/farm/reconciliation?date=${date}`}>
+        <Link prefetch={false} href={`/farm/reconciliation?date=${date}`}>
           Inspect the underlying reconciliation →
         </Link>
       </section>

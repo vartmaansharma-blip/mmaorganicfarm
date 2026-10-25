@@ -91,8 +91,8 @@ export default async function ExceptionsPage({
           </p>
         </div>
         <nav className={styles.links}>
-          <Link href={`/farm/delivery-sheet?date=${date}`}>Delivery sheet</Link>
-          <Link href={`/farm/reconciliation?date=${date}`}>
+          <Link prefetch={false} href={`/farm/delivery-sheet?date=${date}`}>Delivery sheet</Link>
+          <Link prefetch={false} href={`/farm/reconciliation?date=${date}`}>
             Review reconciliation
           </Link>
         </nav>
@@ -223,7 +223,7 @@ export default async function ExceptionsPage({
                     outstanding.
                   </p>
                 ) : null}
-                <Link href={`/farm/customers/${row.user_id}`}>
+                <Link prefetch={false} href={`/farm/customers/${row.user_id}`}>
                   Open customer history →
                 </Link>
                 {!row.event_id ? (
@@ -255,9 +255,9 @@ export default async function ExceptionsPage({
         <p className={styles.empty}>No visits match these filters.</p>
       )}
       <nav className={styles.pager} aria-label="Exception pages">
-        {page > 0 ? <Link href={pageHref(page - 1)}>← Previous</Link> : null}
+        {page > 0 ? <Link prefetch={false} href={pageHref(page - 1)}>← Previous</Link> : null}
         {(page + 1) * 25 < data.total ? (
-          <Link href={pageHref(page + 1)}>Next →</Link>
+          <Link prefetch={false} href={pageHref(page + 1)}>Next →</Link>
         ) : null}
       </nav>
     </main>

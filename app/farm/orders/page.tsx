@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -47,9 +48,9 @@ export default async function OrdersPage({
     <main className={styles.page}>
       <WorkspaceHeader
         title="Orders"
-        description="Purchases, payment eligibility, and the service they create. Open a customer to trace scheduled and completed deliveries."
+        description="Purchases and the service they create. A paid order confirms payment eligibility; delivery history records physical fulfilment."
       />
-      <form className={styles.filters} method="get">
+      <FarmForm className={styles.filters} method="get">
         <label>
           Order ID
           <input
@@ -71,11 +72,11 @@ export default async function OrdersPage({
           </select>
         </label>
         <button>Apply filters</button>
-      </form>
-      <section className={styles.history} aria-label="Orders">
+      </FarmForm>
+      <section className={styles.recordList} aria-label="Orders">
         {result.data.length ? (
           result.data.map((row) => (
-            <article className={styles.panel} key={row.id}>
+            <article className={`${styles.panel} ${styles.record}`} key={row.id}>
               <div className={styles.panelHeader}>
                 <div>
                   <h2>{byId.get(row.user_id) ?? "Customer"}</h2>
@@ -86,7 +87,7 @@ export default async function OrdersPage({
                       : "One-time / adjustment"}
                   </p>
                 </div>
-                <span className={styles.badge}>{row.status}</span>
+                <span className={styles.badge} data-status={row.status}>{row.status.replaceAll("_", " ")}</span>
               </div>
               <div className={styles.items}>
                 {row.order_items.map(
@@ -105,10 +106,9 @@ export default async function OrdersPage({
                 )}
               </div>
               <p className={styles.hint}>
-                Service starts {row.start_date}. Order payment eligibility and
-                physical fulfilment are separate.
+                Service starts {row.start_date}.
               </p>
-              <Link href={`/farm/customers/${row.user_id}`}>
+              <Link prefetch={false} href={`/farm/customers/${row.user_id}`}>
                 Open customer & delivery history →
               </Link>
             </article>

@@ -1,4 +1,6 @@
 "use client";
+import { FarmForm } from "./farm-form";
+
 import { useActionState, useState } from "react";
 import {
   recordCustomerRequest,
@@ -38,7 +40,7 @@ export function DriverCustomerRequestForm({
           {r.customer_words}
         </p>
       ))}
-      <form action={action} className={styles.actionForm}>
+      <FarmForm action={action} managed feedback={state} className={styles.actionForm}>
         <input type="hidden" name="deliveryId" value={deliveryId} />
         <input type="hidden" name="requestKey" value={key} />
         <fieldset disabled={pending || state?.ok}>
@@ -91,7 +93,7 @@ export function DriverCustomerRequestForm({
             {state.message ?? state.error}
           </p>
         ) : null}
-      </form>
+      </FarmForm>
     </details>
   );
 }
@@ -109,7 +111,7 @@ export function CustomerRequestReviewForm({
   const [note, setNote] = useState("");
   const [key] = useState(() => crypto.randomUUID());
   return (
-    <form action={action} className={styles.actionForm}>
+    <FarmForm action={action} managed feedback={state} className={styles.actionForm}>
       <input type="hidden" name="requestId" value={id} />
       <input type="hidden" name="requestKey" value={key} />
       <fieldset disabled={pending || state?.ok}>
@@ -155,6 +157,6 @@ export function CustomerRequestReviewForm({
           {state.message ?? state.error}
         </p>
       ) : null}
-    </form>
+    </FarmForm>
   );
 }

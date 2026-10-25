@@ -25,12 +25,12 @@ export default async function FarmLayout({
             <Image
               src="/mma-logo.png"
               alt="M’ma Farms"
-              width={88}
-              height={74}
+              width={64}
+              height={53}
               priority
             />
           </span>
-          <span className={styles.brandCaption}>Farm operations</span>
+          <span className={styles.brandCaption}><strong>M’ma Organic Farm</strong><small>Farm operations</small></span>
         </Link>
       } navigation={
         <Suspense fallback={<p>Loading navigation…</p>}>
@@ -38,7 +38,6 @@ export default async function FarmLayout({
         </Suspense>
       } staff={
         <div className={styles.staff}>
-          <span>Signed in as</span>
           <strong>
             {role === "admin"
               ? "Owner / admin"

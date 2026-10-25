@@ -58,8 +58,8 @@ export default async function ReconciliationPage({
           </p>
         </div>
         <nav className={styles.links}>
-          <Link href={`/farm/exceptions?date=${date}`}>Resolve exceptions</Link>
-          <Link href={`/farm/delivery-sheet?date=${date}`}>Delivery sheet</Link>
+          <Link prefetch={false} href={`/farm/exceptions?date=${date}`}>Resolve exceptions</Link>
+          <Link prefetch={false} href={`/farm/delivery-sheet?date=${date}`}>Delivery sheet</Link>
         </nav>
       </header>
       <OperationFilters path="/farm/reconciliation">

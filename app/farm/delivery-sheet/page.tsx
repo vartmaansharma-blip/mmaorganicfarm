@@ -1,3 +1,4 @@
+import { FarmForm } from "../farm-form";
 import { DriverDay } from "./driver-day";
 import { readAllRows } from "@/lib/farm-data";
 import type { Metadata } from "next";
@@ -556,13 +557,13 @@ export default async function DeliverySheetPage({
           <PrintSheetButton />
           {managerView ? (
             <>
-              <Link href={`/farm/exceptions?date=${deliveryDate}`}>
+              <Link prefetch={false} href={`/farm/exceptions?date=${deliveryDate}`}>
                 Exceptions
               </Link>
-              <Link href={`/farm/reconciliation?date=${deliveryDate}`}>
+              <Link prefetch={false} href={`/farm/reconciliation?date=${deliveryDate}`}>
                 Reconcile day
               </Link>
-              <Link href="/farm">Dashboard</Link>
+              <Link prefetch={false} href="/farm">Dashboard</Link>
             </>
           ) : null}
         </div>
@@ -575,7 +576,7 @@ export default async function DeliverySheetPage({
         <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
       ) : null}
 
-      <form
+      <FarmForm
         action="/farm/delivery-sheet"
         className={styles.filters}
         method="get"
@@ -623,12 +624,12 @@ export default async function DeliverySheetPage({
           </>
         ) : null}
         <button type="submit">Apply</button>
-      </form>
+      </FarmForm>
 
       {managerView && (selectedRoute || selectedOutcome) ? (
         <p className={styles.notice}>
           Showing filtered visits.{" "}
-          <Link href={`/farm/delivery-sheet?date=${deliveryDate}`}>
+          <Link prefetch={false} href={`/farm/delivery-sheet?date=${deliveryDate}`}>
             Review the complete day before dispatch release →
           </Link>
         </p>
@@ -659,16 +660,16 @@ export default async function DeliverySheetPage({
           </div>
           <div className={styles.dispatchActions}>
             {dispatch?.status !== "released" ? (
-              <form action={prepareDailyDispatch}>
+              <FarmForm action={prepareDailyDispatch}>
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
                 <FormSubmitButton pendingLabel="Preparing dispatch…">
                   {dispatch ? "Refresh dispatch" : "Prepare dispatch"}
                 </FormSubmitButton>
-              </form>
+              </FarmForm>
             ) : null}
             {dispatch?.status === "draft" ? (
-              <form action={releaseDailyDispatch}>
+              <FarmForm action={releaseDailyDispatch}>
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
                 {releaseBlockers > 0 || visits.length === 0 ? (
@@ -680,10 +681,10 @@ export default async function DeliverySheetPage({
                     Release routes
                   </FormSubmitButton>
                 )}
-              </form>
+              </FarmForm>
             ) : null}
             {dispatch?.status === "released" ? (
-              <form action={reopenDailyDispatch}>
+              <FarmForm action={reopenDailyDispatch}>
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
                 <FormSubmitButton
@@ -692,7 +693,7 @@ export default async function DeliverySheetPage({
                 >
                   Reopen dispatch
                 </FormSubmitButton>
-              </form>
+              </FarmForm>
             ) : null}
           </div>
         </section>
@@ -786,7 +787,7 @@ export default async function DeliverySheetPage({
                       ) : null}
                     </div>
                     {managerView && route.routeId && dispatch ? (
-                      <form
+                      <FarmForm
                         action={assignRouteDriver}
                         className={styles.assignForm}
                       >
@@ -833,7 +834,7 @@ export default async function DeliverySheetPage({
                         <FormSubmitButton pendingLabel="Assigning driver…">
                           Save today&apos;s driver
                         </FormSubmitButton>
-                      </form>
+                      </FarmForm>
                     ) : null}
                     {managerView && route.routeId && !dispatch ? (
                       <small>

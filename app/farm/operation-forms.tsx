@@ -1,4 +1,6 @@
 "use client";
+import { FarmForm } from "./farm-form";
+
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -41,7 +43,7 @@ export function OperationFilters({
 }) {
   const router = useRouter();
   return (
-    <form
+    <FarmForm
       className={styles.filters}
       onSubmit={(e) => {
         e.preventDefault();
@@ -54,7 +56,7 @@ export function OperationFilters({
     >
       {children}
       <button type="submit">Apply filters</button>
-    </form>
+    </FarmForm>
   );
 }
 export function DeliveryOutcomeForm({
@@ -95,7 +97,7 @@ export function DeliveryOutcomeForm({
       </p>
     );
   return (
-    <form action={submit} className={styles.actionForm}>
+    <FarmForm action={submit} managed feedback={state} className={styles.actionForm}>
       {deliveryIds.map((id) => (
         <input key={id} name="deliveryId" type="hidden" value={id} />
       ))}
@@ -212,7 +214,7 @@ export function DeliveryOutcomeForm({
           Next stop ↓
         </a>
       ) : null}
-    </form>
+    </FarmForm>
   );
 }
 export function ExceptionResolutionForm({
@@ -230,7 +232,7 @@ export function ExceptionResolutionForm({
   const [note, setNote] = useState("");
   const [follow, setFollow] = useState("");
   return (
-    <form action={submit} className={styles.actionForm}>
+    <FarmForm action={submit} managed feedback={state} className={styles.actionForm}>
       <input name="date" type="hidden" value={date} />
       <input name="visitKey" type="hidden" value={visitKey} />
       <input name="eventId" type="hidden" value={eventId} />
@@ -289,7 +291,7 @@ export function ExceptionResolutionForm({
         </button>
       </fieldset>
       <Feedback state={state} />
-    </form>
+    </FarmForm>
   );
 }
 export function CloseDayForm({
@@ -305,7 +307,7 @@ export function CloseDayForm({
   const [key] = useState(() => crypto.randomUUID());
   const [note, setNote] = useState("");
   return (
-    <form action={submit} className={styles.actionForm}>
+    <FarmForm action={submit} managed feedback={state} className={styles.actionForm}>
       <input name="date" type="hidden" value={date} />
       <input name="requestKey" type="hidden" value={key} />
       <input
@@ -340,6 +342,6 @@ export function CloseDayForm({
         </button>
       </fieldset>
       <Feedback state={state} />
-    </form>
+    </FarmForm>
   );
 }
