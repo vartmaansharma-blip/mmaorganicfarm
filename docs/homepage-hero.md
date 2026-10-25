@@ -16,19 +16,21 @@ The headline, two ordering/farm actions and photograph are balanced vertically o
 
 The hero uses a finite state machine: `FILLING → PLAYING_FORWARD → COMPLETED → PLAYING_REVERSE → FILLING`. Native scrolling controls only the curved milk mask during filling. At full milk, one elapsed-time `requestAnimationFrame` timeline plays every approved photograph, even if scrolling stops or large wheel/touch deltas arrive. Scroll input never selects a photographic target. `lib/hero-motion.ts` contains the deterministic clock and image weights; the component owns DOM input, asset readiness, holding and lifecycle cleanup.
 
-The current director's cut is 4.1 seconds. Pauses and transitions have different lengths: milk anticipation → coffee reveal → a crisp elevated view → a longer macro payoff → a relaxed overhead finish. A 2.5% macro creep keeps the held texture moving; the overhead view gently relaxes from 1.14× to its approved final 1.12× scale. This motion uses the same clock in reverse and does not alter the photographic files or initial composition.
+The current director's cut is 4.44 seconds. Pauses and transitions have different lengths: milk anticipation → coffee reveal → a gentle lift into the elevated view → a longer macro payoff → a relaxed overhead finish. A 2.5% macro creep keeps the held texture moving; the overhead view gently relaxes from 1.14× to its approved final 1.12× scale. This motion uses the same clock in reverse and does not alter the photographic files or initial composition.
 
 | Film time | Shot and direction |
 | --- | --- |
 | 0–300ms | Let the full milk glass register before changing anything. |
 | 300–620ms | A measured coffee treatment. |
 | 620–940ms | Hold the clean frontal coffee photograph. |
-| 940–1080ms | Brief, precise match into `coffee-side-v2.webp`. |
-| 1080–1580ms | Hold the elevated glass for 500ms. |
-| 1580–1900ms | Push into the full-screen macro over 320ms. |
-| 1900–3160ms | Longest hold: 1260ms of full-screen texture with a subtle 2.5% creep. |
-| 3160–3520ms | A slower, 360ms pull-back into the overhead photograph. |
-| 3520–4100ms | Let the overhead relax into its final composition over 580ms. |
+| 940–1420ms | Smooth 480ms camera lift and dissolve into `coffee-side-v2.webp`. |
+| 1420–1920ms | Hold the elevated glass for 500ms. |
+| 1920–2240ms | Push into the full-screen macro over 320ms. |
+| 2240–3500ms | Longest hold: 1260ms of full-screen texture with a subtle 2.5% creep. |
+| 3500–3860ms | A slower, 360ms pull-back into the overhead photograph. |
+| 3860–4440ms | Let the overhead relax into its final composition over 580ms. |
+
+The elevated hand-off uses zero-velocity, zero-acceleration easing at both ends, shared by opacity and a restrained 0.8% upward camera glide. The incoming image settles into its existing alignment and scale. Both photographs retain their aspect ratios; the exact motion retraces in reverse.
 
 The glass also carries eight sparse condensation beads. They grow while pinned, release into an accelerating downward run, collect a neighbouring bead with approximate volume addition, and leave a faint short wet trail. An SVG overlay clips them to the glass body; the original photographs are unchanged. The existing animation loop drives this ambient flow, pauses it when hidden, and stops updating it outside the visible glass. It fades away for the macro and overhead and is removed for reduced motion. The overlay is decorative and cannot intercept navigation.
 
@@ -36,7 +38,7 @@ The identical timeline runs backward on upward reentry after the visitor has scr
 
 The panel's first-screen height/composition is unchanged. Its only sticky runway is **55svh of native filling**, replacing the former 305svh/270svh choreography. At the full-fill/reentry boundary, body positioning temporarily holds the panel at its natural sticky location; scrollbar compensation prevents width shifts. Wheel, touch momentum and scrolling keys are consumed only while held. Completing or cancelling restores the exact prior styles and boundary scroll position. There is no timed dead scroll runway after completion.
 
-All six actual responsive image sources load eagerly and decode before the film clock starts. Preparation has a 1500ms maximum hold budget; a decode failure or timeout releases the hold and retains the frontal milk image for that visit. Late imagery cannot abruptly replace this fallback. The nominal film is 4100ms. Foreground frame delays are capped at 50ms per animation step so a main-thread stall stretches playback instead of skipping a stage. Document-hidden time is excluded, and the single loop resumes at the same point.
+All six actual responsive image sources load eagerly and decode before the film clock starts. Preparation has a 1500ms maximum hold budget; a decode failure or timeout releases the hold and retains the frontal milk image for that visit. Late imagery cannot abruptly replace this fallback. The nominal film is 4440ms. Foreground frame delays are capped at 50ms per animation step so a main-thread stall stretches playback instead of skipping a stage. Document-hidden time is excluded, and the single loop resumes at the same point.
 
 Skip introduction stays available during the macro as a visible keyboard-accessible action, and immediately cancels playback before normal anchor navigation. Other anchor/route navigation and opening the mobile menu also release the hold. Unmount and pagehide remove locks/chrome; a namespaced history-entry flag preserves completed playback on return. Direct content anchors bypass playback. Resize and theme changes retain film state/time. Reduced motion shows a static finished frontal coffee glass with no runway or forced hold; no-JavaScript visitors get the same static composition.
 

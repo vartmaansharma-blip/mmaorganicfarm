@@ -12,17 +12,17 @@ export function heroProgress(top: number, height: number, panelHeight: number, h
   return clamp01((headerHeight - top) / Math.max(1, height - panelHeight));
 }
 
-/** A short product film: anticipation, a crisp angle change, a lingering macro payoff. */
+/** A short product film: anticipation, a gentle camera lift, a lingering macro payoff. */
 export const FILM_CUES = {
   coffeeStart: 300,
   coffeeEnd: 620,
   elevatedStart: 940,
-  elevatedEnd: 1080,
-  macroStart: 1580,
-  macroFull: 1900,
-  overheadStart: 3160,
-  overheadFull: 3520,
-  end: 4100,
+  elevatedEnd: 1420,
+  macroStart: 1920,
+  macroFull: 2240,
+  overheadStart: 3500,
+  overheadFull: 3860,
+  end: 4440,
 } as const;
 export const FILM_DURATION_MS = FILM_CUES.end;
 export const FILM_STAGES = [
@@ -57,9 +57,14 @@ export function filmFrame(time: number) {
   const t = Math.max(0, Math.min(FILM_DURATION_MS, time));
   const cue = FILM_CUES;
   const top = easeBetween(t, cue.overheadStart, cue.overheadFull);
+  // Zero velocity and acceleration at both ends lets the moving photographs
+  // enter and leave their still holds without a visible kick, in either direction.
+  const lift = clamp01((t - cue.elevatedStart) / (cue.elevatedEnd - cue.elevatedStart));
+  const elevation = lift * lift * lift * (lift * (lift * 6 - 15) + 10);
   return {
     coffee: easeBetween(t, cue.coffeeStart, cue.coffeeEnd),
-    side: easeBetween(t, cue.elevatedStart, cue.elevatedEnd) * (1 - top),
+    elevation,
+    side: elevation * (1 - top),
     top,
     macro: easeBetween(t, cue.macroStart, cue.macroFull) * (1 - top),
     // A restrained 2.5% creep keeps the full-screen photograph alive, while
