@@ -11,7 +11,7 @@
   --liquid-left: 21.5%;
   --liquid-depth: 1.2%;
   position: relative;
-  height: 305svh;
+  height: calc(max(100svh - var(--home-header-height), 560px) + 55svh);
   background: var(--hero-paper);
   color: var(--hero-ink);
   scroll-margin-top: var(--home-header-height);
@@ -65,7 +65,7 @@
   .primary, .secondary { min-height: 50px; padding-inline: 22px; font-size: 14px; }
 }
 @media (max-width: 720px) {
-  .sequence { height: 270svh; }
+
   .panel { min-height: 560px; grid-template-columns: 1fr; grid-template-rows: auto 1fr; align-content: start; padding-top: 24px; padding-bottom: 68px; gap: 8px; }
   .copy { padding: 0; }
   .label { font-size: 11px; }
@@ -100,7 +100,8 @@
 .macro img { object-fit: cover; transform: scale(calc(1 + var(--macro-opacity) * .08)); }
 .sequence[data-macro-visible="true"] .macro { pointer-events: auto; }
 .sequence[data-immersive="true"] :is(.copy, .visual, .storyRail, .chapters, .scroll, .skip) { visibility: hidden; }
-.immersiveExit { position: fixed; z-index: 70; bottom: 20px; left: 20px; transform: translateY(200%); opacity: 0; padding: 12px 20px; border-radius: 999px; background: var(--hero-paper); color: var(--hero-ink); font-size: 14px; pointer-events: none; }
+.immersiveExit { position: fixed; z-index: 70; bottom: 20px; left: 20px; transform: none; visibility: hidden; opacity: 0; padding: 12px 20px; border-radius: 999px; background: var(--hero-paper); color: var(--hero-ink); font-size: 14px; pointer-events: none; }
+.sequence[data-macro-visible="true"] .immersiveExit { visibility: visible; opacity: 1; pointer-events: auto; }
 .immersiveExit:focus-visible { transform: none; opacity: 1; pointer-events: auto; outline: 2px solid var(--hero-ink); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .sequence { --coffee-progress: 1 !important; --angle-opacity: 0 !important; --side-opacity: 0 !important; --top-opacity: 0 !important; --macro-opacity: 0 !important; } }
 
@@ -117,3 +118,7 @@
 @media (scripting: none) {
   .sequence { --coffee-progress: 1; }
 }
+
+@media (max-height: 740px) and (min-width: 721px) { .sequence { height: calc(max(100svh - var(--home-header-height), 480px) + 55svh); } }
+@media (max-width: 720px) and (max-height: 700px) { .sequence { height: calc(100svh - var(--home-header-height) + 55svh); } }
+@media (prefers-reduced-motion: reduce), (scripting: none) { .sequence { height: auto; } }

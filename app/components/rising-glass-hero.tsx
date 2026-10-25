@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
-import { dampProgress, heroFrame, heroProgress, liquidGeometry, macroPresentation, stepCamera, type CameraTransition } from "@/lib/hero-motion";
+import { advanceFilm, clamp01, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
 import styles from "./rising-glass-hero.module.css";
 
 export function RisingGlassHero() {
@@ -16,72 +16,241 @@ export function RisingGlassHero() {
   useEffect(() => {
     const root = section.current;
     if (!root) return;
+    const panel = root.firstElementChild as HTMLElement;
+    const html = document.documentElement;
+    const body = document.body;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let frame = 0;
-    let lastTime = 0;
-    let current = -1;
-    let camera: CameraTransition | undefined;
-    const paint = (time: number) => {
+    let film: HeroFilm = { state: history.state?.mmaHeroCompleted ? "COMPLETED" : "FILLING", time: history.state?.mmaHeroCompleted ? FILM_DURATION_MS : 0 };
+    let frame = 0, lastTime = 0, waitingSince = 0;
+    let disposed = false, initialized = false, armed = true, visitedContent = false, anchorNavigation = false, staticFallback = false;
+    let assets: "loading" | "ready" | "failed" = "loading";
+    let hold: { y: number; restore: () => void } | undefined;
+    const persist = () => history.replaceState({ ...history.state, mmaHeroCompleted: film.state !== "FILLING" }, "");
+    const geometry = () => {
       const rect = root.getBoundingClientRect();
-      const panel = root.firstElementChild as HTMLElement;
-      const headerHeight = parseFloat(getComputedStyle(panel).top) || 0;
-      const target = heroProgress(rect.top, rect.height, panel.offsetHeight, headerHeight);
-      const firstPaint = current < 0;
-      const snap = firstPaint || motion.matches || target === 0 || target === 1;
-      current = snap ? target : dampProgress(current, target, lastTime ? Math.min(64, time - lastTime) : 16.67);
-      const progress = motion.matches ? 1 : current;
+      const header = parseFloat(getComputedStyle(panel).top) || 0;
+      const y = hold ? hold.y : window.scrollY;
+      return { rect, header, y, trigger: y + rect.top - header + Math.max(1, rect.height - panel.offsetHeight) };
+    };
+    const saveStyles = (element: HTMLElement, properties: string[]) => {
+      const saved = properties.map(key => [key, element.style.getPropertyValue(key), element.style.getPropertyPriority(key)]);
+      return () => saved.forEach(([key, value, priority]) => value ? element.style.setProperty(key, value, priority) : element.style.removeProperty(key));
+    };
+    const lock = (y: number) => {
+      if (hold) return;
+      const restoreHtml = saveStyles(html, ["overflow", "scroll-behavior"]);
+      const restoreBody = saveStyles(body, ["position", "top", "left", "right", "padding-right", "overflow"]);
+      const gutter = window.innerWidth - html.clientWidth;
+      const padding = parseFloat(getComputedStyle(body).paddingRight) || 0;
+      html.style.scrollBehavior = "auto";
+      window.scrollTo({ top: y, behavior: "instant" });
+      html.style.overflow = "hidden";
+      // A fixed body with overflow-x:hidden becomes a new sticky scroll
+      // container. Keep overflow visible so the approved header/panel stay pinned.
+      body.style.overflow = "visible";
+      body.style.position = "fixed";
+      body.style.top = `${-y}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.paddingRight = `${padding + gutter}px`;
+      hold = { y, restore: () => { restoreBody(); restoreHtml(); } };
+      root.dataset.held = "true";
+    };
+    const unlock = (y = hold?.y) => {
+      if (!hold) return;
+      hold.restore();
+      hold = undefined;
+      // Explicit instant behavior overrides the site's smooth anchor scrolling.
+      window.scrollTo({ top: y, behavior: "instant" });
+      root.dataset.held = "false";
+    };
+    const clearChrome = () => {
+      delete html.dataset.heroImmersive;
+      html.style.removeProperty("--hero-chrome-opacity");
+    };
+    const schedule = () => {
+      if (!disposed && !document.hidden && !frame) frame = requestAnimationFrame(paint);
+    };
+    const cancel = () => {
+      film = { state: "COMPLETED", time: FILM_DURATION_MS };
+      waitingSince = 0;
+      lastTime = 0;
+      unlock();
+      persist();
+      clearChrome();
+      schedule();
+    };
+    const paint = (now: number) => {
+      frame = 0;
+      if (disposed || document.hidden) return;
+      let g = geometry();
+      const scroll = heroProgress(g.rect.top, g.rect.height, panel.offsetHeight, g.header);
+      if (!initialized) {
+        // Restored/anchored content must never be dragged back into an introduction.
+        if (location.hash && location.hash !== "#home") anchorNavigation = true;
+        if (g.y > g.trigger + 24 || anchorNavigation) film = { state: "COMPLETED", time: FILM_DURATION_MS };
+        visitedContent = g.y > g.trigger + 24;
+        initialized = true;
+      }
+      if (motion.matches) {
+        film = { state: "COMPLETED", time: FILM_DURATION_MS };
+        unlock();
+      } else if (!anchorNavigation) {
+        if (film.state === "FILLING") {
+          if (scroll < .94) armed = true;
+          if (scroll >= .999 && armed) {
+            // All responsive images decode before the clock starts. Loading has
+            // a bounded budget; a failed/slow connection keeps a loaded front.
+            lock(g.trigger);
+            if (assets === "ready") {
+              film = startFilm(film);
+              waitingSince = 0;
+              lastTime = now;
+            } else {
+              if (!waitingSince) waitingSince = now;
+              if (assets === "failed" || now - waitingSince >= 1500) { staticFallback = true; cancel(); }
+            }
+          }
+        } else if (film.state === "COMPLETED") {
+          if (g.y > g.trigger + 24) visitedContent = true;
+          if (visitedContent && g.y <= g.trigger && assets === "ready" && !staticFallback) {
+            lock(g.trigger);
+            film = startFilm(film, true);
+            lastTime = now;
+            visitedContent = false;
+          }
+        }
+      }
+      if (playing(film)) {
+        const reverse = film.state === "PLAYING_REVERSE";
+        film = advanceFilm(film, lastTime ? now - lastTime : 0);
+        lastTime = now;
+        if (!playing(film)) {
+          if (reverse) armed = false;
+          unlock(reverse ? (hold?.y ?? g.trigger) - 2 : undefined);
+          persist();
+          lastTime = 0;
+        }
+      }
+      g = geometry();
+      const fillScroll = heroProgress(g.rect.top, g.rect.height, panel.offsetHeight, g.header);
+      const fill = film.state === "FILLING" && !hold ? milkFill(fillScroll) : 1;
+      const values = filmFrame(film.time);
+      // Failed imagery never reveals a blank camera layer.
+      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, side: 0, top: 0, macro: 0 });
+      const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
+      const liquid = liquidGeometry(fill);
+      const curtain = macroPresentation(g.rect.bottom, window.innerHeight, values.macro, g.header);
       root.style.setProperty("--scroll-progress", String(progress));
-      root.dataset.progressStage = progress >= .999 ? "complete" : progress >= .5 ? "middle" : "beginning";
-      storyProgress.current?.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
-      const targetFrame = heroFrame(current, motion.matches, camera?.to);
-      const shot = stepCamera(camera, targetFrame, time, firstPaint || motion.matches);
-      camera = shot.state;
-      const values = { fill: targetFrame.fill, ...shot.values };
-      root.dataset.transitioning = String(shot.active);
-      const liquid = liquidGeometry(values.fill);
-      root.style.setProperty("--fill-progress", String(values.fill));
+      root.style.setProperty("--fill-progress", String(fill));
       root.style.setProperty("--coffee-progress", String(values.coffee));
-      const curtain = macroPresentation(rect.bottom, window.innerHeight, values.macro, headerHeight);
       root.style.setProperty("--angle-opacity", String(Math.min(1, values.side + values.top + values.macro)));
       root.style.setProperty("--side-opacity", String(values.side));
       root.style.setProperty("--top-opacity", String(values.top));
       root.style.setProperty("--macro-opacity", String(curtain.opacity));
       root.style.setProperty("--macro-offset", `${curtain.offsetY}px`);
-      root.dataset.immersive = String(curtain.immersive);
-      root.dataset.macroVisible = String(curtain.opacity > .001);
-      document.documentElement.dataset.heroImmersive = String(curtain.immersive);
-      document.documentElement.style.setProperty("--hero-chrome-opacity", String(1 - curtain.opacity));
-      if (immersiveExit.current) immersiveExit.current.tabIndex = curtain.immersive ? 0 : -1;
-      root.dataset.shot = values.macro > .5 ? "macro" : values.top > .5 ? "top" : values.side > .5 ? "side" : "front";
       root.style.setProperty("--liquid-y", `${liquid.y * 100}%`);
       root.style.setProperty("--liquid-left", `${liquid.left * 100}%`);
       root.style.setProperty("--liquid-depth", `${liquid.depth * 100}%`);
       liquidMask.current?.setAttribute("d", liquid.path);
-      root.dataset.fill = values.fill.toFixed(3);
-      root.dataset.progress = (motion.matches ? 1 : current).toFixed(3);
-      if (!motion.matches && (Math.abs(target - current) > 0.0001 || shot.active)) {
-        lastTime = time;
-        frame = window.requestAnimationFrame(paint);
-      } else {
-        frame = 0;
-        lastTime = 0;
-      }
+      root.dataset.state = film.state;
+      root.dataset.filmTime = String(Math.round(film.time));
+      root.dataset.filmStage = values.stage;
+      root.dataset.assets = assets;
+      root.dataset.transitioning = String(playing(film));
+      root.dataset.progressStage = progress >= .999 ? "complete" : progress >= .5 ? "middle" : "beginning";
+      root.dataset.fill = fill.toFixed(3);
+      root.dataset.progress = progress.toFixed(3);
+      root.dataset.shot = values.macro > .5 ? "macro" : values.top > .5 ? "top" : values.side > .5 ? "side" : "front";
+      root.dataset.immersive = String(curtain.immersive);
+      root.dataset.macroVisible = String(curtain.opacity > .001);
+      html.dataset.heroImmersive = String(curtain.immersive);
+      html.style.setProperty("--hero-chrome-opacity", String(1 - curtain.opacity));
+      if (immersiveExit.current) immersiveExit.current.tabIndex = curtain.opacity > .001 ? 0 : -1;
+      const description = motion.matches ? "Introduction complete. Scroll to explore the farm." : hold && !playing(film) ? "Milk full. Preparing the introduction." : film.state === "FILLING" ? `Milk ${Math.round(fill * 100)}% full. Scroll to fill; a short film follows.` : film.state === "COMPLETED" ? "Introduction complete. Scroll to explore the farm." : film.state === "PLAYING_REVERSE" ? "Introduction playing backward. Scroll upward afterward to empty the glass." : "Introduction playing automatically. Scroll to explore afterward, or skip at any time.";
+      storyProgress.current?.setAttribute("aria-valuenow", String(Math.round(clamp01(progress) * 100)));
+      storyProgress.current?.setAttribute("aria-valuetext", description);
+      if (playing(film) || hold) schedule();
     };
-    const schedule = () => { if (!frame) frame = window.requestAnimationFrame(paint); };
-    const reset = () => { current = -1; schedule(); };
+    const scroll = () => { if (hold && window.scrollY !== 0) window.scrollTo({ top: 0, behavior: "instant" }); schedule(); };
+    const resize = () => {
+      if (hold) { hold.y = geometry().trigger; body.style.top = `${-hold.y}px`; }
+      lastTime = 0;
+      schedule();
+    };
+    const visibility = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      lastTime = 0;
+      if (!document.hidden) { waitingSince = 0; schedule(); }
+    };
+    const input = (event: Event) => {
+      anchorNavigation = false;
+      if (hold && event.cancelable) event.preventDefault();
+    };
+    const key = (event: KeyboardEvent) => {
+      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key) && !(event.target as HTMLElement).closest("button, a, input, textarea, select")) input(event);
+      if (event.key === "Escape" && hold) cancel();
+    };
+    const navigate = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const link = target.closest<HTMLAnchorElement>("a[href]");
+      if (link && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0 && link.target !== "_blank") {
+        const url = new URL(link.href, location.href);
+        if (url.origin !== location.origin || url.pathname !== location.pathname || url.hash) {
+          cancel();
+          anchorNavigation = true;
+          if (url.hash === "#home") { film = { state: "FILLING", time: 0 }; armed = true; visitedContent = false; persist(); }
+        }
+      }
+      // Release our hold before the existing menu acquires its own scroll lock.
+      if (target.closest('button[aria-haspopup="dialog"]')) cancel();
+    };
+    const hash = () => { cancel(); anchorNavigation = true; if (location.hash === "#home") { film = { state: "FILLING", time: 0 }; armed = true; visitedContent = false; persist(); } };
+    const restore = () => {
+      unlock();
+      film = { state: history.state?.mmaHeroCompleted ? "COMPLETED" : "FILLING", time: history.state?.mmaHeroCompleted ? FILM_DURATION_MS : 0 };
+      anchorNavigation = true;
+      visitedContent = false;
+      lastTime = 0;
+      schedule();
+    };
+    const pagehide = () => { if (hold) cancel(); cancelAnimationFrame(frame); frame = 0; };
+    const pageshow = () => { lastTime = 0; schedule(); };
+    // Decode the actual Next.js-selected responsive sources, not separate raw URLs.
+    Promise.all(Array.from(root.querySelectorAll<HTMLImageElement>("img")).map(image => image.decode())).then(() => {
+      if (!disposed) { assets = "ready"; schedule(); }
+    }, () => { if (!disposed) { assets = "failed"; schedule(); } });
     schedule();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", reset);
-    window.addEventListener("pageshow", reset);
-    motion.addEventListener("change", reset);
+    window.addEventListener("scroll", scroll, { passive: true });
+    window.addEventListener("resize", resize);
+    window.addEventListener("pageshow", pageshow);
+    window.addEventListener("pagehide", pagehide);
+    window.addEventListener("hashchange", hash);
+    window.addEventListener("popstate", restore);
+    window.addEventListener("wheel", input, { passive: false });
+    window.addEventListener("touchmove", input, { passive: false });
+    document.addEventListener("keydown", key);
+    document.addEventListener("click", navigate, true);
+    document.addEventListener("visibilitychange", visibility);
+    motion.addEventListener("change", resize);
     return () => {
-      delete document.documentElement.dataset.heroImmersive;
-      document.documentElement.style.removeProperty("--hero-chrome-opacity");
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", reset);
-      window.removeEventListener("pageshow", reset);
-      motion.removeEventListener("change", reset);
+      disposed = true;
+      cancelAnimationFrame(frame);
+      unlock();
+      clearChrome();
+      window.removeEventListener("scroll", scroll);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("pageshow", pageshow);
+      window.removeEventListener("pagehide", pagehide);
+      window.removeEventListener("hashchange", hash);
+      window.removeEventListener("popstate", restore);
+      window.removeEventListener("wheel", input);
+      window.removeEventListener("touchmove", input);
+      document.removeEventListener("keydown", key);
+      document.removeEventListener("click", navigate, true);
+      document.removeEventListener("visibilitychange", visibility);
+      motion.removeEventListener("change", resize);
     };
   }, []);
 
@@ -100,7 +269,7 @@ export function RisingGlassHero() {
         </div>
 
         <div className={styles.visual}>
-          <div className={styles.glass} role="img" aria-label="A traditional grooved glass fills with milk, reveals coffee ribbons, then reveals side and top-down views as you scroll">
+          <div className={styles.glass} role="img" aria-label="Scroll to fill a traditional grooved glass with milk. A short automatic film then reveals coffee, an elevated view, a full-screen macro and an overhead finish. Returning from the farm plays the film backward before upward scrolling empties the glass.">
             <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} priority sizes="(max-width: 720px) 240px, 38vw" />
             <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
               <defs>
@@ -110,22 +279,22 @@ export function RisingGlassHero() {
               </defs>
             </svg>
             <div className={styles.milk} style={{ clipPath: `url(#${maskId})` }}>
-              <Image src="/hero/glass-milk.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 240px, 38vw" />
+              <Image src="/hero/glass-milk.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
             </div>
             <span className={styles.surface} />
-            <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.side} src="/hero/coffee-side-v2.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="lazy" sizes="(max-width: 720px) 260px, 38vw" />
+            <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.side} src="/hero/coffee-side-v2.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
           </div>
         </div>
 
         <div className={styles.macro} aria-hidden="true">
-          <Image src="/hero/coffee-macro.webp" alt="" fill loading="lazy" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" />
+          <Image src="/hero/coffee-macro.webp" alt="" fill loading="eager" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" />
         </div>
-        <a ref={immersiveExit} className={styles.immersiveExit} href="#site-content" tabIndex={-1}>Continue to the site</a>
+        <a ref={immersiveExit} className={styles.immersiveExit} href="#site-content" tabIndex={-1}>Skip introduction <span aria-hidden="true">↘</span></a>
 
         <div className={styles.storyRail}>
-        <span ref={storyProgress} className={styles.progressMeter} role="progressbar" aria-label="Glass story scroll progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0} />
+        <span ref={storyProgress} className={styles.progressMeter} role="progressbar" aria-label="Glass story progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0} />
         <ol className={styles.chapters} aria-label="From the glass to your home">
           <li className={styles.current}><span>01</span><small>The glass</small></li>
           <li><a href="#farm"><span>02</span><small>Our farm</small></a></li>
@@ -135,7 +304,7 @@ export function RisingGlassHero() {
 
         <a className={styles.scroll} href="#site-content">
           <span className={styles.mouse} aria-hidden="true"><i /></span>
-          <span>Scroll to fill<small>Discover the story</small></span>
+          <span>Scroll to fill<small>Then watch the story</small></span>
           <span className={styles.down} aria-hidden="true">↓</span>
         </a>
         <a className={styles.skip} href="#site-content">Skip introduction <span aria-hidden="true">↘</span></a>

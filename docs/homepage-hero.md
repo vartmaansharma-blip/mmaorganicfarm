@@ -14,20 +14,28 @@ The headline, two ordering/farm actions and photograph are balanced vertically o
 
 ## Film choreography
 
-Native scroll drives absolute progress; reverse scroll retraces it. There is no wheel/touch interception or forced playback. A 65ms time-based response smooths input and settles without overshoot. The animation loop stops when settled.
+The hero uses a finite state machine: `FILLING → PLAYING_FORWARD → COMPLETED → PLAYING_REVERSE → FILLING`. Native scrolling controls only the curved milk mask during filling. At full milk, one elapsed-time `requestAnimationFrame` timeline plays every approved photograph, even if scrolling stops or large wheel/touch deltas arrive. Scroll input never selects a photographic target. `lib/hero-motion.ts` contains the deterministic clock and image weights; the component owns DOM input, asset readiness, holding and lifecycle cleanup.
 
-| Progress | Shot and transition |
+| Film time | Shot and transition |
 | --- | --- |
-| 0–48% | Stationary glass; curved meniscus rises smoothly inside tapered walls. |
-| 52.5% boundary | Coffee treatment arrives in a 110ms match dissolve. |
-| 62% boundary | Matched elevated glass arrives in a 110ms angle dissolve. |
-| 78% boundary | 220ms push-in into the supplied full-screen coffee/milk texture; all visible chrome leaves. |
-| 78–93% | Image-only macro hold. |
-| 93% boundary | 180ms pull-back into the closing overhead composition; navigation and actions return. |
-| 93–100% | Clean overhead hold. |
-| Continued scroll | The hero releases naturally into the actual site. |
+| 0–60ms | Filled frontal milk glass hold. |
+| 60–180ms | Milk-to-coffee treatment. |
+| 180–290ms | Matched elevated transition into `coffee-side-v2.webp`. |
+| 290–520ms | Sharp elevated hold. |
+| 520–740ms | Existing photographic push-in into `coffee-macro.webp`. |
+| 740–1280ms | Full-screen macro; the named macro-hold stage starts at 900ms. |
+| 1280–1460ms | Pull-back into `coffee-top.webp`. |
+| 1460–1900ms | Clean overhead hold; final-settle stage starts at 1650ms. |
 
-Scroll controls the fill continuously and selects clean camera targets. Camera transitions finish in clock time even when scrolling stops; a small boundary deadband prevents jitter. Reverse transitions begin at current image weights. No photograph blur filter or persistent double exposure is used. A focus-only continuation gives keyboard visitors a route out of the full-screen insert. Skip introduction goes directly to content. Reduced motion and JavaScript-disabled visits show a finished static glass without the long pinned film.
+The identical timeline runs backward on upward reentry after the visitor has scrolled at least 24px into content. Partial automatic playback ignores incidental direction reversals. After reverse playback the glass is frontal and full; further upward scrolling lowers the milk. A 6% fill deadband rearms the forward trigger after reverse, preventing boundary jitter from immediately restarting it.
+
+The panel's first-screen height/composition is unchanged. Its only sticky runway is **55svh of native filling**, replacing the former 305svh/270svh choreography. At the full-fill/reentry boundary, body positioning temporarily holds the panel at its natural sticky location; scrollbar compensation prevents width shifts. Wheel, touch momentum and scrolling keys are consumed only while held. Completing or cancelling restores the exact prior styles and boundary scroll position. There is no timed dead scroll runway after completion.
+
+All six actual responsive image sources load eagerly and decode before the film clock starts. Preparation has a 1500ms maximum hold budget; a decode failure or timeout releases the hold and retains the frontal milk image for that visit. Late imagery cannot abruptly replace this fallback. The nominal film is 1900ms. Foreground frame delays are capped at 50ms per animation step so a main-thread stall stretches playback instead of skipping a stage. Document-hidden time is excluded, and the single loop resumes at the same point.
+
+Skip introduction stays available during the macro as a visible keyboard-accessible action, and immediately cancels playback before normal anchor navigation. Other anchor/route navigation and opening the mobile menu also release the hold. Unmount and pagehide remove locks/chrome; a namespaced history-entry flag preserves completed playback on return. Direct content anchors bypass playback. Resize and theme changes retain film state/time. Reduced motion shows a static finished frontal coffee glass with no runway or forced hold; no-JavaScript visitors get the same static composition.
+
+The progress meter combines milk fill (0–50%) and film time (50–100%). Its accessible value text explains filling, automatic playback, reverse playback and completion.
 
 The wide macro's responsive `sizes` accounts for its rendered width when it covers a portrait viewport, preventing a small mobile image from being stretched across the full screen.
 
@@ -47,13 +55,13 @@ HERO_BROWSERS=chromium,webkit npm run test:browser
 npm audit --omit=dev
 ```
 
-Browser checks start the optimized production build with an unreachable, non-secret auth fixture. They verify anonymous `/milk` and `/account` gates without customer data or writes. The matrix covers 320×568, 390×844, 768×1024 and 1440×960; forward/reverse fill; stationary panel; shot order; image-only insert/closing overhead/direct content exit; theme persistence; navigation focus/destinations/skip; reduced motion; nine public customer routes in both themes with shared typography and palette contrast checks.
+Browser checks start the optimized production build with an unreachable, non-secret auth fixture. The matrix covers Chromium and WebKit at 320×568, 360×740, 390×844, 768×1024, 1200×630 and 1440×960. It records every stage in both directions, exercises large wheel deltas, a cancelable touch-momentum event, keyboard input, theme/resize during playback, stationary fill/hold, stage order, image readiness, skip, reduced motion and existing navigation/public-page checks. Desktop and phone lifecycle scenarios cover visibility pause/resume (through the visibility-event adapter), route navigation/unmount, browser back/forward, direct anchors and preference changes. Slow/failed image routes check bounded preparation and stable fallback. These are desktop browser engines with emulated phone viewports/touch events, not physical Safari/iPhone tests.
 
-The local checks do not claim physical iPhone/Android performance, authenticated ordering acceptance or a live payment test. No customer orders, delivery schedules or payments are created during verification. These unchanged backend journeys remain separate acceptance coverage.
+`work/hero-verification/results.json` stores measured stage order/timing and checks. PNGs and WebM recordings are written alongside it; 390px/1440px recordings include forward and reverse playback. Exact results for a revision belong in `docs/hero-timed-verification.md` and its PR. The suite does not create orders, schedules or payments.
 
-## Release
+## Release boundary for this motion correction
 
-The user explicitly authorized merge to main and production deployment after completion in the October 24 conversation. This supersedes the initial draft-only delivery instruction. Release uses the existing PR, preserving published history, after production build, source/unit tests, browser verification, visual inspection and a matching preview deployment. Next.js and compatible production transitive packages were updated to resolve advisories discovered during the release audit. Exact release SHA, preview/production status and verification results belong in the delivery report; this document does not assert a deployment occurred.
+This work targets a focused branch from `main` at `5d819602e686357265ac86d6aa8c766a285af25e`. PR #4 (customer controls/themes) and PR #5 (commerce) were inspected and remain separate. Their code is not included. The initial brief requested a PR without automatic merge. On 25 October 2026 the user subsequently authorized direct merge once this correction is complete. Complete local verification and a matching hosted preview check before merging, then verify the deployment triggered by the existing main-branch integration. Earlier release permissions describe earlier work.
 
 ## Approved palette and interaction contract — 24 October 2026
 

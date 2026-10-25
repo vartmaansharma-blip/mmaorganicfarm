@@ -1,138 +1,100 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { dampProgress, heroFrame, heroProgress, liquidGeometry, macroPresentation, stepCamera, CAMERA_TRANSITION_MS } from "../lib/hero-motion.ts";
+import { advanceFilm, FILM_DURATION_MS, FILM_STAGES, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm } from "../lib/hero-motion.ts";
 
-test("fill starts at the sticky header and reaches full before coffee or camera changes", () => {
-  assert.equal(heroProgress(126, 2200, 774, 126), 0);
-  assert.equal(heroProgress(-1300, 2200, 774, 126), 1);
-  assert.deepEqual(heroFrame(0), { fill: 0, coffee: 0, side: 0, top: 0, macro: 0 });
-  assert.equal(heroFrame(.48).fill, 1);
-  assert.equal(heroFrame(.48).coffee, 0);
-  for (let p = 0; p < .48; p += .005) {
-    assert.equal(heroFrame(p).side, 0);
-    assert.equal(heroFrame(p).coffee, 0);
-  }
-});
+const empty = () => ({ state: 'FILLING', time: 0 });
 
-test("scroll fill stays continuous and reversible while photograph targets stay clean", () => {
-  let previous = heroFrame(0);
-  const frames = [];
+test('native scroll fill is continuous, reversible, stationary and reaches full before the film', () => {
+  assert.equal(heroProgress(126, 1300, 774, 126), 0);
+  assert.equal(heroProgress(-400, 1300, 774, 126), 1);
+  let previous = 0;
   for (let i = 0; i <= 1000; i++) {
-    const frame = heroFrame(i / 1000);
-    frames.push(frame);
-    for (const key of Object.keys(frame)) {
-      assert.ok(frame[key] >= 0 && frame[key] <= 1);
-      if (key === "fill") assert.ok(Math.abs(frame[key] - previous[key]) < 0.04);
-      else assert.ok(frame[key] === 0 || frame[key] === 1);
+    const fill = milkFill(i / 1000);
+    assert.ok(fill >= previous && fill - previous < .002);
+    assert.equal(milkFill(1 - (1000 - i) / 1000).toFixed(9), fill.toFixed(9));
+    previous = fill;
+  }
+  assert.equal(milkFill(1), 1);
+  assert.equal(milkFill(-1), 0);
+  assert.equal(milkFill(2), 1);
+  assert.equal(filmFrame(0).coffee, 0);
+});
+
+test('one trigger starts one film; repeated triggers and direction changes cannot restart or reverse it', () => {
+  let film = startFilm(empty());
+  assert.equal(film.state, 'PLAYING_FORWARD');
+  assert.equal(advanceFilm(film, 0).state, 'PLAYING_FORWARD');
+  for (let i = 0; i < 12; i++) {
+    film = advanceFilm(film, 16);
+    assert.strictEqual(startFilm(film), film);
+    assert.strictEqual(startFilm(film, true), film);
+  }
+});
+
+test('foreground stalls cannot skip stages; playback continues with no scroll input', () => {
+  let film = startFilm(empty());
+  const stages = [];
+  for (let i = 0; i < 200 && playing(film); i++) {
+    const name = filmFrame(film.time).stage;
+    if (stages.at(-1) !== name) stages.push(name);
+    film = advanceFilm(film, 9000); // A huge gesture/stall never selects a target frame.
+  }
+  assert.deepEqual(stages, FILM_STAGES.map(stage => stage.name));
+  assert.deepEqual(film, { state: 'COMPLETED', time: FILM_DURATION_MS });
+  assert.deepEqual(advanceFilm(film, 10000), film);
+  assert.strictEqual(startFilm(film), film);
+});
+
+test('every photograph has a clean hold; matching transitions are short and bounded', () => {
+  for (const [time, weights] of [[0,[0,0,0,0]], [180,[1,0,0,0]], [400,[1,1,0,0]], [1000,[1,1,0,1]], [1700,[1,0,1,0]]]) {
+    const { coffee, side, top, macro } = filmFrame(time);
+    assert.deepEqual([coffee,side,top,macro], weights);
+  }
+  for (let time = 1; time <= FILM_DURATION_MS; time++) {
+    const prev = filmFrame(time - 1), next = filmFrame(time);
+    for (const key of ['coffee','side','top','macro']) {
+      assert.ok(next[key] >= 0 && next[key] <= 1);
+      assert.ok(Math.abs(next[key] - prev[key]) < .015);
     }
-    assert.ok(frame.fill >= previous.fill);
-    previous = frame;
   }
-  for (let i = 1000; i >= 0; i--) assert.deepEqual(heroFrame(i / 1000), frames[i]);
-  assert.deepEqual(heroFrame(-1), heroFrame(0));
-  assert.deepEqual(heroFrame(2), heroFrame(1));
 });
 
-test("distinct photographic views include an image-only insert and finish overhead", () => {
-  assert.equal(heroFrame(.66).side, 1);
-  assert.equal(heroFrame(.7).side, 1);
-  assert.equal(heroFrame(.9).macro, 1);
-  assert.equal(heroFrame(.88).macro, 1);
-  assert.equal(heroFrame(.96).top, 1);
-  assert.deepEqual(heroFrame(1), { fill: 1, coffee: 1, side: 0, top: 1, macro: 0 });
-});
-
-test("reduced motion always returns a static finished front glass", () => {
-  for (const p of [0, .2, .5, .8, 1]) assert.deepEqual(heroFrame(p, true), { fill: 1, coffee: 1, side: 0, top: 0, macro: 0 });
-});
-
-test("damping is time based, settles, reverses and never overshoots", () => {
-  const after = (hz) => {
-    let p = 0;
-    for (let i = 0; i < hz / 2; i++) p = dampProgress(p, 1, 1000 / hz);
-    return p;
-  };
-  assert.ok(Math.abs(after(30) - after(120)) < .0001);
-  assert.ok(after(60) > .999);
-  let up = .8;
-  for (let i = 0; i < 40; i++) {
-    const next = dampProgress(up, .2, 16.67);
-    assert.ok(next <= up && next >= .2);
-    up = next;
+test('returning plays every stage backward and ends on a filled frontal milk glass', () => {
+  let film = startFilm({ state: 'COMPLETED', time: FILM_DURATION_MS }, true);
+  assert.equal(advanceFilm(film, 0).state, 'PLAYING_REVERSE');
+  const stages = [];
+  while (playing(film)) {
+    const name = filmFrame(film.time).stage;
+    if (stages.at(-1) !== name) stages.push(name);
+    film = advanceFilm(film, 50);
   }
-  assert.ok(Math.abs(up - .2) < .0001);
+  assert.deepEqual(stages, FILM_STAGES.map(stage => stage.name).reverse());
+  assert.deepEqual(film, empty());
+  assert.deepEqual(filmFrame(film.time), { coffee: 0, side: 0, top: 0, macro: 0, stage: 'filled-front' });
+  assert.ok(milkFill(.5) < milkFill(1));
 });
 
-test("liquid surface stays inside the rim and widens smoothly with the tapered glass", () => {
+test('a paused/hidden clock preserves its point and invalid deltas never advance it', () => {
+  const film = advanceFilm(startFilm(empty()), 40);
+  for (const elapsed of [0, -100, NaN, Infinity]) assert.deepEqual(advanceFilm(film, elapsed), film);
+  assert.equal(advanceFilm(film, 10).time, 50);
+});
+
+test('liquid surface stays inside the approved tapered rim', () => {
   let previous = liquidGeometry(0);
   for (let i = 0; i <= 100; i++) {
     const level = liquidGeometry(i / 100);
-    assert.ok(level.y <= previous.y);
-    assert.ok(level.left <= previous.left);
-    assert.ok(level.y - level.depth > .13, "surface must remain below the rim");
+    assert.ok(level.y <= previous.y && level.left <= previous.left);
+    assert.ok(level.y - level.depth > .13);
     assert.ok(level.left > .08 && level.right < .92);
-    assert.match(level.path, / A /, "surface uses a curved meniscus");
+    assert.match(level.path, / A /);
     previous = level;
   }
 });
 
-test("the full-screen insert stays bounded and anchor skips restore the page", () => {
-  const full = macroPresentation(844, 844, 1, 80);
-  assert.deepEqual(full, { opacity: 1, offsetY: 0, immersive: true });
-  const leaving = macroPresentation(422, 844, 1, 80);
-  assert.deepEqual(leaving, { opacity: 1, offsetY: -422, immersive: true });
+test('full-screen macro stays bounded to the hero, including direct anchor exits', () => {
+  assert.deepEqual(macroPresentation(844, 844, 1, 80), { opacity: 1, offsetY: 0, immersive: true });
+  assert.deepEqual(macroPresentation(422, 844, 1, 80), { opacity: 1, offsetY: -422, immersive: true });
   assert.equal(macroPresentation(100, 844, 1, 80).opacity, 0);
   assert.equal(macroPresentation(-1, 844, 1, 80).immersive, false);
-  assert.deepEqual(macroPresentation(844, 844, 1, 80), full);
-});
-
-
-test("camera dissolves finish on a sharp frame when scrolling stops in an old blend interval", () => {
-  for (const [from, to] of [[.59, .625], [.73, .785], [.89, .935], [.49, .53]]) {
-    let step = stepCamera(undefined, heroFrame(from), 0);
-    const target = heroFrame(to, false, step.state.to);
-    step = stepCamera(step.state, target, 10);
-    const middle = stepCamera(step.state, target, 10 + step.state.durationMs / 2);
-    assert.equal(middle.active, true);
-    for (const value of Object.values(middle.values)) assert.ok(value >= 0 && value <= 1);
-    const end = stepCamera(middle.state, target, 10 + step.state.durationMs);
-    assert.equal(end.active, false);
-    assert.deepEqual(end.values, { coffee: target.coffee, side: target.side, top: target.top, macro: target.macro });
-    assert.ok(Object.values(end.values).every(value => value === 0 || value === 1));
-  }
-});
-
-test("reversing during a camera dissolve continues from the current image weights", () => {
-  const front = heroFrame(.57), side = heroFrame(.66);
-  let step = stepCamera(undefined, front, 0);
-  step = stepCamera(step.state, side, 10);
-  const middle = stepCamera(step.state, side, 60);
-  const reverse = stepCamera(middle.state, front, 60);
-  assert.deepEqual(reverse.values, middle.values);
-  const end = stepCamera(reverse.state, front, 60 + CAMERA_TRANSITION_MS);
-  assert.equal(end.values.side, 0);
-  assert.equal(end.active, false);
-});
-
-test("small scroll jitter around a camera boundary does not restart the dissolve", () => {
-  const before = heroFrame(.60);
-  assert.equal(heroFrame(.623, false, before).side, 0);
-  const after = heroFrame(.63, false, before);
-  assert.equal(after.side, 1);
-  assert.equal(heroFrame(.619, false, after).side, 1);
-  assert.equal(heroFrame(.615, false, after).side, 0);
-});
-
-
-test("macro entry and exit get a bounded zoom beat while angle changes remain brief", () => {
-  const front = stepCamera(undefined, heroFrame(.57), 0);
-  const side = stepCamera(front.state, heroFrame(.66), 10);
-  const macro = stepCamera(side.state, heroFrame(.86), 200);
-  const overhead = stepCamera(macro.state, heroFrame(.99), 500);
-  assert.ok(side.state.durationMs < macro.state.durationMs);
-  assert.ok(overhead.state.durationMs < macro.state.durationMs);
-  for (const beat of [side, macro, overhead]) {
-    assert.ok(beat.state.durationMs <= 220);
-    assert.equal(stepCamera(beat.state, beat.state.to, beat.state.startedAt + beat.state.durationMs).active, false);
-  }
 });

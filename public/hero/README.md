@@ -29,18 +29,18 @@ Overhead: A true top-down camera looking straight into the same grooved glass, c
 
 ## Motion and accessibility
 
-Native scrolling drives absolute progress; no scroll interception or timer-based film playback. Time-based damping follows touch/trackpad scrolling and settles without overshoot. The liquid mask rises continuously before the camera changes. Short dissolves and separate holds keep the photographs distinct. The supplied macro fills the viewport and hides all visual chrome. It then dissolves into a final overhead composition with copy, navigation and Shop restored, as requested in the latest reference. The closing shot releases naturally into the site; reverse scrolling retraces the sequence.
+Native scrolling fills the milk mask, then the complete 1900ms film plays from one elapsed-time clock. Scroll no longer selects camera targets. Returning upward from content plays the same timeline backward before scroll empties the glass. A temporary hold exists only during playback and bounded image preparation; skip/navigation/unmount release it. See `docs/homepage-hero.md` for exact stages, lifecycle and fallback behavior.
 
-Reduced motion and no JavaScript show a static finished glass without the long pinned sequence. The skip link and focus-only final-frame continuation provide keyboard exits. No heavy video or 3D runtime is loaded.
+Every responsive source decodes before playback. Reduced motion and no JavaScript show a static finished frontal glass without a scroll runway or hold. The existing approved files, mask, matching transforms and composition remain unchanged; no video or 3D runtime is added.
 
 ## Mobile scale and side-view matching
 
 The original hero remains the first screen. Mobile glass height is now 42svh capped at 360px (short phones: 35svh capped at 234px), approximately 20% larger than production. The side layer uses a uniform 1.09229 scale with (-4.955827%, -3.344626%) translation: front alpha y=139..1074 and side y=164..1020 on 800×1200 canvases now align at the rim/base without stretching.
 
-The bottom mouse/scroll cue is centered on laptop layouts and retains its original left alignment on phones. The existing desktop chapter rail fills continuously from the hero's normalized native scroll progress; it reverses with scrolling, reaches 100% at the final frame and disappears during the full-screen macro. It remains hidden on narrow screens as in production. Images/typography/layout otherwise follow the approved production design.
+The bottom mouse/scroll cue is centered on laptop layouts and retains its original left alignment on phones. The existing desktop chapter rail combines native milk fill (0–50%) with timed film progress (50–100%); it follows the reverse film and upward emptying, reaches 100% at the final frame and disappears during the full-screen macro. It remains hidden on narrow screens as in production. Images/typography/layout otherwise follow the approved production design.
 
 
-Camera changes now use short clock-driven transitions (110ms angle match, 220ms swirl push-in, 180ms overhead pull-back) between clean shot targets. They finish even when native scrolling stops; a small progress deadband prevents boundary jitter from repeatedly restarting a transition. The fill remains continuously scroll-controlled, reverse transitions start from current image weights, fast skips resolve to the requested shot, and reduced motion remains static. Pausing inside the former blend windows must leave exact 0/1 photographic weights rather than a persistent double exposure.
+Camera changes now belong to the shared reversible timeline (120ms coffee treatment, 110ms angle match, 220ms macro push and 180ms overhead pull-back), with distinct clean holds. Fast scrolling cannot bypass a photograph. Historical notes about scroll-selected shot targets above are superseded by this hybrid motion contract.
 
 
 ## Replacement second shot — current asset
