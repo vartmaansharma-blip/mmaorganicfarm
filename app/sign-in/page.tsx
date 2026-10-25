@@ -1,3 +1,4 @@
+import { safeAuthReturn } from "@/lib/auth-return";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -29,10 +30,7 @@ type SignInPageProps = {
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = await searchParams;
   const isSignUp = params.mode === "sign-up";
-  const next =
-    params.next?.startsWith("/") && !params.next.startsWith("//")
-      ? params.next
-      : "/";
+  const next = safeAuthReturn(params.next);
   const supabase = await createClient();
   const {
     data: { user },

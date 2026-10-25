@@ -1,18 +1,13 @@
+import { safeAuthReturn } from "@/lib/auth-return";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-
-function safeNext(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/";
-}
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const cookieStore = await cookies();
-  const next = safeNext(
+  const next = safeAuthReturn(
     requestUrl.searchParams.get("next") ??
       cookieStore.get("mma_auth_next")?.value ??
       null,
@@ -65,7 +60,5 @@ export async function GET(request: Request) {
 
   cookieStore.delete("mma_auth_next");
 
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const host = forwardedHost ? `https://${forwardedHost}` : requestUrl.origin;
-  return NextResponse.redirect(new URL(next, host));
+  return NextResponse.redirect(new URL(next, requestUrl.origin));
 }

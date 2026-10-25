@@ -1,5 +1,7 @@
 "use server";
 
+import { safeAuthReturn } from "@/lib/auth-return";
+
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -11,11 +13,6 @@ function signInUrl(
   next = "/",
 ) {
   return `/sign-in?mode=${mode}&next=${encodeURIComponent(next)}&${type}=${encodeURIComponent(message)}`;
-}
-
-function safeNext(value: FormDataEntryValue | string | null) {
-  const path = typeof value === "string" ? value : "";
-  return path.startsWith("/") && !path.startsWith("//") ? path : "/";
 }
 
 async function rememberNext(path: string) {
@@ -77,7 +74,7 @@ export async function signInWithEmail(formData: FormData) {
   ensureSupabaseIsReady();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const next = safeNext(formData.get("next"));
+  const next = safeAuthReturn(formData.get("next"));
 
   if (!email || !password) {
     redirect(signInUrl("error", "Enter your email and password.", "sign-in", next));
@@ -101,7 +98,7 @@ export async function signUpWithEmail(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const next = safeNext(formData.get("next"));
+  const next = safeAuthReturn(formData.get("next"));
 
   if (!fullName || !email || password.length < 8) {
     redirect(

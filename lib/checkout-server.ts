@@ -1,15 +1,20 @@
 import "server-only";
+import { paymentModeError } from "./payment-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeOrderCapacity } from "@/lib/production-capacity";
 
 type Payment = { amount: number; orderId: string; paymentId: string; providerOrderId: string };
 export async function recordCapturedPayment(payment: Payment) {
   const admin = createAdminClient();
-  const { data: order, error } = await admin.from("orders").select("id, user_id, delivery_plan_id, purchase_mode, total_paise").eq("id", payment.orderId).eq("razorpay_order_id", payment.providerOrderId).single();
+  const { data: order, error } = await admin.from("orders").select("id, user_id, delivery_plan_id, purchase_mode, total_paise, is_test").eq("id", payment.orderId).eq("razorpay_order_id", payment.providerOrderId).single();
   if (error || !order || order.total_paise !== payment.amount) throw new Error("Paid order mismatch.");
+  const modeError = paymentModeError(order.is_test);
+  if (modeError) throw new Error(modeError);
   const paidAt = new Date().toISOString();
-  const { error: paymentError } = await admin.from("payments").upsert({ amount_paise: payment.amount, currency: "INR", order_id: order.id, paid_at: paidAt, provider: "razorpay", provider_order_id: payment.providerOrderId, provider_payment_id: payment.paymentId, signature_verified: true, status: "captured", user_id: order.user_id }, { onConflict: "provider_payment_id" });
+  const { error: paymentError } = await admin.from("payments").upsert({ amount_paise: payment.amount, currency: "INR", order_id: order.id, paid_at: paidAt, provider: "razorpay", provider_order_id: payment.providerOrderId, provider_payment_id: payment.paymentId, signature_verified: true, is_test: order.is_test, status: "captured", user_id: order.user_id }, { onConflict: "provider_payment_id" });
   if (paymentError) throw new Error("Payment record could not be saved.");
+  // Do not mark test orders paid: database status triggers also assign live routes.
+  if (order.is_test) return;
   const { error: updateError } = await admin.from("orders").update({ status: "paid", updated_at: paidAt }).eq("id", order.id);
   if (updateError) throw new Error("Order could not be marked paid.");
   if (order.purchase_mode === "adjustment") {
@@ -64,8 +69,10 @@ export async function recordCapturedPayment(payment: Payment) {
 }
 export async function recordAuthorizedPayment(input: Payment) {
   const admin = createAdminClient();
-  const { data: order, error } = await admin.from("orders").select("id, user_id, total_paise").eq("id", input.orderId).eq("razorpay_order_id", input.providerOrderId).single();
+  const { data: order, error } = await admin.from("orders").select("id, user_id, total_paise, is_test").eq("id", input.orderId).eq("razorpay_order_id", input.providerOrderId).single();
   if (error || !order || order.total_paise !== input.amount) throw new Error("Authorized payment mismatch.");
-  const { error: saveError } = await admin.from("payments").upsert({ amount_paise: input.amount, currency: "INR", order_id: order.id, provider: "razorpay", provider_order_id: input.providerOrderId, provider_payment_id: input.paymentId, signature_verified: true, status: "authorized", user_id: order.user_id }, { onConflict: "provider_payment_id" });
+  const modeError = paymentModeError(order.is_test);
+  if (modeError) throw new Error(modeError);
+  const { error: saveError } = await admin.from("payments").upsert({ amount_paise: input.amount, currency: "INR", order_id: order.id, provider: "razorpay", provider_order_id: input.providerOrderId, provider_payment_id: input.paymentId, signature_verified: true, is_test: order.is_test, status: "authorized", user_id: order.user_id }, { onConflict: "provider_payment_id" });
   if (saveError) throw new Error("Authorized payment could not be saved.");
 }

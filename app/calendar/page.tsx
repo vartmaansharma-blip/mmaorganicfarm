@@ -1,3 +1,4 @@
+import { databaseErrorMessage } from "@/lib/database-errors";
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
@@ -48,26 +49,28 @@ export default async function CalendarPage({
 
   if (!user) redirect("/sign-in?next=%2Fcalendar");
 
-  const { data: plans } = await supabase
+  const { data: plans, error: plansError } = await supabase
     .from("delivery_plans")
     .select(
       "id, status, start_date, billing_model, period_end_exclusive, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
-    .in("status", ["pending_confirmation", "active", "paused"])
+    .in("status", ["pending_confirmation", "active", "paused", "completed"])
     .order("created_at", { ascending: false });
 
+  if (plansError) throw new Error(databaseErrorMessage(plansError, "We could not load your delivery calendar. Please try again."));
   if (!plans?.length) redirect("/milk");
   const plan =
     plans.find((candidate) => candidate.id === params.plan) ?? plans[0];
 
   if (plan.billing_model === "calendar_month") {
-    const { data: completed } = await supabase
+    const { data: completed, error: completedError } = await supabase
       .from("daily_deliveries")
       .select("delivery_date")
       .eq("plan_id", plan.id)
       .eq("user_id", user.id)
       .eq("status", "delivered");
+    if (completedError) throw new Error("We could not check completed deliveries. Please try again.");
     return (
       <main className={styles.page}>
         <header className={styles.header}>

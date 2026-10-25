@@ -7,6 +7,7 @@ import {
 } from "@/lib/monthly-schedule";
 import { shopProduct } from "@/lib/shop-products";
 import { orderReturnPath } from "@/lib/shop-draft";
+import { databaseErrorMessage } from "@/lib/database-errors";
 import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
 import { redirect } from "next/navigation";
 import {
@@ -310,7 +311,7 @@ export async function saveDeliveryDetails(formData: FormData) {
       redirect(
         orderUrl(
           "error",
-          "We could not save this plan. If you have a current plan or payment in progress, open your account first; otherwise please try again.",
+          databaseErrorMessage(planError, "We could not save this plan. If you have a current plan or payment in progress, open your account first; otherwise please try again."),
           purchase,
           bottle,
           milk,
