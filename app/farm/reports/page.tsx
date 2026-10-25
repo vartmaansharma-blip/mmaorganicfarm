@@ -49,7 +49,7 @@ export default async function ReportsPage({
           <strong>{data.partial_visits}</strong>
           <span>Partial visits</span>
         </article>
-        <article>
+        <article data-attention={data.failed_attempts > 0 || undefined}>
           <strong>{data.failed_attempts}</strong>
           <span>Unsuccessful attempts</span>
         </article>

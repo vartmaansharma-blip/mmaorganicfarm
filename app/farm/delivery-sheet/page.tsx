@@ -563,7 +563,6 @@ export default async function DeliverySheetPage({
               <Link prefetch={false} href={`/farm/reconciliation?date=${deliveryDate}`}>
                 Reconcile day
               </Link>
-              <Link prefetch={false} href="/farm">Dashboard</Link>
             </>
           ) : null}
         </div>
@@ -664,7 +663,7 @@ export default async function DeliverySheetPage({
                 <input name="deliveryDate" type="hidden" value={deliveryDate} />
                 <input name="area" type="hidden" value={selectedArea} />
                 <FormSubmitButton pendingLabel="Preparing dispatch…">
-                  {dispatch ? "Refresh dispatch" : "Prepare dispatch"}
+                  {dispatch ? "Update draft" : "Prepare dispatch"}
                 </FormSubmitButton>
               </FarmForm>
             ) : null}
@@ -1054,7 +1053,7 @@ export default async function DeliverySheetPage({
           </div>
         ) : (
           <p className={styles.allClear}>
-            All deliveries and bottle returns are complete.
+            {visits.length ? "All deliveries and bottle returns are complete." : "There are no visits to review in this view."}
           </p>
         )}
       </section>
