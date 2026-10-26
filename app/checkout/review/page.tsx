@@ -15,6 +15,7 @@ import { paymentModeError } from "@/lib/payment-mode";
 import { hasRazorpayConfig } from "@/lib/razorpay";
 import { createClient } from "@/lib/supabase/server";
 import { RazorpayCheckoutButton } from "./razorpay-checkout-button";
+import { CouponForm } from "./coupon-form";
 import styles from "./review.module.css";
 export const metadata: Metadata = {
   title: "Review your order",
@@ -40,7 +41,7 @@ export default async function ReviewPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
+      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,subtotal_paise,total_paise,discount_code,discount_paise,phone_snapshot,address_snapshot",
     )
     .eq("id", orderId)
     .eq("user_id", user.id)
@@ -150,13 +151,15 @@ export default async function ReviewPage({
             ))}
           </div>
           <dl className={styles.totals}>
+            <div><dt>Products</dt><dd>{formatCheckoutAmount(order.subtotal_paise)}</dd></div>
             <div>
               <dt>Delivery</dt>
               <dd>
                 {formatCheckoutAmount(
                   Math.max(
                     0,
-                    order.total_paise -
+                    order.total_paise +
+                      order.discount_paise -
                       order.subtotal_paise -
                       order.bottle_charge_paise,
                   ),
@@ -169,6 +172,7 @@ export default async function ReviewPage({
                 <dd>{formatCheckoutAmount(order.bottle_charge_paise)}</dd>
               </div>
             )}
+            {order.discount_paise > 0 && <div className={styles.saving}><dt>Welcome-back offer · 5%</dt><dd>−{formatCheckoutAmount(order.discount_paise)}</dd></div>}
             <div className={styles.total}>
               <dt>
                 {monthly
@@ -180,6 +184,7 @@ export default async function ReviewPage({
               <dd>{formatCheckoutAmount(order.total_paise)}</dd>
             </div>
           </dl>
+          {monthly && !order.is_test && <CouponForm orderId={order.id} code={order.discount_code} locked={order.status !== "draft"} />}
         </section>
         {monthly ? (
           <MonthlyPlan
@@ -220,6 +225,7 @@ export default async function ReviewPage({
           </div>
           <RazorpayCheckoutButton
             amount={formatCheckoutAmount(order.total_paise)}
+            amountPaise={order.total_paise}
             orderId={order.id}
             ready={hasRazorpayConfig() && adminReady && !modeError}
             unavailableReason={modeError ?? undefined}

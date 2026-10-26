@@ -1,0 +1,227 @@
+.page {
+  min-height: 100svh;
+  background: #fffdf5;
+  color: #143d2b;
+  padding: 0 5vw 64px;
+}
+.header {
+  max-width: 1320px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0 36px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand img {
+  object-fit: contain;
+}
+.brand span {
+  font-size: 17px;
+}
+.hero {
+  max-width: 1320px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1.02fr;
+  align-items: center;
+  gap: clamp(28px, 5vw, 80px);
+}
+.copy {
+  padding: 16px 0;
+}
+.eyebrow {
+  display: inline-block;
+  padding: 8px 13px;
+  border-radius: 99px;
+  background: #e4f4d8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.copy h1 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(48px, 5.7vw, 84px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+  margin: 24px 0;
+}
+.copy > p {
+  font-size: 16px;
+  line-height: 1.65;
+  max-width: 47ch;
+  color: #496454;
+}
+.offer {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin: 26px 0;
+  padding: 18px 22px;
+  border: 1px solid #efd67b;
+  background: #fff2bc;
+  border-radius: 22px;
+}
+.percent {
+  white-space: nowrap;
+  font-size: 45px;
+  font-weight: 750;
+  letter-spacing: -0.07em;
+}
+.percent small {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+.offer h2 {
+  font: 650 18px var(--font-sans);
+  margin: 0 0 6px;
+}
+.offer p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #536039;
+}
+.primary {
+  min-height: 52px;
+  border-radius: 99px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  background: #087f5b;
+  color: white;
+  font-size: 15px;
+  font-weight: 650;
+  max-width: 440px;
+  margin-top: 22px;
+}
+.primary:hover {
+  background: #066646;
+}
+.copy .hint {
+  font-size: 12px;
+  margin: 12px 0 0;
+}
+.copy .terms {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #637565;
+  margin: 26px 0 0;
+  max-width: 60ch;
+}
+.notice {
+  padding: 15px 18px;
+  background: #e7f4eb;
+  border-radius: 16px;
+  font-size: 14px !important;
+}
+.picture {
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 22px 70px #30481b12;
+}
+.picture img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.codeBox {
+  padding: 18px;
+  border: 1px dashed #87af90;
+  border-radius: 18px;
+  background: white;
+}
+.codeBox label {
+  font-size: 12px;
+  font-weight: 650;
+}
+.codeBox > div {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.codeBox input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: 600 16px monospace;
+  letter-spacing: 0.02em;
+  color: #143d2b;
+}
+.codeBox button {
+  border: 1px solid #a6c7ac;
+  border-radius: 99px;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: #e7f4eb;
+  color: #14553a;
+  font-weight: 650;
+  cursor: pointer;
+}
+.codeBox p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #496454;
+  min-height: 18px;
+}
+.page :is(a, button, input):focus-visible {
+  outline: 3px solid #e19c16;
+  outline-offset: 4px;
+}
+@media (max-width: 760px) {
+  .page {
+    padding: 0 20px 40px;
+  }
+  .header {
+    padding: 18px 0 24px;
+  }
+  .brand span {
+    font-size: 14px;
+  }
+  .header > a:last-child {
+    font-size: 12px;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .picture {
+    grid-row: 1;
+    border-radius: 22px;
+  }
+  .copy {
+    padding: 0 4px;
+  }
+  .copy h1 {
+    font-size: 58px;
+  }
+  .copy > p {
+    font-size: 15px;
+  }
+  .offer {
+    margin: 22px 0;
+  }
+  .primary {
+    max-width: none;
+  }
+  .codeBox input {
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    scroll-behavior: auto;
+  }
+}

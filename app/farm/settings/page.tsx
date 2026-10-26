@@ -53,7 +53,7 @@ export default async function SettingsPage() {
           no automatic refunds.
         </p>
         <p className={styles.hint}>
-          Customer requests go to the Inbox for review before their service is changed.
+          Customers cancel their own plans immediately, without approval. Delivery changes and other requests go to the Inbox for review.
         </p>
       </section>
     </main>

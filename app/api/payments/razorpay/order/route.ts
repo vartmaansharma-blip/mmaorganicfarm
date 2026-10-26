@@ -1,4 +1,5 @@
 import { paymentModeError } from "@/lib/payment-mode";
+import { discountedCheckoutAmount } from "@/lib/checkout-discount";
 import { NextResponse } from "next/server";
 import { quoteStoredMonthlyCheckout } from "@/lib/monthly-checkout";
 import { quoteStoredCheckout } from "@/lib/checkout-quote";
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     orderId?: string;
     termsAccepted?: boolean;
+    expectedAmountPaise?: number;
   } | null;
   if (!body?.orderId || body.termsAccepted !== true)
     return NextResponse.json(
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id,user_id,status,bottle_choice,purchase_mode,delivery_plan_id,start_date,total_paise,razorpay_order_id,phone_snapshot,is_test",
+      "id,user_id,status,bottle_choice,purchase_mode,delivery_plan_id,start_date,total_paise,subtotal_paise,discount_code,discount_paise,razorpay_order_id,phone_snapshot,is_test",
     )
     .eq("id", body.orderId)
     .eq("user_id", user.id)
@@ -60,6 +62,8 @@ export async function POST(request: Request) {
     );
   const modeError = paymentModeError(order.is_test);
   if (modeError) return NextResponse.json({ error: modeError }, { status: 409 });
+  if (body.expectedAmountPaise !== order.total_paise)
+    return NextResponse.json({ error: "Your total changed. Review the updated amount before paying." }, { status: 409 });
   const { data: items } = await supabase
     .from("order_items")
     .select(
@@ -137,7 +141,12 @@ export async function POST(request: Request) {
           order.purchase_mode,
           plan,
         );
-    amount = Math.round(quote.total * 100);
+    amount = discountedCheckoutAmount(
+      Math.round(quote.total * 100),
+      Math.round((quote.total - (quote.bottleCharge ?? 0) - (quote.deliveryCharge ?? 0)) * 100),
+      Boolean(monthly),
+      order,
+    );
   } catch {
     return NextResponse.json(
       {
@@ -159,8 +168,8 @@ export async function POST(request: Request) {
     if (!order.is_test) await reserveOrderCapacity(order.id);
     if (monthlyRules) {
       const { error } = await createAdminClient().rpc(
-        "claim_monthly_checkout",
-        { p_order_id: order.id, p_expected_rules: monthlyRules },
+        "claim_monthly_checkout_total",
+        { p_order_id: order.id, p_expected_rules: monthlyRules, p_expected_total: amount },
       );
       if (error)
         throw new Error(

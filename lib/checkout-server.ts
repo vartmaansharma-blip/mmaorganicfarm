@@ -60,7 +60,7 @@ export async function recordCapturedPayment(payment: Payment) {
     message: order.purchase_mode === "adjustment"
       ? "Your additional payment is confirmed and the milk quantity was updated."
       : order.delivery_plan_id
-      ? "Your payment is confirmed and your delivery plan is active."
+      ? "Your payment is confirmed. Open your account to see the current status of your delivery plan."
       : "Your payment is confirmed and your farm order is accepted.",
     order_id: order.id,
     title: "Payment confirmed",

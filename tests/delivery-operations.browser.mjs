@@ -553,6 +553,49 @@ try {
       ).rows[0].delivered_deliveries,
       1,
     );
+    await cp.locator("summary").filter({hasText:"Cancel plan"}).click();
+    await cp.getByRole("button",{name:"Cancel plan now",exact:true}).click();
+    await cp.getByText("Your plan is cancelled. No farm approval is needed.",{exact:true}).waitFor();
+    assert.equal((await db.query("select status from delivery_plans where id=$1",[failure.plan])).rows[0].status,"cancelled");
+    assert.equal((await db.query("select count(*) n from cancellation_requests where plan_id=$1 and status='requested'",[failure.plan])).rows[0].n,"0");
+    await cp.screenshot({path:path.join(output,`${name}-customer-plan-cancelled.png`),fullPage:true});
+    await cp.goto(`${base}/welcome-back`,{waitUntil:"networkidle"});
+    const personalCode=await cp.getByLabel("Your personal, one-use code").inputValue();
+    assert.match(personalCode,/^MMA-[A-F0-9]{16}$/);
+    await noOverflow(cp);
+    await cp.screenshot({path:path.join(output,`${name}-welcome-back-mobile.png`),fullPage:true});
+    const monthRules=[{id:"milk",quantity:1,repeat:"custom",firstDate:tomorrow,dates:[tomorrow]}];
+    const monthPlan=(await callAs(db,failure.user,"select save_pending_monthly_plan($1,'new',$2) id",[tomorrow,JSON.stringify(monthRules)])).rows[0].id;
+    const monthOrder=randomUUID();
+    await db.query("insert into orders(id,user_id,delivery_plan_id,purchase_mode,status,bottle_choice,subtotal_paise,bottle_charge_paise,total_paise,milk_litres,start_date,phone_snapshot,address_snapshot) values($1,$2,$3,'plan','draft','new',6200,1000,7200,1,$4,'0000000000','Synthetic address')",[monthOrder,failure.user,monthPlan,tomorrow]);
+    await db.query("insert into order_items(order_id,user_id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,scheduled_days,delivery_date) values($1,$2,'milk','Fresh farm milk',1,'litre',6200,6200,'once','{}',$3)",[monthOrder,failure.user,tomorrow]);
+    await cp.goto(`${base}/checkout/review?order=${monthOrder}`,{waitUntil:"networkidle"});
+    await cp.getByLabel("Personal code",{exact:true}).fill("MMA-0000000000000000");
+    await cp.getByRole("button",{name:"Apply code",exact:true}).click();
+    await cp.getByText("This code is not valid for your account.",{exact:true}).waitFor();
+    await cp.getByLabel("Personal code",{exact:true}).fill(personalCode);
+    await cp.getByRole("button",{name:"Apply code",exact:true}).click();
+    await cp.getByText("Welcome-back offer · 5%",{exact:true}).waitFor();
+    await cp.getByRole("button",{name:"Pay ₹68.90",exact:true}).waitFor();
+    assert.equal((await db.query("select discount_paise,total_paise from orders where id=$1",[monthOrder])).rows[0].discount_paise,310);
+    await noOverflow(cp);
+    await cp.screenshot({path:path.join(output,`${name}-welcome-back-checkout-mobile.png`),fullPage:true});
+    await cp.getByRole("button",{name:"Remove code",exact:true}).click();
+    await cp.getByRole("button",{name:"Pay ₹72",exact:true}).waitFor();
+    await cp.getByLabel("Personal code",{exact:true}).fill(personalCode);
+    await cp.getByRole("button",{name:"Apply code",exact:true}).click();
+    await cp.getByText("Welcome-back offer · 5%",{exact:true}).waitFor();
+    await cp.setViewportSize({width:1440,height:900});
+    await cp.screenshot({path:path.join(output,`${name}-welcome-back-checkout-desktop.png`),fullPage:true});
+    await cp.goto(`${base}/welcome-back`,{waitUntil:"networkidle"});
+    assert.equal(await cp.getByLabel("Your personal, one-use code").inputValue(),personalCode);
+    await cp.screenshot({path:path.join(output,`${name}-welcome-back-desktop.png`),fullPage:true});
+    await cp.goto(`${base}/account`,{waitUntil:"networkidle"});
+    await cp.locator("summary").filter({hasText:"Cancel plan"}).click();
+    await cp.getByRole("button",{name:"Cancel plan now",exact:true}).click();
+    await cp.getByText("Your plan is cancelled. No farm approval is needed.",{exact:true}).waitFor();
+    assert.equal((await db.query("select status from delivery_plans where id=$1",[monthPlan])).rows[0].status,"cancelled","monthly plans use the same immediate cancellation flow");
+    assert.equal((await db.query("select count(*) n from private.welcome_back_offers where user_id=$1",[failure.user])).rows[0].n,"1","repeated cancellations never mint another offer");
     assert.deepEqual(errors, []);
     results.push({
       engine: name,

@@ -74,7 +74,7 @@ export default async function CancellationRequestsPage({
       <InboxTabs active="requests" />
       <SpokenRequests history={showHistory} />
       <section className={styles.list}>
-        <h2>Account cancellation requests</h2>
+        <h2>Account cancellations</h2>
         {(data ?? []).length ? (
           data?.map((request) => (
             <article key={request.id}>
@@ -90,7 +90,7 @@ export default async function CancellationRequestsPage({
                         : "Delivery plan")}
                   </span>
                 </div>
-                <b>{request.status}</b>
+                <b>{request.plan_id && request.status === "completed" ? "Cancelled by customer" : request.status}</b>
               </div>
               <p>{request.reason}</p>
               <small>
@@ -100,7 +100,7 @@ export default async function CancellationRequestsPage({
                   timeZone: "Asia/Kolkata",
                 })}
               </small>
-              {request.status === "requested" ? (
+              {request.status === "requested" && !request.plan_id ? (
                 <FarmForm action={resolveCancellationRequest}>
                   <input name="requestId" type="hidden" value={request.id} />
                   <label>

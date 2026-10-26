@@ -12,10 +12,10 @@ import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 import {
   markNotificationsRead,
-  requestPlanCancellation,
   signOut,
 } from "./actions";
 import styles from "./account.module.css";
+import { PlanCancellationForm } from "./plan-cancellation-form";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -332,31 +332,7 @@ export default async function AccountPage({
                       <Link href={`/calendar?plan=${currentPlan.id}`}>
                         Open calendar
                       </Link>
-                      <details className={styles.cancelRequest}>
-                        <summary>Request cancellation</summary>
-                        <p>
-                          The farm reviews preparation and dispatch first. Paid
-                          milk is not automatically refunded.
-                        </p>
-                        <form action={requestPlanCancellation}>
-                          <input
-                            name="planId"
-                            type="hidden"
-                            value={currentPlan.id}
-                          />
-                          <label>
-                            Reason
-                            <textarea
-                              className={styles.reasonField}
-                              name="reason"
-                              required
-                              minLength={3}
-                              rows={3}
-                            />
-                          </label>
-                          <button type="submit">Send request</button>
-                        </form>
-                      </details>
+
                     </article>
                   );
                 })}
@@ -488,29 +464,20 @@ export default async function AccountPage({
                 Edit normal week
               </Link>
             </div>
-            {(deliveryPlans?.length ?? 0) === 1 ? (
-              <details className={styles.cancelRequest}>
-                <summary>Request plan cancellation</summary>
-                <p>
-                  The farm reviews the request against preparation and dispatch
-                  status. Paid milk is not automatically refunded.
-                </p>
-                <form action={requestPlanCancellation}>
-                  <input name="planId" type="hidden" value={deliveryPlan.id} />
-                  <label>
-                    Reason
-                    <textarea
-                      className={styles.reasonField}
-                      name="reason"
-                      required
-                      minLength={3}
-                      rows={3}
-                    />
-                  </label>
-                  <button type="submit">Send request</button>
-                </form>
-              </details>
-            ) : null}
+
+          </section>
+        ) : null}
+
+        {(deliveryPlans?.length ?? 0) > 0 ? (
+          <section className={styles.accountSection} aria-labelledby="manage-plans-heading">
+            <div className={styles.sectionHeading}>
+              <h2 id="manage-plans-heading">Manage your plans</h2>
+              <p>Cancel any current plan immediately. No farm approval is needed.</p>
+            </div>
+            {deliveryPlans?.map((plan, index) => (
+              <PlanCancellationForm key={plan.id} planId={plan.id}
+                label={deliveryPlans.length === 1 ? "Cancel plan" : `Cancel plan ${index + 1} · starts ${formatPlanStartDate(plan.start_date)}`} />
+            ))}
           </section>
         ) : null}
 
@@ -620,11 +587,12 @@ export default async function AccountPage({
             className={styles.requestSection}
             aria-labelledby="request-heading"
           >
-            <h2 id="request-heading">Cancellation requests</h2>
+            <h2 id="request-heading">Cancellation history</h2>
+            {cancellationRequests?.some((request) => request.plan_id && ["completed", "approved"].includes(request.status)) && <p><Link href="/welcome-back">Thinking of coming back? View your personal welcome-back offer.</Link></p>}
             {cancellationRequests?.map((request) => (
               <article key={request.id}>
                 <div>
-                  <strong>{request.status.replaceAll("_", " ")}</strong>
+                  <strong>{request.plan_id && ["completed", "approved"].includes(request.status) ? "Plan cancelled" : request.status.replaceAll("_", " ")}</strong>
                   <span>{request.reason}</span>
                 </div>
                 {request.resolution_note ? (
