@@ -31,7 +31,7 @@ export async function cancelPlan(formData: FormData) {
   const planId = String(formData.get("planId") ?? "");
   const reason = String(formData.get("reason") ?? "").trim();
   if (!/^[0-9a-f-]{36}$/i.test(planId) || reason.length > 500) {
-    redirect("/account?error=Choose+a+valid+plan+and+keep+the+reason+under+500+characters.");
+    redirect("/account?section=deliveries&error=Choose+a+valid+plan+and+keep+the+reason+under+500+characters.");
   }
   const { error } = await supabase.rpc("cancel_my_delivery_plan", {
     p_plan_id: planId,
@@ -39,10 +39,10 @@ export async function cancelPlan(formData: FormData) {
   });
   if (error) {
     console.error("Customer plan cancellation failed", { code: error.code });
-    redirect("/account?error=We+could+not+confirm+cancellation.+Please+try+again.");
+    redirect("/account?section=deliveries&error=We+could+not+confirm+cancellation.+Please+try+again.");
   }
   revalidatePath("/account");
   revalidatePath("/calendar");
   revalidatePath("/farm", "layout");
-  redirect("/account?message=Your+plan+is+cancelled.+No+farm+approval+is+needed.");
+  redirect("/account?section=deliveries&message=Your+plan+is+cancelled.+No+farm+approval+is+needed.");
 }

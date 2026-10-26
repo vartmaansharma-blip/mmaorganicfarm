@@ -534,7 +534,7 @@ try {
     await ownerContext.close();
     const customerContext = await contextFor(browser, failure.user);
     const cp = await customerContext.newPage();
-    await cp.goto(`${base}/account`, { waitUntil: "networkidle" });
+    await cp.goto(`${base}/account?section=deliveries`, { waitUntil: "networkidle" });
     await cp
       .getByRole("region", { name: "Confirmed delivery outcomes" })
       .getByText(/Attempt failed/)
@@ -594,7 +594,7 @@ try {
     await cp.goto(`${base}/welcome-back`,{waitUntil:"networkidle"});
     assert.equal(await cp.getByLabel("Your personal, one-use code").inputValue(),personalCode);
     await cp.screenshot({path:path.join(output,`${name}-welcome-back-desktop.png`),fullPage:true});
-    await cp.goto(`${base}/account`,{waitUntil:"networkidle"});
+    await cp.goto(`${base}/account?section=deliveries`,{waitUntil:"networkidle"});
     await cp.locator("summary").filter({hasText:"Cancel plan"}).click();
     await cp.getByRole("button",{name:"Cancel plan now",exact:true}).click();
     await cp.getByText("Your plan is cancelled. No farm approval is needed.",{exact:true}).waitFor();

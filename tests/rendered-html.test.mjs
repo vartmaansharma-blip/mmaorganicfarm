@@ -507,7 +507,8 @@ test("shows a real customer account after authentication", async () => {
   assert.match(accountLink, /onAuthStateChange/);
   assert.match(accountLink, /\/account/);
   assert.match(accountPage, /customer_profiles/);
-  assert.match(accountPage, /<h1>Profile<\/h1>/);
+  assert.match(accountPage, /<TodayDelivery initial=\{todaySnapshot\}/);
+  assert.match(accountPage, /<AccountNavigation section=\{section\}/);
   assert.doesNotMatch(accountPage, /<h1>Your account<\/h1>/);
   assert.match(accountPage, /Google connected/);
   assert.match(accountPage, /hasDeliveryDetails/);
