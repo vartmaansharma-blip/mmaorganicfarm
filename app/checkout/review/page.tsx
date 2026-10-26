@@ -15,7 +15,6 @@ import { paymentModeError } from "@/lib/payment-mode";
 import { hasRazorpayConfig } from "@/lib/razorpay";
 import { createClient } from "@/lib/supabase/server";
 import { RazorpayCheckoutButton } from "./razorpay-checkout-button";
-import { CouponForm } from "./coupon-form";
 import styles from "./review.module.css";
 export const metadata: Metadata = {
   title: "Review your order",
@@ -41,7 +40,7 @@ export default async function ReviewPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,subtotal_paise,total_paise,discount_code,discount_paise,phone_snapshot,address_snapshot",
+      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
     )
     .eq("id", orderId)
     .eq("user_id", user.id)
@@ -71,12 +70,6 @@ export default async function ReviewPage({
   const rules = monthly
     ? validateRoutines(monthly.start_date, monthly.schedule_rules)
     : null;
-  const { data: personalOffer } =
-    monthly && !order.is_test
-      ? await supabase.rpc("my_welcome_back_offer")
-      : { data: null };
-  const canUseWelcomeBackCode =
-    personalOffer && ["available", "reserved"].includes(personalOffer.state);
   const help = encodeURIComponent(
     `Hello M'ma Organic Farm, I need help with order ${order.id.slice(0, 8).toUpperCase()}.`,
   );
@@ -168,8 +161,7 @@ export default async function ReviewPage({
                 {formatCheckoutAmount(
                   Math.max(
                     0,
-                    order.total_paise +
-                      order.discount_paise -
+                    order.total_paise -
                       order.subtotal_paise -
                       order.bottle_charge_paise,
                   ),
@@ -180,12 +172,6 @@ export default async function ReviewPage({
               <div>
                 <dt>New glass bottles ({Number(order.milk_litres)})</dt>
                 <dd>{formatCheckoutAmount(order.bottle_charge_paise)}</dd>
-              </div>
-            )}
-            {order.discount_paise > 0 && (
-              <div className={styles.saving}>
-                <dt>Welcome-back offer · 5%</dt>
-                <dd>−{formatCheckoutAmount(order.discount_paise)}</dd>
               </div>
             )}
             <div className={styles.total}>
@@ -199,13 +185,6 @@ export default async function ReviewPage({
               <dd>{formatCheckoutAmount(order.total_paise)}</dd>
             </div>
           </dl>
-          {canUseWelcomeBackCode && (
-            <CouponForm
-              orderId={order.id}
-              code={order.discount_code}
-              locked={order.status !== "draft"}
-            />
-          )}
         </section>
         {monthly ? (
           <MonthlyPlan

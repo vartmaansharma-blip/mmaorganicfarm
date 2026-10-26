@@ -124,6 +124,7 @@ export async function createDatabase() {
     );
     await db.query(await readFile(new URL("../../supabase/migrations/20261026060953_customer_plan_cancellation.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../supabase/migrations/20261026062639_welcome_back_checkout_code.sql", import.meta.url), "utf8"));
+    await db.query(await readFile(new URL("../../supabase/migrations/20261026111243_retire_welcome_back_discount.sql", import.meta.url), "utf8"));
   } catch (error) {
     await db.end();
     await server.stop();

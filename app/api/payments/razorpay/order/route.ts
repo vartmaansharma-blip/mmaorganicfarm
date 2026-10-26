@@ -1,5 +1,4 @@
 import { paymentModeError } from "@/lib/payment-mode";
-import { discountedCheckoutAmount } from "@/lib/checkout-discount";
 import { NextResponse } from "next/server";
 import { quoteStoredMonthlyCheckout } from "@/lib/monthly-checkout";
 import { quoteStoredCheckout } from "@/lib/checkout-quote";
@@ -60,6 +59,8 @@ export async function POST(request: Request) {
       { error: "This order is not available for payment." },
       { status: 409 },
     );
+  if (order.discount_paise > 0 || order.discount_code)
+    return NextResponse.json({ error: "Review a new order at the regular product price." }, { status: 409 });
   const modeError = paymentModeError(order.is_test);
   if (modeError) return NextResponse.json({ error: modeError }, { status: 409 });
   if (body.expectedAmountPaise !== order.total_paise)
@@ -141,12 +142,7 @@ export async function POST(request: Request) {
           order.purchase_mode,
           plan,
         );
-    amount = discountedCheckoutAmount(
-      Math.round(quote.total * 100),
-      Math.round((quote.total - (quote.bottleCharge ?? 0) - (quote.deliveryCharge ?? 0)) * 100),
-      Boolean(monthly),
-      order,
-    );
+    amount = Math.round(quote.total * 100);
   } catch {
     return NextResponse.json(
       {

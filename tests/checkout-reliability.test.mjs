@@ -198,17 +198,16 @@ test('monthly claim reuses a provider order bound after the first read', async (
   assert.equal(r.providerCalls, 0);
 });
 
-test('personal discount charges the exact reduced amount and rejects a stale browser invoice', async () => {
+test('retired discounts and stale browser totals cannot start a provider payment', async () => {
   const r = await prepare({ coupon: true });
-  assert.equal(r.result.status, 200);
-  assert.equal(r.providerAmount, 5890);
-  assert.equal(r.result.body.amount, 5890);
-  const stale = await prepare({ coupon: true, expectedAmount: 6200 });
+  assert.equal(r.result.status, 409);
+  assert.equal(r.providerCalls, 0);
+  const stale = await prepare({ expectedAmount: 6000 });
   assert.equal(stale.result.status, 409);
   assert.equal(stale.providerCalls, 0);
   assert.equal(stale.reserved, 0);
 });
-test('fractional discounts display the exact paise that checkout charges', () => {
+test('checkout displays exact paise amounts', () => {
   const { formatCheckoutAmount } = load('lib/checkout-display.ts');
   assert.equal(formatCheckoutAmount(6890), '₹68.90');
   assert.equal(formatCheckoutAmount(310), '₹3.10');

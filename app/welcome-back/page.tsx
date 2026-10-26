@@ -2,55 +2,43 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PersonalOfferCode } from "./personal-offer-code";
 import styles from "./welcome-back.module.css";
 
+const title = "M’ma awaits you.";
+const description =
+  "Come back to fresh milk, paneer and ghee. Plan your next delivery with M’ma Organic Farm.";
 export const metadata: Metadata = {
-  title: "Fresh mornings, again · M’ma Organic Farm",
-  description:
-    "A fresh start for returning customers. Get 5% off the products in your first monthly plan back with your personal welcome-back code.",
+  title,
+  description,
   alternates: { canonical: "/welcome-back" },
   openGraph: {
-    title: "Fresh mornings, again · M’ma Organic Farm",
-    description:
-      "5% off the products in your first month back, with your personal one-use code.",
+    title,
+    description,
     url: "/welcome-back",
     images: [
       {
-        url: "/offers/welcome-back-v2.png",
+        url: "/offers/welcome-back-v3.png",
         width: 1254,
         height: 1254,
-        alt: "M’ma awaits you. 5% off your first month back.",
+        alt: "M’ma awaits you. Milk, paneer and ghee against a cinematic black backdrop.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fresh mornings, again · M’ma Organic Farm",
-    description: "5% off the products in your first month back.",
-    images: ["/offers/welcome-back-v2.png"],
+    title,
+    description,
+    images: ["/offers/welcome-back-v3.png"],
   },
   robots: { index: false, follow: true },
 };
 export const dynamic = "force-dynamic";
-type Offer = {
-  code: string;
-  state: "available" | "reserved" | "redeemed";
-  order_id: string | null;
-};
 
 export default async function WelcomeBackPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  let offer: Offer | null = null;
-  let unavailable = false;
-  if (user) {
-    const { data, error } = await supabase.rpc("my_welcome_back_offer");
-    offer = data as Offer | null;
-    unavailable = Boolean(error);
-  }
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -68,95 +56,43 @@ export default async function WelcomeBackPage() {
       </header>
       <section className={styles.hero}>
         <div className={styles.copy}>
-          <span className={styles.eyebrow}>A little welcome back</span>
+          <span className={styles.eyebrow}>Your fresh start</span>
           <h1>
-            Fresh mornings,
+            M&apos;ma
             <br />
-            again.
+            awaits you.
           </h1>
           <p>
-            Come back to the milk you love. Make a new monthly plan around your
-            mornings, with fresh milk, paneer and ghee on the dates you choose.
+            The mornings you loved are waiting. Fresh milk, soft paneer and
+            golden ghee, brought back into your everyday.
           </p>
-          <div className={styles.offer}>
-            <span className={styles.percent}>
-              5% <small>off</small>
-            </span>
+          <div className={styles.invitation}>
+            <span aria-hidden="true">↗</span>
             <div>
-              <h2>Your first month back</h2>
-              <p>On your products, with your personal code at checkout.</p>
+              <h2>Come back to fresh.</h2>
+              <p>
+                Choose the products and delivery dates that feel right for you.
+              </p>
             </div>
           </div>
-          {!user ? (
-            <>
-              <Link
-                className={styles.primary}
-                href="/sign-in?next=%2Fwelcome-back"
-              >
-                Sign in to see my code <span aria-hidden="true">↗</span>
-              </Link>
-              <p className={styles.hint}>
-                Use the same account as your cancelled plan.
-              </p>
-            </>
-          ) : unavailable ? (
-            <p role="status">
-              We couldn&apos;t load your offer. Please try again shortly.
-            </p>
-          ) : offer?.state === "redeemed" ? (
-            <>
-              <p className={styles.notice}>
-                You&apos;ve already used your welcome-back offer. Your fresh
-                mornings can still continue.
-              </p>
-              <Link className={styles.primary} href="/shop">
-                Plan my deliveries <span aria-hidden="true">↗</span>
-              </Link>
-            </>
-          ) : offer ? (
-            <>
-              <PersonalOfferCode code={offer.code} />
-              <Link
-                className={styles.primary}
-                href={
-                  offer.state === "reserved" && offer.order_id
-                    ? `/checkout/review?order=${offer.order_id}`
-                    : "/shop"
-                }
-              >
-                {offer.state === "reserved"
-                  ? "Continue my checkout"
-                  : "Build my monthly plan"}{" "}
-                <span aria-hidden="true">↗</span>
-              </Link>
-              <p className={styles.hint}>
-                {offer.state === "reserved"
-                  ? "Your code is attached to this checkout. You can remove it before payment starts."
-                  : "Copy your code, choose your dates, then apply it when reviewing checkout."}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className={styles.notice}>
-                This offer is for customers returning after cancelling a paid
-                plan, before purchasing their first month back.
-              </p>
-              <Link className={styles.primary} href="/shop">
-                Explore monthly plans <span aria-hidden="true">↗</span>
-              </Link>
-            </>
-          )}
+          <Link className={styles.primary} href="/shop">
+            Plan my fresh start <span aria-hidden="true">↗</span>
+          </Link>
+          <p className={styles.hint}>
+            Browse freely. Sign in with your existing account when you&apos;re
+            ready to checkout.
+          </p>
           <p className={styles.terms}>
-            One offer per customer. Valid on a new prepaid calendar-month plan
-            after your first paid-plan cancellation. A second cancellation does
-            not renew this offer. Bottle charges and delivery are excluded.
-            Other offers cannot be combined. No cash refund.
+            Need help changing your next delivery?{" "}
+            <a href="https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20help%20rejoining%20or%20rescheduling%20my%20deliveries.">
+              Talk to the farm on WhatsApp.
+            </a>
           </p>
         </div>
         <div className={styles.picture}>
           <Image
-            src="/offers/welcome-back-v2.png"
-            alt="M’ma milk centred between fresh paneer and golden ghee against a black backdrop with soft mist. M’ma awaits you. 5% off your first month back."
+            src="/offers/welcome-back-v3.png"
+            alt="M’ma milk centred between paneer and ghee, with mist on a black backdrop. M’ma awaits you. Come back to fresh."
             width={1254}
             height={1254}
             priority

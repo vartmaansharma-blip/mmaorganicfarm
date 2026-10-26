@@ -591,7 +591,7 @@ export default async function AccountPage({
             aria-labelledby="request-heading"
           >
             <h2 id="request-heading">Cancellation history</h2>
-            {cancellationRequests?.some((request) => request.plan_id && ["completed", "approved"].includes(request.status)) && <p><Link href="/welcome-back">Thinking of coming back? View your personal welcome-back offer.</Link></p>}
+            {cancellationRequests?.some((request) => request.plan_id && ["completed", "approved"].includes(request.status)) && <p><Link href="/welcome-back">Ready to rejoin? Plan your fresh start.</Link></p>}
             {cancellationRequests?.map((request) => (
               <article key={request.id}>
                 <div>

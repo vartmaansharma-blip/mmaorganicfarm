@@ -61,35 +61,34 @@
   max-width: 47ch;
   color: #496454;
 }
-.offer {
+.invitation {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   align-items: center;
-  margin: 26px 0;
-  padding: 18px 22px;
-  border: 1px solid #efd67b;
-  background: #fff2bc;
-  border-radius: 22px;
+  margin: 28px 0;
+  padding: 20px 0;
+  border-block: 1px solid #dce5d8;
 }
-.percent {
-  white-space: nowrap;
-  font-size: 45px;
-  font-weight: 750;
-  letter-spacing: -0.07em;
+.invitation > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #ffc857;
+  color: #143d2b;
+  font-size: 22px;
+  flex-shrink: 0;
 }
-.percent small {
-  font-size: 16px;
-  letter-spacing: 0;
-}
-.offer h2 {
+.invitation h2 {
+  margin: 0 0 7px;
   font: 650 18px var(--font-sans);
-  margin: 0 0 6px;
 }
-.offer p {
+.invitation p {
   margin: 0;
+  color: #496454;
   font-size: 13px;
-  line-height: 1.5;
-  color: #536039;
+  line-height: 1.6;
 }
 .primary {
   min-height: 52px;
@@ -136,46 +135,6 @@
   width: 100%;
   height: auto;
 }
-.codeBox {
-  padding: 18px;
-  border: 1px dashed #87af90;
-  border-radius: 18px;
-  background: white;
-}
-.codeBox label {
-  font-size: 12px;
-  font-weight: 650;
-}
-.codeBox > div {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-.codeBox input {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  background: transparent;
-  font: 600 16px monospace;
-  letter-spacing: 0.02em;
-  color: #143d2b;
-}
-.codeBox button {
-  border: 1px solid #a6c7ac;
-  border-radius: 99px;
-  min-height: 44px;
-  padding: 10px 14px;
-  background: #e7f4eb;
-  color: #14553a;
-  font-weight: 650;
-  cursor: pointer;
-}
-.codeBox p {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: #496454;
-  min-height: 18px;
-}
 .page :is(a, button, input):focus-visible {
   outline: 3px solid #e19c16;
   outline-offset: 4px;
@@ -210,7 +169,7 @@
   .copy > p {
     font-size: 15px;
   }
-  .offer {
+  .invitation {
     margin: 22px 0;
   }
   .primary {
@@ -224,4 +183,9 @@
   .page * {
     scroll-behavior: auto;
   }
+}
+
+.terms a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
