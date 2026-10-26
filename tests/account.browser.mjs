@@ -83,6 +83,8 @@ try{
    for(const state of ['preparing','delivered','partial','none','pending','paused']){
     scenario=state;fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});
     const expected={preparing:'preparing',delivered:'delivered',partial:'attention',none:'none',pending:'setup',paused:'paused'}[state];assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),expected);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${state} overflow`);
+    if(state==='pending'){assert.equal(await page.getByRole('link',{name:'Orders & payment →',exact:true}).getAttribute('href'),'/account?section=orders');assert.ok((await page.locator('[data-scene-state]').boundingBox()).height<110,'unconfirmed delivery scene stays compact');}
     if(state!=='out')assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).count(),0);
     await page.screenshot({path:path.join(output,`${engine}-390-${state}.png`),fullPage:true});
    }
