@@ -17,10 +17,10 @@ export const metadata: Metadata = {
     url: "/welcome-back",
     images: [
       {
-        url: "/offers/welcome-back-v1.png",
+        url: "/offers/welcome-back-v2.png",
         width: 1254,
         height: 1254,
-        alt: "Fresh mornings, again. 5% off your first month back.",
+        alt: "M’ma awaits you. 5% off your first month back.",
       },
     ],
   },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Fresh mornings, again · M’ma Organic Farm",
     description: "5% off the products in your first month back.",
-    images: ["/offers/welcome-back-v1.png"],
+    images: ["/offers/welcome-back-v2.png"],
   },
   robots: { index: false, follow: true },
 };
@@ -155,8 +155,8 @@ export default async function WelcomeBackPage() {
         </div>
         <div className={styles.picture}>
           <Image
-            src="/offers/welcome-back-v1.png"
-            alt="M’ma milk on a sunlit breakfast table. Fresh mornings, again. 5% off your first month back."
+            src="/offers/welcome-back-v2.png"
+            alt="M’ma milk centred between fresh paneer and golden ghee against a black backdrop with soft mist. M’ma awaits you. 5% off your first month back."
             width={1254}
             height={1254}
             priority

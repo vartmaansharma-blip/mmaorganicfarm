@@ -24,7 +24,7 @@ A customer cancels a paid plan immediately, without farm approval. The cancellat
 
 ## WhatsApp creative prepared for provider approval
 
-Header image: https://mmaorganicfarm.vercel.app/offers/welcome-back-v1.png
+Header image: https://mmaorganicfarm.vercel.app/offers/welcome-back-v2.png
 
 Welcome back to M’ma Organic Farm 🌿
 Fresh mornings are waiting for you. Enjoy 5% off the products in your first monthly plan back.
@@ -41,8 +41,10 @@ This is prepared content, not a live sending integration. No WhatsApp Business A
 
 ## Image provenance
 
-Built-in image-generation tool; product and logo references from public/farm-bottle.png and public/mma-logo.png. The output is a promotional lifestyle illustration, not new documentary photography. Final asset: public/offers/welcome-back-v1.png.
+Built-in image-generation tool; product and logo references from public/farm-bottle.png and public/mma-logo.png. The output is a promotional lifestyle illustration, not new documentary photography. Final asset: public/offers/welcome-back-v2.png.
+
+Selected direction: black backdrop, milk in the centre, paneer on the left, ghee on the right, mist behind the products, ivory and gold type. Headline: M’ma awaits you. The personal code stays in message text, not in the public artwork.
 
 Final prompt:
 
-Create a polished square 1200x1200 welcome-back campaign image for M’ma Organic Farm in India, using reference image 1 as the exact milk bottle product reference and image 2 as the exact farm heart logo. Preserve the bottle and its label faithfully. Design a warm, lively but calm editorial composition: milk bottle on a rustic breakfast table in soft morning sunlight, fresh green grass and a softly blurred farm beyond, a small cup of milk, tasteful orange/mango brand accents, ample clean cream negative space in the upper left. Place the supplied orange heart logo small and clean at upper right with no white rectangular tile. Main elegant readable dark forest green typography, verbatim: “Fresh mornings, again.” Secondary text verbatim: “5% off your first month back”. Bottom small readable line verbatim: “Your personal code. Your fresh start.” This is an evocative branded lifestyle promotion, not a claim of a newly photographed real farm location. No sample coupon code, no QR code, no fake buttons, no fabricated certification or health claims, no extra text, no watermark. Modern, welcoming, beautifully lit, high quality WhatsApp marketing creative.
+Create a striking square luxury dairy welcome-back WhatsApp campaign image, 1536x1536 feel, with a near-black charcoal studio background. Use reference image 1 for the exact M’ma milk bottle and its existing label; reference image 2 for the paneer itself; reference image 3 for the exact M’ma 500 g cow ghee jar and label; reference image 4 for the actual orange heart logo. Hero composition: tall cool white milk bottle exactly centred, a sculptural steel plate of fresh paneer and neat cubes lower left, golden ghee jar lower right; the three products form a balanced confident triangular arrangement on a slightly reflective dark slate pedestal. Soft pearl-white mist curls BEHIND the products only, dramatic soft rim light, warm amber highlights on ghee, crisp creamy whites, appetising textures, subtle reflections, deep blacks. The smoke is theatrical backdrop mist, products should look cool/fresh, not hot or steaming. Design as an arresting premium Indian farm brand campaign, art-directed and atmospheric, restrained not cluttered. Top centre in large elegant ivory editorial serif typography, exact text: “M’ma awaits you.” Under headline in small warm gold refined typography, exact text: “Your fresh start tastes better.” Bottom elegant high-contrast offer strip integrated in black, exact text: “5% off your first month back”. Tiny line below, exact text: “With your personal, one-use code”. Use small exact orange heart brand mark top right, without a white rectangular background. Preserve authentic product label designs. No public coupon code, no QR, no fake buttons, no flames, no extra products, no fake certifications, no extra claims, no watermarks. Clear typography readable at phone size; real breathing room around headline and products. This should feel cinematic, welcoming, memorable, a confident invitation back to M’ma Organic Farm.
