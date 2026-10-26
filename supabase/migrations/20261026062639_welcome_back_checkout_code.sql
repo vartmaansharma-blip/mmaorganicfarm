@@ -29,6 +29,9 @@ returns uuid language sql stable set search_path = '' as $$
   select c.id from public.cancellation_requests c
   join public.delivery_plans plan on plan.id=c.plan_id and plan.user_id=c.user_id
   where c.user_id=p_user and c.status in ('completed','approved')
+    and (select count(distinct first_cancel.plan_id) from public.cancellation_requests first_cancel
+      where first_cancel.user_id=p_user and first_cancel.plan_id is not null
+        and first_cancel.status in ('completed','approved'))=1
     and plan.status='cancelled' and not plan.is_test
     and coalesce(c.resolved_at,c.created_at)<=p_before
     and exists (
@@ -70,6 +73,8 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare v_result jsonb;
 begin
   if auth.uid() is null then raise exception 'Sign in to view your offer' using errcode='42501';end if;
+  if (select count(distinct plan_id) from public.cancellation_requests
+    where user_id=auth.uid() and plan_id is not null and status in ('completed','approved'))<>1 then return null;end if;
   v_result:=private.ensure_welcome_back_offer(auth.uid());
   if v_result->>'state'='available' and private.eligible_welcome_back_cancellation(auth.uid(),now()) is null then return null;end if;
   return v_result;

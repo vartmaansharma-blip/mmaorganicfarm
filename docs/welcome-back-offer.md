@@ -4,7 +4,8 @@ A customer cancels a paid plan immediately, without farm approval. The cancellat
 
 ## Offer rules
 
-- One lifetime offer per customer account; a later cancellation never resets a redeemed offer.
+- Only the first-ever plan cancellation can qualify. A second cancellation never creates, renews or re-enables an offer, even if the first code was unused. Repeated request retries for the same already-cancelled plan count as one cancellation.
+- One lifetime offer per customer account. The coupon section is hidden completely for new customers, customers with no cancellation, and customers who cancelled a second plan.
 - Each account receives its own random 16-character code, prefixed with MMA-. The code is bound to the authenticated owner, never a public shared coupon.
 - 5% of the product subtotal of the first new prepaid calendar-month plan after cancellation. Exclude bottle and delivery charges. Round once to the nearest paise.
 - Example: products ₹3,000, bottles ₹10, delivery ₹2 -> saving ₹150, amount payable ₹2,862.

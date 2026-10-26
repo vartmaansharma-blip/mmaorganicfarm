@@ -148,8 +148,9 @@ export default async function WelcomeBackPage() {
           )}
           <p className={styles.terms}>
             One offer per customer. Valid on a new prepaid calendar-month plan
-            after a paid-plan cancellation. Bottle charges and delivery are
-            excluded. Other offers cannot be combined. No cash refund.
+            after your first paid-plan cancellation. A second cancellation does
+            not renew this offer. Bottle charges and delivery are excluded.
+            Other offers cannot be combined. No cash refund.
           </p>
         </div>
         <div className={styles.picture}>

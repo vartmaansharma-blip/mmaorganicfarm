@@ -19,13 +19,15 @@ export function CouponForm({
     {} as CouponState,
   );
   return (
-    <div className={styles.coupon}>
-      <div>
-        <h3>Have a welcome-back code?</h3>
-        <p>
-          5% off your first month&apos;s products. One personal offer per
-          returning customer.
-        </p>
+    <section className={styles.coupon} aria-label="Your welcome-back offer">
+      <div className={styles.couponHeading}>
+        <span className={styles.offerBadge} aria-hidden="true">
+          5%
+        </span>
+        <div>
+          <h3>{code ? "Your 5% is applied" : "A little welcome back"}</h3>
+          <p>Just for your first month back.</p>
+        </div>
       </div>
       {locked ? (
         <p>
@@ -37,7 +39,7 @@ export function CouponForm({
         <form action={action}>
           <input type="hidden" name="order_id" value={orderId} />
           {code ? (
-            <>
+            <div className={styles.appliedRow}>
               <p className={styles.appliedCode}>{code}</p>
               <button
                 type="submit"
@@ -47,7 +49,7 @@ export function CouponForm({
               >
                 {pending ? "Updating…" : "Remove code"}
               </button>
-            </>
+            </div>
           ) : (
             <>
               <label htmlFor="checkout-code">Personal code</label>
@@ -67,18 +69,23 @@ export function CouponForm({
                   {pending ? "Applying…" : "Apply code"}
                 </button>
               </div>
-              <Link href="/welcome-back">Find my personal code</Link>
+              <p className={styles.couponHint}>
+                Your personal code takes 5% off products.{" "}
+                <Link href="/welcome-back">View my code ↗</Link>
+              </p>
             </>
           )}
         </form>
       )}
-      <p
-        role="status"
-        aria-live="polite"
-        className={state.error ? styles.couponError : styles.couponSuccess}
-      >
-        {state.error ?? state.message}
-      </p>
-    </div>
+      {(state.error || state.message) && (
+        <p
+          role="status"
+          aria-live="polite"
+          className={state.error ? styles.couponError : styles.couponSuccess}
+        >
+          {state.error ?? state.message}
+        </p>
+      )}
+    </section>
   );
 }

@@ -48,6 +48,7 @@ export default async function ReviewPage({
     .maybeSingle();
   if (!order) redirect("/milk");
   if (order.status === "paid") redirect(`/checkout/success?order=${order.id}`);
+  if (order.status === "cancelled") redirect("/account");
   const { data: items } = await supabase
     .from("order_items")
     .select(
@@ -70,6 +71,12 @@ export default async function ReviewPage({
   const rules = monthly
     ? validateRoutines(monthly.start_date, monthly.schedule_rules)
     : null;
+  const { data: personalOffer } =
+    monthly && !order.is_test
+      ? await supabase.rpc("my_welcome_back_offer")
+      : { data: null };
+  const canUseWelcomeBackCode =
+    personalOffer && ["available", "reserved"].includes(personalOffer.state);
   const help = encodeURIComponent(
     `Hello M'ma Organic Farm, I need help with order ${order.id.slice(0, 8).toUpperCase()}.`,
   );
@@ -151,7 +158,10 @@ export default async function ReviewPage({
             ))}
           </div>
           <dl className={styles.totals}>
-            <div><dt>Products</dt><dd>{formatCheckoutAmount(order.subtotal_paise)}</dd></div>
+            <div>
+              <dt>Products</dt>
+              <dd>{formatCheckoutAmount(order.subtotal_paise)}</dd>
+            </div>
             <div>
               <dt>Delivery</dt>
               <dd>
@@ -172,7 +182,12 @@ export default async function ReviewPage({
                 <dd>{formatCheckoutAmount(order.bottle_charge_paise)}</dd>
               </div>
             )}
-            {order.discount_paise > 0 && <div className={styles.saving}><dt>Welcome-back offer · 5%</dt><dd>−{formatCheckoutAmount(order.discount_paise)}</dd></div>}
+            {order.discount_paise > 0 && (
+              <div className={styles.saving}>
+                <dt>Welcome-back offer · 5%</dt>
+                <dd>−{formatCheckoutAmount(order.discount_paise)}</dd>
+              </div>
+            )}
             <div className={styles.total}>
               <dt>
                 {monthly
@@ -184,7 +199,13 @@ export default async function ReviewPage({
               <dd>{formatCheckoutAmount(order.total_paise)}</dd>
             </div>
           </dl>
-          {monthly && !order.is_test && <CouponForm orderId={order.id} code={order.discount_code} locked={order.status !== "draft"} />}
+          {canUseWelcomeBackCode && (
+            <CouponForm
+              orderId={order.id}
+              code={order.discount_code}
+              locked={order.status !== "draft"}
+            />
+          )}
         </section>
         {monthly ? (
           <MonthlyPlan

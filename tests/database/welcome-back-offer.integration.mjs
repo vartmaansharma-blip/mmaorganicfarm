@@ -251,7 +251,7 @@ test("payment freezes the code and paid retries consume it once; another cancell
   ]);
   const again = await checkout(f);
   await assert.rejects(apply(again, code), /already used/);
-  assert.equal((await offer(f)).code, code);
+  assert.equal(await offer(f), null);
 });
 test("legacy credit plans and invoices created before cancellation cannot use the first-month offer", async () => {
   const legacy = await checkout(await customer(), { monthly: false });
@@ -309,5 +309,22 @@ test("payment preparation rejects a stale reviewed total before freezing checkou
   await assert.rejects(claim(f, 301100), /total changed/);
   assert.equal((await order(f)).status, 'draft');
   await assert.rejects(callAs(db, f.user, 'select claim_monthly_checkout_total($1,$2,$3)', [f.newOrder, JSON.stringify(f.rules), 286100]), /permission denied/);
+});
+test("a second cancellation hides and invalidates even an unused first offer", async () => {
+  const f = await checkout(await customer()), code = (await offer(f)).code;
+  await apply(f, code);
+  await callAs(db, f.user, 'select cancel_my_delivery_plan($1,null)', [f.newPlan]);
+  assert.equal(await offer(f), null);
+  assert.equal((await order(f)).status, 'cancelled');
+  assert.equal((await order(f)).discount_paise, 0);
+  const next = await checkout(f);
+  await assert.rejects(apply(next, code), /after cancelling a paid plan/);
+  assert.equal((await db.query('select count(*) n from private.welcome_back_offers where user_id=$1', [f.user])).rows[0].n, '1');
+});
+test("a legacy retry for the same cancelled plan does not count as a second cancellation", async () => {
+  const f = await customer();
+  const code = (await offer(f)).code;
+  await callAs(db, f.user, "insert into cancellation_requests(user_id,plan_id,reason) values($1,$2,'Legacy retry')", [f.user,f.plan]);
+  assert.equal((await offer(f)).code, code);
 });
 test.after(() => runtime.stop());

@@ -147,6 +147,14 @@ async function contextFor(browser, user, width = 390) {
   ]);
   return context;
 }
+async function draftMonthlyCheckout(user) {
+  const rules=[{id:"milk",quantity:1,repeat:"custom",firstDate:tomorrow,dates:[tomorrow]}];
+  const plan=(await callAs(db,user,"select save_pending_monthly_plan($1,'new',$2) id",[tomorrow,JSON.stringify(rules)])).rows[0].id;
+  const order=randomUUID();
+  await db.query("insert into orders(id,user_id,delivery_plan_id,purchase_mode,status,bottle_choice,subtotal_paise,bottle_charge_paise,total_paise,milk_litres,start_date,phone_snapshot,address_snapshot) values($1,$2,$3,'plan','draft','new',6200,1000,7200,1,$4,'0000000000','Synthetic address')",[order,user,plan,tomorrow]);
+  await db.query("insert into order_items(order_id,user_id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,scheduled_days,delivery_date) values($1,$2,'milk','Fresh farm milk',1,'litre',6200,6200,'once','{}',$3)",[order,user,tomorrow]);
+  return {plan,order};
+}
 async function noOverflow(page) {
   assert.equal(
     await page.evaluate(
@@ -564,11 +572,7 @@ try {
     assert.match(personalCode,/^MMA-[A-F0-9]{16}$/);
     await noOverflow(cp);
     await cp.screenshot({path:path.join(output,`${name}-welcome-back-mobile.png`),fullPage:true});
-    const monthRules=[{id:"milk",quantity:1,repeat:"custom",firstDate:tomorrow,dates:[tomorrow]}];
-    const monthPlan=(await callAs(db,failure.user,"select save_pending_monthly_plan($1,'new',$2) id",[tomorrow,JSON.stringify(monthRules)])).rows[0].id;
-    const monthOrder=randomUUID();
-    await db.query("insert into orders(id,user_id,delivery_plan_id,purchase_mode,status,bottle_choice,subtotal_paise,bottle_charge_paise,total_paise,milk_litres,start_date,phone_snapshot,address_snapshot) values($1,$2,$3,'plan','draft','new',6200,1000,7200,1,$4,'0000000000','Synthetic address')",[monthOrder,failure.user,monthPlan,tomorrow]);
-    await db.query("insert into order_items(order_id,user_id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,scheduled_days,delivery_date) values($1,$2,'milk','Fresh farm milk',1,'litre',6200,6200,'once','{}',$3)",[monthOrder,failure.user,tomorrow]);
+    const {plan:monthPlan,order:monthOrder}=await draftMonthlyCheckout(failure.user);
     await cp.goto(`${base}/checkout/review?order=${monthOrder}`,{waitUntil:"networkidle"});
     await cp.getByLabel("Personal code",{exact:true}).fill("MMA-0000000000000000");
     await cp.getByRole("button",{name:"Apply code",exact:true}).click();
@@ -596,6 +600,21 @@ try {
     await cp.getByText("Your plan is cancelled. No farm approval is needed.",{exact:true}).waitFor();
     assert.equal((await db.query("select status from delivery_plans where id=$1",[monthPlan])).rows[0].status,"cancelled","monthly plans use the same immediate cancellation flow");
     assert.equal((await db.query("select count(*) n from private.welcome_back_offers where user_id=$1",[failure.user])).rows[0].n,"1","repeated cancellations never mint another offer");
+    await cp.goto(`${base}/welcome-back`,{waitUntil:"networkidle"});
+    assert.equal(await cp.getByLabel("Your personal, one-use code").count(),0,"second cancellation must not show the first unused code");
+    const nextCheckout=await draftMonthlyCheckout(failure.user);
+    await cp.goto(`${base}/checkout/review?order=${nextCheckout.order}`,{waitUntil:"networkidle"});
+    assert.equal(await cp.getByRole("region",{name:"Your welcome-back offer",exact:true}).count(),0,"coupon section hidden after second cancellation");
+    await cp.screenshot({path:path.join(output,`${name}-second-cancellation-no-coupon.png`),fullPage:true});
+    const newUser=randomUUID();
+    await db.query("insert into auth.users(id,email) values($1,$2)",[newUser,`${newUser}@fixture.invalid`]);
+    const newCheckout=await draftMonthlyCheckout(newUser);
+    const newContext=await contextFor(browser,newUser),newPage=await newContext.newPage();
+    await newPage.goto(`${base}/checkout/review?order=${newCheckout.order}`,{waitUntil:"networkidle"});
+    assert.equal(await newPage.getByRole("region",{name:"Your welcome-back offer",exact:true}).count(),0,"coupon section hidden for a first-time customer");
+    await noOverflow(newPage);
+    await newPage.screenshot({path:path.join(output,`${name}-new-customer-no-coupon.png`),fullPage:true});
+    await newContext.close();
     assert.deepEqual(errors, []);
     results.push({
       engine: name,

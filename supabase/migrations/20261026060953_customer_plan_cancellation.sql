@@ -49,6 +49,10 @@ begin
   end if;
 
   update public.delivery_plans set status='cancelled',updated_at=now() where id=p_plan_id;
+  -- Close an unpaid, unbound draft for the stopped plan. A provider checkout or
+  -- captured payment remains intact because its financial outcome may be pending.
+  update public.orders set status='cancelled',updated_at=now()
+    where delivery_plan_id=p_plan_id and user_id=v_user and status='draft' and razorpay_order_id is null;
   -- A released route is not an approval gate. Preserve any physical outcome,
   -- partial quantity evidence and closed-day history instead of rewriting it.
   update public.daily_deliveries d set status='cancelled',updated_at=now()
