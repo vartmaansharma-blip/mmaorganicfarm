@@ -19,7 +19,8 @@
     "test:db": "node --test --test-concurrency=1 tests/database/*.integration.mjs",
     "test:operations:browser": "node tests/delivery-operations.browser.mjs",
     "test:account": "node tests/account.browser.mjs",
-    "test:routing": "node --test tests/database/routing-foundation.integration.mjs && node tests/routing.browser.mjs"
+    "test:routing": "node --test tests/database/routing-foundation.integration.mjs && node tests/routing.browser.mjs",
+    "test:driver-runs": "node --test tests/database/driver-runs.integration.mjs && node tests/driver-runs.browser.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",

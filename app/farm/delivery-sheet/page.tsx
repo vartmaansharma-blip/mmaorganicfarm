@@ -548,6 +548,7 @@ export default async function DeliverySheetPage({
       <DriverDay
         date={deliveryDate}
         selected={params.stop}
+        route={selectedRoute}
         routes={routeGroups}
         instructions={instructions}
         outcomes={deliveryOutcomes}

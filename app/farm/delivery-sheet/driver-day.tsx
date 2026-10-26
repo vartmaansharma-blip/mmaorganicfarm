@@ -35,6 +35,7 @@ type Stop = {
 export async function DriverDay({
   date,
   selected,
+  route,
   routes,
   instructions,
   outcomes,
@@ -42,6 +43,7 @@ export async function DriverDay({
 }: {
   date: string;
   selected?: string;
+  route?: string;
   routes: { name: string; stops: Stop[] }[];
   instructions: Map<string, string>;
   outcomes: Map<string, string>;
@@ -69,9 +71,10 @@ export async function DriverDay({
     : { data: [], error: null };
   if (requests.error) throw requests.error;
   const href = (id: string) =>
-    `/farm/delivery-sheet?${new URLSearchParams({ date, stop: id })}`;
+    `/farm/delivery-sheet?${new URLSearchParams({ date, stop: id, ...(route ? {route} : {}) })}`;
   return (
     <main className={styles.page}>
+      <Link prefetch={false} href={`/farm/runs?date=${date}`} className={styles.runBack}>← My delivery run</Link>
       <header className={styles.header}>
         <div>
           <p>Delivery staff</p>

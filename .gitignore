@@ -50,3 +50,5 @@ next-env.d.ts
 # Routing verification screenshots are delivered in the task outputs.
 /docs/screenshots/routing-foundation/*.png
 /docs/screenshots/routing-foundation-legacy/*.png
+# Driver-run screenshots are delivered in the task outputs.
+/docs/screenshots/driver-runs/*.png

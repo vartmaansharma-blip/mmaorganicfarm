@@ -1,0 +1,50 @@
+[
+  {
+    "engine": "chromium",
+    "width": 390,
+    "vehicleProfileAvailability": "passed",
+    "loadDriverCheckRelease": "passed",
+    "journeyAndDelivery": "passed",
+    "balancedCloseout": "passed",
+    "reportedDistance": 12.3,
+    "overflowAt320": "none",
+    "pageErrors": []
+  },
+  {
+    "engine": "chromium",
+    "width": 1440,
+    "vehicleProfileAvailability": "passed",
+    "loadDriverCheckRelease": "passed",
+    "journeyAndDelivery": "passed",
+    "balancedCloseout": "passed",
+    "reportedDistance": 12.3,
+    "overflowAt320": "none",
+    "pageErrors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 390,
+    "vehicleProfileAvailability": "passed",
+    "loadDriverCheckRelease": "passed",
+    "journeyAndDelivery": "passed",
+    "balancedCloseout": "passed",
+    "reportedDistance": 12.3,
+    "overflowAt320": "none",
+    "pageErrors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 1440,
+    "vehicleProfileAvailability": "passed",
+    "loadDriverCheckRelease": "passed",
+    "journeyAndDelivery": "passed",
+    "balancedCloseout": "passed",
+    "reportedDistance": 12.3,
+    "overflowAt320": "none",
+    "pageErrors": []
+  },
+  {
+    "schema": "legacy",
+    "fallback": "passed"
+  }
+]
