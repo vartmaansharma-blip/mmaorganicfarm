@@ -26,8 +26,9 @@ const stub=createServer(async(req,res)=>{
  res.setHeader('Content-Type','application/json');
  if(url.pathname==='/auth/v1/user'){res.end(JSON.stringify(user));return;}
  if(req.method!=='GET' && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
- if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
+ if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
+ if(url.pathname.endsWith("/farm_catalog_prices"))data={revision:"00000000-0000-4000-8000-000000000099",prices:{milk:6200,paneer:20000,ghee:37500,bottle:1000}};
  if(url.pathname.endsWith('/customer_profiles'))data={full_name:'Test Customer',email:user.email,avatar_url:null,phone:'9000000000',address_line:'Synthetic test address',postal_code:'400001'};
  if(url.pathname.endsWith('/delivery_plans'))data=scenario==='none'?[]:[plan()];
  if(url.pathname.endsWith('/daily_deliveries')){

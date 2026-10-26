@@ -25,7 +25,8 @@ export function deliveryChargeForSubtotal(
   date?: string,
   firstPlanStart?: string,
 ) {
-  if (subtotal <= 0 || subtotal > FREE_DELIVERY_ABOVE) return 0;
+  const currencySubtotal = Math.round(subtotal * 100) / 100;
+  if (currencySubtotal <= 0 || currencySubtotal > FREE_DELIVERY_ABOVE) return 0;
   if (mode === "plan" && date && firstPlanStart) {
     const end = firstMonthEnds(firstPlanStart);
     if (end && date >= firstPlanStart && date < end) return 0;

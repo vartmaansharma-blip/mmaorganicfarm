@@ -1,10 +1,12 @@
 "use client";
+import { useProductPricing } from "../components/product-pricing";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { SHOP_PRODUCTS } from "@/lib/shop-products";
 import styles from "./shop.module.css";
 export function ShopHero() {
+  const {prices} = useProductPricing();
   const [index, setIndex] = useState(0),
     [reduced, setReduced] = useState(false);
   const pressed = useRef(false);
@@ -83,7 +85,7 @@ export function ShopHero() {
         <div>
           <h2>{product.name}</h2>
           <p>
-            ₹{product.price} / {product.unit}
+            ₹{prices[product.id]} / {product.unit}
           </p>
         </div>
         <p>Tap the photograph to explore.</p>

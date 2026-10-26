@@ -1,3 +1,4 @@
+import { DEFAULT_PRODUCT_PRICES, type ProductPrices } from "./product-prices";
 import {
   FARM_PRODUCTS,
   serializeFarmProductSelections,
@@ -69,9 +70,9 @@ export function addCartProduct(
     };
   return next;
 }
-export function cartSelections(cart: ShopCart): FarmProductSelection[] {
+export function cartSelections(cart: ShopCart, prices: ProductPrices = DEFAULT_PRODUCT_PRICES): FarmProductSelection[] {
   return FARM_PRODUCTS.flatMap((p) =>
-    cart[p.id] ? [{ ...p, ...cart[p.id]! }] : [],
+    cart[p.id] ? [{ ...p, ...cart[p.id]!, price: prices[p.id] }] : [],
   );
 }
 export function cartRoutines(cart: ShopCart): ProductRoutine[] {
@@ -123,25 +124,29 @@ export function cartQuote(
   cart: ShopCart,
   mode: ShopMode,
   firstPlanStart?: string | null,
+  prices: ProductPrices = DEFAULT_PRODUCT_PRICES,
 ) {
   if (mode === "plan") {
     const rules = validateRoutines(cart.start, cartRoutines(cart));
     if (rules)
       return quoteMonthlySchedule({
+        prices,
         start: cart.start,
         rules,
         firstPlanStart: firstPlanStart ?? cart.start,
       });
     return calculateOrderPricing({
-      bottleChoice: "none",
+      prices,
+    bottleChoice: "none",
       milkLitres: 0,
       products: [],
     });
   }
   return calculateOrderPricing({
+    prices,
     bottleChoice: cart.milk ? "return" : "none",
     milkLitres: cart.milk?.quantity ?? 0,
-    products: cartSelections(cart).map((p) => ({
+    products: cartSelections(cart, prices).map((p) => ({
       ...p,
       frequency: "once",
       days: [],

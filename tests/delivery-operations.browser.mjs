@@ -12,7 +12,7 @@ import {
 const runtime = await createDatabase();
 const { db } = runtime;
 const bridge = await startFixtureServer(runtime.config);
-const output = path.resolve("docs/screenshots/delivery-operations");
+const output = path.resolve(process.env.OPERATIONS_ARTIFACT_DIR || "docs/screenshots/delivery-operations");
 await mkdir(output, { recursive: true });
 const port = 3165,
   base = `http://127.0.0.1:${port}`;
@@ -523,6 +523,8 @@ try {
     await noOverflow(mp);
     const ownerContext = await contextFor(browser, owner, 1440);
     const ownerPage = await ownerContext.newPage();
+    activePage=ownerPage;
+    ownerPage.on("pageerror",error=>errors.push(error.message));
     await ownerPage.goto(`${base}/farm/payments`, { waitUntil: "networkidle" });
     await ownerPage
       .getByRole("heading", { name: "Finance", exact: true })
@@ -530,6 +532,46 @@ try {
     await noOverflow(ownerPage);
     await ownerPage.screenshot({path:path.join(output,`${name}-page-finance.png`),fullPage:true});
     await ownerPage.setViewportSize({width:320,height:900});
+    await noOverflow(ownerPage);
+    await ownerPage.goto(`${base}/farm/settings`,{waitUntil:"networkidle"});
+    const priceField=ownerPage.getByLabel("Fresh milk price in rupees",{exact:true});
+    await priceField.fill("63.37");
+    await ownerPage.getByLabel("Reason for change",{exact:true}).fill("Synthetic owner price verification");
+    await ownerPage.getByRole("button",{name:"Save product prices",exact:true}).click();
+    await ownerPage.getByRole("status").filter({hasText:"Product prices saved"}).waitFor();
+    assert.equal((await db.query("select prices->>'milk' amount from farm_catalog_prices")).rows[0].amount,"6337");
+    assert.equal(new URL(ownerPage.url()).pathname,"/farm/settings");
+    await ownerPage.screenshot({path:path.join(output,`${name}-editable-prices-mobile.png`),fullPage:true});
+    await noOverflow(ownerPage);
+    await ownerPage.goto(`${base}/shop/milk`,{waitUntil:"networkidle"});
+    assert.match(await ownerPage.locator("main").innerText(),/63.37/);
+    await ownerPage.goto(`${base}/farm/settings`,{waitUntil:"networkidle"});
+    await ownerPage.getByLabel("Fresh milk price in rupees",{exact:true}).fill("62");
+    await ownerPage.getByLabel("Reason for change",{exact:true}).fill("Restore synthetic fixture catalogue");
+    await ownerPage.getByRole("button",{name:"Save product prices",exact:true}).click();
+    await ownerPage.getByRole("status").filter({hasText:"Product prices saved"}).waitFor();
+    await ownerPage.goto(`${base}/farm/payments`,{waitUntil:"networkidle"});
+    const receipt=ownerPage.locator("details").filter({has:ownerPage.locator("summary").getByText("Edit receipt details",{exact:true})}).first();
+    await receipt.locator("summary").click();
+    await receipt.getByLabel("Reference",{exact:true}).fill(`SYNTHETIC-${name}-CORRECTION`);
+    await receipt.getByLabel("Reason for correction",{exact:true}).fill("Correct synthetic receipt reference");
+    await receipt.getByRole("button",{name:"Save receipt details",exact:true}).click();
+    await ownerPage.getByRole("status").filter({hasText:"Receipt details corrected"}).waitFor();
+    assert.equal((await db.query("select count(*) n from farm_change_log where action='correct_receipt'")).rows[0].n,name==='chromium'?'1':'2');
+    await ownerPage.screenshot({path:path.join(output,`${name}-editable-receipt-mobile.png`),fullPage:true});
+    await noOverflow(ownerPage);
+    await ownerPage.goto(`${base}/farm/customers/${success.user}`,{waitUntil:"networkidle"});
+    const quantities=ownerPage.locator("#quantity-editor");
+    await quantities.getByRole("heading",{name:"Edit prepaid quantities"}).waitFor();
+    await quantities.getByLabel("Adjustment type",{exact:true}).selectOption("skip");
+    await quantities.getByLabel("Reason",{exact:true}).fill("Synthetic customer requested a full skip");
+    await quantities.getByRole("button",{name:"Save quantity change",exact:true}).click();
+    await quantities.getByRole("status").filter({hasText:"Prepaid quantities updated"}).waitFor();
+    assert.equal((await db.query("select action from delivery_exceptions where plan_id=$1 and delivery_date=$2 and product_key='milk'",[success.plan,tomorrow])).rows[0].action,"skip");
+    assert.ok(await quantities.getByRole("button",{name:"Save quantity change",exact:true}).isEnabled(),"another future quantity remains editable after saving");
+    const nextSource=await quantities.getByLabel("From delivery",{exact:true}).inputValue();
+    assert.ok(Number((await db.query("select plan_product_quantity($1,'milk',$2) quantity",[success.plan,nextSource])).rows[0].quantity)>0,"the selected source reflects the refreshed schedule");
+    await ownerPage.screenshot({path:path.join(output,`${name}-editable-quantity-mobile.png`),fullPage:true});
     await noOverflow(ownerPage);
     await ownerContext.close();
     const customerContext = await contextFor(browser, failure.user);

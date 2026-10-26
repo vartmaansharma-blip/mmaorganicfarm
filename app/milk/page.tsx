@@ -1,3 +1,4 @@
+import { readProductCatalogue } from "@/lib/product-prices-server";
 import { PlanBuilderStartTracking } from "@/app/components/landing-conversion-tracking";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import type { Metadata } from "next";
@@ -40,6 +41,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
     redirect("/sign-in?next=%2Fmilk");
   }
 
+  const { prices } = await readProductCatalogue();
   const firstPlanStart = await firstScheduledPlanStart(supabase, user.id);
   const isEditing = params.edit === "plan";
   const { data: savedPlan } = isEditing
@@ -153,7 +155,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
           <p className={styles.eyebrow}>M&apos;ma farm shop</p>
           <h1 id="milk-title">Build your farm basket.</h1>
           <p className={styles.price}>
-            Milk ₹62 <span>per litre with bottle return</span>
+            Milk ₹{prices.milk} <span>per litre with bottle return</span>
           </p>
           <p className={styles.intro}>
             Combine fresh milk with farm paneer and ghee. Choose a one-time

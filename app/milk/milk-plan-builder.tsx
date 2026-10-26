@@ -1,4 +1,5 @@
 "use client";
+import { useProductPricing } from "../components/product-pricing";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -84,6 +85,7 @@ export function MilkPlanBuilder({
   initialStartDate = "",
   isEditing = false,
 }: MilkPlanBuilderProps) {
+  const { prices } = useProductPricing();
   const minimumStartDate = nextDeliveryDateInIndia();
   const firstAvailableStartDate =
     initialStartDate >= minimumStartDate
@@ -113,11 +115,11 @@ export function MilkPlanBuilder({
   const selectedMilkLitres =
     mode === "once" ? onceQuantity : mode === "plan" ? weeklyLitres : 0;
   const hasMilk = selectedMilkLitres > 0;
-  const selectedExtras = FARM_PRODUCTS.flatMap((product) => {
+  const selectedExtras = FARM_PRODUCTS.map(p => ({...p, price: prices[p.id]})).flatMap((product) => {
     const selection = extras[product.id];
     return selection ? [{ ...product, ...selection }] : [];
   });
-  const oncePricing = calculateOrderPricing({
+  const oncePricing = calculateOrderPricing({ prices,
     bottleChoice: hasMilk ? "return" : "none",
     milkLitres: onceQuantity,
     products: selectedExtras.map((product) => ({
@@ -126,12 +128,12 @@ export function MilkPlanBuilder({
       frequency: "once",
     })),
   });
-  const weeklyPricing = calculateOrderPricing({
+  const weeklyPricing = calculateOrderPricing({ prices,
     bottleChoice: hasMilk ? "return" : "none",
     milkLitres: weeklyLitres,
     products: selectedExtras,
   });
-  const planPricing = calculatePlanPricing({
+  const planPricing = calculatePlanPricing({ prices,
     bottleChoice: hasMilk ? "return" : "none",
     products: selectedExtras,
     schedule,
@@ -342,7 +344,7 @@ export function MilkPlanBuilder({
               <div className={styles.productIdentity}>
                 <span>
                   <strong>Fresh milk</strong>
-                  <small>1 litre · ₹62</small>
+                  <small>1 litre · ₹{prices.milk}</small>
                 </span>
                 <b>{hasMilk ? "Selected" : "Add below"}</b>
               </div>
@@ -376,7 +378,7 @@ export function MilkPlanBuilder({
               )}
             </article>
 
-            {FARM_PRODUCTS.map((product) => {
+            {FARM_PRODUCTS.map(p => ({...p, price: prices[p.id]})).map((product) => {
               const selection = extras[product.id];
 
               return (
@@ -402,7 +404,7 @@ export function MilkPlanBuilder({
                     <span>Farm made</span>
                   </div>
                   <div className={styles.productMarker}>
-                    <span>0{FARM_PRODUCTS.indexOf(product) + 2}</span>
+                    <span>0{FARM_PRODUCTS.findIndex(p => p.id === product.id) + 2}</span>
                     <small>Dairy</small>
                   </div>
                   <label>

@@ -1,4 +1,6 @@
 "use server";
+import { readProductCatalogue } from "@/lib/product-prices-server";
+import { priceInPaise } from "@/lib/product-prices";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -12,7 +14,6 @@ import { FARM_PRODUCTS } from "@/lib/farm-products";
 import {
   calculateOrderPricing,
   calculatePaidMilkAdjustment,
-  MILK_PRICE_PER_LITRE,
 } from "@/lib/order-pricing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -118,17 +119,20 @@ async function startMilkIncreasePayment({
     );
   }
 
+  const { prices } = await readProductCatalogue();
   const extraLitres = requestedQuantity - currentQuantity;
-  const pricing = calculateOrderPricing({
+  const pricing = calculateOrderPricing({ prices,
     bottleChoice: plan.bottle_choice === "new" ? "new" : "return",
     milkLitres: extraLitres,
     products: [],
   });
+  pricing.total = Math.round((pricing.total - pricing.deliveryCharge) * 100) / 100;
+  pricing.deliveryCharge = 0;
   const { data: order, error: orderError } = await admin
     .from("orders")
     .insert({
       address_snapshot: profile.address_line,
-      bottle_charge_paise: pricing.bottleCharge * 100,
+      bottle_charge_paise: priceInPaise(pricing.bottleCharge),
       bottle_choice: plan.bottle_choice === "new" ? "new" : "return",
       currency: "INR",
       delivery_plan_id: plan.id,
@@ -137,8 +141,8 @@ async function startMilkIncreasePayment({
       purchase_mode: "adjustment",
       start_date: date,
       status: "draft",
-      subtotal_paise: pricing.milkTotal * 100,
-      total_paise: pricing.total * 100,
+      subtotal_paise: priceInPaise(pricing.milkTotal),
+      total_paise: priceInPaise(pricing.total),
       user_id: userId,
     })
     .select("id")
@@ -157,14 +161,14 @@ async function startMilkIncreasePayment({
   const { error: itemError } = await admin.from("order_items").insert({
     delivery_date: date,
     frequency: "once",
-    line_total_paise: pricing.milkTotal * 100,
+    line_total_paise: priceInPaise(pricing.milkTotal),
     order_id: order.id,
     product_key: "milk",
     product_name: "Additional fresh farm milk",
     quantity: extraLitres,
     scheduled_days: [],
     unit: "litre",
-    unit_price_paise: MILK_PRICE_PER_LITRE * 100,
+    unit_price_paise: priceInPaise(prices.milk),
     user_id: userId,
   });
   const { error: adjustmentError } = await admin

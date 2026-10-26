@@ -1,11 +1,7 @@
+import { DEFAULT_PRODUCT_PRICES, money, type ProductPrices } from "./product-prices";
 import { addCalendarDays } from "./delivery-calendar";
 import { firstMonthEnds, deliveryChargeForSubtotal } from "./delivery-pricing";
-import {
-  MILK_PRICE_PER_LITRE,
-  NEW_BOTTLE_CHARGE,
-  type BottleChoice,
-} from "./order-pricing";
-import { FARM_PRODUCTS } from "./farm-products";
+import type { BottleChoice } from "./order-pricing";
 import { validShopDate, type ShopProductId } from "./shop-draft";
 export type RepeatPattern =
   | "daily"
@@ -28,11 +24,7 @@ export type PlannedDay = {
   items: Array<{ id: ShopProductId; quantity: number }>;
 };
 const ids = ["milk", "paneer", "ghee"] as const;
-export function routinePrice(id: ShopProductId) {
-  return id === "milk"
-    ? MILK_PRICE_PER_LITRE
-    : FARM_PRODUCTS.find((p) => p.id === id)!.price;
-}
+export function routinePrice(id: ShopProductId, prices: ProductPrices = DEFAULT_PRODUCT_PRICES) { return prices[id]; }
 export function defaultRepeat(id: ShopProductId): RepeatPattern {
   return id === "milk" ? "daily" : id === "paneer" ? "weekly" : "monthly";
 }
@@ -230,11 +222,13 @@ export function quoteMonthlySchedule({
   rules,
   bottleChoice = "return",
   firstPlanStart = start,
+  prices = DEFAULT_PRODUCT_PRICES,
 }: {
   start: string;
   rules: ProductRoutine[];
   bottleChoice?: BottleChoice;
   firstPlanStart?: string;
+  prices?: ProductPrices;
 }) {
   const valid = validateRoutines(start, rules);
   if (!valid) throw new Error("Choose a valid monthly routine.");
@@ -254,8 +248,8 @@ export function quoteMonthlySchedule({
     let subtotal = 0;
     for (const item of day.items) {
       quantities[item.id] += item.quantity;
-      productTotals[item.id] += item.quantity * routinePrice(item.id);
-      subtotal += item.quantity * routinePrice(item.id);
+      productTotals[item.id] += item.quantity * routinePrice(item.id, prices);
+      subtotal += item.quantity * routinePrice(item.id, prices);
     }
     deliveryCharge += deliveryChargeForSubtotal(
       subtotal,
@@ -264,8 +258,9 @@ export function quoteMonthlySchedule({
       firstPlanStart,
     );
   }
+  for (const id of ids) productTotals[id] = money(productTotals[id]);
   const milkLitres = quantities.milk,
-    bottleCharge = bottleChoice === "new" ? milkLitres * NEW_BOTTLE_CHARGE : 0,
+    bottleCharge = bottleChoice === "new" ? money(milkLitres * prices.bottle) : 0,
     productsSubtotal = Object.values(productTotals).reduce((a, b) => a + b, 0);
   return {
     days,
@@ -274,11 +269,11 @@ export function quoteMonthlySchedule({
     milkLitres,
     milkTotal: productTotals.milk,
     oneTimeAddOnsTotal: 0,
-    recurringAddOnsTotal: productTotals.paneer + productTotals.ghee,
+    recurringAddOnsTotal: money(productTotals.paneer + productTotals.ghee),
     bottleCharge,
     deliveryCharge,
     productsSubtotal,
-    total: productsSubtotal + bottleCharge + deliveryCharge,
+    total: money(productsSubtotal + bottleCharge + deliveryCharge),
     endExclusive: firstMonthEnds(start),
   };
 }

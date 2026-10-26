@@ -108,6 +108,7 @@ async function prepare({ failure, claimError = false, isTest = false, env, provi
     '@/lib/supabase/server': { createClient: async () => userClient },
     '@/lib/supabase/admin': { createAdminClient: () => admin, hasSupabaseAdminConfig: () => true },
     '@/lib/production-capacity': { reserveOrderCapacity: async () => { reserved++; }, releaseOrderCapacity: async () => { released++; } },
+    '@/lib/product-prices-server': {readOrderProductPrices: async () => ({milk:62,paneer:200,ghee:375,bottle:10})},
     '@/lib/monthly-checkout': { quoteStoredMonthlyCheckout: () => ({ total: 62 }) },
     '@/lib/checkout-quote': { quoteStoredCheckout: () => ({ total: 62 }) },
     '@/lib/first-scheduled-plan': { firstScheduledPlanStart: async () => null },

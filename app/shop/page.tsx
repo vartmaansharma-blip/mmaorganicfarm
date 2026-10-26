@@ -1,3 +1,4 @@
+import { readProductCatalogue } from "@/lib/product-prices-server";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/shop" },
   robots: { index: true, follow: true },
 };
-export default function ShopPage() {
+export default async function ShopPage() {
+  const { prices } = await readProductCatalogue();
   return (
     <main>
       <ShopHero />
@@ -37,7 +39,7 @@ export default function ShopPage() {
               <div>
                 <h3>{p.name}</h3>
                 <p>
-                  ₹{p.price} / {p.unit}
+                  ₹{prices[p.id]} / {p.unit}
                 </p>
               </div>
               <span aria-hidden="true">↗</span>
@@ -58,8 +60,8 @@ export default function ShopPage() {
         <details>
           <summary>What will I pay?</summary>
           <p>
-            Product prices are shown beside each item. Milk is ₹62 per litre
-            with bottle return; new glass bottles add ₹10 per litre. One-time
+            Product prices are shown beside each item. Milk is ₹{prices.milk} per litre
+            with bottle return; new glass bottles add ₹{prices.bottle} per litre. One-time
             delivery is ₹5 and free above ₹199 in products. Scheduled orders
             have a one-month fee waiver from your first plan, then ₹2 per
             delivery, free above ₹199 for that delivery. Review your full order

@@ -65,8 +65,8 @@ export function ProductDetails({ id }: { id: ShopProductId }) {
   );
 }
 function OneTimeProductDetails({ id }: { id: ShopProductId }) {
-  const { state, update, firstPlanStart, setCartOpen } = useShop(),
-    p = shopProduct(id),
+  const { state, update, firstPlanStart, setCartOpen, prices } = useShop(),
+    p = shopProduct(id, prices),
     mode = state.mode,
     d = state.drafts[mode][id],
     plan = mode === "plan",
@@ -100,7 +100,7 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
     });
   }
   const extras: FarmProductSelection[] = milk
-    ? FARM_PRODUCTS.flatMap((product) => {
+    ? FARM_PRODUCTS.map(p => ({...p, price: prices[p.id]})).flatMap((product) => {
         const x = d.extras[product.id];
         return x.enabled
           ? [
@@ -125,14 +125,14 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
   const validDate = validShopDate(d.start) && d.start >= minimum;
   const pricing =
     plan && milk
-      ? calculatePlanPricing({
+      ? calculatePlanPricing({ prices,
           bottleChoice: "return",
           products: extras,
           schedule: d.schedule,
           startDate: validDate ? (dates[0]?.date ?? d.start) : "",
           firstPlanStart: firstPlanStart ?? dates[0]?.date ?? d.start,
         })
-      : calculateOrderPricing({
+      : calculateOrderPricing({ prices,
           bottleChoice: milk ? "return" : "none",
           milkLitres: milk ? d.quantity : 0,
           products: extras,
@@ -322,7 +322,7 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
                 {milk ? (
                   <details className={styles.optional}>
                     <summary>Add paneer or ghee</summary>
-                    {FARM_PRODUCTS.map((product) => {
+                    {FARM_PRODUCTS.map(p => ({...p, price: prices[p.id]})).map((product) => {
                       const x = d.extras[product.id];
                       function extra(value: Partial<typeof x>) {
                         change({

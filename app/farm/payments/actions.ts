@@ -38,3 +38,24 @@ export async function resetManualPayment(formData: FormData) {
   if (userId) revalidatePath(`/farm/customers/${userId}`);
   redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}message=Manual+payment+reset.+The+order+and+future+service+were+reversed.`);
 }
+
+export async function correctPaymentDetails(formData: FormData) {
+  const { role, supabase } = await requireFarmManager("/farm/payments");
+  if (role !== "admin") redirect("/farm/payments?error=Owner+access+is+required.");
+  const userId = textValue(formData,"userId");
+  const returnTo = /^[0-9a-f-]{36}$/i.test(userId) ? `/farm/payments?customer=${userId}` : "/farm/payments";
+  const join = returnTo.includes("?") ? "&" : "?";
+  const received = textValue(formData,"receivedAt");
+  // The input explicitly displays India time; never interpret it in the server timezone.
+  const paidAt = new Date(`${received}+05:30`);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(received) || !Number.isFinite(paidAt.valueOf())) redirect(`${returnTo}${join}error=Choose+a+valid+received+date.`);
+  const {error} = await supabase.rpc("correct_manual_payment_details", {
+    p_payment_id: textValue(formData,"paymentId"), p_method: textValue(formData,"method"),
+    p_reference: textValue(formData,"reference"), p_paid_at: paidAt.toISOString(),
+    p_reason: textValue(formData,"reason"), p_expected_revision: Number(formData.get("revision")),
+  });
+  if (error) redirect(`${returnTo}${join}error=${encodeURIComponent(error.code === "23505" ? "That reference is already recorded on another payment. Check it before saving." : error.message)}`);
+  revalidatePath("/farm/payments");
+  revalidatePath(`/farm/customers/${userId}`);
+  redirect(`${returnTo}${join}message=Receipt+details+corrected.+The+amount+and+service+are+unchanged.`);
+}

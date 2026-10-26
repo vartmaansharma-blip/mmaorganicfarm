@@ -1,3 +1,4 @@
+import { DEFAULT_PRODUCT_PRICES, priceInPaise, type ProductPrices } from "./product-prices";
 import {
   quoteMonthlySchedule,
   routinePrice,
@@ -24,6 +25,7 @@ export function quoteStoredMonthlyCheckout(
   plan: MonthlyStoredPlan,
   dates: MonthlyStoredDate[],
   firstPlanStart: string,
+  prices: ProductPrices = DEFAULT_PRODUCT_PRICES,
 ) {
   const rules = validateRoutines(plan.start_date, plan.schedule_rules);
   if (!rules) throw Error("Invalid monthly routines.");
@@ -35,6 +37,7 @@ export function quoteStoredMonthlyCheckout(
   )
     throw Error("Invalid bottle option.");
   const quote = quoteMonthlySchedule({
+    prices,
     start: plan.start_date,
     rules,
     bottleChoice,
@@ -66,8 +69,8 @@ export function quoteStoredMonthlyCheckout(
     if (
       !item ||
       item.quantity !== quote.quantities[rule.id] ||
-      item.unit_price_paise !== routinePrice(rule.id) * 100 ||
-      item.line_total_paise !== quote.productTotals[rule.id] * 100 ||
+      item.unit_price_paise !== priceInPaise(routinePrice(rule.id, prices)) ||
+      item.line_total_paise !== priceInPaise(quote.productTotals[rule.id]) ||
       item.frequency !== "once" ||
       item.scheduled_days.length
     )

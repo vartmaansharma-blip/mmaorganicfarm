@@ -496,3 +496,6 @@
 
 .routeBoard { border:1px solid #a7def5; }
 .routeBoard > .panelHeader { background:var(--farm-sky-soft); border-radius:9px; padding:16px; }
+
+.priceGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px; }
+.priceInput {display:flex;align-items:center;gap:8px;color:var(--farm-muted);} .priceInput input {min-width:0;}

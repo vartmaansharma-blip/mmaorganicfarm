@@ -19,13 +19,13 @@ import { useShop } from "./shop-state";
 import styles from "./cart.module.css";
 const money = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 export function CartButton() {
-  const { state, update, cartOpen, setCartOpen } = useShop();
+  const { state, update, cartOpen, setCartOpen, prices, firstPlanStart } = useShop();
   const trigger = useRef<HTMLButtonElement>(null),
     dialog = useRef<HTMLDialogElement>(null);
   const mode = state.mode,
     cart = state.carts[mode],
     count = cartCount(cart),
-    quote = cartQuote(cart, mode),
+    quote = cartQuote(cart, mode, firstPlanStart, prices),
     routines = cartRoutines(cart),
     minimum = nextDeliveryDateInIndia();
   useEffect(() => {
@@ -160,7 +160,7 @@ export function CartButton() {
               {(["milk", "paneer", "ghee"] as const).map((id) => {
                 const item = cart[id];
                 if (!item) return null;
-                const p = shopProduct(id);
+                const p = shopProduct(id, prices);
                 const variable =
                   id === "milk" &&
                   mode === "plan" &&
@@ -261,7 +261,7 @@ export function CartButton() {
                 {(["paneer", "ghee"] as const)
                   .filter((id) => !cart[id])
                   .map((id) => {
-                    const p = shopProduct(id);
+                    const p = shopProduct(id, prices);
                     return (
                       <Link
                         key={id}
