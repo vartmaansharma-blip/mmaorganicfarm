@@ -147,12 +147,28 @@ try {
       activePage = m;
       for (const p of [m, d]) p.on("pageerror", (e) => errors.push(e.message));
       await m.goto(base + "/farm/runs");
+      await m
+        .getByRole("list", { name: "Run preparation checklist" })
+        .waitFor();
+      assert.equal(
+        await m
+          .getByRole("button", { name: "Create delivery run", exact: true })
+          .isEnabled(),
+        false,
+      );
+      await m.evaluate(() => window.scrollTo(0, 0));
+      await m.screenshot({
+        path: `${output}/${engineName}-${width}-manager-setup.png`,
+        fullPage: true,
+      });
       const tab = m.getByRole("button", { name: "Vehicles", exact: true });
       assert.equal(
         await tab.evaluate((el) => getComputedStyle(el).backgroundColor),
         "rgba(0, 0, 0, 0)",
       );
-      await tab.click();
+      await m
+        .getByRole("button", { name: "Set up vehicle", exact: false })
+        .click();
       const vehicleForm = m.getByRole("form", { name: "Add vehicle" });
       await vehicleForm.getByLabel("Vehicle name").fill("Morning farm van");
       await vehicleForm.getByLabel("Registration").fill("TEST-DELIVERY");
@@ -202,6 +218,18 @@ try {
         .getByRole("button", { name: "Delivery runs", exact: false })
         .click();
       const create = m.getByRole("form", { name: "Create delivery run" });
+      assert.equal(
+        await create
+          .getByRole("button", { name: "Create delivery run" })
+          .isEnabled(),
+        true,
+      );
+      assert.equal(
+        await m
+          .getByRole("list", { name: "Run preparation checklist" })
+          .count(),
+        0,
+      );
       await create.getByLabel("Prepared route").selectOption(route);
       await create.getByLabel("Available driver").selectOption(driver);
       const vehicle = (await db.query("select id from farm_vehicles")).rows[0]

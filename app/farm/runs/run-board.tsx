@@ -39,6 +39,7 @@ function Operation({
   children,
   label,
   build,
+  disabled = false,
 }: {
   action: string;
   base?: Record<string, unknown>;
@@ -47,6 +48,7 @@ function Operation({
   children?: ReactNode;
   label: string;
   build?: (fd: FormData) => Record<string, unknown>;
+  disabled?: boolean;
 }) {
   const request = useRef<{ payload: string; key: string } | null>(null);
   const lastSaveSucceeded = useRef(false);
@@ -101,7 +103,7 @@ function Operation({
         if (!lastSaveSucceeded.current) event.preventDefault();
       }}
     >
-      <fieldset disabled={pending || !online}>
+      <fieldset disabled={pending || !online || disabled}>
         {children}
         <Submit>{label}</Submit>
       </fieldset>
@@ -632,6 +634,17 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
   const [section, setSection] = useState("runs");
   const driver = data.role === "driver";
   const currentRuns = data.runs.filter((r) => r.status !== "cancelled");
+  const confirmedDrivers = data.drivers.filter(
+    (d) => d.active && d.available && d.phone,
+  );
+  const activeVehicles = data.vehicles.filter((v) => v.active);
+  const unassignedRoutes = data.routes.filter(
+    (r) => r.stops > 0 && !currentRuns.some((run) => run.route_id === r.id),
+  );
+  const canCreateRun =
+    confirmedDrivers.length > 0 &&
+    activeVehicles.length > 0 &&
+    unassignedRoutes.length > 0;
   const update: Update = (workspace) => setData(workspace);
   return (
     <main
@@ -757,7 +770,80 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
                   capacity are checked before release.
                 </p>
               </div>
+              {!canCreateRun && currentRuns.length === 0 ? (
+                <>
+                  <p className={styles.helper}>
+                    Complete these preparation steps before creating a run.
+                  </p>
+                  <ol
+                    className={styles.preparation}
+                    aria-label="Run preparation checklist"
+                  >
+                    <li data-ready={confirmedDrivers.length > 0 || undefined}>
+                      <span className={styles.stepMark} aria-hidden="true">
+                        {confirmedDrivers.length ? "✓" : "01"}
+                      </span>
+                      <div>
+                        <h3>Confirm the driver</h3>
+                        <p>
+                          {confirmedDrivers.length
+                            ? "Contact details and availability are recorded."
+                            : "Save a contact number and confirm availability for this service day."}
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => setSection("team")}>
+                        Set up driver <span aria-hidden="true">↗</span>
+                      </button>
+                    </li>
+                    <li data-ready={activeVehicles.length > 0 || undefined}>
+                      <span className={styles.stepMark} aria-hidden="true">
+                        {activeVehicles.length ? "✓" : "02"}
+                      </span>
+                      <div>
+                        <h3>Choose a vehicle</h3>
+                        <p>
+                          {activeVehicles.length
+                            ? "An active vehicle is available to select."
+                            : "Add the registration and actual product carrying limits."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSection("vehicles")}
+                      >
+                        Set up vehicle <span aria-hidden="true">↗</span>
+                      </button>
+                    </li>
+                    <li data-ready={unassignedRoutes.length > 0 || undefined}>
+                      <span className={styles.stepMark} aria-hidden="true">
+                        {unassignedRoutes.length ? "✓" : "03"}
+                      </span>
+                      <div>
+                        <h3>Prepare the route</h3>
+                        <p>
+                          {unassignedRoutes.length
+                            ? "A route has pending stops and no run assigned."
+                            : "Prepare this day's dispatch and resolve route assignments."}
+                        </p>
+                      </div>
+                      <Link
+                        prefetch={false}
+                        href={`/farm/routes?date=${data.date}`}
+                      >
+                        Open dispatch board <span aria-hidden="true">↗</span>
+                      </Link>
+                    </li>
+                  </ol>
+                </>
+              ) : null}
+              {!canCreateRun && currentRuns.length > 0 ? (
+                <p className={styles.helper}>
+                  To add another run, you need an unassigned route with pending
+                  stops, a confirmed driver and an active vehicle.
+                </p>
+              ) : null}
               <Operation
+                disabled={!canCreateRun}
                 action="create"
                 base={{ date: data.date }}
                 date={data.date}
@@ -771,17 +857,11 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
                       <option value="" disabled>
                         Choose a route
                       </option>
-                      {data.routes
-                        .filter(
-                          (r) =>
-                            r.stops > 0 &&
-                            !currentRuns.some((run) => run.route_id === r.id),
-                        )
-                        .map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.name} · {r.stops} stops
-                          </option>
-                        ))}
+                      {unassignedRoutes.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} · {r.stops} stops
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <label>
@@ -805,13 +885,11 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
                       <option value="" disabled>
                         Choose a driver
                       </option>
-                      {data.drivers
-                        .filter((d) => d.active && d.available && d.phone)
-                        .map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.name}
-                          </option>
-                        ))}
+                      {confirmedDrivers.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <label>
@@ -820,13 +898,11 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
                       <option value="" disabled>
                         Choose a vehicle
                       </option>
-                      {data.vehicles
-                        .filter((v) => v.active)
-                        .map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.name} · {v.registration}
-                          </option>
-                        ))}
+                      {activeVehicles.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name} · {v.registration}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 </div>
