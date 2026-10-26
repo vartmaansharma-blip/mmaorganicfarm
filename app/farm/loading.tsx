@@ -1,15 +1,30 @@
-import styles from "./operations-workbench.module.css";
+import styles from "./farm-shell.module.css";
 export default function Loading() {
   return (
-    <main className={styles.page} aria-busy="true">
-      <p className={styles.hint} role="status">
-        Loading farm records…
-      </p>
-      <h1>Farm operations</h1>
-      <p>
-        Checking your current workspace. Counts appear after records have
-        loaded.
-      </p>
+    <main className={styles.loadingPage} aria-busy="true">
+      <header>
+        <p className={styles.loadingEyebrow}>M’ma farm workspace</p>
+        <h1>Getting your day ready.</h1>
+        <p role="status">Loading the latest farm records…</p>
+      </header>
+      <div className={styles.loadingGrid} aria-hidden="true">
+        {[0, 1, 2].map((item) => (
+          <div key={item} className={styles.loadingCard}>
+            <span />
+            <b />
+            <span />
+          </div>
+        ))}
+      </div>
+      <div className={styles.loadingRows} aria-hidden="true">
+        {[0, 1, 2, 3].map((item) => (
+          <div key={item}>
+            <span />
+            <span />
+            <span />
+          </div>
+        ))}
+      </div>
     </main>
   );
 }

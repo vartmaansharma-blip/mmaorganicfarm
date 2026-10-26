@@ -291,7 +291,7 @@ try {
       .waitFor();
     const driverGuard=await context.newPage();
     await driverGuard.goto(`${base}/farm/exceptions`, { waitUntil: "networkidle" });
-    assert.match(driverGuard.url(), /delivery-sheet/, "driver manager-route guard");
+    assert.match(driverGuard.url(), /farm\/runs/, "driver manager-route guard");
     await driverGuard.close();
     const managerContext = await contextFor(browser, manager, 1440);
     const mp = await managerContext.newPage();

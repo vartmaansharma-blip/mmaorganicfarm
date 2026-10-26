@@ -1,4 +1,7 @@
-import { deliveryNavigationUrl, hasConfirmedDestination } from "@/lib/delivery-navigation";
+import {
+  deliveryNavigationUrl,
+  hasConfirmedDestination,
+} from "@/lib/delivery-navigation";
 import { FarmForm } from "../farm-form";
 import Link from "next/link";
 import {
@@ -71,10 +74,16 @@ export async function DriverDay({
     : { data: [], error: null };
   if (requests.error) throw requests.error;
   const href = (id: string) =>
-    `/farm/delivery-sheet?${new URLSearchParams({ date, stop: id, ...(route ? {route} : {}) })}`;
+    `/farm/delivery-sheet?${new URLSearchParams({ date, stop: id, ...(route ? { route } : {}) })}`;
   return (
     <main className={styles.page}>
-      <Link prefetch={false} href={`/farm/runs?date=${date}`} className={styles.runBack}>← My delivery run</Link>
+      <Link
+        prefetch={false}
+        href={`/farm/runs?date=${date}`}
+        className={styles.runBack}
+      >
+        ← My delivery run
+      </Link>
       <header className={styles.header}>
         <div>
           <p>Delivery staff</p>
@@ -103,6 +112,7 @@ export async function DriverDay({
               id={`stop-${current.id}`}
               key={current.visit_key}
               className={styles.stop}
+              data-outcome={outcomes.get(current.visit_key) ?? current.status}
             >
               <div className={styles.stopHeading}>
                 <span>
@@ -135,7 +145,9 @@ export async function DriverDay({
                     rel="noreferrer"
                     href={deliveryNavigationUrl(current)!}
                   >
-                    {hasConfirmedDestination(current) ? "Navigate to confirmed entrance ↗" : "Navigate by address ↗"}
+                    {hasConfirmedDestination(current)
+                      ? "Navigate to confirmed entrance ↗"
+                      : "Navigate by address ↗"}
                   </a>
                 ) : null}
               </div>

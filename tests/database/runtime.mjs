@@ -129,8 +129,8 @@ export async function createDatabase({ routingFoundation = false, driverRuns = f
     await db.query(await readFile(new URL("../../supabase/migrations/20261026062639_welcome_back_checkout_code.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../supabase/migrations/20261026111243_retire_welcome_back_discount.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../supabase/migrations/20261026112857_farm_operational_editors.sql", import.meta.url), "utf8"));
-    if (routingFoundation) await db.query(await readFile(new URL("../../supabase/pending-migrations/20261026113838_routing_foundation.sql", import.meta.url), "utf8"));
-    if (driverRuns) await db.query(await readFile(new URL("../../supabase/pending-migrations/20261026164039_driver_run_foundation.sql", import.meta.url), "utf8"));
+    if (routingFoundation) await db.query(await readFile(new URL("../../supabase/migrations/20261026172231_routing_foundation.sql", import.meta.url), "utf8"));
+    if (driverRuns) await db.query(await readFile(new URL("../../supabase/migrations/20261026172251_driver_run_foundation.sql", import.meta.url), "utf8"));
   } catch (error) {
     await db.end();
     await server.stop();

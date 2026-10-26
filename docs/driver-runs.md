@@ -6,7 +6,9 @@ A manager can connect an existing individual driver login, a dated availability 
 
 `/farm/runs` is role aware. Managers have Delivery runs, Driver team and Vehicles views. Drivers see only their own runs, availability and the next permitted action. Contact details for a run are withheld from its workspace response until release. Existing `/farm/delivery-sheet` remains the stop and outcome screen; links preserve the selected route when advancing to the next stop.
 
-The design retains the M’ma logo and existing typography. Forest green, warm cream and restrained gold distinguish the briefing, product quantities and main action. The driver's briefing becomes shorter once a run is assigned. Controls are labelled; forms retain entries on failure and acknowledge saved server state. Nothing silently saves while offline. Explicit refresh retrieves the other person's latest action.
+The design retains the M’ma logo and existing typography. Forest green, warm cream and restrained gold distinguish the briefing, product quantities and main action. The driver's briefing becomes shorter once a run is assigned. Managers get a first-use preparation checklist for driver contact/availability, vehicle limits and route work; an incomplete setup cannot submit an empty run form. Controls are labelled; forms retain entries on failure and acknowledge saved server state. Nothing silently saves while offline. Explicit refresh retrieves the other person's latest action.
+
+The shared shell adds purposeful micro-interactions and motion across manager and driver workflows. See [farm interactions](farm-interactions.md) for timing, keyboard behaviour, reduced motion and verification.
 
 ## Operating sequence
 
@@ -30,15 +32,15 @@ Google Maps navigation already uses a confirmed customer entrance where availabl
 
 ## Database and release
 
-`supabase/pending-migrations/20261026164039_driver_run_foundation.sql`
+`supabase/migrations/20261026172251_driver_run_foundation.sql`
 
 SHA-256: `f397c968fa249e8828f467480e350b0cc1329450fdc7229c77d87fd8a4e7746d`
 
-This file is intentionally outside automatic migrations. No live schema changes or customer-record writes were performed. It works with both the current schema and the separately pending routing/GPS-pin migration. An unapplied run schema shows a graceful setup message and a link to the existing route; unrelated RPC errors are not masked as an empty workday.
+Activated on MmaFarms (`gorlusptyzndobqviocv`) on 26 October 2026, after routing version `20261026172231`. Supabase recorded driver-run version `20261026172251`. The reviewed pending file was moved to the matching history filename without changing its bytes. The database additions are live; existing business-record fingerprints are unchanged. The compatibility fallback remains for environments without the migration and does not mask unrelated RPC errors.
 
 New tables have RLS and no direct authenticated or anonymous grants. Public invoker RPCs delegate to private definer functions with an empty search path and explicit active-staff role checks. Commands log before/after state, actor, payload and a unique request key. Replays of the same request return the same result; another actor or payload cannot reuse the key. Run versions reject stale forms. Day locks match existing outcome accounting; unique reservations and serialised resource commands prevent duplicate custody.
 
-Before production activation, review this exact SQL, apply only to the approved MmaFarms project, check grants and live migration history, then run an authenticated staff acceptance check on the production-equivalent preview. Production deployment remains a separate approval step.
+The live owner workspace has been checked through an existing authenticated browser session. Live admin and driver read functions pass in their respective database-role contexts; nonstaff access is rejected. No synthetic runs or delivery outcomes were written to production. Actual vehicle limits, driver contact/availability, load counts and field acceptance still require farm inputs. The new preparation checklist directs staff to each prerequisite and disables creation until the displayed choices exist. See [activation verification](routing-activation.md).
 
 ## Verification
 

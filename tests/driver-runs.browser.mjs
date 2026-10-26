@@ -48,9 +48,9 @@ try {
   for (const [engineName, engine] of [
     ["chromium", chromium],
     ["webkit", webkit],
-  ]) {
+  ].filter(([name]) => !process.env.RUN_BROWSER_ENGINE || name === process.env.RUN_BROWSER_ENGINE)) {
     browser = await engine.launch();
-    for (const width of [390, 1440]) {
+    for (const width of [390, 1440].filter(width => !process.env.RUN_BROWSER_WIDTH || width === Number(process.env.RUN_BROWSER_WIDTH))) {
       runtime = await createDatabase({
         routingFoundation: true,
         driverRuns: true,
@@ -135,9 +135,11 @@ try {
       await callAs(db, manager, "select prepare_daily_dispatch($1)", [date]);
       const managerContext = await browser.newContext({
           viewport: { width, height: 950 },
+          reducedMotion: width === 1440 ? "reduce" : "no-preference",
         }),
         driverContext = await browser.newContext({
           viewport: { width, height: 950 },
+          reducedMotion: width === 1440 ? "reduce" : "no-preference",
         });
       await managerContext.addCookies([cookie(manager)]);
       await driverContext.addCookies([cookie(driver)]);
@@ -147,22 +149,159 @@ try {
       activePage = m;
       for (const p of [m, d]) p.on("pageerror", (e) => errors.push(e.message));
       await m.goto(base + "/farm/runs");
+      await m
+        .getByRole("list", { name: "Run preparation checklist" })
+        .waitFor();
+      assert.equal(
+        await m
+          .getByRole("button", { name: "Create delivery run", exact: true })
+          .isEnabled(),
+        false,
+      );
+      await m.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      await m.screenshot({
+        path: `${output}/${engineName}-${width}-manager-setup.png`,
+        fullPage: true,
+      });
+      if (width === 390) {
+        const toggle = m.getByRole("button", {
+          name: "Open navigation",
+          exact: true,
+        });
+        await toggle.click();
+        const menu = m.getByRole("dialog", {
+          name: "Farm navigation",
+          exact: true,
+        });
+        await menu.waitFor();
+        assert.equal(
+          await m.locator("#farm-workspace").getAttribute("inert"),
+          "",
+        );
+        assert.equal(
+          await m.evaluate(() => document.body.style.overflow),
+          "hidden",
+        );
+        await m.screenshot({
+          path: `${output}/${engineName}-${width}-navigation.png`,
+          fullPage: false,
+        });
+        const last = menu.getByRole("link").last();
+        await last.focus();
+        await m.keyboard.press("Tab");
+        assert.equal(
+          await menu
+            .getByRole("button", { name: "Close menu", exact: true })
+            .evaluate((el) => document.activeElement === el),
+          true,
+        );
+        await m.keyboard.press("Shift+Tab");
+        assert.equal(
+          await last.evaluate((el) => document.activeElement === el),
+          true,
+        );
+        await m.keyboard.press("Escape");
+        assert.equal(
+          await toggle.evaluate((el) => document.activeElement === el),
+          true,
+        );
+        assert.equal(
+          await m.locator("#farm-workspace").getAttribute("inert"),
+          null,
+        );
+        assert.equal(await m.evaluate(() => document.body.style.overflow), "");
+      } else {
+        assert.equal(
+          await m
+            .locator("main h1")
+            .evaluate((el) => getComputedStyle(el).animationName),
+          "none",
+        );
+        assert.equal(
+          await m
+            .getByRole("button", { name: "Vehicles", exact: true })
+            .evaluate((el) => getComputedStyle(el).transitionDuration),
+          "0s",
+        );
+      }
       const tab = m.getByRole("button", { name: "Vehicles", exact: true });
       assert.equal(
         await tab.evaluate((el) => getComputedStyle(el).backgroundColor),
         "rgba(0, 0, 0, 0)",
       );
-      await tab.click();
+      await m
+        .getByRole("button", { name: "Set up vehicle", exact: false })
+        .click();
       const vehicleForm = m.getByRole("form", { name: "Add vehicle" });
       await vehicleForm.getByLabel("Vehicle name").fill("Morning farm van");
       await vehicleForm.getByLabel("Registration").fill("TEST-DELIVERY");
       await vehicleForm.getByLabel("Milk capacity").fill("25");
       await vehicleForm.getByLabel("Paneer capacity").fill("10");
       await vehicleForm.getByLabel("Ghee capacity").fill("5");
-      await vehicleForm.getByRole("button", { name: "Add vehicle" }).click();
+      assert.equal(await vehicleForm.getAttribute("data-farm-dirty"), "true");
+      await m.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+      await m.waitForFunction(() => window.scrollY < 1);
+      await m.evaluate(() => {
+        const target = document.querySelector("main h1");
+        const point = (y) => ({
+          identifier: 1,
+          target,
+          clientX: 130,
+          clientY: y,
+        });
+        for (const [type, touches] of [
+          ["touchstart", [point(140)]],
+          ["touchmove", [point(280)]],
+          ["touchend", []],
+        ]) {
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          Object.defineProperty(event, "touches", { value: touches });
+          target.dispatchEvent(event);
+        }
+      });
+      await m
+        .getByRole("status")
+        .filter({ hasText: "Save your unfinished edit" })
+        .waitFor();
+      assert.equal(
+        await vehicleForm.getByLabel("Vehicle name").inputValue(),
+        "Morning farm van",
+      );
+      let releaseSave;
+      const saveGate = new Promise((resolve) => {
+        releaseSave = resolve;
+      });
+      const delayedSave = async (route) => {
+        if (route.request().method() === "POST") await saveGate;
+        await route.continue();
+      };
+      await m.route("**/farm/runs", delayedSave);
+      const saving = vehicleForm.getByRole("button", {
+        name: "Saving…",
+        exact: true,
+      });
+      const clickSave = vehicleForm
+        .getByRole("button", { name: "Add vehicle" })
+        .click();
+      try {
+        await saving.waitFor();
+        assert.equal(await saving.isDisabled(), true);
+        assert.equal(await saving.getAttribute("aria-busy"), "true");
+        assert.equal(await m.locator('[data-farm-notice="saved"]').count(), 0);
+        assert.equal(
+          (await db.query("select count(*)::integer n from farm_vehicles"))
+            .rows[0].n,
+          0,
+        );
+      } finally {
+        releaseSave();
+      }
+      await clickSave;
       await m
         .getByRole("heading", { name: "Morning farm van", exact: true })
         .waitFor();
+      await m.locator('[data-farm-notice="saved"]').waitFor();
+      await m.unroute("**/farm/runs", delayedSave);
       await m.getByRole("button", { name: "Driver team", exact: true }).click();
       await m
         .getByText("Contact and vehicle preferences", { exact: true })
@@ -202,6 +341,18 @@ try {
         .getByRole("button", { name: "Delivery runs", exact: false })
         .click();
       const create = m.getByRole("form", { name: "Create delivery run" });
+      assert.equal(
+        await create
+          .getByRole("button", { name: "Create delivery run" })
+          .isEnabled(),
+        true,
+      );
+      assert.equal(
+        await m
+          .getByRole("list", { name: "Run preparation checklist" })
+          .count(),
+        0,
+      );
       await create.getByLabel("Prepared route").selectOption(route);
       await create.getByLabel("Available driver").selectOption(driver);
       const vehicle = (await db.query("select id from farm_vehicles")).rows[0]
@@ -227,7 +378,7 @@ try {
           .count(),
         0,
       );
-      await d.evaluate(() => window.scrollTo(0, 0));
+      await d.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await d.screenshot({
         path: `${output}/${engineName}-${width}-driver-load.png`,
         fullPage: true,
@@ -239,18 +390,27 @@ try {
       await m.getByRole("button", { name: "Release this run" }).click();
       await m.locator('article[data-state="released"]').waitFor();
       await d.reload();
+      activePage = d;
       await d.getByLabel("Opening odometer").fill("120.1");
       await d.getByRole("button", { name: "Start my run" }).click();
       await d.locator('article[data-state="in_progress"]').waitFor();
+      await d
+        .getByRole("status")
+        .filter({ hasText: "Garden morning" })
+        .waitFor();
+      await d.waitForFunction(
+        () =>
+          document.activeElement?.textContent === "Good things, on their way",
+      );
       await m.reload();
       await m.locator('article[data-state="in_progress"]').waitFor();
       await m.waitForLoadState("networkidle");
-      await m.evaluate(() => window.scrollTo(0, 0));
+      await m.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await m.screenshot({
         path: `${output}/${engineName}-${width}-manager.png`,
         fullPage: true,
       });
-      await d.evaluate(() => window.scrollTo(0, 0));
+      await d.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await d.screenshot({
         path: `${output}/${engineName}-${width}-driver-journey.png`,
         fullPage: true,
@@ -261,9 +421,8 @@ try {
         .waitFor();
       await d.getByRole("button", { name: "Save delivered" }).click();
       await d
-        .getByText("Delivery saved. Continue to the next stop.", {
-          exact: true,
-        })
+        .getByRole("status")
+        .filter({ hasText: "Delivery saved. Continue to the next stop." })
         .waitFor();
       await d.waitForLoadState("networkidle");
       await waitForDb(
@@ -307,7 +466,7 @@ try {
       assert.equal(saved.closeout.returns.milk, 1);
       await d.reload();
       await d.getByRole("heading", { name: "A day well delivered" }).waitFor();
-      await d.evaluate(() => window.scrollTo(0, 0));
+      await d.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await d.screenshot({
         path: `${output}/${engineName}-${width}-driver-closed.png`,
         fullPage: true,
@@ -340,6 +499,11 @@ try {
         reportedDistance: 12.3,
         overflowAt320: "none",
         pageErrors: errors,
+        menuFocusAndScroll: width === 390 ? "passed" : "desktop",
+        reducedMotion: width === 1440 ? "passed" : "normal motion",
+        pendingAndConfirmedSave: "passed",
+        unsavedRunRefreshGuard: "passed",
+        runTransitionFocus: "passed",
       });
       for (const p of [m, d]) p.removeAllListeners("pageerror");
       await managerContext.close();
@@ -381,6 +545,7 @@ try {
   console.error(log.slice(-5000));
   if (activePage && !activePage.isClosed()) {
     console.error((await activePage.locator("body").innerText()).slice(-5000));
+    console.error(await activePage.evaluate(() => ({focus:document.activeElement?.tagName,html:document.activeElement?.outerHTML.slice(0,400),connected:document.activeElement?.isConnected})));
     await activePage.screenshot({
       path: output + "/failure.png",
       fullPage: true,
