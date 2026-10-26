@@ -1,0 +1,50 @@
+[
+  {
+    "engine": "chromium",
+    "width": 390,
+    "schema": "migrated",
+    "gpsCapture": "passed",
+    "denied": "passed",
+    "imprecise": "passed",
+    "serverSave": "passed",
+    "managerReadiness": "passed",
+    "driverNavigation": "passed",
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "width": 1440,
+    "schema": "migrated",
+    "gpsCapture": "passed",
+    "denied": "passed",
+    "imprecise": "passed",
+    "serverSave": "passed",
+    "managerReadiness": "passed",
+    "driverNavigation": "passed",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 390,
+    "schema": "migrated",
+    "gpsCapture": "passed",
+    "denied": "passed",
+    "imprecise": "passed",
+    "serverSave": "passed",
+    "managerReadiness": "passed",
+    "driverNavigation": "passed",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 1440,
+    "schema": "migrated",
+    "gpsCapture": "passed",
+    "denied": "passed",
+    "imprecise": "passed",
+    "serverSave": "passed",
+    "managerReadiness": "passed",
+    "driverNavigation": "passed",
+    "errors": []
+  }
+]

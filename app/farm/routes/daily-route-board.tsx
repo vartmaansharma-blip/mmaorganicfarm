@@ -34,7 +34,7 @@ export async function DailyRouteBoard({
       if (result.data.length < 1000) return rows;
     }
   }
-  const [rows, routes, outcomes, dispatch] = await Promise.all([
+  const [rows, routes, outcomes, dispatch, readinessResult] = await Promise.all([
     readRows(),
     supabase.from("delivery_routes").select("id,name").order("name"),
     readAllRows<OverviewOutcome>((start, end) =>
@@ -50,9 +50,11 @@ export async function DailyRouteBoard({
       .select("status")
       .eq("delivery_date", date)
       .maybeSingle(),
+    supabase.rpc("get_dispatch_routing_readiness", { p_date: date }),
   ]);
   const error = [routes.error, dispatch.error].find(Boolean);
   if (error) throw error;
+  const readiness = readinessResult.data as { visits: number; confirmed_pin_visits: number; issues: { code: string; message: string; visit_key: string | null; route_id: string | null }[] } | null;
   const relevant = (routes.data ?? []).filter((route) =>
     rows.some((row) => row.delivery_route_id === route.id),
   );
@@ -82,6 +84,19 @@ export async function DailyRouteBoard({
             Review dispatch & manifest →
           </Link>
         </div>
+      </div>
+      <div className={styles.reportRow} aria-label="Dispatch routing checks">
+        <strong>Dispatch routing checks</strong>
+        {readinessResult.error || !readiness ? <p role="alert">Routing checks could not be loaded. Refresh before reviewing release.</p> : <>
+          <p>{readiness.visits} {readiness.visits === 1 ? "visit" : "visits"} · {readiness.confirmed_pin_visits} with a confirmed entrance pin. Other visits use their written address.</p>
+          {readiness.issues.length ? <>
+            <strong>{readiness.issues.length} routing issues need review</strong>
+            <ul>{readiness.issues.map((issue, index) => <li key={`${issue.code}-${issue.visit_key ?? issue.route_id}-${index}`}>
+              {issue.message}{" "}
+              <Link prefetch={false} href={`/farm/delivery-sheet?${new URLSearchParams({date, ...(issue.route_id ? {route: issue.route_id} : {})})}`}>Review affected {issue.visit_key ? "visit" : "route"} →</Link>
+            </li>)}</ul>
+          </> : <p>{readiness.visits ? (dispatch.data?.status === "released" ? "No routing blockers found. This dispatch is released." : "No routing blockers found. Review the manifest before manager release.") : "No active visits to release."}</p>}
+        </>}
       </div>
       {relevant.map((route) => {
         const group = rows.filter((row) => row.delivery_route_id === route.id);

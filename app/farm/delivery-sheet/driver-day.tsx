@@ -1,3 +1,4 @@
+import { deliveryNavigationUrl, hasConfirmedDestination } from "@/lib/delivery-navigation";
 import { FarmForm } from "../farm-form";
 import Link from "next/link";
 import {
@@ -12,6 +13,9 @@ import { outcomeLabel, type OutcomeItem } from "@/lib/delivery-operations";
 import { DeliveryOutcomeForm } from "../operation-forms";
 import styles from "./driver-day.module.css";
 type Stop = {
+  destination_latitude: number | null;
+  destination_longitude: number | null;
+  destination_confirmed_at: string | null;
   id: string;
   visit_key: string;
   customer_name: string;
@@ -126,9 +130,9 @@ export async function DriverDay({
                   <a
                     target="_blank"
                     rel="noreferrer"
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(current.address_snapshot)}`}
+                    href={deliveryNavigationUrl(current)!}
                   >
-                    Navigate ↗
+                    {hasConfirmedDestination(current) ? "Navigate to confirmed entrance ↗" : "Navigate by address ↗"}
                   </a>
                 ) : null}
               </div>

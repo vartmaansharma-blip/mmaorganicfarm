@@ -1,0 +1,11 @@
+.pin { display:grid; gap:16px; padding:24px 0; border-top:1px solid var(--line); }
+.pin h2,.pin p { margin:0; }
+.pin p,.pin small { line-height:1.6; }
+.pin h2 { font-size:1.25rem; }
+.pin button,.pin a { min-height:48px; padding:12px 18px; border-radius:24px; font:inherit; }
+.pin button { border:1px solid currentColor; background:transparent; color:inherit; cursor:pointer; width:fit-content; }
+.pin button:disabled { opacity:.6; cursor:wait; }
+.pin button:focus-visible,.pin a:focus-visible { outline:3px solid var(--color-accent,#c9a447); outline-offset:4px; }
+.review { display:grid; gap:12px; padding:16px; border:1px solid var(--line); border-radius:16px; }
+.review a { padding-left:0; }
+@media(max-width:600px) { .pin button { width:100%; } }

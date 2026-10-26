@@ -1,3 +1,4 @@
+import { DeliveryPin } from "./delivery-pin";
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import { AccountNavigation, accountSections, type AccountSection } from "./account-navigation";
@@ -45,7 +46,7 @@ export default async function AccountPage({
   const todayResult = section === "today" ? loadCustomerDelivery(supabase, user.id).catch(() => null) : Promise.resolve(null);
   const { data: profile, error: profileError } = await supabase
     .from("customer_profiles")
-    .select("full_name, email, avatar_url, phone, address_line, postal_code")
+    .select("full_name, email, avatar_url, phone, address_line, postal_code, updated_at")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -104,6 +105,9 @@ export default async function AccountPage({
   );
   const hasPhone = Boolean(profile?.phone?.trim());
   const hasAddress = Boolean(profile?.address_line?.trim());
+  const pinResult = section === "settings" && profile?.address_line
+    ? await supabase.from("customer_delivery_pins").select("latitude,longitude,accuracy_metres").eq("user_id",user.id).maybeSingle()
+    : { data: null, error: null };
   const hasDeliveryDetails = hasPhone || hasAddress;
   const deliveryPlan = selectedPlan ?? null;
   const totalPlanBalance = (deliveryPlans ?? []).reduce(
@@ -289,6 +293,7 @@ export default async function AccountPage({
           </Link>
         </section>
 
+        {profile?.address_line ? <DeliveryPin key={`${profile.address_line}:${profile.updated_at}`} address={profile.address_line} saved={pinResult.data} available={!pinResult.error} /> : null}
         <section className={styles.settingsGroup} aria-labelledby="appearance-heading"><div><h2 id="appearance-heading">Appearance</h2><p>Make yourself comfortable. Your theme stays with you across the shop.</p></div><ThemeToggle /></section>
         <section className={styles.settingsGroup} aria-labelledby="sign-in-heading"><div><h2 id="sign-in-heading">Sign-in & account</h2><p>{googleConnected ? "Connected through Google." : "Signed in with your email address."}</p></div><form action={signOut}><button className={styles.textAction} type="submit">Sign out</button></form></section>
         </> : null}

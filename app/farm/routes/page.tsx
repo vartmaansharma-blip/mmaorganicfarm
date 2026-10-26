@@ -229,7 +229,7 @@ export default async function RoutesPage({
                 Add locality terms or postal codes when an area has multiple
                 routes.
               </strong>
-              <span>Use the words found in customer addresses.</span>
+              <span>Use the words found in customer addresses. Review overlapping rules before automatic assignment.</span>
             </li>
             <li>
               <strong>Assign one active driver to each route.</strong>
