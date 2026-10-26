@@ -821,6 +821,8 @@
 .completion { opacity:0; }
 [data-scene-state="delivered"] .completion { opacity:1; animation:scootyConfirm 500ms ease 400ms both; }
 :is([data-scene-state="none"],[data-scene-state="setup"],[data-scene-state="paused"],[data-scene-state="cancelled"],[data-scene-state="skipped"]) .rider { display:none; }
+:is([data-scene-state="none"],[data-scene-state="setup"],[data-scene-state="paused"],[data-scene-state="cancelled"],[data-scene-state="skipped"]) .scene { height:88px; }
+:is([data-scene-state="none"],[data-scene-state="setup"],[data-scene-state="paused"],[data-scene-state="cancelled"],[data-scene-state="skipped"]) .scene svg { height:88px; min-width:0; }
 [data-motion="paused"] :is(.bounce,.roadmarks,.wheelspoke,.rider,.completion) { animation-play-state:paused; }
 .motionControl { display:block; min-height:44px; margin:-8px 0 0 auto; padding:6px 0 6px 12px; border:0; background:transparent; font:400 10px var(--font-sans); color:var(--ui-muted); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 .deliverySteps { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; list-style:none; margin:0; padding:0 26px 22px; font-size:10px; color:var(--ui-muted); }
