@@ -1,0 +1,50 @@
+[
+  {
+    "engine": "chromium",
+    "width": 390,
+    "schema": "legacy",
+    "gpsCapture": "unavailable as expected",
+    "denied": "not applicable",
+    "imprecise": "not applicable",
+    "serverSave": "not applicable",
+    "managerReadiness": "unavailable as expected",
+    "driverNavigation": "passed",
+    "errors": []
+  },
+  {
+    "engine": "chromium",
+    "width": 1440,
+    "schema": "legacy",
+    "gpsCapture": "unavailable as expected",
+    "denied": "not applicable",
+    "imprecise": "not applicable",
+    "serverSave": "not applicable",
+    "managerReadiness": "unavailable as expected",
+    "driverNavigation": "passed",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 390,
+    "schema": "legacy",
+    "gpsCapture": "unavailable as expected",
+    "denied": "not applicable",
+    "imprecise": "not applicable",
+    "serverSave": "not applicable",
+    "managerReadiness": "unavailable as expected",
+    "driverNavigation": "passed",
+    "errors": []
+  },
+  {
+    "engine": "webkit",
+    "width": 1440,
+    "schema": "legacy",
+    "gpsCapture": "unavailable as expected",
+    "denied": "not applicable",
+    "imprecise": "not applicable",
+    "serverSave": "not applicable",
+    "managerReadiness": "unavailable as expected",
+    "driverNavigation": "passed",
+    "errors": []
+  }
+]

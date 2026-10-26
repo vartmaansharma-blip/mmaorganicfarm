@@ -1,3 +1,5 @@
+import { isMissingDestinationSchema } from "@/lib/routing-schema";
+import { deliveryNavigationUrl } from "@/lib/delivery-navigation";
 import { FarmForm } from "../farm-form";
 import { DriverDay } from "./driver-day";
 import { readAllRows } from "@/lib/farm-data";
@@ -36,6 +38,9 @@ type DeliveryItem = {
 };
 
 type DeliveryRow = {
+  destination_latitude: number | null;
+  destination_longitude: number | null;
+  destination_confirmed_at: string | null;
   address_snapshot: string | null;
   assigned_driver_id: string | null;
   bottle_choice: "new" | "none" | "return";
@@ -114,10 +119,6 @@ function quantityLabel(item: DeliveryItem) {
   return /^1\s/.test(item.unit)
     ? `${quantity} × ${item.unit}`
     : `${quantity} ${item.unit}${quantity === 1 ? "" : "s"}`;
-}
-
-function mapsUrl(address: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
 function phoneUrl(phone: string) {
@@ -254,16 +255,27 @@ export default async function DeliverySheetPage({
     : "";
   const managerView = canManageLocations(role);
 
-  let deliveriesQuery = supabase
-    .from("daily_deliveries")
-    .select(
-      "id, user_id, plan_id, order_id, visit_key, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)",
-    )
-    .eq("delivery_date", deliveryDate)
-    .eq("is_test", false);
-
-  if (role === "driver") {
-    deliveriesQuery = deliveriesQuery.eq("assigned_driver_id", user.id);
+  function deliveriesQuery(withPins: boolean) {
+    let query = supabase.from("daily_deliveries").select(
+      "id, user_id, plan_id, order_id, visit_key, status, customer_name, phone_snapshot, address_snapshot, bottle_choice, delivery_area_id, delivery_route_id, assigned_driver_id, route_stop_order, delivery_confirmed, bottle_return_required, bottle_returned, driver_note, daily_delivery_items(product_key, quantity, unit)" +
+        (withPins ? ",destination_latitude,destination_longitude,destination_confirmed_at" : ""),
+    ).eq("delivery_date", deliveryDate).eq("is_test", false);
+    if (role === "driver") query = query.eq("assigned_driver_id", user.id);
+    return query;
+  }
+  async function readDeliveries() {
+    const read = (withPins: boolean) => readAllRows<DeliveryRow>((start, end) =>
+      deliveriesQuery(withPins).order("id").range(start, end).then(({ data, error }) => ({
+        data: data as unknown as DeliveryRow[] | null, error,
+      })),
+    );
+    try { return await read(true); }
+    catch (error) {
+      if (!isMissingDestinationSchema(error)) throw error;
+      // Safe during the additive database rollout: keep existing assigned
+      // address-based work available without claiming GPS is active.
+      return read(false);
+    }
   }
 
   const [
@@ -276,9 +288,7 @@ export default async function DeliverySheetPage({
     dispatchResult,
     outcomesResult,
   ] = await Promise.all([
-    readAllRows<DeliveryRow>((start, end) =>
-      deliveriesQuery.order("id").range(start, end),
-    ).then((data) => ({ data, error: null })),
+    readDeliveries().then((data) => ({ data, error: null })),
     supabase
       .from("delivery_areas")
       .select("id, name, active, sort_order")
@@ -892,7 +902,7 @@ export default async function DeliverySheetPage({
                           {stop.address_snapshot ? (
                             <a
                               className={styles.mapLink}
-                              href={mapsUrl(stop.address_snapshot)}
+                              href={deliveryNavigationUrl(stop)!}
                               rel="noreferrer"
                               target="_blank"
                             >

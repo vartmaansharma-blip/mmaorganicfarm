@@ -55,3 +55,8 @@ The user explicitly requested completion, merge to main and deployment. TypeScri
 The three application migrations were applied in order after a schema-only hosted rehearsal. Existing plans, orders, payments and delivery-outcome fingerprints matched before and after migration. A recovery snapshot remains inside the same Supabase database in `dashboard_recovery_20261025`, with application-role schema access revoked. It contains application tables, function/policy/index/constraint definitions and migration history. This is an application recovery snapshot; it is not a platform-managed backup of Auth, Storage objects or the complete Supabase project. No customer records were exported locally or deleted.
 
 The rehearsal used empty, nonexposed schemas rather than an independent Supabase project. Full hosted authenticated workflow acceptance remains a narrower evidence boundary than local browser coverage. Routine preparation may create tomorrow's drafts; human dispatch release and sensitive changes still require staff decisions.
+
+
+## Routing foundation update
+
+See [routing-foundation.md](routing-foundation.md) for the 26 October 2026 routing audit, optional confirmed entrance pins, release guards, verification scope and pending production approval.
