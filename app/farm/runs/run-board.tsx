@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
+import { announceFarmSave } from "../farm-save-notice";
 import { formatCalendarDate, productName } from "@/lib/delivery-calendar";
 import {
   journeyDistance,
@@ -25,7 +26,13 @@ type Update = (workspace: RunWorkspace) => void;
 function Submit({ children }: { children: ReactNode }) {
   const { pending } = useFormStatus();
   return (
-    <button className={styles.primary} disabled={pending} type="submit">
+    <button
+      className={styles.primary}
+      disabled={pending}
+      aria-busy={pending}
+      data-pending={pending || undefined}
+      type="submit"
+    >
       {pending ? "Saving…" : children}
       <span aria-hidden="true">{pending ? "…" : "↗"}</span>
     </button>
@@ -50,6 +57,7 @@ function Operation({
   build?: (fd: FormData) => Record<string, unknown>;
   disabled?: boolean;
 }) {
+  const form = useRef<HTMLFormElement>(null);
   const request = useRef<{ payload: string; key: string } | null>(null);
   const lastSaveSucceeded = useRef(false);
   const [online, setOnline] = useState(true);
@@ -89,14 +97,28 @@ function Operation({
         };
       }
       lastSaveSucceeded.current = result.ok;
+      if (result.ok && form.current) delete form.current.dataset.farmDirty;
       if (result.workspace) onUpdate(result.workspace);
+      else if (result.ok) announceFarmSave(result.message, true);
       return result;
     },
     { ok: false, message: "" },
   );
   return (
     <form
+      ref={form}
       action={perform}
+      data-farm-pending={String(pending)}
+      aria-busy={pending}
+      onInput={(event) => {
+        event.currentTarget.dataset.farmDirty = "true";
+      }}
+      onChange={(event) => {
+        event.currentTarget.dataset.farmDirty = "true";
+      }}
+      onSubmit={(event) => {
+        if (pending) event.preventDefault();
+      }}
       className={styles.form}
       aria-label={label}
       onReset={(event) => {
@@ -115,7 +137,7 @@ function Operation({
       {state.message ? (
         <p
           className={state.ok ? styles.feedback : styles.error}
-          role={state.ok ? "status" : "alert"}
+          role={state.ok ? undefined : "alert"}
         >
           {state.message}
         </p>
@@ -224,6 +246,22 @@ function RunCard({
   date: string;
   onUpdate: Update;
 }) {
+  const body = useRef<HTMLDivElement>(null);
+  const previousStatus = useRef(run.status);
+  useEffect(() => {
+    if (previousStatus.current === run.status) return;
+    previousStatus.current = run.status;
+    const frame = requestAnimationFrame(() => {
+      const focused = document.activeElement;
+      // Safari may keep focus on the skip-link destination after a pointer
+      // submission. Both neutral containers should yield to the next phase.
+      if (focused === document.body || focused?.id === "farm-workspace")
+        body.current
+          ?.querySelector<HTMLElement>("h3")
+          ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [run.status]);
   const base = { id: run.id, version: run.version };
   const distance = journeyDistance(run),
     minutes = journeyMinutes(run);
@@ -248,9 +286,9 @@ function RunCard({
         <span className={styles.status}>{runStatus[run.status]}</span>
       </header>
       <Progress status={run.status} />
-      <div className={styles.runBody}>
+      <div key={run.status} ref={body} className={styles.runBody}>
         <div className={styles.brief}>
-          <h3>
+          <h3 tabIndex={-1}>
             {driver
               ? ((
                   {
@@ -645,7 +683,20 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
     confirmedDrivers.length > 0 &&
     activeVehicles.length > 0 &&
     unassignedRoutes.length > 0;
-  const update: Update = (workspace) => setData(workspace);
+  const update: Update = (workspace) => {
+    const changed = workspace.runs.find(
+      (run) =>
+        data.runs.find((previous) => previous.id === run.id)?.version !==
+        run.version,
+    );
+    setData(workspace);
+    announceFarmSave(
+      changed
+        ? `${changed.route_name} · ${runStatus[changed.status]}`
+        : "Saved. Your workday is up to date.",
+      true,
+    );
+  };
   return (
     <main
       className={styles.page}

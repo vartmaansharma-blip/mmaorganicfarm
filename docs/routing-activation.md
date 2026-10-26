@@ -26,6 +26,10 @@ An empty setup previously displayed a creation form whose required selectors con
 
 No driver availability, vehicle registration, capacity, load or compensation rate was invented. Farm staff must supply and confirm those real values before a physical run.
 
+## Dashboard and driver interaction polish
+
+The shared workspace now includes animated mobile navigation with keyboard focus containment, real pending/save indicators, loading skeletons, preserved unfinished run edits during refresh, and focused transitions between confirmed run phases. Reduced-motion preferences disable animation across the shell. See [the interaction behaviour and test scope](farm-interactions.md).
+
 ## Security advisor boundary
 
 No new warning-level advisor class appeared. Six new informational [RLS-with-no-policy findings](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) are intentional: these tables have no client grants and are accessible through role-checked RPCs only. Adding permissive policies to silence the advisory would weaken this design.

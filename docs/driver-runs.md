@@ -8,6 +8,8 @@ A manager can connect an existing individual driver login, a dated availability 
 
 The design retains the M’ma logo and existing typography. Forest green, warm cream and restrained gold distinguish the briefing, product quantities and main action. The driver's briefing becomes shorter once a run is assigned. Managers get a first-use preparation checklist for driver contact/availability, vehicle limits and route work; an incomplete setup cannot submit an empty run form. Controls are labelled; forms retain entries on failure and acknowledge saved server state. Nothing silently saves while offline. Explicit refresh retrieves the other person's latest action.
 
+The shared shell adds purposeful micro-interactions and motion across manager and driver workflows. See [farm interactions](farm-interactions.md) for timing, keyboard behaviour, reduced motion and verification.
+
 ## Operating sequence
 
 1. Invite or activate the driver's individual account through Farm staff. Save the phone number, operations note and preferred vehicle in Driver team. The preference fills the vehicle choice when that driver is selected; a manager can choose another vehicle.

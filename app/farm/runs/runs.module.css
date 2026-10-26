@@ -914,3 +914,18 @@
     justify-self: start;
   }
 }
+
+.welcome { animation:run-arrive 300ms cubic-bezier(.2,.7,.3,1) both; }
+.runBody { animation:run-arrive 220ms cubic-bezier(.2,.7,.3,1) both; }
+.status,.progress li>span,.progress li::after { transition:background-color 220ms ease,border-color 220ms ease,color 220ms ease; }
+.progress li[data-complete]::after { background:#b6c9a4; }
+.progress li[data-complete]>span { animation:run-check 250ms ease-out both; }
+.page .primary>span { transition:transform 180ms ease; }
+.page .primary[data-pending]>span { border:1.5px solid currentColor; border-right-color:transparent; border-radius:50%; font-size:0; height:13px; width:13px; animation:run-spin 900ms linear infinite; }
+.feedback,.error { animation:run-feedback 160ms ease-out both; }
+@media(hover:hover) and (pointer:fine) { .page .primary:not(:disabled):hover>span { transform:translate(2px,-2px); } }
+@keyframes run-arrive { from { opacity:.3; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+@keyframes run-check { from { transform:scale(.92); } 65% { transform:scale(1.06); } to { transform:scale(1); } }
+@keyframes run-spin { to { transform:rotate(360deg); } }
+@keyframes run-feedback { from { opacity:0; } to { opacity:1; } }
+@media(prefers-reduced-motion:reduce) { .page,.page *,.page *::before,.page *::after { animation:none!important; transition:none!important; } }

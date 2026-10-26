@@ -380,3 +380,13 @@
 .panel { border-radius: 14px; }
 .footer { border-top: 1px solid var(--farm-line); padding-top: 18px; }
 @media(max-width:760px) { .mission { grid-template-columns: 1fr; gap: 24px; padding: 23px; } .currentStatus { border-left: 0; border-top: 1px solid #e6c96f; padding: 20px 0 0; width: 100%; } .process { gap: 12px; } }
+
+/* Link movement is quiet; only actionable surfaces respond. */
+.metrics a,.attention a,.routeRow a { transition:background-color 160ms ease,border-color 160ms ease,box-shadow 160ms ease,transform 160ms ease; }
+.metrics a:active { transform:scale(.99); }
+@media(hover:hover) and (pointer:fine) {
+  .metrics a:hover { box-shadow:0 6px 18px #173c3210; transform:translateY(-2px); }
+  .attention a:hover { background:#f5f7f0; }
+  .routeRow a:hover { text-decoration:underline; text-underline-offset:4px; }
+}
+@media(prefers-reduced-motion:reduce) { .page * { animation:none!important; transition:none!important; } }

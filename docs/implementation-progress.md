@@ -8,6 +8,7 @@
 - [x] Verify migration history, RLS, RPC grants, role-scoped reads and unchanged existing business records.
 - [x] Verify the authenticated live owner workspace.
 - [x] Guide first-use preparation instead of allowing an empty run form to submit.
+- [x] Polish shared dashboard/driver navigation, loading, save feedback, run transitions and reduced-motion behaviour.
 - [ ] Farm enters real vehicle registration/capacity and driver contact details; confirms actual availability and load.
 - [ ] Field pilot verifies actual entrances, physical deliveries, return handling and odometer readings.
 - [ ] Add native-capable GPS tracking and durable offline queues, then validate against odometer evidence.
@@ -17,3 +18,5 @@
 The pending files were activated as `20261026172231_routing_foundation.sql` and `20261026172251_driver_run_foundation.sql`; their reviewed contents and hashes are unchanged. Existing-schema fallbacks remain for older environments.
 
 See [routing foundation](routing-foundation.md), [driver runs](driver-runs.md) and [activation verification](routing-activation.md). Completed software checks do not claim completion of a real delivery or a GPS/pay pilot.
+
+Interaction behaviour and acceptance coverage: [farm workspace interactions](farm-interactions.md).
