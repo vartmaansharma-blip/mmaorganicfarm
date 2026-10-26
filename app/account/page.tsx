@@ -1,12 +1,16 @@
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
+import { AccountNavigation, accountSections, type AccountSection } from "./account-navigation";
+import { AccountDate, TodayDelivery } from "./today-delivery";
+import { ThemeToggle } from "@/app/components/theme-toggle";
+import { loadCustomerDelivery } from "@/lib/customer-delivery-data";
 import { CustomerDeliveryHistory } from "@/app/farm/customer-delivery-history";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
-import { buildDeliveryCalendar, productName } from "@/lib/delivery-calendar";
+import { buildDeliveryCalendar, productName, todayInIndia } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
@@ -18,7 +22,7 @@ import {
 import styles from "./account.module.css";
 
 export const metadata: Metadata = {
-  title: "Profile",
+  title: "My M’ma",
   robots: { index: false, follow: false },
 };
 
@@ -27,9 +31,10 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; section?: string; plan?: string }>;
 }) {
   const params = await searchParams;
+  const section: AccountSection = accountSections.includes(params.section as AccountSection) ? params.section as AccountSection : "today";
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,13 +42,14 @@ export default async function AccountPage({
 
   if (!user) redirect("/sign-in");
 
-  const { data: profile } = await supabase
+  const todayResult = section === "today" ? loadCustomerDelivery(supabase, user.id).catch(() => null) : Promise.resolve(null);
+  const { data: profile, error: profileError } = await supabase
     .from("customer_profiles")
     .select("full_name, email, avatar_url, phone, address_line, postal_code")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { data: deliveryPlans } = await supabase
+  const { data: deliveryPlans, error: plansError } = await supabase
     .from("delivery_plans")
     .select(
       "id, status, start_date, bottle_choice, billing_model, period_end_exclusive, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
@@ -52,9 +58,9 @@ export default async function AccountPage({
     .in("status", ["pending_confirmation", "active", "paused"])
     .order("created_at", { ascending: false });
   const [
-    { data: notifications },
-    { data: cancellationRequests },
-    { data: orders },
+    { data: notifications, error: notificationsError },
+    { data: cancellationRequests, error: requestsError },
+    { data: orders, error: ordersError },
   ] = await Promise.all([
     supabase
       .from("customer_notifications")
@@ -78,14 +84,18 @@ export default async function AccountPage({
       .limit(20),
   ]);
 
+  const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.[0];
+  const todaySnapshot = await todayResult;
   const { data: monthlyCompleted } =
-    deliveryPlans?.[0]?.billing_model === "calendar_month"
+    section === "deliveries" && selectedPlan?.billing_model === "calendar_month"
       ? await supabase
           .from("daily_deliveries")
           .select("delivery_date")
-          .eq("plan_id", deliveryPlans[0].id)
+          .eq("plan_id", selectedPlan.id)
           .eq("user_id", user.id)
           .eq("status", "delivered")
+          .eq("delivery_confirmed", true)
+          .eq("is_test", false)
       : { data: null };
   const name = profile?.full_name ?? user.user_metadata.full_name ?? "Customer";
   const email = profile?.email ?? user.email ?? "";
@@ -95,7 +105,7 @@ export default async function AccountPage({
   const hasPhone = Boolean(profile?.phone?.trim());
   const hasAddress = Boolean(profile?.address_line?.trim());
   const hasDeliveryDetails = hasPhone || hasAddress;
-  const deliveryPlan = deliveryPlans?.[0] ?? null;
+  const deliveryPlan = selectedPlan ?? null;
   const totalPlanBalance = (deliveryPlans ?? []).reduce(
     (total, plan) =>
       total +
@@ -186,13 +196,15 @@ export default async function AccountPage({
           <span>M&apos;ma Organic Farm</span>
         </Link>
         <div className="customer-header-actions">
-          <Link className={styles.back} href="/#milk">
-            Back to milk
+          <Link className={styles.back} href="/milk">
+            Back to shop
           </Link>
           <PageNavigationControls />
         </div>
       </header>
 
+      <div className={styles.accountLayout}>
+      <AccountNavigation section={section} />
       <section className={styles.content}>
         {params.message ? (
           <p className={styles.notice}>{params.message}</p>
@@ -204,17 +216,18 @@ export default async function AccountPage({
         ) : null}
         <div className={styles.pageHeading}>
           <div>
-            <p className={styles.eyebrow}>Welcome, {name.split(/\s+/)[0]}</p>
-            <h1>Profile</h1>
-            <p className={styles.intro}>
-              Your details, delivery routine, and plan in one place.
-            </p>
+            <p className={styles.eyebrow}>{section === "today" ? `Welcome, ${name.split(/\s+/)[0]}` : "My M’ma"}</p>
+            <h1>{section === "today" ? "Today" : section === "deliveries" ? "Your deliveries" : section === "orders" ? "Orders" : "Settings"}</h1>
+            <p className={styles.intro}>{section === "today" ? "A little closer to the farm, every day." : section === "deliveries" ? "Your routine, upcoming dates and recorded delivery results." : section === "orders" ? "Your purchases and payment details, together." : "The details that make it yours."}</p>
           </div>
-          <Link className={styles.startOrder} href="/milk">
-            Start an order
-          </Link>
+          {section === "today" ? <AccountDate initialDate={todayInIndia()} /> : <Link className={styles.startOrder} href="/milk">Start an order</Link>}
         </div>
-
+        {section === "today" ? <>
+          <TodayDelivery initial={todaySnapshot} />
+          <Link className={styles.contactSummary} href="/account?section=settings"><span><strong>Delivering to you</strong><small>{hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : "Add your delivery address in Settings."}</small></span><span>Manage details →</span></Link>
+        </> : null}
+        {section === "settings" ? <>
+        {profileError ? <p className={styles.noticeError}>Your personal details couldn’t be loaded. Please refresh this page.</p> : null}
         <section
           className={styles.accountSection}
           aria-labelledby="profile-heading"
@@ -276,6 +289,12 @@ export default async function AccountPage({
           </Link>
         </section>
 
+        <section className={styles.settingsGroup} aria-labelledby="appearance-heading"><div><h2 id="appearance-heading">Appearance</h2><p>Make yourself comfortable. Your theme stays with you across the shop.</p></div><ThemeToggle /></section>
+        <section className={styles.settingsGroup} aria-labelledby="sign-in-heading"><div><h2 id="sign-in-heading">Sign-in & account</h2><p>{googleConnected ? "Connected through Google." : "Signed in with your email address."}</p></div><form action={signOut}><button className={styles.textAction} type="submit">Sign out</button></form></section>
+        </> : null}
+        {section === "deliveries" ? <>
+        {plansError ? <p className={styles.noticeError}>We couldn’t load your plans. Please refresh to try again.</p> : null}
+        {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=deliveries&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly plan" : "Weekly plan"} {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
         {deliveryPlan?.billing_model === "calendar_month" ? (
           <MonthlyPlan
             id={deliveryPlan.id}
@@ -307,61 +326,6 @@ export default async function AccountPage({
               </div>
               <span className={styles.planStatus}>{planStatus}</span>
             </div>
-
-            {(deliveryPlans?.length ?? 0) > 1 ? (
-              <div
-                className={styles.planSwitcher}
-                aria-label="Current paid plans"
-              >
-                {deliveryPlans?.map((currentPlan, index) => {
-                  const currentRemaining = Math.max(
-                    0,
-                    Number(currentPlan.purchased_deliveries) -
-                      Number(currentPlan.delivered_deliveries),
-                  );
-                  return (
-                    <article key={currentPlan.id}>
-                      <div>
-                        <span>Plan {deliveryPlans.length - index}</span>
-                        <strong>{currentRemaining} deliveries remaining</strong>
-                        <small>
-                          Started {formatPlanStartDate(currentPlan.start_date)}{" "}
-                          · {currentPlan.status.replaceAll("_", " ")}
-                        </small>
-                      </div>
-                      <Link href={`/calendar?plan=${currentPlan.id}`}>
-                        Open calendar
-                      </Link>
-                      <details className={styles.cancelRequest}>
-                        <summary>Request cancellation</summary>
-                        <p>
-                          The farm reviews preparation and dispatch first. Paid
-                          milk is not automatically refunded.
-                        </p>
-                        <form action={requestPlanCancellation}>
-                          <input
-                            name="planId"
-                            type="hidden"
-                            value={currentPlan.id}
-                          />
-                          <label>
-                            Reason
-                            <textarea
-                              className={styles.reasonField}
-                              name="reason"
-                              required
-                              minLength={3}
-                              rows={3}
-                            />
-                          </label>
-                          <button type="submit">Send request</button>
-                        </form>
-                      </details>
-                    </article>
-                  );
-                })}
-              </div>
-            ) : null}
 
             <dl className={styles.planSummary}>
               <div>
@@ -488,7 +452,7 @@ export default async function AccountPage({
                 Edit normal week
               </Link>
             </div>
-            {(deliveryPlans?.length ?? 0) === 1 ? (
+            {deliveryPlan ? (
               <details className={styles.cancelRequest}>
                 <summary>Request plan cancellation</summary>
                 <p>
@@ -514,6 +478,12 @@ export default async function AccountPage({
           </section>
         ) : null}
 
+        {!deliveryPlan && !plansError ? <div className={styles.emptyPanel}><h2>Your next routine starts here.</h2><p>Confirmed plans and their calendars will appear here.</p><Link className={styles.startOrder} href="/milk">Choose your farm favourites</Link></div> : null}
+        <CustomerDeliveryHistory userId={user.id} />
+        </> : null}
+        {section === "orders" ? <>
+        {ordersError ? <p className={styles.noticeError}>We couldn’t load your orders. Please refresh to try again.</p> : null}
+        {!orders?.length && !ordersError ? <div className={styles.emptyPanel}><h2>Good things start at the farm.</h2><p>Your orders and payment status will appear here after your first order.</p><Link className={styles.startOrder} href="/milk">Visit the shop</Link></div> : null}
         {(orders?.length ?? 0) > 0 ? (
           <section
             className={styles.ordersSection}
@@ -575,8 +545,10 @@ export default async function AccountPage({
           </section>
         ) : null}
 
-        <CustomerDeliveryHistory userId={user.id} />
+        </> : null}
 
+        {section === "today" ? <>
+        {notificationsError ? <p className={styles.noticeError}>Recent updates couldn’t be loaded. Refresh to try again.</p> : null}
         {(notifications?.length ?? 0) > 0 ? (
           <section
             className={styles.activitySection}
@@ -615,6 +587,9 @@ export default async function AccountPage({
           </section>
         ) : null}
 
+        </> : null}
+        {section === "deliveries" ? <>
+        {requestsError ? <p className={styles.noticeError}>Cancellation requests couldn’t be loaded. Please refresh.</p> : null}
         {(cancellationRequests?.length ?? 0) > 0 ? (
           <section
             className={styles.requestSection}
@@ -635,15 +610,17 @@ export default async function AccountPage({
           </section>
         ) : null}
 
+        </> : null}
         <div className={styles.accountFooter}>
           <span>Signed in as {email}</span>
-          <form action={signOut}>
+          {section !== "settings" ? <form action={signOut}>
             <button className={styles.signOut} type="submit">
               Sign out
             </button>
-          </form>
+          </form> : null}
         </div>
       </section>
+      </div>
     </main>
   );
 }

@@ -11,7 +11,7 @@ export async function CustomerDeliveryHistory({ userId }: { userId: string }) {
     p_user_id: userId,
     p_limit: 20,
   });
-  if (error) throw error;
+  if (error) return <section className={styles.section} aria-label="Confirmed delivery outcomes"><h2>Delivery outcomes</h2><p>We couldn’t load recorded delivery results. Please refresh to try again.</p></section>;
   const history = (data ?? []) as CustomerDeliveryOutcome[];
   return (
     <section
@@ -26,7 +26,7 @@ export async function CustomerDeliveryHistory({ userId }: { userId: string }) {
       </p>
       {history.length ? (
         history.map((row) => (
-          <article key={row.visit_key}>
+          <article key={`${row.delivery_date}:${row.visit_key}`}>
             <div>
               <strong>{formatCalendarDate(row.delivery_date)}</strong>
               <span>
