@@ -66,7 +66,7 @@ Existing outcome suites deliberately construct historical released days incremen
 
 ## Release and rollback
 
-The migration is `supabase/migrations/20261026113838_routing_foundation.sql`. It adds one RLS-protected pin table, three nullable destination snapshot columns, functions and triggers; it changes routing functions without backfilling customer/order/payment/plan records. Ordinary future operations will update routes and snapshots under those rules.
+The reviewed SQL is staged at `supabase/pending-migrations/20261026113838_routing_foundation.sql`, outside the integration-watched migrations directory. Move it into the normal migrations stream only after exact-file approval, or apply the approved SQL explicitly with recorded migration history. Its SHA-256 is `09131d9ee17257295a59d7d0f1814d239f72dda5035b0d4f8276607a4b0c4c43`. It adds one RLS-protected pin table, three nullable destination snapshot columns, functions and triggers; it changes routing functions without backfilling customer/order/payment/plan records. Ordinary future operations will update routes and snapshots under those rules.
 
 The app tolerates the old schema: only known missing additive destination-column errors trigger an address-only delivery query; other errors remain visible. GPS saving and enhanced routing checks show unavailable states until the migration exists. This permits the owner-authorised code merge without applying production DDL. Apply the reviewed migration to activate the new database behaviour, then run hosted acceptance with authorised customer, manager and driver accounts. Production migration requires separate approval for the exact file and MmaFarms project. The owner has authorised merging passing code into main.
 
