@@ -1,3 +1,4 @@
+import { DEFAULT_PRODUCT_PRICES, type ProductPrices } from "./product-prices";
 import { FARM_PRODUCTS } from "./farm-products";
 import { MILK_PRICE_PER_LITRE } from "./order-pricing";
 import type { ShopProductId } from "./shop-draft";
@@ -32,6 +33,6 @@ export const SHOP_PRODUCTS = [
   description: string;
   alt: string;
 }>;
-export function shopProduct(id: ShopProductId) {
-  return SHOP_PRODUCTS.find((p) => p.id === id)!;
+export function shopProduct(id: ShopProductId, prices: ProductPrices = DEFAULT_PRODUCT_PRICES) {
+  return { ...SHOP_PRODUCTS.find((p) => p.id === id)!, price: prices[id] };
 }

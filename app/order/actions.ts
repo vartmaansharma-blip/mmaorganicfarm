@@ -1,4 +1,6 @@
 "use server";
+import { readProductCatalogue } from "@/lib/product-prices-server";
+import { priceInPaise } from "@/lib/product-prices";
 
 import {
   parseRoutines,
@@ -22,7 +24,6 @@ import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import {
   calculateOrderPricing,
   calculatePlanPricing,
-  MILK_PRICE_PER_LITRE,
   type BottleChoice,
 } from "@/lib/order-pricing";
 import { createClient } from "@/lib/supabase/server";
@@ -106,8 +107,9 @@ export async function saveDeliveryDetails(formData: FormData) {
     : requestedBottle === "new"
       ? "new"
       : "return";
+  const { prices } = await readProductCatalogue();
   const selectedProducts = parseFarmProductSelections(
-    String(formData.get("extras") ?? ""),
+    String(formData.get("extras") ?? ""), prices,
   );
   const extras = serializeFarmProductSelections(selectedProducts);
   const schedule = String(formData.get("schedule") ?? "");
@@ -123,21 +125,21 @@ export async function saveDeliveryDetails(formData: FormData) {
       ? await firstScheduledPlanStart(supabase, user.id)
       : null;
   const pricing = monthlyRules
-    ? quoteMonthlySchedule({
+    ? quoteMonthlySchedule({ prices,
         start,
         rules: monthlyRules,
         bottleChoice: bottle,
         firstPlanStart: firstPlanStart ?? start,
       })
     : purchase === "plan" && weeklySchedule
-      ? calculatePlanPricing({
+      ? calculatePlanPricing({ prices,
           bottleChoice: bottle,
           products: selectedProducts,
           schedule: weeklySchedule,
           startDate: start,
           firstPlanStart: firstPlanStart ?? start,
         })
-      : calculateOrderPricing({
+      : calculateOrderPricing({ prices,
           bottleChoice: bottle,
           milkLitres: effectiveMilkLitres,
           products: selectedProducts,
@@ -411,7 +413,7 @@ export async function saveDeliveryDetails(formData: FormData) {
     .from("orders")
     .insert({
       address_snapshot: address,
-      bottle_charge_paise: pricing.bottleCharge * 100,
+      bottle_charge_paise: priceInPaise(pricing.bottleCharge),
       bottle_choice: bottle,
       currency: "INR",
       delivery_plan_id: deliveryPlanId,
@@ -421,8 +423,8 @@ export async function saveDeliveryDetails(formData: FormData) {
       start_date: orderDeliveryDate,
       status: "draft",
       subtotal_paise:
-        (pricing.total - pricing.bottleCharge - pricing.deliveryCharge) * 100,
-      total_paise: pricing.total * 100,
+        priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge),
+      total_paise: priceInPaise(pricing.total),
       user_id: user.id,
     })
     .select("id")
@@ -446,18 +448,18 @@ export async function saveDeliveryDetails(formData: FormData) {
     purchase === "plan" ? pricing.milkLitres : effectiveMilkLitres;
   const orderItems = monthlyRules
     ? monthlyRules.map((rule) => {
-        const q = quoteMonthlySchedule({ start, rules: monthlyRules });
+        const q = quoteMonthlySchedule({ prices, start, rules: monthlyRules });
         return {
           delivery_date: start,
           frequency: "once",
-          line_total_paise: q.productTotals[rule.id] * 100,
+          line_total_paise: priceInPaise(q.productTotals[rule.id]),
           order_id: order.id,
           product_key: rule.id,
           product_name: shopProduct(rule.id).name,
           quantity: q.quantities[rule.id],
           scheduled_days: [],
           unit: rule.id === "milk" ? "litre" : "500 g",
-          unit_price_paise: routinePrice(rule.id) * 100,
+          unit_price_paise: priceInPaise(routinePrice(rule.id, prices)),
           user_id: user.id,
         };
       })
@@ -467,7 +469,7 @@ export async function saveDeliveryDetails(formData: FormData) {
               {
                 delivery_date: orderDeliveryDate,
                 frequency: purchase === "plan" ? "weekly" : "once",
-                line_total_paise: pricing.milkTotal * 100,
+                line_total_paise: priceInPaise(pricing.milkTotal),
                 order_id: order.id,
                 product_key: "milk",
                 product_name: "Fresh farm milk",
@@ -479,7 +481,7 @@ export async function saveDeliveryDetails(formData: FormData) {
                       )
                     : [],
                 unit: purchase === "plan" ? "litres / 30 deliveries" : "litre",
-                unit_price_paise: MILK_PRICE_PER_LITRE * 100,
+                unit_price_paise: priceInPaise(prices.milk),
                 user_id: user.id,
               },
             ]
@@ -488,14 +490,14 @@ export async function saveDeliveryDetails(formData: FormData) {
           delivery_date:
             product.frequency === "once" ? orderDeliveryDate : null,
           frequency: product.frequency,
-          line_total_paise: (pricing.productTotals[product.id] ?? 0) * 100,
+          line_total_paise: priceInPaise((pricing.productTotals[product.id] ?? 0)),
           order_id: order.id,
           product_key: product.id,
           product_name: product.name,
           quantity: product.quantity,
           scheduled_days: product.days,
           unit: product.unit,
-          unit_price_paise: product.price * 100,
+          unit_price_paise: priceInPaise(product.price),
           user_id: user.id,
         })),
       ];

@@ -1,9 +1,9 @@
+import { DEFAULT_PRODUCT_PRICES, priceInPaise, type ProductPrices } from "./product-prices";
 import { FARM_PRODUCTS, type FarmProductSelection } from "./farm-products";
 import {
   calculateOrderPricing,
   calculatePlanPricing,
   type BottleChoice,
-  MILK_PRICE_PER_LITRE,
 } from "./order-pricing";
 import type { WeeklyMilkSchedule } from "./milk-plan";
 export type StoredCheckoutItem = {
@@ -23,6 +23,7 @@ export function quoteStoredCheckout(
     startDate: string;
     firstPlanStart: string;
   },
+  prices: ProductPrices = DEFAULT_PRODUCT_PRICES,
 ) {
   if (
     !items.length ||
@@ -35,7 +36,7 @@ export function quoteStoredCheckout(
     if (!Number.isInteger(item.quantity) || item.quantity < 1)
       throw Error("Invalid product quantity.");
     if (item.product_key === "milk") {
-      if (item.unit_price_paise !== MILK_PRICE_PER_LITRE * 100)
+      if (item.unit_price_paise !== priceInPaise(prices.milk))
         throw Error("Invalid milk price.");
       milk = item.quantity;
       continue;
@@ -44,7 +45,7 @@ export function quoteStoredCheckout(
     if (
       !p ||
       item.quantity > 5 ||
-      item.unit_price_paise !== p.price * 100 ||
+      item.unit_price_paise !== priceInPaise(prices[p.id]) ||
       !["once", "weekly"].includes(item.frequency)
     )
       throw Error("Invalid farm product.");
@@ -56,6 +57,7 @@ export function quoteStoredCheckout(
       throw Error("Invalid product days.");
     products.push({
       ...p,
+      price: prices[p.id],
       quantity: item.quantity,
       frequency: item.frequency === "weekly" ? "weekly" : "once",
       days: item.scheduled_days,
@@ -69,12 +71,13 @@ export function quoteStoredCheckout(
     mode === "plan" && plan
       ? calculatePlanPricing({
           bottleChoice,
+          prices,
           products,
           schedule: plan.schedule,
           startDate: plan.startDate,
           firstPlanStart: plan.firstPlanStart,
         })
-      : calculateOrderPricing({ bottleChoice, products, milkLitres: milk });
+      : calculateOrderPricing({ bottleChoice, prices, products, milkLitres: milk });
   if (mode === "adjustment") {
     pricing.total -= pricing.deliveryCharge;
     pricing.deliveryCharge = 0;
@@ -86,7 +89,7 @@ export function quoteStoredCheckout(
       item.product_key === "milk"
         ? pricing.milkTotal
         : pricing.productTotals[item.product_key];
-    if (item.line_total_paise !== amount * 100)
+    if (item.line_total_paise !== priceInPaise(amount))
       throw Error("Product total changed.");
   }
   return pricing;

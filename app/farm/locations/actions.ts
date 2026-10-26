@@ -1,4 +1,6 @@
 "use server";
+import { readProductCatalogue } from "@/lib/product-prices-server";
+import { priceInPaise, type ProductPrices } from "@/lib/product-prices";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -22,7 +24,6 @@ import { MILK_PLAN_DAYS, type WeeklyMilkSchedule } from "@/lib/milk-plan";
 import {
   calculateOrderPricing,
   calculatePlanPricing,
-  MILK_PRICE_PER_LITRE,
   PLAN_DELIVERY_COUNT,
   type BottleChoice,
 } from "@/lib/order-pricing";
@@ -353,11 +354,11 @@ export async function assignCustomerLocation(formData: FormData) {
   redirectWithMessage(returnTo, "message", "Customer profile and route updated.");
 }
 
-function manualProducts(formData: FormData): FarmProductSelection[] {
+function manualProducts(formData: FormData, prices: ProductPrices): FarmProductSelection[] {
   return FARM_PRODUCTS.flatMap((product) => {
     const quantity = Number(formData.get(`${product.id}Quantity`) ?? 0);
     return Number.isInteger(quantity) && quantity >= 1 && quantity <= 5
-      ? [{ ...product, days: [], frequency: "once" as const, quantity }]
+      ? [{ ...product, price: prices[product.id], days: [], frequency: "once" as const, quantity }]
       : [];
   });
 }
@@ -376,7 +377,8 @@ export async function recordCustomerOrder(formData: FormData) {
       : "return";
   const startDate = textValue(formData, "startDate");
   const earliestStart = nextDeliveryDateInIndia();
-  const products = manualProducts(formData);
+  const { prices, revision } = await readProductCatalogue();
+  const products = manualProducts(formData, prices);
   const onceMilk = Number(formData.get("milkLitres") ?? 0);
   const paymentConfirmed = textValue(formData, "paymentConfirmed") === "yes";
   const requestedPaymentMethod = textValue(formData, "paymentMethod");
@@ -435,8 +437,13 @@ export async function recordCustomerOrder(formData: FormData) {
 
   const firstPlanStart = purchaseMode === "plan" ? await firstScheduledPlanStart(admin, userId) : null;
   const pricing = purchaseMode === "plan"
-    ? calculatePlanPricing({ bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
-    : calculateOrderPricing({ bottleChoice, milkLitres: onceMilk, products });
+    ? calculatePlanPricing({ prices, bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
+    : calculateOrderPricing({ prices, bottleChoice, milkLitres: onceMilk, products });
+
+  if (textValue(formData, "catalogueRevision") !== revision || Number(formData.get("expectedTotalPaise")) !== priceInPaise(pricing.total)) {
+    revalidatePath("/", "layout");
+    redirectWithMessage(returnTo, "error", "Product prices changed. Review the current total and confirm the received payment again.");
+  }
 
   let deliveryPlanId: string | null = null;
   if (purchaseMode === "plan") {
@@ -495,7 +502,7 @@ export async function recordCustomerOrder(formData: FormData) {
     .from("orders")
     .insert({
       address_snapshot: profile.address_line,
-      bottle_charge_paise: pricing.bottleCharge * 100,
+      bottle_charge_paise: priceInPaise(pricing.bottleCharge),
       bottle_choice: bottleChoice,
       currency: "INR",
       delivery_plan_id: deliveryPlanId,
@@ -506,17 +513,23 @@ export async function recordCustomerOrder(formData: FormData) {
       purchase_mode: purchaseMode,
       start_date: startDate,
       status: "pending_payment",
-      subtotal_paise: (pricing.total - pricing.bottleCharge - pricing.deliveryCharge) * 100,
-      total_paise: pricing.total * 100,
+      subtotal_paise: priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge),
+      total_paise: priceInPaise(pricing.total),
       user_id: userId,
     })
-    .select("id")
+    .select("id,catalog_revision")
     .single();
   if (orderError || !order) {
     if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
     redirectWithMessage(returnTo, "error", orderError?.message ?? "The order could not be recorded.");
   }
 
+  if (order.catalog_revision !== revision) {
+    await admin.from("orders").delete().eq("id", order.id);
+    if (deliveryPlanId) await admin.from("delivery_plans").delete().eq("id", deliveryPlanId);
+    revalidatePath("/", "layout");
+    redirectWithMessage(returnTo, "error", "Product prices changed. Review the new total before recording payment.");
+  }
   const scheduledDays = purchaseMode === "plan"
     ? schedule.flatMap((quantity, index) => quantity > 0 ? [index + 1] : [])
     : [];
@@ -525,28 +538,28 @@ export async function recordCustomerOrder(formData: FormData) {
       ? [{
           delivery_date: startDate,
           frequency: purchaseMode === "plan" ? "weekly" : "once",
-          line_total_paise: pricing.milkTotal * 100,
+          line_total_paise: priceInPaise(pricing.milkTotal),
           order_id: order.id,
           product_key: "milk",
           product_name: "Fresh farm milk",
           quantity: pricing.milkLitres,
           scheduled_days: scheduledDays,
           unit: purchaseMode === "plan" ? "litres / 30 deliveries" : "litre",
-          unit_price_paise: MILK_PRICE_PER_LITRE * 100,
+          unit_price_paise: priceInPaise(prices.milk),
           user_id: userId,
         }]
       : []),
     ...products.map((product) => ({
       delivery_date: startDate,
       frequency: "once",
-      line_total_paise: (pricing.productTotals[product.id] ?? 0) * 100,
+      line_total_paise: priceInPaise((pricing.productTotals[product.id] ?? 0)),
       order_id: order.id,
       product_key: product.id,
       product_name: product.name,
       quantity: product.quantity,
       scheduled_days: [],
       unit: product.unit,
-      unit_price_paise: product.price * 100,
+      unit_price_paise: priceInPaise(product.price),
       user_id: userId,
     })),
   ];

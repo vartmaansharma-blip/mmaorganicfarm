@@ -1,3 +1,4 @@
+import { readProductCatalogue } from "@/lib/product-prices-server";
 import Image from "next/image";
 import { LandingConversionTracking } from "@/app/components/landing-conversion-tracking";
 import { CapsuleNavigation } from "@/app/components/capsule-navigation";
@@ -65,7 +66,7 @@ const officialPoints = [
 
 const siteUrl = "https://mmaorganicfarm.vercel.app";
 
-const structuredData = {
+const structuredData = (milkPrice: number) => ({
   "@context": "https://schema.org",
   "@graph": [
     {
@@ -75,7 +76,7 @@ const structuredData = {
       url: siteUrl,
       telephone: "+919818804419",
       image: `${siteUrl}/hero-milk.png`,
-      priceRange: "₹62 per litre",
+      priceRange: `₹${milkPrice} per litre`,
       address: {
         "@type": "PostalAddress",
         addressLocality: "Jamshedpur",
@@ -98,12 +99,12 @@ const structuredData = {
       },
       image: `${siteUrl}/hero-milk.png`,
       description:
-        "Fresh farm milk for Jamshedpur homes, offered at ₹62 per litre with glass bottle delivery.",
+        `Fresh farm milk for Jamshedpur homes, offered at ₹${milkPrice} per litre with glass bottle delivery.`,
       offers: {
         "@type": "Offer",
-        price: "62",
+        price: String(milkPrice),
         priceCurrency: "INR",
-        priceSpecification: { "@type": "UnitPriceSpecification", price: "62", priceCurrency: "INR", unitText: "litre" },
+        priceSpecification: { "@type": "UnitPriceSpecification", price: String(milkPrice), priceCurrency: "INR", unitText: "litre" },
         url: `${siteUrl}/shop/milk`,
         eligibleRegion: {
           "@type": "City",
@@ -112,14 +113,15 @@ const structuredData = {
       },
     },
   ],
-};
+});
 
 export default async function Home() {
+  const { prices } = await readProductCatalogue();
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData(prices.milk)) }}
       />
 
       <a className="skip-link" href="#main">
@@ -146,10 +148,10 @@ export default async function Home() {
         <div className="ticker" role="region" tabIndex={0} aria-label="M'ma Organic Farm ordering summary">
           <div>
             <span>
-              M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ BUILD YOUR MILK PLAN ✦
+              M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹{prices.milk} PER LITRE ✦ BUILD YOUR MILK PLAN ✦
             </span>
             <span aria-hidden="true">
-              M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹62 PER LITRE ✦ BUILD YOUR MILK PLAN ✦
+              M&apos;MA ORGANIC FARM ✦ FRESH FROM FARM ✦ 20 YEARS OPERATING ✦ 500+ FAMILIES ✦ ₹{prices.milk} PER LITRE ✦ BUILD YOUR MILK PLAN ✦
             </span>
           </div>
         </div>
@@ -168,7 +170,7 @@ export default async function Home() {
             <article className="milk-visual">
               <Image src="/farm/bottle.webp" alt="M'ma Organic Farm milk bottle at the farm" width={1122} height={1402} sizes="(max-width: 720px) calc(100vw - 40px), 45vw" />
               <div className="price-tag">
-                <strong>₹62</strong>
+                <strong>₹{prices.milk}</strong>
                 <span>/ litre</span>
               </div>
             </article>

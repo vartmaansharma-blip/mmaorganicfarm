@@ -1,7 +1,7 @@
+import { readProductCatalogue } from "@/lib/product-prices-server";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 import { FARM_PRODUCTS } from "@/lib/farm-products";
-import { MILK_PRICE_PER_LITRE } from "@/lib/order-pricing";
 
 export const metadata: Metadata = {
   title: "Product Pricing",
@@ -9,7 +9,8 @@ export const metadata: Metadata = {
     "Current M'ma Organic Farm product prices for Jamshedpur customers.",
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const { prices } = await readProductCatalogue();
   return (
     <PublicInformationLayout
       eyebrow="Clear pricing"
@@ -21,14 +22,14 @@ export default function PricingPage() {
         <dl>
           <div>
             <dt>Fresh milk · 1 litre</dt>
-            <dd>₹{MILK_PRICE_PER_LITRE}</dd>
+            <dd>₹{prices.milk}</dd>
           </div>
           {FARM_PRODUCTS.map((product) => (
             <div key={product.id}>
               <dt>
                 {product.name} · {product.unit}
               </dt>
-              <dd>₹{product.price}</dd>
+              <dd>₹{prices[product.id]}</dd>
             </div>
           ))}
         </dl>
@@ -36,7 +37,7 @@ export default function PricingPage() {
       <section>
         <h2>Glass bottle</h2>
         <p>
-          Milk is ₹62 per litre with bottle return. New glass bottles add ₹10
+          Milk is ₹{prices.milk} per litre with bottle return. New glass bottles add ₹{prices.bottle}
           per litre; this is a bottle purchase, separate from delivery.
         </p>
       </section>

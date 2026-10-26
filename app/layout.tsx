@@ -1,3 +1,5 @@
+import { readProductCatalogue } from "@/lib/product-prices-server";
+import { ProductPricingProvider } from "./components/product-pricing";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -20,7 +22,7 @@ const interfaceFont = localFont({
 const siteUrl = "https://mmaorganicfarm.vercel.app";
 const siteTitle = "M'ma Organic Farm | Fresh Farm Milk Delivery in Jamshedpur";
 const siteDescription =
-  "Order fresh farm milk in Jamshedpur from M'ma Organic Farm. ₹62 per litre, glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
+  "Order fresh farm milk in Jamshedpur from M'ma Organic Farm. glass bottle delivery, 20 years operating, 500+ families served, and 1,000 L+ daily production.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -65,17 +67,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const catalogue = await readProductCatalogue();
   return (
     <html className={`${editorial.variable} ${interfaceFont.variable}`} data-theme="dark" data-scroll-behavior="smooth" lang="en" suppressHydrationWarning>
       <head>
         <script id="mama-theme" dangerouslySetInnerHTML={{ __html: `(function(){var t='dark';try{if(localStorage.getItem('mama-theme')==='light')t='light'}catch(e){}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t})()` }} />
       </head>
-      <body><ShopProvider minimumDate={nextDeliveryDateInIndia()}>{children}</ShopProvider></body>
+      <body><ProductPricingProvider catalogue={catalogue}><ShopProvider minimumDate={nextDeliveryDateInIndia()}>{children}</ShopProvider></ProductPricingProvider></body>
     </html>
   );
 }

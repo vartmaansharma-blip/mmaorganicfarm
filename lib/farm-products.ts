@@ -1,3 +1,4 @@
+import { DEFAULT_PRODUCT_PRICES, type ProductPrices } from "./product-prices";
 export const FARM_PRODUCTS = [
   { id: "paneer", name: "Fresh paneer", price: 200, unit: "500 g" },
   { id: "ghee", image: "/ghee-500g.png", name: "Farm ghee", price: 375, unit: "500 g" },
@@ -16,7 +17,7 @@ export type FarmProductSelection = {
   unit: string;
 };
 
-export function parseFarmProductSelections(value: string) {
+export function parseFarmProductSelections(value: string, prices: ProductPrices = DEFAULT_PRODUCT_PRICES) {
   const products = new Map(FARM_PRODUCTS.map((product) => [product.id, product]));
 
   return value.split(/[;,]/).flatMap((entry): FarmProductSelection[] => {
@@ -37,7 +38,7 @@ export function parseFarmProductSelections(value: string) {
       .sort((a, b) => a - b);
 
     return product
-      ? [{ ...product, days: frequency === "weekly" ? days : [], frequency, quantity }]
+      ? [{ ...product, price: prices[product.id], days: frequency === "weekly" ? days : [], frequency, quantity }]
       : [];
   });
 }

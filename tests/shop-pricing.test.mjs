@@ -563,3 +563,26 @@ test("legacy public drafts preserve their selected weekdays without adding hidde
   );
   assert.deepEqual(cartRoutines(cart)[0].week, [1, 0, 1, 0, 1, 0, 0]);
 });
+
+test("edited catalogue prices, including paise, agree across cart and canonical checkout", () => {
+  const prices={milk:63.37,paneer:211.19,ghee:389.99,bottle:12.25};
+  const products=[{...paneer,frequency:'once',days:[],quantity:3}];
+  const quote=calculateOrderPricing({bottleChoice:'new',milkLitres:3,products,prices});
+  assert.equal(quote.milkTotal,190.11);assert.equal(quote.productTotals.paneer,633.57);assert.equal(quote.total,860.43);
+  const invoice=[{product_key:'milk',quantity:3,unit_price_paise:6337,line_total_paise:19011,frequency:'once',scheduled_days:[]},{product_key:'paneer',quantity:3,unit_price_paise:21119,line_total_paise:63357,frequency:'once',scheduled_days:[]}];
+  assert.equal(quoteStoredCheckout(invoice,'new','once',undefined,prices).total,quote.total);
+  assert.throws(()=>quoteStoredCheckout(invoice,'new','once'),/price|product/);
+  const {cartQuote}=load('lib/shop-cart.ts');
+  const state=createShopState('2026-12-01');state.carts.once.milk={...state.drafts.once.milk,quantity:3};state.carts.once.paneer={enabled:true,quantity:3,frequency:'once',days:[]};
+  assert.equal(cartQuote(state.carts.once,'once',null,prices).total,823.68);
+});
+test("a monthly edited-price invoice verifies against its own immutable catalogue",()=>{
+  const prices={milk:63.37,paneer:211.19,ghee:389.99,bottle:12.25},start='2026-12-01';
+  const rules=[{id:'milk',quantity:3,repeat:'daily',firstDate:start},{id:'paneer',quantity:1,repeat:'weekly',firstDate:start}];
+  const q=quoteMonthlySchedule({start,rules,prices});
+  const invoice=rules.map(r=>({product_key:r.id,quantity:q.quantities[r.id],unit_price_paise:Math.round(prices[r.id]*100),line_total_paise:Math.round(q.productTotals[r.id]*100),frequency:'once',scheduled_days:[]}));
+  const dates=q.days.flatMap(d=>d.items.map(i=>({product_key:i.id,delivery_date:d.date,quantity:i.quantity})));
+  const stored={start_date:start,period_end_exclusive:q.endExclusive,schedule_rules:rules};
+  assert.equal(quoteStoredMonthlyCheckout(invoice,'return',stored,dates,start,prices).total,q.total);
+  assert.throws(()=>quoteStoredMonthlyCheckout(invoice,'return',stored,dates,start),/invoice changed/);
+});

@@ -32,8 +32,8 @@ const labels: Record<RepeatPattern, string> = {
 };
 
 export function ScheduledProductDetails({ id }: { id: ShopProductId }) {
-  const { state, update, setCartOpen, firstPlanStart } = useShop();
-  const p = shopProduct(id),
+  const { state, update, setCartOpen, firstPlanStart, prices } = useShop();
+  const p = shopProduct(id, prices),
     d = state.drafts.plan[id],
     cart = state.carts.plan;
   const [calendarOpen, setCalendarOpen] = useState(true);
@@ -52,7 +52,7 @@ export function ScheduledProductDetails({ id }: { id: ShopProductId }) {
   const prospective = addCartProduct(cart, id, draft, "plan");
   const rules = validateRoutines(start, cartRoutines(prospective));
   const quote = rules
-    ? quoteMonthlySchedule({
+    ? quoteMonthlySchedule({ prices,
         start,
         rules,
         firstPlanStart: firstPlanStart ?? start,

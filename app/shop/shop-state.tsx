@@ -1,4 +1,5 @@
 "use client";
+import { useProductPricing } from "../components/product-pricing";
 import {
   createContext,
   useContext,
@@ -91,6 +92,7 @@ export function ShopProvider({
   );
 }
 export function useShop() {
+  const { prices, revision: catalogueRevision } = useProductPricing();
   const store = useContext(Context);
   if (!store) throw Error("Shop provider missing");
   const state = useSyncExternalStore(store.subscribe, store.get, store.server);
@@ -98,6 +100,8 @@ export function useShop() {
   const cart = useContext(CartContext)!;
   return {
     state,
+    prices,
+    catalogueRevision,
     update: store.update,
     firstPlanStart,
     hydrated: store.isRestored(),

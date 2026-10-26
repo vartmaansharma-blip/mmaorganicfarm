@@ -7,12 +7,13 @@ import { formatCheckoutAmount } from "@/lib/checkout-display";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 import styles from "../operations-list.module.css";
-import { resetManualPayment } from "./actions";
+import { correctPaymentDetails, resetManualPayment } from "./actions";
 import { FormSubmitButton } from "../form-submit-button";
 
 export const metadata: Metadata = { title: "Farm payments", robots: { index: false, follow: false } };
 
 type PaymentRow = {
+  record_revision: number;
   amount_paise: number;
   created_at: string;
   id: string;
@@ -39,7 +40,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
   const customerId = /^[0-9a-f-]{36}$/i.test(parameters.customer ?? "") ? parameters.customer! : null;
   let paymentQuery = admin
     .from("payments")
-    .select("id,user_id,order_id,amount_paise,provider,provider_payment_id,payment_method,paid_at,created_at,status")
+    .select("id,user_id,order_id,amount_paise,provider,provider_payment_id,payment_method,paid_at,created_at,status,record_revision")
     .eq("is_test", false)
     .eq("status", "captured")
     .order("paid_at", { ascending: false })
@@ -69,6 +70,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
     ? await admin.from("customer_profiles").select("user_id,full_name").in("user_id", userIds)
     : { data: [] };
   const customerNames = new Map((customerProfiles ?? []).map((profile) => [profile.user_id, profile.full_name ?? "Customer"]));
+  const {data: receiptChanges} = await admin.from("farm_change_log").select("id,reason,record_id,created_at").eq("record_type","payment").in("record_id", payments.map(p => p.id)).order("created_at",{ascending:false}).limit(25);
   const capturedTotal = payments.reduce((sum, payment) => sum + Number(payment.amount_paise), 0);
   const farmRecordedCount = payments.filter((payment) => payment.provider === "manual").length;
 
@@ -92,10 +94,19 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
         <p>{formatCheckoutAmount(payment.amount_paise)}</p>
         <small>{paymentMethodLabel(payment.payment_method)} · {payment.provider_payment_id ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
         {!customerId ? <Link prefetch={false} href={`/farm/customers/${payment.user_id}`}>Open customer</Link> : null}
+        {payment.provider === "manual" ? <details className={styles.correction}><summary>Edit receipt details</summary><FarmForm action={correctPaymentDetails}>
+          <input type="hidden" name="paymentId" value={payment.id}/><input type="hidden" name="userId" value={payment.user_id}/><input type="hidden" name="revision" value={payment.record_revision}/>
+          <label>Payment method<select name="method" defaultValue={payment.payment_method ?? "cash"}><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="other">Other</option></select></label>
+          <label>Reference<input name="reference" maxLength={120} defaultValue={payment.provider_payment_id ?? ""}/></label>
+          <label>Received at · India time<input name="receivedAt" type="datetime-local" step="1" required defaultValue={new Date(new Date(payment.paid_at ?? payment.created_at).getTime()+19800000).toISOString().slice(0,19)}/></label>
+          <label>Reason for correction<textarea name="reason" minLength={3} maxLength={300} rows={2} required/></label>
+          <p>To correct an amount or order, reverse the incorrect entry below, then record the right order and payment from the customer page.</p><FormSubmitButton pendingLabel="Saving receipt…">Save receipt details</FormSubmitButton>
+        </FarmForm></details> : null}
         {role === "admin" && payment.provider === "manual" ? <details className={styles.correction}><summary>Correct this payment</summary><FarmForm action={resetManualPayment}><input name="paymentId" type="hidden" value={payment.id} /><input name="userId" type="hidden" value={payment.user_id} /><label>Reason for reset<textarea maxLength={300} minLength={3} name="reason" placeholder="For example: cash entry recorded twice" required rows={2} /></label><p>This removes the payment from totals and cancels the related order and future service. The correction remains recorded.</p><FormSubmitButton pendingLabel="Resetting…">Reset payment</FormSubmitButton></FarmForm></details> : null}
       </article>) : <div className={styles.empty}>No confirmed payments yet.</div>}
     </section>
 
+    {receiptChanges?.length ? <details className={styles.audit}><summary>Receipt edit history · {receiptChanges.length}</summary><div>{receiptChanges.map(change => <article key={change.id}><strong>{change.reason}</strong><small>{new Date(change.created_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})}</small></article>)}</div></details> : null}
     {(correctionData ?? []).length ? <details className={styles.audit}><summary>Payment correction log · {(correctionData ?? []).length}</summary><div>{(correctionData ?? []).map((change) => <article key={change.id}><strong>Order MMA-{change.order_id.slice(0, 8).toUpperCase()}</strong><span>{change.reason}</span><small>{new Date(change.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small></article>)}</div></details> : null}
   </main>;
 }

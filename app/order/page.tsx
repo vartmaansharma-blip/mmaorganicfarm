@@ -1,3 +1,4 @@
+import { readProductCatalogue } from "@/lib/product-prices-server";
 import { parseRoutines, quoteMonthlySchedule } from "@/lib/monthly-schedule";
 import { SharedCalendar } from "@/app/shop/shared-calendar";
 import { orderReturnPath } from "@/lib/shop-draft";
@@ -67,7 +68,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
     user.user_metadata.name ??
     "there"
   ).split(/\s+/)[0];
-  const selectedProducts = parseFarmProductSelections(params.extras ?? "");
+  const { prices } = await readProductCatalogue();
+  const selectedProducts = parseFarmProductSelections(params.extras ?? "", prices);
   const weeklySchedule = parseWeeklyMilkSchedule(params.schedule ?? "");
   const planSchedule = params.purchase === "plan" ? weeklySchedule : null;
   const purchase = params.purchase === "plan" ? "plan" : "once";
@@ -89,21 +91,21 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
       ? await firstScheduledPlanStart(supabase, user.id)
       : null;
   const pricing = monthlyRules
-    ? quoteMonthlySchedule({
+    ? quoteMonthlySchedule({ prices,
         start: params.start ?? "",
         rules: monthlyRules,
         bottleChoice,
         firstPlanStart: firstPlanStart ?? params.start,
       })
     : purchase === "plan" && planSchedule
-      ? calculatePlanPricing({
+      ? calculatePlanPricing({ prices,
           bottleChoice,
           products: selectedProducts,
           schedule: planSchedule,
           startDate: params.start ?? "",
           firstPlanStart: firstPlanStart ?? params.start ?? "",
         })
-      : calculateOrderPricing({
+      : calculateOrderPricing({ prices,
           bottleChoice,
           milkLitres,
           products: selectedProducts,
@@ -302,7 +304,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                   />
                   <span>
                     <strong>I will return a bottle</strong>
-                    <small>Milk remains ₹62 per litre.</small>
+                    <small>Milk remains ₹{prices.milk} per litre.</small>
                   </span>
                 </label>
                 <label>
@@ -314,7 +316,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                   />
                   <span>
                     <strong>I need new bottles</strong>
-                    <small>₹72 per litre including ₹10 per glass bottle.</small>
+                    <small>₹{Math.round((prices.milk + prices.bottle)*100)/100} per litre including ₹{prices.bottle} per glass bottle.</small>
                   </span>
                 </label>
               </div>

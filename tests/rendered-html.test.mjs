@@ -287,7 +287,7 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
 
   assert.match(page, /RisingGlassHero/);
   assert.doesNotMatch(page, /order-orbit|bottle-stage/);
-  assert.match(page, /₹62 per litre/);
+  assert.match(page, /readProductCatalogue/);
   assert.match(page, /919818804419/);
   assert.match(page, /20 years operating/);
   assert.match(page, /500\+ families/);
@@ -323,7 +323,7 @@ test("publishes complete business and policy information", async () => {
       readFile(publicInformationLayoutUrl, "utf8"),
     ]);
 
-  assert.match(pricing, /MILK_PRICE_PER_LITRE/);
+  assert.match(pricing, /prices\.milk/);
   assert.match(pricing, /FARM_PRODUCTS/);
   assert.match(shipping, /Jamshedpur/);
   assert.match(shipping, /next delivery day/);
@@ -607,7 +607,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
     ]);
 
   assert.match(page, /Build your farm basket/);
-  assert.match(page, /₹62/);
+  assert.match(page, /prices\.milk/);
   assert.match(page, /cowshed\.jpeg/);
   assert.doesNotMatch(page, /farm-bottle\.png/);
   assert.match(page, /MilkPlanBuilder/);
@@ -636,7 +636,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(builder, /calculateOrderPricing/);
   assert.match(pricing, /MILK_PRICE_PER_LITRE = 62/);
   assert.match(pricing, /NEW_BOTTLE_CHARGE = 10/);
-  assert.match(pricing, /safeMilkLitres \* NEW_BOTTLE_CHARGE/);
+  assert.match(pricing, /safeMilkLitres \* prices\.bottle/);
   assert.match(checkoutPricing, /milkBottles \* NEW_BOTTLE_CHARGE/);
   assert.match(pricing, /calculatePaidMilkAdjustment/);
   assert.match(pricing, /additionalPayment/);
@@ -655,7 +655,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(order, /Bottle for this delivery/);
   assert.match(order, /I will return a bottle/);
   assert.match(order, /I need new bottles/);
-  assert.match(order, /₹72 per litre including ₹10 per glass bottle/);
+  assert.match(order, /prices\.milk \+ prices\.bottle/);
   assert.match(builder, /Choose what comes home/);
   assert.match(builder, /selection \? "Remove" : "Add \+"/);
   assert.match(builder, /First delivery/);

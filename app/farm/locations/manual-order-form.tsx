@@ -1,4 +1,5 @@
 "use client";
+import { useProductPricing } from "../../components/product-pricing";
 import { FarmForm } from "../farm-form";
 
 import { useMemo, useState } from "react";
@@ -54,6 +55,8 @@ function OrderEditor({
   returnTo,
   userId,
 }: ManualOrderFormProps) {
+  const { prices, revision } = useProductPricing();
+  const [confirmedRevision, setConfirmedRevision] = useState("");
   const [purchaseMode, setPurchaseMode] = useState<"once" | "plan">("plan");
   const [schedule, setSchedule] = useState<WeeklyMilkSchedule>([0, 0, 0, 0, 0, 0, 0]);
   const [milkLitres, setMilkLitres] = useState(0);
@@ -68,16 +71,16 @@ function OrderEditor({
     () => FARM_PRODUCTS.flatMap((product) => {
       const quantity = productQuantities[product.id] ?? 0;
       return quantity > 0
-        ? [{ ...product, days: [], frequency: "once" as const, quantity }]
+        ? [{ ...product, price: prices[product.id], days: [], frequency: "once" as const, quantity }]
         : [];
     }),
-    [productQuantities],
+    [productQuantities, prices],
   );
   const pricing = useMemo(
     () => purchaseMode === "plan"
-      ? calculatePlanPricing({ bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
-      : calculateOrderPricing({ bottleChoice, milkLitres, products }),
-    [bottleChoice, milkLitres, products, purchaseMode, schedule, startDate, firstPlanStart],
+      ? calculatePlanPricing({ prices, bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
+      : calculateOrderPricing({ prices, bottleChoice, milkLitres, products }),
+    [prices, bottleChoice, milkLitres, products, purchaseMode, schedule, startDate, firstPlanStart],
   );
   const capacityImpact = useMemo(() => {
     if (purchaseMode === "once") {
@@ -102,7 +105,7 @@ function OrderEditor({
   const orderReady = profileReady &&
     (milkSelected || products.length > 0) &&
     !capacityConflict &&
-    paymentConfirmed;
+    paymentConfirmed && confirmedRevision === `${revision}:${pricing.total}`;
 
   function updateSchedule(index: number, value: string) {
     setSchedule((current) => current.map((quantity, dayIndex) =>
@@ -112,6 +115,7 @@ function OrderEditor({
 
   return (
     <FarmForm action={recordCustomerOrder} className={styles.orderWorkspace}>
+      <input type="hidden" name="catalogueRevision" value={revision} /><input type="hidden" name="expectedTotalPaise" value={Math.round(pricing.total * 100)} />
       <input name="userId" type="hidden" value={userId} />
       {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
       <div className={styles.orderEditor}>
@@ -177,7 +181,7 @@ function OrderEditor({
         )}
 
         <div className={styles.orderFields}>
-          {FARM_PRODUCTS.map((product) => (
+          {FARM_PRODUCTS.map(p => ({...p, price: prices[p.id]})).map((product) => (
             <label key={product.id}>
               <span>{product.name}</span>
               <input
@@ -288,9 +292,9 @@ function OrderEditor({
         </div>
         <label className={confirmationStyles.confirmation}>
           <input
-            checked={paymentConfirmed}
+            checked={paymentConfirmed && confirmedRevision === `${revision}:${pricing.total}`}
             name="paymentConfirmed"
-            onChange={(event) => setPaymentConfirmed(event.target.checked)}
+            onChange={(event) => (setConfirmedRevision(`${revision}:${pricing.total}`), setPaymentConfirmed(event.target.checked))}
             required
             type="checkbox"
             value="yes"
@@ -298,7 +302,7 @@ function OrderEditor({
           <span>I confirm the farm received this payment.</span>
         </label>
         <div className={styles.orderSubmit}>
-          <p>Only record the order after the money has been received. A manager can correct a manual payment later.</p>
+          <p>Only record the order after the money has been received. The owner can correct a farm-recorded payment later.</p>
           {orderReady ? <FormSubmitButton pendingLabel="Recording paid order…">Record paid order</FormSubmitButton> : <button disabled type="button">Record paid order</button>}
         </div>
       </aside>

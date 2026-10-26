@@ -1,3 +1,4 @@
+import { readOrderProductPrices } from "@/lib/product-prices-server";
 import { paymentModeError } from "@/lib/payment-mode";
 import { NextResponse } from "next/server";
 import { quoteStoredMonthlyCheckout } from "@/lib/monthly-checkout";
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
         };
       }
     }
+    const prices = await readOrderProductPrices(supabase, order.id);
     const invoice = items.map((item) => ({
       ...item,
       quantity: Number(item.quantity),
@@ -135,12 +137,14 @@ export async function POST(request: Request) {
           })),
           (await firstScheduledPlanStart(supabase, user.id)) ??
             monthly.start_date,
+          prices,
         )
       : quoteStoredCheckout(
           invoice,
           order.bottle_choice,
           order.purchase_mode,
           plan,
+          prices,
         );
     amount = Math.round(quote.total * 100);
   } catch {
