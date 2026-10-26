@@ -39,7 +39,7 @@ export const baselineFiles = [
 // Older outcome suites construct historical released-day fixtures incrementally.
 // The routing suite and routing browser journey opt into the new manifest guards
 // and exercise valid preparation/release plus outcome regression on that schema.
-export async function createDatabase({ routingFoundation = false } = {}) {
+export async function createDatabase({ routingFoundation = false, driverRuns = false } = {}) {
   const require = createRequire(import.meta.url);
   const binaryRoot = path.resolve(
     path.dirname(
@@ -130,6 +130,7 @@ export async function createDatabase({ routingFoundation = false } = {}) {
     await db.query(await readFile(new URL("../../supabase/migrations/20261026111243_retire_welcome_back_discount.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../supabase/migrations/20261026112857_farm_operational_editors.sql", import.meta.url), "utf8"));
     if (routingFoundation) await db.query(await readFile(new URL("../../supabase/pending-migrations/20261026113838_routing_foundation.sql", import.meta.url), "utf8"));
+    if (driverRuns) await db.query(await readFile(new URL("../../supabase/pending-migrations/20261026164039_driver_run_foundation.sql", import.meta.url), "utf8"));
   } catch (error) {
     await db.end();
     await server.stop();

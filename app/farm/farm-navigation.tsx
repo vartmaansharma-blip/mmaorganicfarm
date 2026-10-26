@@ -9,6 +9,7 @@ const groups = [
     items: [
       ["Overview", "/farm"],
       ["Routes", "/farm/routes"],
+      ["Delivery runs", "/farm/runs"],
       ["Deliveries", "/farm/delivery-sheet"],
       ["Inbox", "/farm/exceptions"],
       ["Closeout", "/farm/reconciliation"],
@@ -46,6 +47,7 @@ const groups = [
 ];
 const iconPaths: Record<string, string> = {
   "/farm": "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
+  "/farm/runs": "M3 5h11v12H3z M14 9h4l3 4v4h-7 M6 17v2 M18 17v2 M6 9h5",
   "/farm/routes": "M6 5a2 2 0 1 0 0 .1M6 7v7a4 4 0 0 0 4 4h6 M18 16a2 2 0 1 0 0 4a2 2 0 0 0 0-4 M9 5h7a3 3 0 0 1 0 6h-4",
   "/farm/delivery-sheet": "M3 5h11v12H3z M14 9h4l3 4v4h-7 M6 17v2 M18 17v2 M6 9h5",
   "/farm/exceptions": "M3 4h18v16H3z M3 13h5l2 3h4l2-3h5 M8 8h8",
@@ -63,6 +65,7 @@ const iconPaths: Record<string, string> = {
 const dated = new Set([
   "/farm",
   "/farm/routes",
+  "/farm/runs",
   "/farm/delivery-sheet",
   "/farm/exceptions",
   "/farm/reconciliation",
@@ -80,7 +83,7 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
     : null;
   const visibleGroups =
     role === "driver"
-      ? [{ label: "Delivery", items: [["My route", "/farm/delivery-sheet"]] }]
+      ? [{ label: "Delivery", items: [["My run", "/farm/runs"], ["My route", "/farm/delivery-sheet"]] }]
       : groups;
   const currentPath =
     pathname === "/farm/cancellations"

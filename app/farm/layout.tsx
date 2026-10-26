@@ -19,7 +19,7 @@ export default async function FarmLayout({
         <Link
           prefetch={false}
           className={styles.brand}
-          href={driverView ? "/farm/delivery-sheet" : "/farm"}
+          href={driverView ? "/farm/runs" : "/farm"}
         >
           <span className={styles.brandMark}>
             <Image
