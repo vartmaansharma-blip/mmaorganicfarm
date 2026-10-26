@@ -17,7 +17,8 @@
     "test:customer-ui": "node tests/customer-system.browser.mjs",
     "test:shop": "node tests/shop.browser.mjs",
     "test:db": "node --test --test-concurrency=1 tests/database/*.integration.mjs",
-    "test:operations:browser": "node tests/delivery-operations.browser.mjs"
+    "test:operations:browser": "node tests/delivery-operations.browser.mjs",
+    "test:account": "node tests/account.browser.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
