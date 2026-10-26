@@ -91,9 +91,9 @@ test('test keys cannot record a live customer payment', async () => {
   await assert.rejects(() => recordCapturedPayment({ amount: 6200 }), /does not match/);
   assert.equal(events.some(e => e.op !== 'select'), false);
 });
-async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null } = {}) {
-  const events = []; let providerCalls = 0, released = 0, reserved = 0;
-  const order = { id: 'synthetic', user_id: 'user', status: 'draft', purchase_mode: 'plan', delivery_plan_id: 'plan', start_date: '2026-10-26', total_paise: 6200, is_test: isTest, razorpay_order_id: providerId };
+async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, expectedAmount = null } = {}) {
+  const events = []; let providerAmount; let providerCalls = 0, released = 0, reserved = 0;
+  const order = { id: 'synthetic', user_id: 'user', status: 'draft', purchase_mode: 'plan', delivery_plan_id: 'plan', start_date: '2026-10-26', total_paise: coupon ? 5890 : 6200, subtotal_paise: 6200, discount_code: coupon ? 'MMA-ABCDEF1234567890' : null, discount_paise: coupon ? 310 : 0, is_test: isTest, razorpay_order_id: providerId };
   const userClient = client(order, events, q => {
     if (q.table === 'orders') return { data: order };
     if (q.table === 'order_items') return { data: [{ product_key: 'milk', quantity: 1, unit_price_paise: 6200, line_total_paise: 6200 }] };
@@ -111,12 +111,12 @@ async function prepare({ failure, claimError = false, isTest = false, env, provi
     '@/lib/monthly-checkout': { quoteStoredMonthlyCheckout: () => ({ total: 62 }) },
     '@/lib/checkout-quote': { quoteStoredCheckout: () => ({ total: 62 }) },
     '@/lib/first-scheduled-plan': { firstScheduledPlanStart: async () => null },
-    '@/lib/razorpay': { hasRazorpayConfig: () => true, RazorpayRequestError, publicRazorpayKey: () => 'synthetic', createRazorpayOrder: async () => {
-      providerCalls++; if (failure === 'network') throw new Error('network timeout'); if (failure) throw new RazorpayRequestError(failure); return { id: 'order_synthetic' };
+    '@/lib/razorpay': { hasRazorpayConfig: () => true, RazorpayRequestError, publicRazorpayKey: () => 'synthetic', createRazorpayOrder: async (input) => {
+      providerAmount = input.amount; providerCalls++; if (failure === 'network') throw new Error('network timeout'); if (failure) throw new RazorpayRequestError(failure); return { id: 'order_synthetic' };
     } },
   }, env ?? { RAZORPAY_KEY_ID: 'rzp_live_synthetic', VERCEL_ENV: 'production' });
-  const result = await POST({ json: async () => ({ orderId: order.id, termsAccepted: true }) });
-  return { result, events, providerCalls, released, reserved };
+  const result = await POST({ json: async () => ({ orderId: order.id, termsAccepted: true, expectedAmountPaise: expectedAmount ?? order.total_paise }) });
+  return { result, events, providerCalls, providerAmount, released, reserved };
 }
 test('monthly provider rejection resets only its own unbound claim and releases capacity', async () => {
   const r = await prepare({ failure: 401 });
@@ -180,7 +180,7 @@ test('verification network failure keeps Pay disabled and offers status recovery
       react: { useState: () => { const slot = index++; states[slot] = slot === 0; return [states[slot], value => { states[slot] = value; }]; } },
       'next/navigation': { useRouter: () => ({ push: () => assert.fail('cannot confirm without verification') }) },
     });
-    const tree = RazorpayCheckoutButton({ amount: '₹62', orderId: 'synthetic', ready: true });
+    const tree = RazorpayCheckoutButton({ amount: '₹62', amountPaise: 6200, orderId: 'synthetic', ready: true });
     const button = tree.props.children.find(x => x?.type === 'button');
     await button.props.onClick();
     await options.handler({ razorpay_payment_id: 'pay_synthetic', razorpay_order_id: 'order_synthetic', razorpay_signature: 'synthetic' });
@@ -196,4 +196,20 @@ test('monthly claim reuses a provider order bound after the first read', async (
   assert.equal(r.result.status, 200);
   assert.equal(r.result.body.providerOrderId, 'order_already_bound');
   assert.equal(r.providerCalls, 0);
+});
+
+test('retired discounts and stale browser totals cannot start a provider payment', async () => {
+  const r = await prepare({ coupon: true });
+  assert.equal(r.result.status, 409);
+  assert.equal(r.providerCalls, 0);
+  const stale = await prepare({ expectedAmount: 6000 });
+  assert.equal(stale.result.status, 409);
+  assert.equal(stale.providerCalls, 0);
+  assert.equal(stale.reserved, 0);
+});
+test('checkout displays exact paise amounts', () => {
+  const { formatCheckoutAmount } = load('lib/checkout-display.ts');
+  assert.equal(formatCheckoutAmount(6890), '₹68.90');
+  assert.equal(formatCheckoutAmount(310), '₹3.10');
+  assert.equal(formatCheckoutAmount(7200), '₹72');
 });

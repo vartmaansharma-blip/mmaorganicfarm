@@ -20,8 +20,8 @@ function loadRazorpay() {
     document.body.appendChild(script);
   });
 }
-export function RazorpayCheckoutButton({ amount, orderId, ready, unavailableReason, isTest = false }: {
-  amount: string; orderId: string; ready: boolean; unavailableReason?: string; isTest?: boolean;
+export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, unavailableReason, isTest = false }: {
+  amount: string; amountPaise: number; orderId: string; ready: boolean; unavailableReason?: string; isTest?: boolean;
 }) {
   const router = useRouter();
   const [accepted, setAccepted] = useState(false);
@@ -36,10 +36,10 @@ export function RazorpayCheckoutButton({ amount, orderId, ready, unavailableReas
       if (!await loadRazorpay()) throw new Error("Secure checkout could not load.");
       const response = await fetch("/api/payments/razorpay/order", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, termsAccepted: true }),
+        body: JSON.stringify({ orderId, termsAccepted: true, expectedAmountPaise: amountPaise }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Payment could not start.");
+      if (!response.ok) { router.refresh(); throw new Error(data.error ?? "Payment could not start."); }
       let submitted = false;
       const checkout = new window.Razorpay({
         key: data.keyId, amount: data.amount, currency: "INR", name: "M'ma Organic Farm",

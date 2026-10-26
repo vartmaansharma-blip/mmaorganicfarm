@@ -118,7 +118,7 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
       if (url.pathname.startsWith("/rest/v1/rpc/")) {
         const fn = url.pathname.split("/").at(-1);
         if (
-          !/^(record_driver_customer_request|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
+          !/^(my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
             fn,
           )
         )

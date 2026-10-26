@@ -81,6 +81,7 @@ export async function createDatabase() {
  create schema auth; create schema private;
  create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb not null default '{}');
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+ create function auth.role() returns text language sql stable as $$ select nullif(current_setting('request.jwt.claim.role',true),'') $$;
  grant usage on schema public,auth,private to authenticated,anon,service_role;
  grant execute on function auth.uid() to authenticated,anon,service_role;`);
     for (const name of baselineFiles) {
@@ -121,6 +122,9 @@ export async function createDatabase() {
         "utf8",
       ),
     );
+    await db.query(await readFile(new URL("../../supabase/migrations/20261026060953_customer_plan_cancellation.sql", import.meta.url), "utf8"));
+    await db.query(await readFile(new URL("../../supabase/migrations/20261026062639_welcome_back_checkout_code.sql", import.meta.url), "utf8"));
+    await db.query(await readFile(new URL("../../supabase/migrations/20261026111243_retire_welcome_back_discount.sql", import.meta.url), "utf8"));
   } catch (error) {
     await db.end();
     await server.stop();

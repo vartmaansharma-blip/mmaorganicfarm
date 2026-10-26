@@ -1,0 +1,191 @@
+.page {
+  min-height: 100svh;
+  background: #fffdf5;
+  color: #143d2b;
+  padding: 0 5vw 64px;
+}
+.header {
+  max-width: 1320px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0 36px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand img {
+  object-fit: contain;
+}
+.brand span {
+  font-size: 17px;
+}
+.hero {
+  max-width: 1320px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1.02fr;
+  align-items: center;
+  gap: clamp(28px, 5vw, 80px);
+}
+.copy {
+  padding: 16px 0;
+}
+.eyebrow {
+  display: inline-block;
+  padding: 8px 13px;
+  border-radius: 99px;
+  background: #e4f4d8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.copy h1 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(48px, 5.7vw, 84px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+  margin: 24px 0;
+}
+.copy > p {
+  font-size: 16px;
+  line-height: 1.65;
+  max-width: 47ch;
+  color: #496454;
+}
+.invitation {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 28px 0;
+  padding: 20px 0;
+  border-block: 1px solid #dce5d8;
+}
+.invitation > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #ffc857;
+  color: #143d2b;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.invitation h2 {
+  margin: 0 0 7px;
+  font: 650 18px var(--font-sans);
+}
+.invitation p {
+  margin: 0;
+  color: #496454;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.primary {
+  min-height: 52px;
+  border-radius: 99px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  background: #087f5b;
+  color: white;
+  font-size: 15px;
+  font-weight: 650;
+  max-width: 440px;
+  margin-top: 22px;
+}
+.primary:hover {
+  background: #066646;
+}
+.copy .hint {
+  font-size: 12px;
+  margin: 12px 0 0;
+}
+.copy .terms {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #637565;
+  margin: 26px 0 0;
+  max-width: 60ch;
+}
+.notice {
+  padding: 15px 18px;
+  background: #e7f4eb;
+  border-radius: 16px;
+  font-size: 14px !important;
+}
+.picture {
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 22px 70px #30481b12;
+}
+.picture img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.page :is(a, button, input):focus-visible {
+  outline: 3px solid #e19c16;
+  outline-offset: 4px;
+}
+@media (max-width: 760px) {
+  .page {
+    padding: 0 20px 40px;
+  }
+  .header {
+    padding: 18px 0 24px;
+  }
+  .brand span {
+    font-size: 14px;
+  }
+  .header > a:last-child {
+    font-size: 12px;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .picture {
+    grid-row: 1;
+    border-radius: 22px;
+  }
+  .copy {
+    padding: 0 4px;
+  }
+  .copy h1 {
+    font-size: 58px;
+  }
+  .copy > p {
+    font-size: 15px;
+  }
+  .invitation {
+    margin: 22px 0;
+  }
+  .primary {
+    max-width: none;
+  }
+  .codeBox input {
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    scroll-behavior: auto;
+  }
+}
+
+.terms a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

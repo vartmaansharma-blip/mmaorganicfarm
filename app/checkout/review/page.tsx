@@ -47,6 +47,7 @@ export default async function ReviewPage({
     .maybeSingle();
   if (!order) redirect("/milk");
   if (order.status === "paid") redirect(`/checkout/success?order=${order.id}`);
+  if (order.status === "cancelled") redirect("/account");
   const { data: items } = await supabase
     .from("order_items")
     .select(
@@ -151,6 +152,10 @@ export default async function ReviewPage({
           </div>
           <dl className={styles.totals}>
             <div>
+              <dt>Products</dt>
+              <dd>{formatCheckoutAmount(order.subtotal_paise)}</dd>
+            </div>
+            <div>
               <dt>Delivery</dt>
               <dd>
                 {formatCheckoutAmount(
@@ -220,6 +225,7 @@ export default async function ReviewPage({
           </div>
           <RazorpayCheckoutButton
             amount={formatCheckoutAmount(order.total_paise)}
+            amountPaise={order.total_paise}
             orderId={order.id}
             ready={hasRazorpayConfig() && adminReady && !modeError}
             unavailableReason={modeError ?? undefined}
