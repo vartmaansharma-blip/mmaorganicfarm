@@ -77,6 +77,7 @@ type PlanItem = {
 };
 
 type PlanRow = {
+  delivery_pauses: Array<{start_date:string;end_date:string}>;
   delivery_exceptions: Array<{delivery_date:string;product_key:string;action:string;quantity:number|null}>;
   delivered_deliveries: number;
   id: string;
@@ -226,7 +227,7 @@ export default async function CustomerPage({
     admin
       .from("delivery_plans")
       .select(
-        "id, status, is_test, start_date, billing_model, period_end_exclusive, scheduled_delivery_items(delivery_date,product_key,quantity,unit), delivery_exceptions(delivery_date,product_key,action,quantity), purchased_deliveries, delivered_deliveries, updated_at, weekly_delivery_items(day_of_week, product_key, quantity)",
+        "id, status, is_test, start_date, billing_model, period_end_exclusive, scheduled_delivery_items(delivery_date,product_key,quantity,unit), delivery_exceptions(delivery_date,product_key,action,quantity), delivery_pauses(start_date,end_date), purchased_deliveries, delivered_deliveries, updated_at, weekly_delivery_items(day_of_week, product_key, quantity)",
       )
       .eq("user_id", userId)
       .eq("is_test", false)
@@ -322,6 +323,7 @@ export default async function CustomerPage({
   if(activePlan?.status === "active") {
     const end = activePlan.billing_model === "calendar_month" ? activePlan.period_end_exclusive! : addCalendarDays(nextDeliveryDate,31);
     for(let date = nextDeliveryDate > activePlan.start_date ? nextDeliveryDate : activePlan.start_date; date < end; date=addCalendarDays(date,1)) {
+      if(activePlan.delivery_pauses.some(pause => date >= pause.start_date && date <= pause.end_date)) continue;
       const quantities = {date,milk:0,paneer:0,ghee:0};
       for(const product of ["milk","paneer","ghee"] as const) {
         const exception = activePlan.delivery_exceptions.find(e=>e.delivery_date===date && e.product_key===product);
@@ -372,7 +374,9 @@ export default async function CustomerPage({
         !["cancelled", "delivered", "failed"].includes(delivery.status),
     )
     .sort((a, b) => a.delivery_date.localeCompare(b.delivery_date));
-  const nextDelivery = upcomingDeliveries[0];
+  const nextPlannedDay = editableDays.find(day => day.milk+day.paneer+day.ghee>0);
+  const nextDelivery = upcomingDeliveries[0] && (!nextPlannedDay || upcomingDeliveries[0].delivery_date <= nextPlannedDay.date) ? upcomingDeliveries[0] : undefined;
+  const nextPlanSummary = nextPlannedDay ? (["milk","paneer","ghee"] as const).filter(p=>nextPlannedDay[p]>0).map(p=>`${nextPlannedDay[p]} ${p === "milk" ? "L milk" : `${p} pack${nextPlannedDay[p]===1 ? "" : "s"}`}`).join(" · ") : "";
   const weeklyMilk = new Map<number, number>();
   plans.forEach((plan) =>
     plan.weekly_delivery_items
@@ -390,20 +394,7 @@ export default async function CustomerPage({
     .flatMap((p) => p.scheduled_delivery_items)
     .filter((i) => i.delivery_date >= nextDeliveryDate)
     .sort((a, b) => a.delivery_date.localeCompare(b.delivery_date));
-  const scheduledNextQuantity =
-    (weeklyMilk.get(weekdayFromYmd(nextDeliveryDate)) ?? 0) +
-    monthlyDates
-      .filter(
-        (i) => i.delivery_date === nextDeliveryDate && i.product_key === "milk",
-      )
-      .reduce((n, i) => n + Number(i.quantity), 0);
-  const nextDeliveryLabel = nextDelivery
-    ? formatCalendarDate(nextDelivery.delivery_date)
-    : scheduledNextQuantity > 0
-      ? formatCalendarDate(nextDeliveryDate)
-      : monthlyDates.length
-        ? formatCalendarDate(monthlyDates[0].delivery_date)
-        : "Not scheduled";
+  const nextDeliveryLabel = nextDelivery ? formatCalendarDate(nextDelivery.delivery_date) : nextPlannedDay ? formatCalendarDate(nextPlannedDay.date) : "Not scheduled";
   const purchasedDeliveries = plans.reduce(
     (sum, plan) => sum + Number(plan.purchased_deliveries),
     0,
@@ -512,8 +503,8 @@ export default async function CustomerPage({
           <small>
             {nextDelivery
               ? titleCase(nextDelivery.status)
-              : scheduledNextQuantity > 0
-                ? `${quantityLabel(scheduledNextQuantity, "L")} planned`
+              : nextPlannedDay
+                ? `${nextPlanSummary} planned`
                 : "No quantity due"}
           </small>
         </article>

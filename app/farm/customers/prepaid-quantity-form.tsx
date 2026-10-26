@@ -30,8 +30,20 @@ export function PrepaidQuantityForm({
     days.find((d) => d.date !== source)?.date ?? "",
   );
   const [skip, setSkip] = useState(false);
-  const sourceQuantity = days.find((d) => d.date === source)?.[product] ?? 0;
-  const effectiveTarget = monthly ? target : addCalendarDays(source, 1);
+  const fromDate =
+    days.find((d) => d.date === source && d[product] > 0)?.date ??
+    days.find((d) => d[product] > 0)?.date ??
+    "";
+  const toDate =
+    days.find((d) => d.date === target && d.date !== fromDate)?.date ??
+    days.find((d) => d.date !== fromDate)?.date ??
+    "";
+  const sourceQuantity = days.find((d) => d.date === fromDate)?.[product] ?? 0;
+  const effectiveTarget = monthly
+    ? toDate
+    : fromDate
+      ? addCalendarDays(fromDate, 1)
+      : "";
   const targetQuantity =
     days.find((d) => d.date === effectiveTarget)?.[product] ?? 0;
   const max = Math.min(
@@ -68,7 +80,7 @@ export function PrepaidQuantityForm({
             Product
             <select
               aria-label="Product to move"
-            name="product"
+              name="product"
               value={product}
               onChange={(e) => {
                 const p = e.target.value as typeof product;
@@ -88,10 +100,11 @@ export function PrepaidQuantityForm({
           From delivery
           <select
             aria-label="From delivery"
-          name="source"
-            value={source}
+            name="source"
+            value={fromDate}
             onChange={(e) => setSource(e.target.value)}
           >
+            {!sourceQuantity ? <option value="">No deliveries for this product</option> : null}
             {days
               .filter((d) => d[product] > 0)
               .map((d) => (
@@ -104,9 +117,13 @@ export function PrepaidQuantityForm({
         {monthly ? (
           <label>
             To delivery
-            <select aria-label="To delivery" value={target} onChange={(e) => setTarget(e.target.value)}>
+            <select
+              aria-label="To delivery"
+              value={toDate}
+              onChange={(e) => setTarget(e.target.value)}
+            >
               {days
-                .filter((d) => d.date !== source)
+                .filter((d) => d.date !== fromDate)
                 .map((d) => (
                   <option key={d.date} value={d.date}>
                     {d.date} · {d[product]} already scheduled
@@ -119,7 +136,7 @@ export function PrepaidQuantityForm({
             Change
             <select
               aria-label="Adjustment type"
-            value={skip ? "skip" : "reduce"}
+              value={skip ? "skip" : "reduce"}
               onChange={(e) => setSkip(e.target.value === "skip")}
             >
               <option value="reduce">
@@ -137,7 +154,7 @@ export function PrepaidQuantityForm({
           <label>
             Quantity to move
             <input
-              key={`${source}:${product}:${target}`}
+              key={`${fromDate}:${product}:${toDate}`}
               type="number"
               name="quantity"
               min="1"
@@ -168,7 +185,7 @@ export function PrepaidQuantityForm({
         <FormSubmitButton
           disabled={
             !sourceQuantity ||
-            (!(skip && !monthly) && (max < 1 || source === effectiveTarget))
+            (!(skip && !monthly) && (!effectiveTarget || max < 1 || fromDate === effectiveTarget))
           }
           pendingLabel="Updating schedule…"
         >

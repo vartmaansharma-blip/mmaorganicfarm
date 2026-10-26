@@ -54,7 +54,7 @@ export async function correctPaymentDetails(formData: FormData) {
     p_reference: textValue(formData,"reference"), p_paid_at: paidAt.toISOString(),
     p_reason: textValue(formData,"reason"), p_expected_revision: Number(formData.get("revision")),
   });
-  if (error) redirect(`${returnTo}${join}error=${encodeURIComponent(error.message)}`);
+  if (error) redirect(`${returnTo}${join}error=${encodeURIComponent(error.code === "23505" ? "That reference is already recorded on another payment. Check it before saving." : error.message)}`);
   revalidatePath("/farm/payments");
   revalidatePath(`/farm/customers/${userId}`);
   redirect(`${returnTo}${join}message=Receipt+details+corrected.+The+amount+and+service+are+unchanged.`);

@@ -12,7 +12,7 @@ import {
 const runtime = await createDatabase();
 const { db } = runtime;
 const bridge = await startFixtureServer(runtime.config);
-const output = path.resolve("docs/screenshots/delivery-operations");
+const output = path.resolve(process.env.OPERATIONS_ARTIFACT_DIR || "docs/screenshots/delivery-operations");
 await mkdir(output, { recursive: true });
 const port = 3165,
   base = `http://127.0.0.1:${port}`;
@@ -553,7 +553,7 @@ try {
     await ownerPage.goto(`${base}/farm/payments`,{waitUntil:"networkidle"});
     const receipt=ownerPage.locator("details").filter({has:ownerPage.locator("summary").getByText("Edit receipt details",{exact:true})}).first();
     await receipt.locator("summary").click();
-    await receipt.getByLabel("Reference",{exact:true}).fill("SYNTHETIC-CORRECTION");
+    await receipt.getByLabel("Reference",{exact:true}).fill(`SYNTHETIC-${name}-CORRECTION`);
     await receipt.getByLabel("Reason for correction",{exact:true}).fill("Correct synthetic receipt reference");
     await receipt.getByRole("button",{name:"Save receipt details",exact:true}).click();
     await ownerPage.getByRole("status").filter({hasText:"Receipt details corrected"}).waitFor();
@@ -568,6 +568,9 @@ try {
     await quantities.getByRole("button",{name:"Save quantity change",exact:true}).click();
     await quantities.getByRole("status").filter({hasText:"Prepaid quantities updated"}).waitFor();
     assert.equal((await db.query("select action from delivery_exceptions where plan_id=$1 and delivery_date=$2 and product_key='milk'",[success.plan,tomorrow])).rows[0].action,"skip");
+    assert.ok(await quantities.getByRole("button",{name:"Save quantity change",exact:true}).isEnabled(),"another future quantity remains editable after saving");
+    const nextSource=await quantities.getByLabel("From delivery",{exact:true}).inputValue();
+    assert.ok(Number((await db.query("select plan_product_quantity($1,'milk',$2) quantity",[success.plan,nextSource])).rows[0].quantity)>0,"the selected source reflects the refreshed schedule");
     await ownerPage.screenshot({path:path.join(output,`${name}-editable-quantity-mobile.png`),fullPage:true});
     await noOverflow(ownerPage);
     await ownerContext.close();

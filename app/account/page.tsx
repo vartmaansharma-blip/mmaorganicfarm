@@ -282,7 +282,7 @@ export default async function AccountPage({
             </dl>
           ) : null}
 
-          <Link className={styles.editDetails} href="/order">
+          <Link prefetch={false} className={styles.editDetails} href="/order">
             {hasDeliveryDetails
               ? "Update delivery details"
               : "Add delivery details"}

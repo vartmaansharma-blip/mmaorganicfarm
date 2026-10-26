@@ -83,7 +83,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
     <FarmForm className={styles.filters} method="get">{customerId?<input type="hidden" name="customer" value={customerId}/>:null}<label>Payment date from<input name="from" type="date" defaultValue={from??""}/></label><label>Through<input name="to" type="date" defaultValue={to??""}/></label><button>Apply dates</button></FarmForm>
     <p className={styles.scope}>Latest 100 captured payments in this scope. Totals below cover only the records shown, not lifetime revenue.</p>
     <section className={styles.metrics} aria-label="Payment summary">
-      <article><span>Confirmed</span><strong>{payments.length}</strong></article>
+      <article><span>Payments</span><strong>{payments.length}</strong></article>
       <article><span>Received</span><strong>{formatCheckoutAmount(capturedTotal)}</strong></article>
       <article><span>Farm recorded</span><strong>{farmRecordedCount}</strong></article>
     </section>
@@ -92,7 +92,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
       {payments.length ? payments.map((payment) => <article key={payment.id}>
         <div className={styles.rowHeading}><div><strong>{customerNames.get(payment.user_id) ?? "Customer"}</strong><span>Order MMA-{payment.order_id.slice(0, 8).toUpperCase()}</span></div><b>Confirmed</b></div>
         <p>{formatCheckoutAmount(payment.amount_paise)}</p>
-        <small>{paymentMethodLabel(payment.payment_method)} · {payment.provider_payment_id ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
+        <small>{payment.provider === "manual" && !payment.payment_method ? "Farm recorded" : paymentMethodLabel(payment.payment_method)} · {payment.provider_payment_id ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
         {!customerId ? <Link prefetch={false} href={`/farm/customers/${payment.user_id}`}>Open customer</Link> : null}
         {payment.provider === "manual" ? <details className={styles.correction}><summary>Edit receipt details</summary><FarmForm action={correctPaymentDetails}>
           <input type="hidden" name="paymentId" value={payment.id}/><input type="hidden" name="userId" value={payment.user_id}/><input type="hidden" name="revision" value={payment.record_revision}/>
