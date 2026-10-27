@@ -1,5 +1,5 @@
 import { readOrderProductPrices } from "@/lib/product-prices-server";
-import { paymentModeError } from "@/lib/payment-mode";
+import { liveCheckoutError, paymentModeError } from "@/lib/payment-mode";
 import { NextResponse } from "next/server";
 import { quoteStoredMonthlyCheckout } from "@/lib/monthly-checkout";
 import { quoteStoredCheckout } from "@/lib/checkout-quote";
@@ -64,6 +64,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Review a new order at the regular product price." }, { status: 409 });
   const modeError = paymentModeError(order.is_test);
   if (modeError) return NextResponse.json({ error: modeError }, { status: 409 });
+  const activationError = liveCheckoutError();
+  if (activationError) return NextResponse.json({ error: activationError }, { status: 503 });
   if (body.expectedAmountPaise !== order.total_paise)
     return NextResponse.json({ error: "Your total changed. Review the updated amount before paying." }, { status: 409 });
   const { data: items } = await supabase
