@@ -47,6 +47,13 @@ test('test/live mode and preview protection fail closed', () => {
   assert.match(paymentModeError(true, 'rzp_live_synthetic', 'production'), /does not match/);
   assert.match(paymentModeError(false, 'rzp_live_synthetic', 'preview'), /disabled in previews/);
 });
+test('new live checkouts stay disabled until explicitly enabled', () => {
+  const { liveCheckoutError } = load('lib/payment-mode.ts');
+  assert.match(liveCheckoutError('rzp_live_synthetic', undefined), /not enabled/);
+  assert.match(liveCheckoutError('rzp_live_synthetic', 'false'), /not enabled/);
+  assert.equal(liveCheckoutError('rzp_live_synthetic', 'true'), null);
+  assert.equal(liveCheckoutError('rzp_test_synthetic', 'false'), null);
+});
 test('only definitive provider rejections permit checkout recovery', () => {
   const { RazorpayRequestError } = load('lib/razorpay.ts');
   for (const code of [400, 401, 403, 422]) assert.equal(new RazorpayRequestError(code).definitelyRejected, true);
@@ -115,7 +122,7 @@ async function prepare({ failure, claimError = false, isTest = false, env, provi
     '@/lib/razorpay': { hasRazorpayConfig: () => true, RazorpayRequestError, publicRazorpayKey: () => 'synthetic', createRazorpayOrder: async (input) => {
       providerAmount = input.amount; providerCalls++; if (failure === 'network') throw new Error('network timeout'); if (failure) throw new RazorpayRequestError(failure); return { id: 'order_synthetic' };
     } },
-  }, env ?? { RAZORPAY_KEY_ID: 'rzp_live_synthetic', VERCEL_ENV: 'production' });
+  }, env ?? { RAZORPAY_KEY_ID: 'rzp_live_synthetic', RAZORPAY_LIVE_CHECKOUT_ENABLED: 'true', VERCEL_ENV: 'production' });
   const result = await POST({ json: async () => ({ orderId: order.id, termsAccepted: true, expectedAmountPaise: expectedAmount ?? order.total_paise }) });
   return { result, events, providerCalls, providerAmount, released, reserved };
 }
@@ -136,6 +143,13 @@ test('uncertain provider outcomes and competing claims stay frozen with capacity
 test('test/live mismatch rejects before capacity, claims or provider requests', async () => {
   const r = await prepare({ env: testEnv });
   assert.equal(r.result.status, 409); assert.equal(r.providerCalls, 0); assert.equal(r.reserved, 0);
+});
+test('live checkout guard returns before capacity reservation and Razorpay creation', async () => {
+  const r = await prepare({ env: { RAZORPAY_KEY_ID: 'rzp_live_synthetic', RAZORPAY_LIVE_CHECKOUT_ENABLED: 'false', VERCEL_ENV: 'production' } });
+  assert.equal(r.result.status, 503);
+  assert.match(r.result.body.error, /Live checkout is not enabled/);
+  assert.equal(r.providerCalls, 0);
+  assert.equal(r.reserved, 0);
 });
 test('test checkout bypasses real capacity and returns an explicit test result', async () => {
   const r = await prepare({ env: testEnv, isTest: true });
