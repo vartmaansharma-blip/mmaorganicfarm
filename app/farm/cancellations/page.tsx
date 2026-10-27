@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../farm-page-notice";
 import { FarmForm } from "../farm-form";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -65,12 +66,8 @@ export default async function CancellationRequestsPage({
           </Link>
         </div>
       </header>
-      {params.message ? (
-        <p className={styles.notice}>{params.message}</p>
-      ) : null}
-      {params.error ? (
-        <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
-      ) : null}
+      <FarmPageNotice message={params.message} level="success" />
+      <FarmPageNotice message={params.error} level="error" />
       <InboxTabs active="requests" />
       <SpokenRequests history={showHistory} />
       <section className={styles.list}>

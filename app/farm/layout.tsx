@@ -1,3 +1,4 @@
+import { dashboardReviewEnabled } from "@/lib/dashboard-review-mode";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
@@ -12,10 +13,15 @@ export default async function FarmLayout({
 }: {
   children: ReactNode;
 }) {
-  const { role } = await requireFarmStaff("/farm");
+  const { role, user } = await requireFarmStaff("/farm");
   const driverView = role === "driver";
   return (
-    <FarmWorkspaceShell driver={driverView} brand={
+    <FarmWorkspaceShell
+      key={user.id}
+      userId={user.id}
+      management={role === "admin" || role === "manager"}
+      driver={driverView}
+      brand={
         <Link
           prefetch={false}
           className={styles.brand}
@@ -30,13 +36,18 @@ export default async function FarmLayout({
               priority
             />
           </span>
-          <span className={styles.brandCaption}><strong>M’ma Organic Farm</strong><small>Farm operations</small></span>
+          <span className={styles.brandCaption}>
+            <strong>M’ma Organic Farm</strong>
+            <small>Farm operations</small>
+          </span>
         </Link>
-      } navigation={
+      }
+      navigation={
         <Suspense fallback={<p>Loading navigation…</p>}>
           <FarmNavigation role={role} />
         </Suspense>
-      } staff={
+      }
+      staff={
         <div className={styles.staff}>
           <strong>
             {role === "admin"
@@ -45,10 +56,36 @@ export default async function FarmLayout({
                 ? "Delivery staff"
                 : "Operations manager"}
           </strong>
-          <Link prefetch={false} href="/">Back to website ↗</Link>
+          <Link prefetch={false} href="/">
+            Back to website ↗
+          </Link>
         </div>
-      }>
-        {children}
+      }
+    >
+      {dashboardReviewEnabled() ? (
+        <div className={styles.reviewBanner}>
+          <div>
+            <strong>Dashboard review</strong>
+            <span>Sample data · changes paused</span>
+          </div>
+          <nav aria-label="Review perspective">
+            {[
+              ["admin", "Owner / co-founder"],
+              ["manager", "Manager"],
+              ["driver", "Driver"],
+            ].map(([id, label]) => (
+              <a
+                key={id}
+                href={`/farm/review-role?role=${id}`}
+                aria-current={role === id ? "page" : undefined}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      ) : null}
+      {children}
     </FarmWorkspaceShell>
   );
 }

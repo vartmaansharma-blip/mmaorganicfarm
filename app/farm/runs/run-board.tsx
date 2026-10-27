@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
-import { announceFarmSave } from "../farm-save-notice";
+import { announceFarmSave, announceFarmNotice } from "../farm-save-notice";
 import { formatCalendarDate, productName } from "@/lib/delivery-calendar";
 import {
   journeyDistance,
@@ -90,7 +90,7 @@ function Operation({
           date,
         );
       } catch {
-        return {
+        result = {
           ok: false,
           message:
             "We couldn’t confirm the save. Keep these entries and retry, or refresh to check the run.",
@@ -100,6 +100,7 @@ function Operation({
       if (result.ok && form.current) delete form.current.dataset.farmDirty;
       if (result.workspace) onUpdate(result.workspace);
       else if (result.ok) announceFarmSave(result.message, true);
+      else announceFarmNotice(result.message, "error");
       return result;
     },
     { ok: false, message: "" },
@@ -136,6 +137,7 @@ function Operation({
       ) : null}
       {state.message ? (
         <p
+          data-farm-feedback
           className={state.ok ? styles.feedback : styles.error}
           role={state.ok ? undefined : "alert"}
         >

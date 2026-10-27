@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../farm-page-notice";
 import { isMissingDestinationSchema } from "@/lib/routing-schema";
 import { deliveryNavigationUrl } from "@/lib/delivery-navigation";
 import { FarmForm } from "../farm-form";
@@ -579,12 +580,8 @@ export default async function DeliverySheetPage({
         </div>
       </header>
 
-      {params.message ? (
-        <p className={styles.notice}>{params.message}</p>
-      ) : null}
-      {params.error ? (
-        <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
-      ) : null}
+      <FarmPageNotice message={params.message} level="success" />
+      <FarmPageNotice message={params.error} level="error" />
 
       <FarmForm
         action="/farm/delivery-sheet"

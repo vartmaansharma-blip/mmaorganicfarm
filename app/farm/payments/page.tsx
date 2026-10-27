@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../farm-page-notice";
 import { FarmForm } from "../farm-form";
 import { redirect } from "next/navigation";
 import { validOperationalDate } from "@/lib/delivery-operations";
@@ -77,8 +78,8 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
   return <main className={styles.page}>
     <header><div><p>Finance</p><h1>{customer ? `${customer.full_name ?? "Customer"} payments` : "Finance"}</h1><span>Only money received by the farm is included. Reversed farm-recorded entries remain in the correction log.</span></div>{customerId ? <div><Link prefetch={false} href={`/farm/customers/${customerId}`}>Back to customer</Link></div> : null}</header>
 
-    {parameters.message ? <p className={styles.notice}>{parameters.message}</p> : null}
-    {parameters.error ? <p className={`${styles.notice} ${styles.error}`} role="alert">{parameters.error}</p> : null}
+    <FarmPageNotice message={parameters.message} level="success" />
+    <FarmPageNotice message={parameters.error} level="error" />
 
     <FarmForm className={styles.filters} method="get">{customerId?<input type="hidden" name="customer" value={customerId}/>:null}<label>Payment date from<input name="from" type="date" defaultValue={from??""}/></label><label>Through<input name="to" type="date" defaultValue={to??""}/></label><button>Apply dates</button></FarmForm>
     <p className={styles.scope}>Latest 100 captured payments in this scope. Totals below cover only the records shown, not lifetime revenue.</p>

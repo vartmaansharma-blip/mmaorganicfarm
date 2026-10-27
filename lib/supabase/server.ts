@@ -1,7 +1,14 @@
+import { dashboardReviewEnabled } from "../dashboard-review-mode";
+import {
+  createDashboardReviewClient,
+  dashboardReviewRole,
+} from "../dashboard-review/client";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export async function createClient() {
+  if (dashboardReviewEnabled())
+    return createDashboardReviewClient(await dashboardReviewRole());
   const cookieStore = await cookies();
 
   return createServerClient(

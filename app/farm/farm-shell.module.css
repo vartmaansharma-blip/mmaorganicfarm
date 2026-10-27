@@ -196,3 +196,16 @@
   .menuBackdrop,.menuClose,.saveNotice { display:none!important; }
   .shell * { animation:none!important; transition:none!important; }
 }
+
+/* Page work stays still while action messages collect at the top right. */
+.workspace [data-farm-feedback] { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip-path:inset(50%)!important; white-space:nowrap!important; border:0!important; }
+.noticeStack { display:grid; gap:10px; max-width:390px; position:fixed; right:20px; top:100px; width:calc(100vw - 32px); z-index:90; pointer-events:none; }
+.actionNotice { align-items:flex-start; background:#fffef7f5; backdrop-filter:blur(20px); border:1px solid #d5dfcd; border-radius:18px; box-shadow:0 10px 35px #173c3222; color:#173f35; display:flex; gap:12px; padding:17px; pointer-events:auto; animation:farm-notice-in 220ms ease-out both; }
+.actionNotice[data-level="error"] { background:#fff9f2f5; border-color:#e6cfb9; }
+.noticeIcon { align-items:center; background:#e8f0df; border-radius:50%; display:flex; flex:0 0 27px; font-size:14px; height:27px; justify-content:center; }
+.actionNotice[data-level="error"] .noticeIcon { background:#f4e4c9; color:#87591a; }
+.actionNotice>div { min-width:0; flex:1; }.actionNotice strong { display:block; font-size:12px; margin:2px 0 6px; }.actionNotice p { font-size:11px; line-height:1.75; margin:0; }.actionNotice button { background:transparent; border:0; color:#526b48; font:inherit; font-size:10px; min-height:32px; padding:7px 0; text-align:left; }.actionNotice .dismissNotice { align-items:center; background:#edf0e7; border-radius:50%; display:flex; flex:0 0 28px; font-size:18px; height:28px; justify-content:center; min-height:28px; padding:0; width:28px; }
+@media(max-width:540px) { .topbarContext { gap:8px; }.noticeStack { top:86px; left:12px; right:12px; width:auto; } }
+@media print { .noticeStack { display:none!important; } }
+
+.reviewBanner { align-items:center; background:#faf6e8; border-bottom:1px solid #e0ddc9; color:#385643; display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; padding:14px 28px; }.reviewBanner>div { display:grid; gap:4px; }.reviewBanner strong { font-size:12px; }.reviewBanner span { color:#7a806b; font-size:10px; }.reviewBanner nav { display:flex; flex-wrap:wrap; gap:6px; }.reviewBanner a { border:1px solid #d8dec9; border-radius:20px; color:inherit; font-size:10px; min-height:36px; padding:10px 12px; text-decoration:none; }.reviewBanner a[aria-current] { background:#173f35; border-color:#173f35; color:white; }

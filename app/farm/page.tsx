@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "./farm-page-notice";
 import { FarmForm } from "./farm-form";
 import { readAllRows } from "@/lib/farm-data";
 import type { Metadata } from "next";
@@ -232,16 +233,8 @@ export default async function FarmDashboardPage({
         </div>
 
       </header>
-      {p.message ? (
-        <p className={styles.notice} role="status">
-          {p.message}
-        </p>
-      ) : null}
-      {p.error ? (
-        <p className={styles.error} role="alert">
-          {p.error}
-        </p>
-      ) : null}
+      <FarmPageNotice message={p.message} level="success" />
+      <FarmPageNotice message={p.error} level="error" />
       <FarmForm className={styles.filters} method="get">
         <label>
           Service date

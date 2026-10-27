@@ -1,12 +1,15 @@
 "use client";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { FarmNotificationCentre } from "./notifications/notification-centre";
 import { PullToRefresh } from "./pull-to-refresh";
+import { storedFarmNotices, type FarmNotice } from "@/lib/farm-notices";
 import styles from "./farm-shell.module.css";
 let fallbackPreference = false;
 const preferenceKey = "mma-farm-sidebar-v2";
@@ -33,24 +36,27 @@ function subscribeViewport(callback: () => void) {
 function readViewport() {
   return window.matchMedia("(max-width:999px)").matches;
 }
-type Notice = { id: number; message: string; announce: boolean };
 export function FarmWorkspaceShell({
   brand,
   navigation,
   staff,
   children,
   driver,
+  management = false,
+  userId,
 }: {
   brand: ReactNode;
   navigation: ReactNode;
   staff: ReactNode;
   children: ReactNode;
   driver: boolean;
+  management?: boolean;
+  userId: string;
 }) {
   const surface = useRef<HTMLDivElement>(null);
   const mobileButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
-  const noticeNumber = useRef(0);
+  const toastTimers = useRef(new Map<string, number>());
   const collapsed = useSyncExternalStore(
     subscribePreference,
     readPreference,
@@ -61,9 +67,20 @@ export function FarmWorkspaceShell({
     readViewport,
     () => false,
   );
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notices, setNotices] = useState<FarmNotice[]>([]);
+  const [toasts, setToasts] = useState<string[]>([]);
+  const [restored, setRestored] = useState(false);
+  const notificationStorageKey = `mma-farm-notices-v1:${userId}`;
+  const toggleNotifications = useCallback((open: boolean) => {
+    setNotificationsOpen(open);
+    if (open) {
+      setMenuOpen(false);
+      setToasts([]);
+    }
+  }, []);
   const modalOpen = mobile && menuOpen;
   useEffect(() => {
     const scroll = () => setScrolled(window.scrollY > 12);
@@ -89,28 +106,76 @@ export function FarmWorkspaceShell({
     };
   }, [modalOpen]);
   useEffect(() => {
-    const saved = (event: Event) => {
+    const frame = requestAnimationFrame(() => {
+      try {
+        const stored = storedFarmNotices(
+          window.sessionStorage.getItem(notificationStorageKey),
+        );
+        setNotices((current) =>
+          [
+            ...stored.filter(
+              (item) => !current.some((notice) => notice.id === item.id),
+            ),
+            ...current,
+          ].slice(-50),
+        );
+      } catch {
+        /* Storage is optional. */
+      }
+      setRestored(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [notificationStorageKey]);
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      window.sessionStorage.setItem(
+        notificationStorageKey,
+        JSON.stringify(notices),
+      );
+    } catch {
+      /* Notices still work without storage. */
+    }
+  }, [notices, restored, notificationStorageKey]);
+  useEffect(() => {
+    const timers = toastTimers.current;
+    const received = (event: Event) => {
       const detail = (event as CustomEvent).detail;
       if (
         !detail ||
         typeof detail.message !== "string" ||
-        detail.message.length > 300
+        !detail.message.trim() ||
+        detail.message.length > 1000
       )
         return;
-      setNotice({
-        id: ++noticeNumber.current,
+      const item: FarmNotice = {
+        id: crypto.randomUUID(),
         message: detail.message,
+        level: detail.level === "error" ? "error" : "success",
+        href: String(detail.href ?? "/farm"),
+        created_at: new Date().toISOString(),
         announce: detail.announce === true,
-      });
+      };
+      setNotices((old) => [...old, item].slice(-50));
+      setToasts((old) => [...old, item.id].slice(-3));
+      timers.set(
+        item.id,
+        window.setTimeout(
+          () => {
+            setToasts((old) => old.filter((id) => id !== item.id));
+            timers.delete(item.id);
+          },
+          item.level === "error" ? 10000 : 6000,
+        ),
+      );
     };
-    window.addEventListener("farm:saved", saved);
-    return () => window.removeEventListener("farm:saved", saved);
+    window.addEventListener("farm:notice", received);
+    return () => {
+      window.removeEventListener("farm:notice", received);
+      for (const timer of timers.values()) window.clearTimeout(timer);
+      timers.clear();
+    };
   }, []);
-  useEffect(() => {
-    if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(null), 4200);
-    return () => window.clearTimeout(timer);
-  }, [notice]);
   function closeMenu() {
     setMenuOpen(false);
     mobileButton.current?.focus();
@@ -129,6 +194,7 @@ export function FarmWorkspaceShell({
   }
   return (
     <div
+      inert={notificationsOpen}
       ref={surface}
       onKeyDown={(event) => {
         if (!modalOpen) return;
@@ -209,6 +275,15 @@ export function FarmWorkspaceShell({
         </div>
         <div className={styles.topbarContext}>
           <span className={styles.workspaceLabel}>Your farm, in focus.</span>
+          <FarmNotificationCentre
+            management={management}
+            notices={notices}
+            onLocalDismiss={(ids) =>
+              setNotices((old) => old.filter((item) => !ids.includes(item.id)))
+            }
+            open={notificationsOpen}
+            onOpenChange={toggleNotifications}
+          />
           {staff}
         </div>
       </header>
@@ -257,41 +332,53 @@ export function FarmWorkspaceShell({
       >
         {children}
       </div>
-      {notice ? (
-        <div
-          key={notice.id}
-          className={styles.saveNotice}
-          role={notice.announce ? "status" : undefined}
-          aria-hidden={!notice.announce}
-          data-farm-notice="saved"
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="1.3"
-            />
-            <path
-              className={styles.noticeTick}
-              pathLength="1"
-              d="m7 12 3 3 7-7"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span>{notice.message}</span>
-        </div>
-      ) : null}
+      <div className={styles.noticeStack} aria-label="Recent action notices">
+        {notices
+          .filter((item) => toasts.includes(item.id))
+          .slice()
+          .reverse()
+          .map((notice) => (
+            <div
+              key={notice.id}
+              className={styles.actionNotice}
+              data-level={notice.level}
+              data-farm-notice={notice.level === "error" ? "error" : "saved"}
+            >
+              <span className={styles.noticeIcon} aria-hidden="true">
+                {notice.level === "error" ? "!" : "✓"}
+              </span>
+              <div
+                role={
+                  notice.announce
+                    ? notice.level === "error"
+                      ? "alert"
+                      : "status"
+                    : undefined
+                }
+              >
+                <strong>
+                  {notice.level === "error"
+                    ? "Action needs attention"
+                    : "Update saved"}
+                </strong>
+                <p>{notice.message}</p>
+                <button type="button" onClick={() => toggleNotifications(true)}>
+                  View notifications
+                </button>
+              </div>
+              <button
+                className={styles.dismissNotice}
+                type="button"
+                aria-label="Dismiss action notice"
+                onClick={() =>
+                  setToasts((old) => old.filter((id) => id !== notice.id))
+                }
+              >
+                ×
+              </button>
+            </div>
+          ))}
+      </div>
     </div>
   );
 }

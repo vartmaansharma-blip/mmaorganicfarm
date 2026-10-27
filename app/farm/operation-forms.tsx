@@ -27,6 +27,7 @@ function useSave(
 function Feedback({ state }: { state: OperationState | null }) {
   return state ? (
     <p
+      data-farm-feedback
       className={state.ok ? styles.success : styles.error}
       role={state.ok ? "status" : "alert"}
     >

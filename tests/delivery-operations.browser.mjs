@@ -422,9 +422,11 @@ try {
     assert.equal(refreshRequests,1,"repeated gestures coalesce into one refresh");
     mp.off("request",countRefresh);
     await managerContext.setOffline(true);
+    await mp.waitForFunction(() => !navigator.onLine);
     await pull();
     await mp.getByRole("status").filter({hasText:"You’re offline"}).waitFor();
     await managerContext.setOffline(false);
+    await mp.waitForFunction(() => navigator.onLine);
     assert.equal(new URL(mp.url()).pathname,"/farm/capacity","pull refresh stays on current page");
     assert.equal(new URL(mp.url()).search,"?product=milk","pull refresh preserves product scope");
     await normalInput.fill("999");

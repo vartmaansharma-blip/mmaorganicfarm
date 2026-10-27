@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../farm-page-notice";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { FARM_PRODUCTS } from "@/lib/farm-products";
@@ -37,8 +38,8 @@ export default async function SettingsPage({searchParams}: {searchParams: Promis
       <section className={styles.panel}>
         <h2>Products & pricing</h2>
         <p className={styles.hint}>New orders use these prices. Existing orders keep their agreed prices.</p>
-        {messages.error ? <p className={styles.error} role="alert">{messages.error}</p> : null}
-        {messages.message ? <p className={styles.success} role="status">{messages.message}</p> : null}
+        <FarmPageNotice message={messages.error} level="error" />
+        <FarmPageNotice message={messages.message} level="success" />
         {role === "admin" ? <FarmForm action={updateProductPrices} className={styles.actionForm}>
           <input type="hidden" name="revision" value={catalogue.revision} />
           <fieldset><legend>Product prices · INR</legend><div className={styles.priceGrid}>

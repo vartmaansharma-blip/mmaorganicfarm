@@ -26,6 +26,7 @@ const groups = [
   {
     label: "Farm",
     items: [
+      ["Milk intake", "/farm/production"],
       ["Production & capacity", "/farm/capacity"],
       ["Bottles", "/farm/bottles"],
     ],
@@ -46,6 +47,7 @@ const groups = [
   },
 ];
 const iconPaths: Record<string, string> = {
+  "/farm/production": "M9 3h6v5l3 4v9H6v-9l3-4z M6 14h12",
   "/farm": "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   "/farm/runs": "M3 5h11v12H3z M14 9h4l3 4v4h-7 M6 17v2 M18 17v2 M6 9h5",
   "/farm/routes":
@@ -74,6 +76,7 @@ const dated = new Set([
   "/farm/exceptions",
   "/farm/reconciliation",
   "/farm/bottles",
+  "/farm/production",
   "/farm/reports",
 ]);
 function NavigationActivity() {
