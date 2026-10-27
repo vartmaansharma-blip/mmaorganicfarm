@@ -20,3 +20,19 @@ The pending files were activated as `20261026172231_routing_foundation.sql` and 
 See [routing foundation](routing-foundation.md), [driver runs](driver-runs.md) and [activation verification](routing-activation.md). Completed software checks do not claim completion of a real delivery or a GPS/pay pilot.
 
 Interaction behaviour and acceptance coverage: [farm workspace interactions](farm-interactions.md).
+
+## 27 October 2026 — farm notifications and physical intake
+
+GPS/background tracking and adaptive routing are paused at the owner’s request. The next independent feature is daily physical milk intake, with the requested top-header notification centre implemented alongside it.
+
+- [x] Replace work-row action banners with stacked notices and user-scoped tab history.
+- [x] Add the Apple-pattern bell overlay, grouped updates, dismiss actions, keyboard focus and reduced motion.
+- [x] Connect committed operational events to a role-scoped persistent notification feed shared by owners and managers.
+- [x] Record measured milk intake, audit corrections/voids and preserve physical quantities.
+- [x] Test blocked driver deactivation without changing access or shifting the row/layout.
+- [ ] Approve and activate the two reviewed migrations on MmaFarms.
+- [ ] Verify the exact merged deployment and authenticated hosted owner workspace.
+
+See [farm notifications](farm-notifications.md) and [daily milk intake](daily-milk-intake.md). Local evidence does not imply live activation.
+
+Sign-in is preserved and paused on a separate, sample-data review preview. Owners/co-founders, managers and drivers can be inspected without an account; preview mutations are blocked. See [dashboard review](dashboard-review.md). This mode cannot activate in the production environment.

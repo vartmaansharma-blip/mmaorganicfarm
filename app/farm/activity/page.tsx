@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../farm-page-notice";
 import { FarmForm } from "../farm-form";
 import { todayInIndia, nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { retryPreparation } from "./actions";
@@ -47,16 +48,8 @@ export default async function ActivityPage({
         title="Automation & activity"
         description="Recorded operational changes and their actors. A completed preparation does not release a route."
       />
-      {params.message ? (
-        <p className={styles.success} role="status">
-          {params.message}
-        </p>
-      ) : null}
-      {params.error ? (
-        <p className={styles.error} role="alert">
-          {params.error}
-        </p>
-      ) : null}
+      <FarmPageNotice message={params.message} level="success" />
+      <FarmPageNotice message={params.error} level="error" />
       <section className={styles.panel}>
         <h2>Nightly draft preparation</h2>
         <p>

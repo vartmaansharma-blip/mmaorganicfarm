@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../farm-page-notice";
 import { FarmForm } from "../farm-form";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -23,8 +24,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
 
   return <main className={styles.page}>
     <header><div><p>Access control</p><h1>Farm staff</h1><span>Invite drivers, control access, then assign each active route from the Routes page.</span></div><Link prefetch={false} href="/farm/routes">Open routes</Link></header>
-    {params.message ? <p className={styles.notice}>{params.message}</p> : null}
-    {params.error ? <p className={`${styles.notice} ${styles.error}`} role="alert">{params.error}</p> : null}
+    <FarmPageNotice message={params.message} level="success" />
+    <FarmPageNotice message={params.error} level="error" />
 
     <section className={styles.summary}><article><strong>{drivers.filter((driver) => driver.active).length}</strong><span>Active drivers</span></article><article><strong>{drivers.filter((driver) => !driver.active).length}</strong><span>Inactive drivers</span></article></section>
 

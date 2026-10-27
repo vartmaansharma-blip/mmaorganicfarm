@@ -6,6 +6,7 @@ import { createDatabase, callAs } from "./runtime.mjs";
 const runtime = await createDatabase({
   routingFoundation: process.env.RUNS_WITH_PINS !== "false",
   driverRuns: true,
+  farmNotifications: true,
 });
 const { db, config } = runtime;
 const manager = randomUUID(),

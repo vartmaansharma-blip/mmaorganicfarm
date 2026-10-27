@@ -10,7 +10,7 @@ import { useFormStatus } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { performFarmAction } from "./farm-action-feedback";
 import styles from "./farm-shell.module.css";
-import { announceFarmSave } from "./farm-save-notice";
+import { announceFarmNotice } from "./farm-save-notice";
 
 type Feedback = { ok: boolean; message?: string; error?: string };
 type Props = ComponentProps<"form"> & {
@@ -53,14 +53,25 @@ export function FarmForm({
     },
     null,
   );
-  const currentFeedback = managed ? feedback : result;
+  const currentFeedback: Feedback | null | undefined = managed
+    ? feedback
+    : result;
+  const notified = useRef<Feedback | null>(null);
 
   useLayoutEffect(() => {
     if (!currentFeedback || !form.current) return;
     if (currentFeedback.ok) {
       delete form.current.dataset.farmDirty;
-      announceFarmSave(
-        currentFeedback.message ?? "Saved. Your records are up to date.",
+    }
+    if (notified.current !== currentFeedback) {
+      notified.current = currentFeedback;
+      announceFarmNotice(
+        currentFeedback.message ??
+          currentFeedback.error ??
+          (currentFeedback.ok
+            ? "Saved. Your records are up to date."
+            : "The action couldn’t be confirmed."),
+        currentFeedback.ok ? "success" : "error",
       );
     }
     const saved = position.current;
@@ -126,6 +137,7 @@ export function FarmForm({
       <FormPhase form={form} />
       {!managed && result ? (
         <p
+          data-farm-feedback
           className={styles.formFeedback}
           data-error={!result.ok || undefined}
           role={result.ok ? "status" : "alert"}

@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../../farm-page-notice";
 import { PrepaidQuantityForm, type EditablePlanDay } from "../prepaid-quantity-form";
 import { addCalendarDays } from "@/lib/delivery-calendar";
 import { FarmForm } from "../../farm-form";
@@ -454,14 +455,8 @@ export default async function CustomerPage({
         </div>
       </header>
 
-      {messages.message ? (
-        <p className={styles.notice}>{messages.message}</p>
-      ) : null}
-      {messages.error ? (
-        <p className={`${styles.notice} ${styles.error}`} role="alert">
-          {messages.error}
-        </p>
-      ) : null}
+      <FarmPageNotice message={messages.message} level="success" />
+      <FarmPageNotice message={messages.error} level="error" />
 
       <nav className={styles.tabs} aria-label="Customer sections">
         <a href="#overview">Overview</a>

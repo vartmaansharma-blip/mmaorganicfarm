@@ -1,9 +1,12 @@
+import { dashboardReviewEnabled } from "./dashboard-review-mode";
+import { dashboardReviewContext } from "./dashboard-review/client";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export type FarmStaffRole = "admin" | "driver" | "manager";
 
 export async function requireFarmStaff(next = "/farm") {
+  if (dashboardReviewEnabled()) return dashboardReviewContext();
   const supabase = await createClient();
   const {
     data: { user },

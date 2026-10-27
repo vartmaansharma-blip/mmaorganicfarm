@@ -1,3 +1,4 @@
+import { FarmPageNotice } from "../farm-page-notice";
 import { FarmForm } from "../farm-form";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -126,8 +127,8 @@ export default async function CapacityPage({
       <nav className={styles.productTabs} aria-label="Capacity product">
         {CAPACITY_PRODUCTS.map(product => <Link prefetch={false} scroll={false} aria-current={product.id === selectedKey ? "page" : undefined} href={`/farm/capacity?product=${product.id}`} key={product.id}><span>{product.name}</span><strong>{formatCapacityQuantity(capacityByProduct.get(product.id)?.daily_limit ?? 0)} <small>{product.shortUnit} / day</small></strong></Link>)}
       </nav>
-      {params.message ? <p className={styles.notice} role="status">{params.message}</p> : null}
-      {params.error ? <p className={styles.error} role="alert">{params.error}</p> : null}
+      <FarmPageNotice message={params.message} level="success" />
+      <FarmPageNotice message={params.error} level="error" />
       {migrationPending ? <p className={styles.error}>Capacity records are unavailable. Editing is paused until the data connection is ready.</p> : null}
       <section className={styles.summary} aria-label="Capacity at a glance">
         <div><span>Normal daily capacity</span><strong>{formatCapacityQuantity(defaultLimit)} <small>{selectedProduct.shortUnit}</small></strong><p>{selectedProduct.name} · dates with a one-day limit keep their own setting.</p></div>

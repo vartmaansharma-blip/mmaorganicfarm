@@ -94,7 +94,7 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
     const service = token === "local-service-fixture";
     const send = (status, data) => {
       res.writeHead(status, { "content-type": "application/json" });
-      res.end(JSON.stringify(data));
+      res.end(req.method === "HEAD" ? undefined : JSON.stringify(data));
     };
     if (url.pathname.startsWith("/auth/v1/user")) {
       if (!user) return send(401, { message: "Invalid fixture session" });
@@ -118,7 +118,7 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
       if (url.pathname.startsWith("/rest/v1/rpc/")) {
         const fn = url.pathname.split("/").at(-1);
         if (
-          !/^(get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
+          !/^(get_milk_intake_workspace|get_milk_intake_history|milk_intake_command|get_farm_notifications|dismiss_farm_notifications|get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
             fn,
           )
         )
@@ -196,6 +196,10 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
             result=(await client.query(`insert into public.${name(table)} (${keys.map(name).join(",")}) values (${keys.map((_,i)=>`$${i+1}`).join(",")}) on conflict (${conflict.map(name).join(",")}) do update set ${keys.filter(k=>!conflict.includes(k)).map(k=>`${name(k)}=excluded.${name(k)}`).join(",")} returning *`,keys.map(k=>row[k]))).rows;
           }
         } else {
+        if(req.headers.prefer?.includes("count=exact")) {
+          const count=(await client.query(`select count(*)::integer total from public.${name(table)} t ${where.length?"where "+where.join(" and "):""}`,values)).rows[0].total;
+          res.setHeader("content-range",`${offset}-${Math.max(offset,offset+Math.min(limit,count)-1)}/${count}`);
+        }
         const sql = `select ${selection(url.searchParams.get("select") || "*")} from public.${name(table)} t ${where.length ? "where " + where.join(" and ") : ""}${order} limit ${limit} offset ${offset}`;
         result = (await client.query(sql, values)).rows;
         }
