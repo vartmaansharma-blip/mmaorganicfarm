@@ -14,3 +14,14 @@ export function paymentModeError(isTest: boolean, keyId = process.env.RAZORPAY_K
     return "This order does not match the payment mode. Test payments require an order marked as test by the farm. Please contact the farm before continuing.";
   return null;
 }
+
+// Gate NEW live checkouts only. Payment verification and webhooks must remain
+// available to settle existing provider orders if the checkout switch is off.
+export function liveCheckoutError(
+  keyId = process.env.RAZORPAY_KEY_ID,
+  enabled = process.env.RAZORPAY_LIVE_CHECKOUT_ENABLED,
+): string | null {
+  if (razorpayMode(keyId) === "live" && enabled !== "true")
+    return "Live checkout is not enabled yet. Please contact the farm.";
+  return null;
+}
