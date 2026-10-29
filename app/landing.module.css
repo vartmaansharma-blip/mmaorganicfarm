@@ -38,3 +38,10 @@
 .content :global(.glass-story) { color: var(--hero-ink); border-color: var(--hero-line); background: var(--hero-paper); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .content :global(.story-metrics) { border-color: var(--hero-line); }
 .content :global(.story-metrics span) { color: var(--hero-muted); }
+
+/* A quieter editorial card for the farm story, with a clear reading measure. */
+.content :global(.about-section) { background: var(--hero-paper); }
+.content :global(.glass-story) { background: var(--hero-surface); padding: clamp(32px, 5vw, 72px); }
+.content :global(.glass-story h2) { max-width: 18ch; font-size: clamp(40px, 4.8vw, 68px); line-height: 1.08; }
+.content :global(.glass-story > p:not(.eyebrow)) { max-width: 64ch; margin: 24px 0; color: var(--hero-muted); font-size: 17px; }
+.content :global(.story-metrics) { margin-top: 36px; }
