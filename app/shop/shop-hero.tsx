@@ -30,7 +30,7 @@ export function ShopHero() {
     <section className={styles.hero} aria-labelledby="shop-title">
       <div className={styles.intro}>
         <p className={styles.eyebrow}>M’ma Organic Farm</p>
-        <h1 id="shop-title">
+        <h1 className="customer-page-heading" id="shop-title">
           Bring M’ma
           <br />
           home<span>.</span>

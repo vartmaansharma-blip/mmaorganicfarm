@@ -35,7 +35,7 @@ export default async function Success({ searchParams }: { searchParams: Promise<
     </div>
     <section className={styles.content}>
       <span className={styles.mark}>{paid ? "✓" : "…"}</span><p>Step 4 of 4</p>
-      <h1>{order.is_test ? "Test payment status." : paid ? "Your order is confirmed." : "Payment is being confirmed."}</h1>
+      <h1 className="customer-page-heading">{order.is_test ? "Test payment status." : paid ? "Your order is confirmed." : "Payment is being confirmed."}</h1>
       <p className={styles.intro}>{intro}</p>
       <dl>
         <div><dt>Order</dt><dd>{order.id.slice(0, 8).toUpperCase()}</dd></div>

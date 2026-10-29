@@ -817,3 +817,11 @@
   font-size: 13px;
   margin: 18px 0;
 }
+
+/* Scroll naturally between the original product photo and its additional view. */
+.photoStrip { display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; border-radius: 110px 110px 10px 10px; }
+.photoStrip:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 4px; }
+.photoSlide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+.detailPhoto .extraPhoto { object-fit: contain; background: var(--color-surface); }
+.photoHint { margin: 8px 0 0; color: var(--color-text-secondary); font-size: 13px; }
+@media (max-width: 600px) { .photoStrip { border-radius: 70px 70px 8px 8px; } }

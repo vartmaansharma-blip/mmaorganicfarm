@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { firstMonthEnds } from "@/lib/delivery-pricing";
@@ -20,6 +19,7 @@ import { shopProduct } from "@/lib/shop-products";
 import { useShop } from "./shop-state";
 import { SharedCalendar } from "./shared-calendar";
 import styles from "./shop.module.css";
+import { ProductPhotoStrip } from "./product-photo-strip";
 
 const labels: Record<RepeatPattern, string> = {
   custom: "Custom",
@@ -87,20 +87,11 @@ export function ScheduledProductDetails({ id }: { id: ShopProductId }) {
         ← Back to the counter
       </Link>
       <div className={styles.detailGrid}>
-        <div className={styles.detailPhoto}>
-          <Image
-            src={p.image}
-            alt={p.alt}
-            width={800}
-            height={1000}
-            priority
-            sizes="(max-width: 700px) 90vw, 45vw"
-          />
-        </div>
+        <ProductPhotoStrip id={id} />
         <div className={styles.detailCopy}>
           <p className={styles.eyebrow}>M’ma Organic Farm</p>
           <div className={styles.productTitle}>
-            <h1>{p.name}</h1>
+            <h1 className="customer-page-heading">{p.name}</h1>
             <p>
               ₹{p.price} <span>/ {p.unit}</span>
             </p>

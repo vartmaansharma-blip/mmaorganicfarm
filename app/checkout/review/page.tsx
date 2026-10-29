@@ -111,7 +111,7 @@ export default async function ReviewPage({
       <div className={styles.shell}>
         <section className={styles.heading}>
           <p>Step 3 of 4</p>
-          <h1>Review your order.</h1>
+          <h1 className="customer-page-heading">Review your order.</h1>
           <span>Nothing is charged until you confirm payment.</span>
         </section>
         <section className={styles.section}>

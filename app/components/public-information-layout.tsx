@@ -43,7 +43,7 @@ export function PublicInformationLayout({
       <main className={styles.main}>
         <section className={styles.hero}>
           <p className={styles.eyebrow}>{eyebrow}</p>
-          <h1>{title}</h1>
+          <h1 className="customer-page-heading">{title}</h1>
           <p className={styles.intro}>{intro}</p>
         </section>
         <div className={styles.content}>{children}</div>

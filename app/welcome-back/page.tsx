@@ -57,7 +57,7 @@ export default async function WelcomeBackPage() {
       <section className={styles.hero}>
         <div className={styles.copy}>
           <span className={styles.eyebrow}>Your fresh start</span>
-          <h1>
+          <h1 className="customer-page-heading">
             M&apos;ma
             <br />
             awaits you.

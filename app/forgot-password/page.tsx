@@ -27,7 +27,7 @@ export default async function ForgotPasswordPage({
           <span>M&apos;ma Organic Farm</span>
         </Link><PageNavigationControls /></div>
         <p className={styles.eyebrow}>Customer account</p>
-        <h1>Reset your password.</h1>
+        <h1 className="customer-page-heading">Reset your password.</h1>
         <p className={styles.recoveryIntro}>
           Enter the email used for your account. We will send one secure link
           to choose a new password.
