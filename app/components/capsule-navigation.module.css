@@ -14,10 +14,10 @@
 }
 .brand { width: 112px; justify-self: start; }
 .brand img { width: 100%; height: auto; }
-.capsule { display: flex; align-items: center; padding: 5px; border: 1px solid var(--hero-line); border-radius: 999px; gap: 4px; }
+.capsule { display: flex; align-items: center; padding: 5px; border: 1px solid var(--hero-line); border-radius: 999px; gap: 4px; background: var(--hero-surface); }
 .capsule a { display: grid; place-items: center; min-height: 44px; padding: 0 clamp(14px, 1.7vw, 28px); white-space: nowrap; font-size: 14px; font-weight: 500; border-radius: 999px; transition: background-color 160ms ease, color 160ms ease; }
 .capsule a:hover { background: var(--hero-hover); }
-.capsule a[aria-current] { background: var(--hero-active); color: var(--hero-accent); }
+.capsule a[aria-current] { background: var(--hero-hover); color: var(--hero-ink); }
 .shop { color: var(--hero-on-yellow); justify-self: end; display: flex; align-items: center; justify-content: center; gap: 22px; min-height: 48px; padding: 0 24px; background: var(--hero-yellow); border-radius: 999px; font-size: 14px; font-weight: 600; transition: background-color 160ms ease, transform 140ms ease; }
 .shop:hover { background: var(--hero-yellow-hover); }
 .shop span:last-child { transition: transform 180ms ease; }
@@ -44,7 +44,7 @@
 .drawerLinks { display: grid; margin-top: 36px; }
 .drawerLinks a { display: grid; grid-template-columns: 28px 1fr 24px; align-items: center; gap: 12px; min-height: 72px; padding: 12px 8px; border-bottom: 1px solid var(--hero-line); font-size: 23px; letter-spacing: -.025em; }
 .drawerLinks a small { font-size: 11px; color: var(--hero-muted); }
-.drawerLinks a[aria-current] { color: var(--hero-accent); background: var(--hero-active); border-radius: 10px; border-bottom-color: transparent; }
+.drawerLinks a[aria-current] { color: var(--hero-ink); background: var(--hero-hover); border-radius: 10px; border-bottom-color: transparent; }
 .drawerLinks a > span:last-child { font-size: 18px; }
 .drawerLinks a { transition: background-color 160ms ease; }
 .drawerLinks a:hover { background: var(--hero-hover); }
@@ -78,18 +78,18 @@
 :global(html[data-hero-immersive="true"]) .header { visibility: hidden; }
 
 /* Frosted menu surface; opaque fallback keeps navigation readable everywhere. */
-.drawer { --drawer-glass: rgb(30 35 29 / .88); border-radius: 24px 0 0 24px; }
-:global(html[data-theme="light"]) .drawer { --drawer-glass: rgb(247 243 232 / .92); }
+.drawer { --drawer-glass: rgb(40 55 45 / .96); border-radius: 24px 0 0 24px; }
+:global(html[data-theme="light"]) .drawer { --drawer-glass: rgb(255 252 245 / .97); }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .drawer {
     background: linear-gradient(135deg, rgb(255 255 255 / .035), transparent 48%), var(--drawer-glass);
-    -webkit-backdrop-filter: blur(24px) saturate(125%);
-    backdrop-filter: blur(24px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     border-left: 1px solid rgb(255 255 255 / .14);
     box-shadow: -14px 0 42px rgb(0 0 0 / .12), inset 1px 0 rgb(255 255 255 / .06);
   }
   /* A modal's backdrop is a separate backdrop root in some browser engines. */
-  .drawer::backdrop { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  .drawer::backdrop { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 }
 @media (prefers-reduced-transparency: reduce) {
   .drawer { background: var(--hero-paper); -webkit-backdrop-filter: none; backdrop-filter: none; }

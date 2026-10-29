@@ -7,15 +7,21 @@
 .content :global(.confidence-strip article), .content :global(.official-grid article) { background: var(--hero-surface); }
 .content :global(.milk-section), .content :global(.official-section), .content :global(.farm-section) { background: var(--hero-paper); }
 .content :global(.confidence-strip span), .content :global(.confidence-strip p), .content :global(.official-heading > p:last-child), .content :global(.official-grid p), .content :global(.farm-heading > p:last-child), .content :global(.feature-list p), .content :global(.feature-list span) { color: var(--hero-muted); }
-.content :global(.button-yellow), .content :global(.closing-section) { color: var(--hero-on-yellow); }
-.content :global(.button-dark) { background: var(--green); color: #f7f3e8; }
+.content :global(.button-yellow) { color: var(--hero-on-yellow); background: var(--hero-yellow); }
+.content :global(.button-yellow:hover) { background: var(--hero-yellow-hover); }
+.content :global(.button-dark) { background: var(--color-closing-action); color: var(--color-on-closing-action); }
+.content :global(.button-dark:hover) { background: var(--color-closing-action-hover); }
 .content :global(.feature-list div) { border-color: var(--hero-line); }
 .content :global(.eyebrow), .content :global(.story-metrics strong) { color: var(--hero-accent); }
-.content :global(.closing-section .eyebrow) { color: var(--green); }
-.content :global(.ticker) { color: #f7f3e8; background: var(--green); }
-.content :global(.site-footer) { color: #f5f0e4; background: #1e231d; }
-.content :global(.button) { border-radius: var(--ui-radius-control); transition: transform 140ms ease, background-color 160ms ease; }
-.content :global(.button:hover) { transform: translateY(-1px); box-shadow: none; }
+.content :global(.closing-section), .content :global(.ticker), .content :global(.site-footer) { color: var(--color-on-botanical); background: var(--color-section-botanical); }
+.content :global(.closing-section .eyebrow) { color: var(--color-on-botanical-muted); }
+.content :global(.closing-section .button-light) { color: var(--color-on-botanical); border-color: var(--color-on-botanical-muted); background: transparent; }
+.content :global(.closing-section .button-light:hover) { background: rgb(255 255 255 / .1); }
+.content :global(.site-footer a) { color: var(--color-on-botanical); }
+.content :global(.footer-identity p), .content :global(.footer-copyright) { color: var(--color-on-botanical-muted); }
+.content :global(.site-footer a:focus-visible), .content :global(.closing-section a:focus-visible) { outline: 2px solid var(--color-on-botanical); outline-offset: 4px; }
+.content :global(.button) { border-radius: var(--ui-radius-control); transition: transform 140ms ease; }
+.content :global(.button:hover) { transform: translateY(-1px); box-shadow: none; transition: transform 140ms ease, background-color 160ms ease; }
 .content :global(.button:active) { transform: scale(.98); }
 .content :global(.button:focus-visible) { outline: 2px solid var(--ui-focus); outline-offset: 4px; }
 
@@ -29,6 +35,6 @@
 
 /* Sage surfaces connect the farm story with the hero and scheduling controls. */
 .content :global(.about-section) { background: var(--hero-surface); }
-.content :global(.glass-story) { color: var(--hero-ink); border-color: var(--hero-line); background: var(--hero-paper); box-shadow: 0 20px 60px rgb(0 0 0 / .06); }
+.content :global(.glass-story) { color: var(--hero-ink); border-color: var(--hero-line); background: var(--hero-paper); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .content :global(.story-metrics) { border-color: var(--hero-line); }
 .content :global(.story-metrics span) { color: var(--hero-muted); }
