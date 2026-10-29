@@ -25,7 +25,7 @@ export const runtime = "nodejs";
 // Public, read-only readiness signal. Never return credentials or customer data.
 export async function GET() {
   return NextResponse.json(
-    { liveCheckoutEnabled: razorpayMode() === "live" && paymentModeError(false) === null && liveCheckoutError() === null },
+    { mode: razorpayMode(), liveCheckoutEnabled: razorpayMode() === "live" && paymentModeError(false) === null && liveCheckoutError() === null },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
