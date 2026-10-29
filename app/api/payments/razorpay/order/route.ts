@@ -1,5 +1,5 @@
 import { readOrderProductPrices } from "@/lib/product-prices-server";
-import { liveCheckoutError, paymentModeError } from "@/lib/payment-mode";
+import { liveCheckoutError, paymentModeError, razorpayMode } from "@/lib/payment-mode";
 import { NextResponse } from "next/server";
 import { quoteStoredMonthlyCheckout } from "@/lib/monthly-checkout";
 import { quoteStoredCheckout } from "@/lib/checkout-quote";
@@ -21,6 +21,14 @@ import {
 } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
+
+// Public, read-only readiness signal. Never return credentials or customer data.
+export async function GET() {
+  return NextResponse.json(
+    { liveCheckoutEnabled: razorpayMode() === "live" && paymentModeError(false) === null && liveCheckoutError() === null },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();

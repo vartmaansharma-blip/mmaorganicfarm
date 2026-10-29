@@ -53,6 +53,26 @@ test('new live checkouts stay disabled until explicitly enabled', () => {
   assert.match(liveCheckoutError('rzp_live_synthetic', 'false'), /not enabled/);
   assert.equal(liveCheckoutError('rzp_live_synthetic', 'true'), null);
   assert.equal(liveCheckoutError('rzp_test_synthetic', 'false'), null);
+  for (const value of ['', 'TRUE', '1', 'true ', ' true'])
+    assert.match(liveCheckoutError('rzp_live_synthetic', value), /not enabled/);
+});
+test('public checkout readiness is read-only and never exposes credentials', async () => {
+  for (const [key, flag, expected] of [
+    ['rzp_live_synthetic', 'false', false],
+    ['rzp_live_synthetic', undefined, false],
+    ['rzp_live_synthetic', 'true', true],
+    ['rzp_test_synthetic', 'true', false],
+    ['invalid', 'true', false],
+  ]) {
+    const { GET } = load('app/api/payments/razorpay/order/route.ts', {
+      'next/server': { NextResponse: { json: (body, options) => ({ body, options }) } },
+      '@/lib/supabase/server': { createClient: () => assert.fail('readiness cannot access customers') },
+      '@/lib/supabase/admin': { createAdminClient: () => assert.fail('readiness cannot access the database') },
+    }, { RAZORPAY_KEY_ID: key, RAZORPAY_LIVE_CHECKOUT_ENABLED: flag });
+    const result = await GET();
+    assert.deepEqual(result.body, { liveCheckoutEnabled: expected });
+    assert.equal(result.options.headers['Cache-Control'], 'no-store');
+  }
 });
 test('only definitive provider rejections permit checkout recovery', () => {
   const { RazorpayRequestError } = load('lib/razorpay.ts');
