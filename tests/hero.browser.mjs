@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createServer } from "node:http";
 import { chromium, webkit } from "playwright";
 
 const port = process.env.HERO_TEST_PORT || "3101";
@@ -9,13 +10,21 @@ const base = process.env.BASE_URL || `http://127.0.0.1:${port}`;
 const output = path.resolve(process.env.HERO_ARTIFACT_DIR || "work/hero-verification");
 await mkdir(output, { recursive: true });
 let server;
+let fixture;
 let serverLog = "";
 const results = [];
 
 if (!process.env.BASE_URL) {
-  // Non-secret, deliberately unreachable fixture. Anonymous navigation needs no database.
+  // Only the public catalogue is needed by the homepage; never contact live data.
+  fixture = createServer((req, res) => {
+    if (!req.url?.startsWith("/rest/v1/farm_catalog_prices")) { res.writeHead(404).end(); return; }
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ revision: "hero-fixture", prices: { milk: 6200, paneer: 20000, ghee: 37500, bottle: 1000 } }));
+  });
+  await new Promise((resolve, reject) => fixture.once("error", reject).listen(0, "127.0.0.1", resolve));
+  const fixtureUrl = `http://127.0.0.1:${fixture.address().port}`;
   server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", port], {
-    env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: "https://hero-verification.invalid", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_hero_browser_fixture" },
+    env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: fixtureUrl, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_hero_browser_fixture" },
     stdio: ["ignore", "pipe", "pipe"],
   });
   server.stdout.on("data", chunk => { serverLog += chunk; });
@@ -48,12 +57,17 @@ const state = (page, value) => page.waitForFunction(s => document.getElementById
 async function observeFilm(page) {
   await page.evaluate(() => {
     window.filmSamples = [];
+    window.cameraSamples = [];
     const sample = () => {
       const root = document.getElementById('home');
       if (!root) return;
       const previous = window.filmSamples.at(-1);
       const current = { state: root.dataset.state, stage: root.dataset.filmStage, time: Number(root.dataset.filmTime), at: performance.now(), top: root.firstElementChild.getBoundingClientRect().top };
       if (!previous || previous.state !== current.state || previous.stage !== current.stage) window.filmSamples.push(current);
+      if (current.time >= 1440 && current.time <= 2840) {
+        const rig = root.querySelector('[data-camera-rig]');
+        window.cameraSamples.push({ time: current.time, y: new DOMMatrix(getComputedStyle(rig).transform).m42 });
+      }
       window.filmObserver = requestAnimationFrame(sample);
     };
     cancelAnimationFrame(window.filmObserver);
@@ -62,7 +76,6 @@ async function observeFilm(page) {
 }
 const stageNames = ['filled-front', 'coffee-treatment', 'elevated', 'macro-push', 'macro-hold', 'overhead-pull', 'settled-overhead'];
 async function verifyHybrid(page, name, width) {
-  const front = await page.locator('img[src*="coffee-front"]').boundingBox();
   const tops = [];
   for (const progress of [.2, .65, .3]) {
     await scrollToFill(page, progress);
@@ -99,6 +112,7 @@ async function verifyHybrid(page, name, width) {
     const root = document.getElementById('home');
     return root.style.getPropertyValue('--side-opacity') === '1' && root.dataset.filmStage === 'elevated';
   });
+  const front = await page.locator('img[src*="coffee-front"]').boundingBox();
   const elevated = await page.locator('img[src*="coffee-side"]').boundingBox();
   assert.ok(Math.abs(front.y + front.height * 139 / 1200 - elevated.y - elevated.height * 108 / 1200) < 2, 'camera lift lands on the matched rim');
   assert.ok(Math.abs(front.y + front.height * 1074 / 1200 - elevated.y - elevated.height * 1092 / 1200) < 2, 'camera lift lands on the matched base');
@@ -111,6 +125,10 @@ async function verifyHybrid(page, name, width) {
   const forward = await page.evaluate(() => window.filmSamples.filter(s => s.state === 'PLAYING_FORWARD'));
   assert.deepEqual(forward.map(s => s.stage), stageNames, 'all forward stages receive screen time despite large deltas');
   assert.ok(forward.every(s => Math.abs(s.top - heldY) < 2), 'hold does not move panel');
+  const forwardCamera = await page.evaluate(() => window.cameraSamples);
+  assert.ok(forwardCamera.length > 10, 'the camera shot receives frames under fast scrolling');
+  assert.ok(forwardCamera.at(-1).y > forwardCamera[0].y + 50, 'framing travels from base to rim');
+  assert.ok(forwardCamera.every((s, i) => !i || s.y >= forwardCamera[i - 1].y - .01), 'camera never resets during the shot');
   for (let i = 1; i < forward.length; i++) assert.ok(forward[i].time > forward[i-1].time, 'theme/resize/input never restarts clock');
   assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
   assert.equal(await page.evaluate(() => document.body.style.position), '');
@@ -132,6 +150,9 @@ async function verifyHybrid(page, name, width) {
   await state(page, 'FILLING');
   const reverse = await page.evaluate(() => window.filmSamples.filter(s => s.state === 'PLAYING_REVERSE'));
   assert.deepEqual(reverse.map(s => s.stage), [...stageNames].reverse(), 'reverse film follows every stage backward');
+  const reverseCamera = await page.evaluate(() => window.cameraSamples);
+  assert.ok(reverseCamera.length > 10 && reverseCamera.at(-1).y < reverseCamera[0].y - 50, 'reverse camera travels from rim to base');
+  assert.ok(reverseCamera.every((s, i) => !i || s.y <= reverseCamera[i - 1].y + .01), 'reverse camera does not reset');
   assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front');
   for (let i = 0; i < 5; i++) {
     await scrollToFill(page, i % 2 ? 1 : .998);
@@ -465,4 +486,5 @@ try {
   console.log(JSON.stringify(results, null, 2));
 } finally {
   server?.kill("SIGTERM");
+  fixture?.close();
 }
