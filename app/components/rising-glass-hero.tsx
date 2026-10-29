@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
-import { advanceFilm, clamp01, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
+import { advanceFilm, clamp01, FILM_CUES, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
+import { createMacroVideo } from "@/lib/hero-macro-video";
 import { condensationFrame, GLASS_BEADS } from "@/lib/hero-condensation";
 import styles from "./rising-glass-hero.module.css";
 
@@ -12,11 +13,13 @@ export function RisingGlassHero() {
   const liquidMask = useRef<SVGPathElement>(null);
   const storyProgress = useRef<HTMLSpanElement>(null);
   const immersiveExit = useRef<HTMLAnchorElement>(null);
+  const macroClip = useRef<HTMLVideoElement>(null);
   const maskId = `milk-${useId().replace(/:/g, "")}`;
 
   useEffect(() => {
     const root = section.current;
-    if (!root) return;
+    const video = macroClip.current;
+    if (!root || !video) return;
     const panel = root.firstElementChild as HTMLElement;
     const html = document.documentElement;
     const body = document.body;
@@ -30,6 +33,7 @@ export function RisingGlassHero() {
     }));
     let disposed = false, initialized = false, armed = true, visitedContent = false, anchorNavigation = false, staticFallback = false;
     let assets: "loading" | "ready" | "failed" = "loading";
+    let macroStarted = false;
     let hold: { y: number; restore: () => void } | undefined;
     const persist = () => history.replaceState({ ...history.state, mmaHeroCompleted: film.state !== "FILLING" }, "");
     const geometry = () => {
@@ -77,7 +81,9 @@ export function RisingGlassHero() {
     const schedule = () => {
       if (!disposed && !document.hidden && !frame) frame = requestAnimationFrame(paint);
     };
+    const macroVideo = createMacroVideo(video, schedule);
     const cancel = () => {
+      macroVideo.stop();
       film = { state: "COMPLETED", time: FILM_DURATION_MS };
       waitingSince = 0;
       lastTime = 0;
@@ -99,16 +105,20 @@ export function RisingGlassHero() {
         initialized = true;
       }
       if (motion.matches) {
+        macroVideo.stop();
         film = { state: "COMPLETED", time: FILM_DURATION_MS };
         unlock();
       } else if (!anchorNavigation) {
         if (film.state === "FILLING") {
+          if (scroll > .05 && !staticFallback) macroVideo.prepare();
           if (scroll < .94) armed = true;
           if (scroll >= .999 && armed) {
             // All responsive images decode before the clock starts. Loading has
             // a bounded budget; a failed/slow connection keeps a loaded front.
             lock(g.trigger);
             if (assets === "ready") {
+              macroStarted = false;
+              macroVideo.stop();
               film = startFilm(film);
               waitingSince = 0;
               lastTime = now;
@@ -120,6 +130,7 @@ export function RisingGlassHero() {
         } else if (film.state === "COMPLETED") {
           if (g.y > g.trigger + 24) visitedContent = true;
           if (visitedContent && g.y <= g.trigger && assets === "ready" && !staticFallback) {
+            macroVideo.stop();
             lock(g.trigger);
             film = startFilm(film, true);
             lastTime = now;
@@ -129,7 +140,19 @@ export function RisingGlassHero() {
       }
       if (playing(film)) {
         const reverse = film.state === "PLAYING_REVERSE";
-        film = advanceFilm(film, lastTime ? now - lastTime : 0);
+        const elapsed = lastTime ? now - lastTime : 0;
+        let next = advanceFilm(film, elapsed);
+        if (!reverse && film.time < FILM_CUES.overheadStart && next.time >= FILM_CUES.macroFull) {
+          if (!macroStarted) { macroVideo.begin(); macroStarted = true; }
+          const media = macroVideo.tick(elapsed);
+          if (media.phase !== "fallback") {
+            // The film owns entry/exit. Inside its macro hold, consume native
+            // media time at 1x instead of letting two independent clocks drift.
+            // An ended event is required before the overhead transition opens.
+            next = { ...next, time: media.phase === "ended" ? FILM_CUES.overheadStart : FILM_CUES.macroFull + Math.min(FILM_CUES.overheadStart - FILM_CUES.macroFull - .001, media.time) };
+          }
+        }
+        film = next;
         lastTime = now;
         if (!playing(film)) {
           if (reverse) armed = false;
@@ -147,6 +170,9 @@ export function RisingGlassHero() {
       const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
       const liquid = liquidGeometry(fill);
       const curtain = macroPresentation(g.rect.bottom, window.innerHeight, values.macro, g.header);
+      const media = macroVideo.tick(0);
+      root.dataset.videoState = media.phase;
+      root.dataset.videoVisible = String(media.visible);
       root.style.setProperty("--scroll-progress", String(progress));
       root.style.setProperty("--fill-progress", String(fill));
       root.style.setProperty("--coffee-progress", String(values.coffee));
@@ -206,7 +232,8 @@ export function RisingGlassHero() {
       frame = 0;
       lastTime = 0;
       wetLast = 0;
-      if (!document.hidden) { waitingSince = 0; schedule(); }
+      if (document.hidden) macroVideo.pause();
+      else { macroVideo.resume(); waitingSince = 0; schedule(); }
     };
     let lastTouchY: number | undefined;
     const touchStart = (event: TouchEvent) => { lastTouchY = event.touches.length === 1 ? event.touches[0].clientY : undefined; };
@@ -254,6 +281,7 @@ export function RisingGlassHero() {
     };
     const hash = () => { cancel(); anchorNavigation = true; if (location.hash === "#home") { film = { state: "FILLING", time: 0 }; armed = true; visitedContent = false; persist(); } };
     const restore = () => {
+      macroVideo.stop();
       unlock();
       film = { state: history.state?.mmaHeroCompleted ? "COMPLETED" : "FILLING", time: history.state?.mmaHeroCompleted ? FILM_DURATION_MS : 0 };
       anchorNavigation = true;
@@ -262,7 +290,7 @@ export function RisingGlassHero() {
       schedule();
     };
     const pagehide = () => { if (hold) cancel(); cancelAnimationFrame(frame); frame = 0; };
-    const pageshow = () => { lastTime = 0; schedule(); };
+    const pageshow = () => { macroVideo.resume(); lastTime = 0; schedule(); };
     // Decode the actual Next.js-selected responsive sources, not separate raw URLs.
     Promise.all(Array.from(root.querySelectorAll<HTMLImageElement>("img")).map(image => image.decode())).then(() => {
       if (!disposed) { assets = "ready"; schedule(); }
@@ -285,6 +313,7 @@ export function RisingGlassHero() {
     motion.addEventListener("change", resize);
     return () => {
       disposed = true;
+      macroVideo.dispose();
       cancelAnimationFrame(frame);
       unlock();
       clearChrome();
@@ -368,6 +397,8 @@ export function RisingGlassHero() {
 
         <div className={styles.macro} aria-hidden="true">
           <Image src="/hero/coffee-macro.webp" alt="" fill loading="eager" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" />
+          <video ref={macroClip} className={styles.macroVideo} poster="/hero/coffee-macro.webp" width={1284} height={724} preload="none" muted playsInline controls={false} loop={false} disablePictureInPicture disableRemotePlayback aria-hidden="true" tabIndex={-1} />
+          <span className={styles.videoCredit}>Video generated with Kling AI</span>
         </div>
         <a ref={immersiveExit} className={styles.immersiveExit} href="#site-content" tabIndex={-1}>Skip introduction <span aria-hidden="true">↘</span></a>
 

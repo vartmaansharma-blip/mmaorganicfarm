@@ -3,19 +3,21 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium, webkit } from "playwright";
+import { startPublicCatalogueFixture } from "./helpers/public-catalogue-fixture.mjs";
 
 const port = process.env.HERO_TEST_PORT || "3101";
 const base = process.env.BASE_URL || `http://127.0.0.1:${port}`;
 const output = path.resolve(process.env.HERO_ARTIFACT_DIR || "work/hero-verification");
 await mkdir(output, { recursive: true });
+const fixture = process.env.BASE_URL ? null : await startPublicCatalogueFixture();
 let server;
 let serverLog = "";
 const results = [];
 
 if (!process.env.BASE_URL) {
-  // Non-secret, deliberately unreachable fixture. Anonymous navigation needs no database.
+  // Non-secret local fixture for the required public catalogue; all writes are rejected.
   server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", port], {
-    env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: "https://hero-verification.invalid", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_hero_browser_fixture" },
+    env: { ...process.env, ...fixture.env },
     stdio: ["ignore", "pipe", "pipe"],
   });
   server.stdout.on("data", chunk => { serverLog += chunk; });
@@ -27,7 +29,7 @@ async function ready() {
     if (server && server.exitCode !== null) throw new Error(`Owned preview exited: ${serverLog}`);
     // Do not accidentally validate an older process already listening on this port.
     if (!server || /Ready in/.test(serverLog)) {
-      try { if ((await fetch(base)).ok) return; } catch { /* Wait for startup. */ }
+      try { if ((await fetch(base, { signal: AbortSignal.timeout(2000) })).ok) return; } catch { /* Wait for startup. */ }
     }
     await new Promise(resolve => setTimeout(resolve, 200));
   }
@@ -465,4 +467,6 @@ try {
   console.log(JSON.stringify(results, null, 2));
 } finally {
   server?.kill("SIGTERM");
+  fixture?.server.closeAllConnections();
+  fixture?.server.close();
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceFilm, FILM_CUES, FILM_DURATION_MS, FILM_STAGES, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm } from "../lib/hero-motion.ts";
+import { advanceFilm, FILM_CUES, FILM_DURATION_MS, FILM_STAGES, MACRO_VIDEO_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm } from "../lib/hero-motion.ts";
 
 const empty = () => ({ state: 'FILLING', time: 0 });
 
@@ -46,7 +46,7 @@ test('foreground stalls cannot skip stages; playback continues with no scroll in
 });
 
 test('every photograph has a clean hold; matching transitions are continuous and bounded', () => {
-  for (const [time, weights] of [[0,[0,0,0,0]], [780,[1,0,0,0]], [1660,[1,1,0,0]], [2800,[1,1,0,1]], [4100,[1,0,1,0]]]) {
+  for (const [time, weights] of [[0,[0,0,0,0]], [780,[1,0,0,0]], [1660,[1,1,0,0]], [2800,[1,1,0,1]], [FILM_CUES.overheadFull + 100,[1,0,1,0]]]) {
     const { coffee, side, top, macro } = filmFrame(time);
     assert.deepEqual([coffee,side,top,macro], weights);
   }
@@ -102,7 +102,8 @@ test('full-screen macro stays bounded to the hero, including direct anchor exits
 
 test('directed rhythm gives the camera lift room while preserving the longer macro payoff', () => {
   const cue = FILM_CUES;
-  assert.equal(FILM_DURATION_MS, 4440);
+  assert.ok(Math.abs(FILM_DURATION_MS - 6221.667) < .000001);
+  assert.ok(Math.abs(cue.overheadStart - cue.macroFull - MACRO_VIDEO_DURATION_MS) < .000001);
   assert.ok(cue.coffeeStart >= 300, 'full milk registers before treatment');
   assert.ok(cue.elevatedStart - cue.coffeeEnd >= 300, 'coffee gets a clean frontal hold');
   assert.ok(cue.macroStart - cue.elevatedEnd >= 500, 'the elevated glass has time to register');

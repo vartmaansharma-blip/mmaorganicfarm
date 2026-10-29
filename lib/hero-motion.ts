@@ -13,6 +13,7 @@ export function heroProgress(top: number, height: number, panelHeight: number, h
 }
 
 /** A short product film: anticipation, a gentle camera lift, a lingering macro payoff. */
+export const MACRO_VIDEO_DURATION_MS = 3041.667;
 export const FILM_CUES = {
   coffeeStart: 300,
   coffeeEnd: 620,
@@ -20,9 +21,9 @@ export const FILM_CUES = {
   elevatedEnd: 1420,
   macroStart: 1920,
   macroFull: 2240,
-  overheadStart: 3500,
-  overheadFull: 3860,
-  end: 4440,
+  overheadStart: 2240 + MACRO_VIDEO_DURATION_MS,
+  overheadFull: 2600 + MACRO_VIDEO_DURATION_MS,
+  end: 3180 + MACRO_VIDEO_DURATION_MS,
 } as const;
 export const FILM_DURATION_MS = FILM_CUES.end;
 export const FILM_STAGES = [
