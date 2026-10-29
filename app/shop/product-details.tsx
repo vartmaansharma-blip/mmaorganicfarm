@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { FARM_PRODUCTS, type FarmProductSelection } from "@/lib/farm-products";
@@ -19,6 +18,7 @@ import { addCartProduct } from "@/lib/shop-cart";
 import { shopProduct } from "@/lib/shop-products";
 import { useShop } from "./shop-state";
 import styles from "./shop.module.css";
+import { ProductGallery } from "./product-gallery";
 import { ScheduledProductDetails } from "./scheduled-product-details";
 const money = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 function Stepper({
@@ -175,16 +175,7 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
         ← Back to the counter
       </Link>
       <div className={styles.detailGrid}>
-        <div className={styles.detailPhoto}>
-          <Image
-            src={p.image}
-            alt={p.alt}
-            width={800}
-            height={1000}
-            sizes="(max-width: 700px) 90vw, 45vw"
-            priority
-          />
-        </div>
+        <ProductGallery id={id} />
         <div className={styles.detailCopy}>
           <p className={styles.eyebrow}>M’ma Organic Farm</p>
           <div className={styles.productTitle}>

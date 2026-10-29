@@ -323,7 +323,7 @@
   position: sticky;
   top: 140px;
 }
-.detailPhoto img {
+.galleryMain img {
   width: 100%;
   height: auto;
   aspect-ratio: 0.95;
@@ -718,7 +718,7 @@
     position: static;
     width: 100%;
   }
-  .detailPhoto img {
+  .galleryMain img {
     aspect-ratio: 1;
     border-radius: 70px 70px 8px 8px;
   }
@@ -817,3 +817,11 @@
   font-size: 13px;
   margin: 18px 0;
 }
+
+/* Product photography remains optional to explore; the first view is unchanged. */
+.galleryMain img.galleryAdditional { object-fit: contain; background: var(--color-surface); }
+.galleryChoices { display: flex; gap: 10px; margin-top: 12px; }
+.galleryChoices button { width: 64px; height: 72px; padding: 2px; border: 2px solid transparent; border-radius: 9px; background: var(--color-surface); cursor: pointer; }
+.galleryChoices button[aria-pressed="true"] { border-color: var(--color-text-primary); }
+.galleryChoices button:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 3px; }
+.galleryChoices img { display: block; width: 100%; height: 100%; border-radius: 5px; object-fit: cover; }
