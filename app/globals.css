@@ -22,58 +22,74 @@
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* Canonical semantic colors. Keep the approved photographic hero palette. */
+/* Shared semantic palette; feedback colours retain their established meanings. */
 :root, :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-background: #1e231d;
-  --color-surface: #2c3528;
-  --color-surface-raised: #313b2d;
-  --color-surface-hover: #354030;
-  --color-text-primary: #f5f0e4;
-  --color-text-secondary: #c0c5b7;
-  --color-border: #4a5744;
-  --color-accent: #b9c6aa;
-  --color-accent-contrast: #1e231d;
-  --color-action-primary: #f4c64b;
-  --color-action-primary-text: #29271f;
-  --color-action-primary-hover: #e8b835;
-  --color-action-secondary: #2c3528;
-  --color-action-secondary-text: #f5f0e4;
-  --color-focus-ring: #f4c64b;
-  --color-input-background: #1e231d;
-  --color-input-border: #85947b;
+  --color-background: #17231d;
+  --color-surface: #28372d;
+  --color-surface-raised: #304136;
+  --color-surface-hover: #374b3d;
+  --color-text-primary: #fff5e6;
+  --color-text-secondary: #c7d2c6;
+  --color-border: #596d5d;
+  --color-accent: #a9c2ab;
+  --color-accent-contrast: #17231d;
+  --color-botanical: #8daa90;
+  --color-premium-accent: #e9bf77;
+  --color-action-primary: #e9bf77;
+  --color-action-primary-text: #19251d;
+  --color-action-primary-hover: #f2ce91;
+  --color-action-secondary: #28372d;
+  --color-action-secondary-text: #fff5e6;
+  --color-focus-ring: #e9bf77;
+  --color-input-background: #17231d;
+  --color-input-border: #8daa90;
   --color-success: #bde6c4;
   --color-success-surface: #20382b;
   --color-warning: #f2d38a;
   --color-warning-surface: #3d3420;
   --color-error: #ffb9ae;
   --color-error-surface: #3a2520;
+  --color-section-botanical: #203a2a;
+  --color-on-botanical: #fff5e6;
+  --color-on-botanical-muted: #d8e1d5;
+  --color-closing-action: #e9bf77;
+  --color-on-closing-action: #19251d;
+  --color-closing-action-hover: #f2ce91;
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --color-background: #f7f3e8;
-  --color-surface: #e6ebdd;
-  --color-surface-raised: #fffdf7;
-  --color-surface-hover: #dce4d3;
-  --color-text-primary: #29271f;
-  --color-text-secondary: #626354;
-  --color-border: #d0d8c8;
-  --color-accent: #3f563e;
-  --color-accent-contrast: #f7f3e8;
-  --color-action-primary: #f4c64b;
-  --color-action-primary-text: #29271f;
-  --color-action-primary-hover: #e8b835;
-  --color-action-secondary: #e6ebdd;
-  --color-action-secondary-text: #29271f;
-  --color-focus-ring: #3f563e;
-  --color-input-background: #f7f3e8;
-  --color-input-border: #7b876e;
+  --color-background: #f7f2e7;
+  --color-surface: #fffcf5;
+  --color-surface-raised: #fffcf5;
+  --color-surface-hover: #e6eddf;
+  --color-text-primary: #263b2c;
+  --color-text-secondary: #566a5c;
+  --color-border: #bac8b7;
+  --color-accent: #466b4d;
+  --color-accent-contrast: #fff9ed;
+  --color-botanical: #466b4d;
+  --color-premium-accent: #b78b4a;
+  --color-action-primary: #365842;
+  --color-action-primary-text: #fff9ed;
+  --color-action-primary-hover: #294734;
+  --color-action-secondary: #fffcf5;
+  --color-action-secondary-text: #263b2c;
+  --color-focus-ring: #365842;
+  --color-input-background: #fffcf5;
+  --color-input-border: #6e8271;
   --color-success: #214d3a;
   --color-success-surface: #edf8f1;
   --color-warning: #70580f;
   --color-warning-surface: #fff8df;
   --color-error: #8d3026;
   --color-error-surface: #fff1ef;
+  --color-section-botanical: #365842;
+  --color-on-botanical: #fff9ed;
+  --color-on-botanical-muted: #e1e8dd;
+  --color-closing-action: #fff9ed;
+  --color-on-closing-action: #263b2c;
+  --color-closing-action-hover: #e6eddf;
 }
 /* Existing hero and customer modules remain compatible with the same contract. */
 :root {
