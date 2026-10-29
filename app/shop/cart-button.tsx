@@ -6,10 +6,12 @@ import { OutlineIcon } from "@/app/components/outline-icon";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import {
   cartCount,
+  combinedCartOrderHref,
   cartOrderHref,
   cartQuote,
   cartReady,
   cartRoutines,
+  selectedShopCart,
   shiftShopPlan,
 } from "@/lib/shop-cart";
 import { SharedCalendar } from "./shared-calendar";
@@ -24,10 +26,17 @@ export function CartButton() {
     dialog = useRef<HTMLDialogElement>(null);
   const mode = state.mode,
     cart = state.carts[mode],
+    selected = selectedShopCart(cart),
     count = cartCount(cart),
     quote = cartQuote(cart, mode, firstPlanStart, prices),
+    selectedQuote = cartQuote(selected, mode, firstPlanStart, prices),
     routines = cartRoutines(cart),
     minimum = nextDeliveryDateInIndia();
+  const onceSelected = selectedShopCart(state.carts.once);
+  const planSelected = selectedShopCart(state.carts.plan);
+  const bothSelected = cartCount(onceSelected) > 0 && cartCount(planSelected) > 0;
+  const bothReady = bothSelected && cartReady(onceSelected, "once", minimum)
+    && cartReady(planSelected, "plan", minimum);
   useEffect(() => {
     if (cartOpen && !dialog.current?.open) dialog.current?.showModal();
     if (!cartOpen && dialog.current?.open) dialog.current?.close();
@@ -77,7 +86,7 @@ export function CartButton() {
     else if (id !== "milk" && cart[id])
       changeCart({ ...cart, [id]: { ...cart[id], quantity } });
   }
-  const productSubtotal = quote.total - quote.deliveryCharge;
+  const productSubtotal = selectedQuote.total - selectedQuote.deliveryCharge;
   return (
     <>
       <button
@@ -169,6 +178,17 @@ export function CartButton() {
                   new Set(cart.milk.schedule.filter((q) => q > 0)).size > 1;
                 return (
                   <li key={id}>
+                    <label className={styles.selectItem}>
+                      <input
+                        type="checkbox"
+                        checked={cart.selected[id]}
+                        onChange={(event) => changeCart({
+                          ...cart,
+                          selected: { ...cart.selected, [id]: event.target.checked },
+                        })}
+                      />
+                      <span className={styles.visuallyHidden}>Select {p.name} for checkout</span>
+                    </label>
                     <Image src={p.image} alt="" width={68} height={82} />
                     <div className={styles.itemBody}>
                       <Link
@@ -287,7 +307,7 @@ export function CartButton() {
             <div className={styles.bottom}>
               <div>
                 <span>
-                  {mode === "plan" ? "Plan products" : "Products subtotal"}
+                  {mode === "plan" ? "Selected plan products" : "Selected products subtotal"}
                 </span>
                 <strong>{money(productSubtotal)}</strong>
               </div>
@@ -297,21 +317,34 @@ export function CartButton() {
                   : "Delivery ₹5, free above ₹199 in products."}{" "}
                 Your eligibility and full total are confirmed before payment.
               </p>
-              {cartReady(cart, mode, minimum) ? (
+              {cartReady(selected, mode, minimum) ? (
                 <Link
                   className={styles.checkout}
-                  href={cartOrderHref(cart, mode)}
+                  href={cartOrderHref(selected, mode)}
                   onClick={() => setCartOpen(false)}
                 >
-                  Continue to delivery details <span aria-hidden="true">→</span>
+                  Checkout selected items <span aria-hidden="true">→</span>
                 </Link>
               ) : (
                 <button className={styles.checkout} type="button" disabled>
-                  Complete your schedule
+                  {cartCount(selected) ? "Complete your schedule" : "Select items to checkout"}
                 </button>
               )}
+              {bothSelected ? (
+                <div className={styles.combinedChoice}>
+                  <p>Want one payment for your one-time and prepaid scheduled items?</p>
+                  {bothReady ? (
+                    <Link href={combinedCartOrderHref(onceSelected, planSelected)}
+                      onClick={() => setCartOpen(false)}>
+                      Checkout both selected carts together →
+                    </Link>
+                  ) : (
+                    <span>Complete both delivery dates and schedules to pay together.</span>
+                  )}
+                </div>
+              ) : null}
               <p className={styles.saved}>
-                Your cart is saved in this browser tab. Nothing is charged yet.
+                Unselected items stay in your cart. Nothing is charged yet.
               </p>
             </div>
           </>

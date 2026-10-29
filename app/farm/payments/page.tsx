@@ -22,6 +22,7 @@ type PaymentRow = {
   payment_method: string | null;
   provider: string;
   provider_payment_id: string | null;
+  checkout_batch_id: string | null;
   status: "captured";
   user_id: string;
 };
@@ -40,7 +41,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
   const customerId = /^[0-9a-f-]{36}$/i.test(parameters.customer ?? "") ? parameters.customer! : null;
   let paymentQuery = admin
     .from("payments")
-    .select("id,user_id,order_id,amount_paise,provider,provider_payment_id,payment_method,paid_at,created_at,status,record_revision")
+    .select("id,user_id,order_id,amount_paise,provider,provider_payment_id,checkout_batch_id,payment_method,paid_at,created_at,status,record_revision")
     .eq("is_test", false)
     .eq("status", "captured")
     .order("paid_at", { ascending: false })
@@ -65,6 +66,11 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
     ? { data: [] }
     : await (customerId ? correctionQuery.in("order_id", customerOrderIds) : correctionQuery);
   const payments = (paymentData ?? []) as PaymentRow[];
+  const batchIds = [...new Set(payments.flatMap((payment) => payment.checkout_batch_id ? [payment.checkout_batch_id] : []))];
+  const { data: batchData } = batchIds.length
+    ? await admin.from("checkout_batches").select("id,provider_payment_id").in("id", batchIds)
+    : { data: [] };
+  const batchReferences = new Map((batchData ?? []).map((batch) => [batch.id, batch.provider_payment_id]));
   const userIds = [...new Set(payments.map((payment) => payment.user_id))];
   const { data: customerProfiles } = userIds.length
     ? await admin.from("customer_profiles").select("user_id,full_name").in("user_id", userIds)
@@ -72,6 +78,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
   const customerNames = new Map((customerProfiles ?? []).map((profile) => [profile.user_id, profile.full_name ?? "Customer"]));
   const {data: receiptChanges} = await admin.from("farm_change_log").select("id,reason,record_id,created_at").eq("record_type","payment").in("record_id", payments.map(p => p.id)).order("created_at",{ascending:false}).limit(25);
   const capturedTotal = payments.reduce((sum, payment) => sum + Number(payment.amount_paise), 0);
+  const chargeCount = new Set(payments.map((payment) => payment.checkout_batch_id ?? payment.id)).size;
   const farmRecordedCount = payments.filter((payment) => payment.provider === "manual").length;
 
   return <main className={styles.page}>
@@ -83,7 +90,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
     <FarmForm className={styles.filters} method="get">{customerId?<input type="hidden" name="customer" value={customerId}/>:null}<label>Payment date from<input name="from" type="date" defaultValue={from??""}/></label><label>Through<input name="to" type="date" defaultValue={to??""}/></label><button>Apply dates</button></FarmForm>
     <p className={styles.scope}>Latest 100 captured payments in this scope. Totals below cover only the records shown, not lifetime revenue.</p>
     <section className={styles.metrics} aria-label="Payment summary">
-      <article><span>Payments</span><strong>{payments.length}</strong></article>
+      <article><span>Payments</span><strong>{chargeCount}</strong></article>
       <article><span>Received</span><strong>{formatCheckoutAmount(capturedTotal)}</strong></article>
       <article><span>Farm recorded</span><strong>{farmRecordedCount}</strong></article>
     </section>
@@ -92,7 +99,7 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
       {payments.length ? payments.map((payment) => <article key={payment.id}>
         <div className={styles.rowHeading}><div><strong>{customerNames.get(payment.user_id) ?? "Customer"}</strong><span>Order MMA-{payment.order_id.slice(0, 8).toUpperCase()}</span></div><b>Confirmed</b></div>
         <p>{formatCheckoutAmount(payment.amount_paise)}</p>
-        <small>{payment.provider === "manual" && !payment.payment_method ? "Farm recorded" : paymentMethodLabel(payment.payment_method)} · {payment.provider_payment_id ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
+        <small>{payment.provider === "manual" && !payment.payment_method ? "Farm recorded" : paymentMethodLabel(payment.payment_method)} · {payment.checkout_batch_id ? "Combined payment share" : "Payment"} · {payment.provider_payment_id ?? (payment.checkout_batch_id ? batchReferences.get(payment.checkout_batch_id) : null) ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
         {!customerId ? <Link prefetch={false} href={`/farm/customers/${payment.user_id}`}>Open customer</Link> : null}
         {payment.provider === "manual" ? <details className={styles.correction}><summary>Edit receipt details</summary><FarmForm action={correctPaymentDetails}>
           <input type="hidden" name="paymentId" value={payment.id}/><input type="hidden" name="userId" value={payment.user_id}/><input type="hidden" name="revision" value={payment.record_revision}/>

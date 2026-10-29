@@ -20,8 +20,8 @@ function loadRazorpay() {
     document.body.appendChild(script);
   });
 }
-export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, unavailableReason, isTest = false }: {
-  amount: string; amountPaise: number; orderId: string; ready: boolean; unavailableReason?: string; isTest?: boolean;
+export function RazorpayCheckoutButton({ amount, amountPaise, orderId, batchId, ready, unavailableReason, isTest = false }: {
+  amount: string; amountPaise: number; orderId: string; batchId?: string; ready: boolean; unavailableReason?: string; isTest?: boolean;
 }) {
   const router = useRouter();
   const [accepted, setAccepted] = useState(false);
@@ -34,16 +34,16 @@ export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, un
     setMessage("");
     try {
       if (!await loadRazorpay()) throw new Error("Secure checkout could not load.");
-      const response = await fetch("/api/payments/razorpay/order", {
+      const response = await fetch(batchId ? "/api/payments/razorpay/batch/order" : "/api/payments/razorpay/order", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, termsAccepted: true, expectedAmountPaise: amountPaise }),
+        body: JSON.stringify({ ...(batchId ? { batchId } : { orderId }), termsAccepted: true, expectedAmountPaise: amountPaise }),
       });
       const data = await response.json();
       if (!response.ok) { router.refresh(); throw new Error(data.error ?? "Payment could not start."); }
       let submitted = false;
       const checkout = new window.Razorpay({
         key: data.keyId, amount: data.amount, currency: "INR", name: "M'ma Organic Farm",
-        description: isTest ? "Test farm order" : "Farm order", order_id: data.providerOrderId,
+        description: isTest ? "Test farm order" : batchId ? "Farm basket" : "Farm order", order_id: data.providerOrderId,
         prefill: data.prefill, theme: { color: "#f4c84a" },
         modal: { ondismiss: () => {
           if (submitted) return;
@@ -55,14 +55,14 @@ export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, un
           setConfirming(true);
           setMessage("Confirming your payment…");
           try {
-            const verified = await fetch("/api/payments/razorpay/verify", {
+            const verified = await fetch(batchId ? "/api/payments/razorpay/batch/verify" : "/api/payments/razorpay/verify", {
               method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderId, paymentId: result.razorpay_payment_id,
+              body: JSON.stringify({ ...(batchId ? { batchId } : { orderId }), paymentId: result.razorpay_payment_id,
                 providerOrderId: result.razorpay_order_id, signature: result.razorpay_signature }),
             });
             const confirmation = await verified.json();
             if (!verified.ok) throw new Error(confirmation.error);
-            router.push(`/checkout/success?order=${orderId}`);
+            router.push(batchId ? `/checkout/batch/success?batch=${batchId}` : `/checkout/success?order=${orderId}`);
           } catch {
             // The provider may already have charged: keep Pay disabled until status is resolved.
             setMessage("Payment confirmation is pending. Do not pay again. Check your profile or contact the farm.");
