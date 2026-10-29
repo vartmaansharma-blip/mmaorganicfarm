@@ -31,7 +31,7 @@ live checkout or authorize a transaction.
 
 ## Atomic confirmation deployment
 
-Install `20261029132348_razorpay_atomic_payment_confirmation.sql` before deploying
+Install `20261029133430_razorpay_atomic_payment_confirmation.sql` before deploying
 its application callers. It creates a private confirmation ledger and one
 `SECURITY INVOKER` RPC executable only by `service_role`. Installation does not
 rewrite existing orders, payments or notifications. The application fails with a

@@ -7,7 +7,7 @@ import { createDatabase, callAs } from './runtime.mjs';
 
 const runtime = await createDatabase({ routingFoundation: true, driverRuns: true });
 const { db, config } = runtime;
-await db.query(await readFile(new URL('../../supabase/migrations/20261029132348_razorpay_atomic_payment_confirmation.sql', import.meta.url), 'utf8'));
+await db.query(await readFile(new URL('../../supabase/migrations/20261029133430_razorpay_atomic_payment_confirmation.sql', import.meta.url), 'utf8'));
 // Match the hosted service role's existing table grants; callers still use the
 // new function's restricted EXECUTE grant and the real database transactions.
 await db.query('grant select,insert,update on all tables in schema public to service_role');
