@@ -19,7 +19,7 @@ import { shopProduct } from "@/lib/shop-products";
 import { useShop } from "./shop-state";
 import { SharedCalendar } from "./shared-calendar";
 import styles from "./shop.module.css";
-import { ProductGallery } from "./product-gallery";
+import { ProductPhotoStrip } from "./product-photo-strip";
 
 const labels: Record<RepeatPattern, string> = {
   custom: "Custom",
@@ -87,7 +87,7 @@ export function ScheduledProductDetails({ id }: { id: ShopProductId }) {
         ← Back to the counter
       </Link>
       <div className={styles.detailGrid}>
-        <ProductGallery id={id} />
+        <ProductPhotoStrip id={id} />
         <div className={styles.detailCopy}>
           <p className={styles.eyebrow}>M’ma Organic Farm</p>
           <div className={styles.productTitle}>

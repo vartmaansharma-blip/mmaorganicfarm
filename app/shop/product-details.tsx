@@ -18,7 +18,7 @@ import { addCartProduct } from "@/lib/shop-cart";
 import { shopProduct } from "@/lib/shop-products";
 import { useShop } from "./shop-state";
 import styles from "./shop.module.css";
-import { ProductGallery } from "./product-gallery";
+import { ProductPhotoStrip } from "./product-photo-strip";
 import { ScheduledProductDetails } from "./scheduled-product-details";
 const money = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 function Stepper({
@@ -175,7 +175,7 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
         ← Back to the counter
       </Link>
       <div className={styles.detailGrid}>
-        <ProductGallery id={id} />
+        <ProductPhotoStrip id={id} />
         <div className={styles.detailCopy}>
           <p className={styles.eyebrow}>M’ma Organic Farm</p>
           <div className={styles.productTitle}>
