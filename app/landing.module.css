@@ -48,3 +48,22 @@
 @media (max-width: 720px) {
   .content :global(.story-metrics strong) { font-size: clamp(16px, 4.6vw, 22px); white-space: nowrap; }
 }
+@media (max-width: 360px) {
+  .content :global(.story-metrics strong) { font-size: 15px; }
+}
+
+/* Let the real product and farm photography enter the story as it comes into view.
+   Browsers without scroll-driven animation keep the images fully visible. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .content :global(.milk-visual), .content :global(.farm-card) {
+      animation: photo-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+    @keyframes photo-reveal {
+      from { clip-path: inset(3% 0); }
+      to { clip-path: inset(0); }
+    }
+  }
+}
