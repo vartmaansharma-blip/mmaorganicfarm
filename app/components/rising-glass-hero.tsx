@@ -143,7 +143,7 @@ export function RisingGlassHero() {
       const fill = film.state === "FILLING" && !hold ? milkFill(fillScroll) : 1;
       const values = filmFrame(film.time);
       // Failed imagery never reveals a blank camera layer.
-      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, elevation: 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 1 });
+      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, elevation: 0, cameraZoom: 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 1 });
       const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
       const liquid = liquidGeometry(fill);
       const curtain = macroPresentation(g.rect.bottom, window.innerHeight, values.macro, g.header);
@@ -151,6 +151,7 @@ export function RisingGlassHero() {
       root.style.setProperty("--fill-progress", String(fill));
       root.style.setProperty("--coffee-progress", String(values.coffee));
       root.style.setProperty("--elevation-progress", String(values.elevation));
+      root.style.setProperty("--camera-zoom", String(values.cameraZoom));
       root.style.setProperty("--angle-opacity", String(Math.min(1, values.side + values.top + values.macro)));
       root.style.setProperty("--side-opacity", String(values.side));
       root.style.setProperty("--top-opacity", String(values.top));
@@ -322,7 +323,8 @@ export function RisingGlassHero() {
 
         <div className={styles.visual}>
           <div className={styles.glass} role="img" aria-label="Scroll to fill a traditional grooved glass with milk. A short automatic film then reveals coffee, an elevated view, a full-screen macro and an overhead finish. Returning from the farm plays the film backward before upward scrolling empties the glass.">
-            <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} priority sizes="(max-width: 720px) 240px, 38vw" />
+            <div className={styles.cameraViewport}><div className={styles.cameraRig} data-camera-rig>
+            <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} priority sizes="(max-width: 720px) 400px, 60vw" />
             <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
               <defs>
                 <clipPath id={maskId} clipPathUnits="objectBoundingBox">
@@ -331,12 +333,11 @@ export function RisingGlassHero() {
               </defs>
             </svg>
             <div className={styles.milk} style={{ clipPath: `url(#${maskId})` }}>
-              <Image src="/hero/glass-milk.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+              <Image src="/hero/glass-milk.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 400px, 60vw" />
             </div>
             <span className={styles.surface} />
-            <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.side} src="/hero/coffee-side-v2.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
+            <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 400px, 60vw" />
+            <Image className={styles.side} src="/hero/coffee-side-v2.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 400px, 60vw" />
             <svg className={styles.condensation} viewBox="0 0 800 1200" aria-hidden="true" focusable="false" data-condensation>
               <defs>
                 <clipPath id={`${maskId}-glass-surface`}><path d="M 125 200 Q 400 155 675 200 L 600 1015 Q 400 1050 200 1015 Z" /></clipPath>
@@ -363,6 +364,8 @@ export function RisingGlassHero() {
                 ))}
               </g>
             </svg>
+            </div></div>
+            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
           </div>
         </div>
 

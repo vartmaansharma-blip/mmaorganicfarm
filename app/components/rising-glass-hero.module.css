@@ -4,6 +4,7 @@
   --coffee-progress: 0;
   --angle-opacity: 0;
   --elevation-progress: 0;
+  --camera-zoom: 0;
   --side-opacity: 0;
   --top-opacity: 0;
   --macro-opacity: 0;
@@ -97,8 +98,9 @@
 @media (scripting: none) { .sequence { height: auto; --fill-progress: 1; } .panel { position: relative; top: 0; } }
 
 .coffee { position: absolute; inset: 0; opacity: calc(var(--coffee-progress) * (1 - var(--angle-opacity))); }
-.empty, .milk, .coffee { transform: translateY(calc(var(--elevation-progress) * -.8%)) scale(calc(1 - var(--elevation-progress) * .004)); }
-.side { position: absolute; inset: 0; opacity: var(--side-opacity); transform-origin: 0 0; transform: translate(2.489837%, calc(3.031504% + (1 - var(--elevation-progress)) * .8%)) scale(calc(.950203252 + (1 - var(--elevation-progress)) * .0038)); }
+.cameraViewport { position: absolute; inset: 0; overflow: hidden; }
+.cameraRig { position: absolute; inset: 0; transform: translate3d(0, calc(var(--camera-zoom) * (-25% + var(--elevation-progress) * 50%)), 0) scale(calc(1 + var(--camera-zoom) * .55)); }
+.side { position: absolute; inset: 0; opacity: var(--side-opacity); transform-origin: 0 0; transform: translate(2.489837%, 3.031504%) scale(.950203252); }
 .top { position: absolute; inset: 0; opacity: var(--top-opacity); transform: scale(calc(1.12 + (1 - var(--overhead-settle)) * .02)); }
 .macro { position: fixed; inset: 0; z-index: 60; width: 100vw; height: 100dvh; overflow: hidden; opacity: var(--macro-opacity); transform: translateY(var(--macro-offset)); pointer-events: none; }
 .macro img { object-fit: cover; transform: scale(calc(1 + var(--macro-opacity) * .08 + var(--macro-drift) * .025)); }

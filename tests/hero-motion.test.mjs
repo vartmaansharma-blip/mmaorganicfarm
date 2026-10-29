@@ -46,7 +46,7 @@ test('foreground stalls cannot skip stages; playback continues with no scroll in
 });
 
 test('every photograph has a clean hold; matching transitions are continuous and bounded', () => {
-  for (const [time, weights] of [[0,[0,0,0,0]], [780,[1,0,0,0]], [1660,[1,1,0,0]], [2800,[1,1,0,1]], [4100,[1,0,1,0]]]) {
+  for (const [time, weights] of [[0,[0,0,0,0]], [780,[1,0,0,0]], [3000,[1,1,0,0]], [4300,[1,1,0,1]], [5500,[1,0,1,0]]]) {
     const { coffee, side, top, macro } = filmFrame(time);
     assert.deepEqual([coffee,side,top,macro], weights);
   }
@@ -70,7 +70,7 @@ test('returning plays every stage backward and ends on a filled frontal milk gla
   }
   assert.deepEqual(stages, FILM_STAGES.map(stage => stage.name).reverse());
   assert.deepEqual(film, empty());
-  assert.deepEqual(filmFrame(film.time), { coffee: 0, elevation: 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 0, stage: 'filled-front' });
+  assert.deepEqual(filmFrame(film.time), { coffee: 0, elevation: 0, cameraZoom: 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 0, stage: 'filled-front' });
   assert.ok(milkFill(.5) < milkFill(1));
 });
 
@@ -102,11 +102,11 @@ test('full-screen macro stays bounded to the hero, including direct anchor exits
 
 test('directed rhythm gives the camera lift room while preserving the longer macro payoff', () => {
   const cue = FILM_CUES;
-  assert.equal(FILM_DURATION_MS, 4440);
+  assert.equal(FILM_DURATION_MS, 5860);
   assert.ok(cue.coffeeStart >= 300, 'full milk registers before treatment');
-  assert.ok(cue.elevatedStart - cue.coffeeEnd >= 300, 'coffee gets a clean frontal hold');
+  assert.ok(cue.cameraInStart - cue.coffeeEnd >= 300, 'coffee gets a clean frontal hold');
   assert.ok(cue.macroStart - cue.elevatedEnd >= 500, 'the elevated glass has time to register');
-  assert.ok(cue.elevatedEnd - cue.elevatedStart >= 450, 'the second view glides in instead of snapping');
+  assert.ok(cue.elevatedEnd - cue.elevatedStart === 1400, 'the second view glides in instead of snapping');
   assert.ok(cue.overheadStart - cue.macroFull >= 1200, 'the macro is the longest payoff');
   assert.ok(cue.end - cue.overheadFull >= 500, 'the ending has a calm landing');
 });
@@ -138,4 +138,22 @@ test('macro creep and closing settle stay bounded, continuous and reverse on the
       assert.ok(b >= 0 && b <= 1 && Math.abs(b-a) < .005);
     }
   }
+});
+
+ test('camera framing follows a single continuous path and returns before the macro', () => {
+  const c = FILM_CUES;
+  assert.equal(filmFrame(c.elevatedStart).cameraZoom, 1);
+  assert.equal(filmFrame(c.elevatedEnd).cameraZoom, 1);
+  assert.equal(filmFrame(c.macroStart).cameraZoom, 1);
+  assert.equal(filmFrame(c.overheadStart).cameraZoom, 0);
+  let last = -.25;
+  for (let t = c.elevatedStart; t <= c.elevatedEnd; t++) {
+    const f = filmFrame(t);
+    const y = f.cameraZoom * (-.25 + .5 * f.elevation);
+    assert.ok(y >= last && y - last < .001);
+    assert.equal(f.cameraZoom, 1);
+    last = y;
+  }
+  assert.ok(Math.abs(last - .25) < 1e-12);
+  assert.equal(filmFrame(c.macroStart).macro, 0);
 });

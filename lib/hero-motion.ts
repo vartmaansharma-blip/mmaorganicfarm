@@ -16,13 +16,14 @@ export function heroProgress(top: number, height: number, panelHeight: number, h
 export const FILM_CUES = {
   coffeeStart: 300,
   coffeeEnd: 620,
-  elevatedStart: 940,
-  elevatedEnd: 1420,
-  macroStart: 1920,
-  macroFull: 2240,
-  overheadStart: 3500,
-  overheadFull: 3860,
-  end: 4440,
+  cameraInStart: 940,
+  elevatedStart: 1440,
+  elevatedEnd: 2840,
+  macroStart: 3340,
+  macroFull: 3660,
+  overheadStart: 4920,
+  overheadFull: 5280,
+  end: 5860,
 } as const;
 export const FILM_DURATION_MS = FILM_CUES.end;
 export const FILM_STAGES = [
@@ -64,7 +65,8 @@ export function filmFrame(time: number) {
   return {
     coffee: easeBetween(t, cue.coffeeStart, cue.coffeeEnd),
     elevation,
-    side: elevation * (1 - top),
+    cameraZoom: easeBetween(t, cue.cameraInStart, cue.elevatedStart) * (1 - easeBetween(t, cue.macroFull, cue.overheadStart)),
+    side: easeBetween(elevation, .55, 1) * (1 - top),
     top,
     macro: easeBetween(t, cue.macroStart, cue.macroFull) * (1 - top),
     // A restrained 2.5% creep keeps the full-screen photograph alive, while
