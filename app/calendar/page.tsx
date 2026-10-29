@@ -166,7 +166,7 @@ export default async function CalendarPage({
         <div className={styles.heading}>
           <div>
             <p className={styles.eyebrow}>Your delivery routine</p>
-            <h1>Delivery calendar</h1>
+            <h1 className="customer-page-heading">Delivery calendar</h1>
             <p>
               Plan from tomorrow: skip one day, change milk, or pause two or
               more days.

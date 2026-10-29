@@ -55,7 +55,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
       <section className={styles.authPanel}>
         <div className={styles.authContent}>
-          <h1>{isSignUp ? "Create your account" : "Welcome back"}</h1>
+          <h1 className="customer-page-heading">{isSignUp ? "Create your account" : "Welcome back"}</h1>
           <p className={styles.intro}>
             {isSignUp
               ? "Sign up with Google or email. We will ask for delivery details only after you choose to order."

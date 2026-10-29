@@ -1609,3 +1609,12 @@ html[data-hero-immersive="true"] .whatsapp-float { visibility: hidden; }
  .customer-header-actions:has([data-page-controls])>a,
  .customer-header-actions:has([data-page-controls])>div:not([data-page-controls]){display:none}
 }
+
+/* A short orientation cue for customer-page headings; controls remain ready immediately. */
+@media (prefers-reduced-motion: no-preference) {
+  .customer-page-heading { animation: customer-heading-arrive 280ms ease-out; }
+  @keyframes customer-heading-arrive {
+    from { transform: translateY(6px); }
+    to { transform: translateY(0); }
+  }
+}

@@ -27,7 +27,7 @@ export default async function ResetPasswordPage({
           <span>M&apos;ma Organic Farm</span>
         </Link><PageNavigationControls /></div>
         <p className={styles.eyebrow}>Customer account</p>
-        <h1>Choose a new password.</h1>
+        <h1 className="customer-page-heading">Choose a new password.</h1>
         <p className={styles.recoveryIntro}>
           Use at least eight characters. Your new password will replace the old
           one immediately.

@@ -153,7 +153,7 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
 
         <div className={styles.productCopy}>
           <p className={styles.eyebrow}>M&apos;ma farm shop</p>
-          <h1 id="milk-title">Build your farm basket.</h1>
+          <h1 className="customer-page-heading" id="milk-title">Build your farm basket.</h1>
           <p className={styles.price}>
             Milk ₹{prices.milk} <span>per litre with bottle return</span>
           </p>

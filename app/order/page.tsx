@@ -135,7 +135,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
       <section className={styles.layout}>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>Step 2 of 4</p>
-          <h1>Where should we bring your order, {firstName}?</h1>
+          <h1 className="customer-page-heading">Where should we bring your order, {firstName}?</h1>
           <p>
             Add a contact number and delivery address. You can review every
             detail before payment.

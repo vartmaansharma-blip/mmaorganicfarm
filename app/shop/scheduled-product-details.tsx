@@ -91,7 +91,7 @@ export function ScheduledProductDetails({ id }: { id: ShopProductId }) {
         <div className={styles.detailCopy}>
           <p className={styles.eyebrow}>M’ma Organic Farm</p>
           <div className={styles.productTitle}>
-            <h1>{p.name}</h1>
+            <h1 className="customer-page-heading">{p.name}</h1>
             <p>
               ₹{p.price} <span>/ {p.unit}</span>
             </p>
