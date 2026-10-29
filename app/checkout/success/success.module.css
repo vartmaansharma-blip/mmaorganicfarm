@@ -28,3 +28,36 @@
 .actions a { min-height: var(--ui-control-height); border-radius: var(--ui-radius-control); }
 
 .mark { color: var(--color-accent); background: var(--color-surface); border-color: var(--color-accent); }
+
+.confirmed .mark { position: relative; }
+.confirmed .mark::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .confirmed .mark { animation: confirmation-pop 600ms cubic-bezier(.2,.7,.3,1) both; }
+  .confirmed .mark::after { animation: confirmation-halo 750ms ease-out 120ms both; }
+  .confirmed h1 { animation: confirmation-rise 500ms cubic-bezier(.2,.7,.3,1) 150ms both; }
+  .confirmed .intro { animation: confirmation-rise 500ms cubic-bezier(.2,.7,.3,1) 250ms both; }
+  .confirmed dl { animation: confirmation-rise 500ms cubic-bezier(.2,.7,.3,1) 350ms both; }
+}
+
+@keyframes confirmation-pop {
+  from { opacity: .35; transform: scale(.72); }
+  65% { opacity: 1; transform: scale(1.08); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes confirmation-halo {
+  from { opacity: .55; transform: scale(.7); }
+  to { opacity: 0; transform: scale(1.7); }
+}
+@keyframes confirmation-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
