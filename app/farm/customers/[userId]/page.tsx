@@ -67,6 +67,7 @@ type PaymentRow = {
   paid_at: string | null;
   provider: string;
   provider_payment_id: string | null;
+  checkout_batch_id: string | null;
   status: string;
 };
 
@@ -217,7 +218,7 @@ export default async function CustomerPage({
       ? admin
           .from("payments")
           .select(
-            "id, order_id, status, is_test, amount_paise, provider, provider_payment_id, paid_at, created_at",
+            "id, order_id, status, is_test, amount_paise, provider, provider_payment_id, checkout_batch_id, paid_at, created_at",
           )
           .eq("user_id", userId)
           .eq("is_test", false)
@@ -315,6 +316,12 @@ export default async function CustomerPage({
     ? []
     : ((capacityResult.data ?? []) as CapacityDay[]);
   const livePayments = payments;
+  const combinedIds = [...new Set(livePayments.flatMap((payment) => payment.checkout_batch_id ? [payment.checkout_batch_id] : []))];
+  const { data: combinedData } = combinedIds.length
+    ? await admin.from("checkout_batches").select("id,provider_payment_id").in("id", combinedIds)
+    : { data: [] };
+  const combinedReferences = new Map((combinedData ?? []).map((batch) => [batch.id, batch.provider_payment_id]));
+  const liveChargeCount = new Set(livePayments.map((payment) => payment.checkout_batch_id ?? payment.id)).size;
   const paidOrders = orders;
   const activePlan =
     plans.find((plan) => plan.status === "active") ??
@@ -470,7 +477,7 @@ export default async function CustomerPage({
         </a>
         {role === "admin" ? (
           <a href="#payments">
-            Payments <span>{livePayments.length}</span>
+            Payments <span>{liveChargeCount}</span>
           </a>
         ) : null}
         <a href="#delivery-outcomes">Delivery outcomes</a>
@@ -747,8 +754,8 @@ export default async function CustomerPage({
                 <span>
                   <strong>View payment ledger</strong>
                   <small>
-                    {livePayments.length} live transaction
-                    {livePayments.length === 1 ? "" : "s"} · newest first
+                    {liveChargeCount} live transaction
+                    {liveChargeCount === 1 ? "" : "s"} · newest first
                   </small>
                 </span>
                 <b aria-hidden="true">⌄</b>
@@ -775,6 +782,7 @@ export default async function CustomerPage({
                     </span>
                     <span data-label="Reference">
                       {payment.provider_payment_id ??
+                        (payment.checkout_batch_id ? combinedReferences.get(payment.checkout_batch_id) : null) ??
                         titleCase(payment.provider)}
                     </span>
                     <span data-label="Status">

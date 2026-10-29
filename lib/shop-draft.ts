@@ -53,8 +53,8 @@ export function createShopState(start: string): ShopState {
   return {
     mode: "plan",
     carts: {
-      once: { start, milk: null, paneer: null, ghee: null },
-      plan: { start, milk: null, paneer: null, ghee: null },
+      once: { start, milk: null, paneer: null, ghee: null, selected: { milk: false, paneer: false, ghee: false } },
+      plan: { start, milk: null, paneer: null, ghee: null, selected: { milk: false, paneer: false, ghee: false } },
     },
     drafts: {
       once: {
@@ -239,6 +239,8 @@ export function restoreShopState(
               : [],
         };
     }
+    for (const id of ["milk", "paneer", "ghee"] as const)
+      cart.selected[id] = Boolean(cart[id]) && raw.selected?.[id] !== false;
   }
   return result;
 }
@@ -272,9 +274,11 @@ export function orderReturnPath(params: Record<string, string | undefined>) {
     "schedule",
     "start",
     "routine",
+    "nextPlan",
+    "combineWith",
   ] as const) {
     const value = params[key];
-    if (typeof value === "string" && value.length <= 400) query.set(key, value);
+    if (typeof value === "string" && value.length <= (key === "nextPlan" ? 1200 : 400)) query.set(key, value);
   }
   return `/order${query.size ? `?${query}` : ""}`;
 }

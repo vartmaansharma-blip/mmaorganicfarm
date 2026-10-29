@@ -27,9 +27,28 @@ export type ShopCart = {
   milk: ShopDraft | null;
   paneer: ShopExtra | null;
   ghee: ShopExtra | null;
+  selected: Record<ShopProductId, boolean>;
 };
 export function emptyShopCart(start: string): ShopCart {
-  return { start, milk: null, paneer: null, ghee: null };
+  return { start, milk: null, paneer: null, ghee: null, selected: { milk: false, paneer: false, ghee: false } };
+}
+export function selectedShopCart(cart: ShopCart): ShopCart {
+  const next = structuredClone(cart);
+  for (const id of ["milk", "paneer", "ghee"] as const)
+    if (!cart.selected[id]) next[id] = null;
+  return next;
+}
+export function removePurchasedItems(cart: ShopCart, snapshots: Partial<Record<ShopProductId, string>> = {}) {
+  const next = structuredClone(cart);
+  let changed = false;
+  for (const id of ["milk", "paneer", "ghee"] as const) {
+    if (snapshots[id] && JSON.stringify(cart[id]) === snapshots[id]) {
+      next[id] = null;
+      next.selected[id] = false;
+      changed = true;
+    }
+  }
+  return { cart: next, changed };
 }
 export function cartCount(cart: ShopCart) {
   return (
@@ -48,15 +67,18 @@ export function addCartProduct(
   if (mode === "once" && !cartCount(cart)) next.start = draft.start;
   if (id === "milk") {
     next.milk = structuredClone(draft);
+    next.selected.milk = true;
     if (mode === "once") next.start = draft.start;
     if (mode === "once")
       for (const key of ["paneer", "ghee"] as const)
-        if (draft.extras[key].enabled)
+        if (draft.extras[key].enabled) {
           next[key] = {
             ...structuredClone(draft.extras[key]),
             frequency: "once",
             days: [],
           };
+          next.selected[key] = true;
+        }
   } else
     next[id] = {
       enabled: true,
@@ -68,6 +90,7 @@ export function addCartProduct(
       firstDate: draft.start,
       week: draft.repeat === "days" ? [...draft.schedule] : undefined,
     };
+  next.selected[id] = true;
   return next;
 }
 export function cartSelections(cart: ShopCart, prices: ProductPrices = DEFAULT_PRODUCT_PRICES): FarmProductSelection[] {
@@ -220,6 +243,11 @@ export function cartOrderHref(cart: ShopCart, mode: ShopMode) {
       ),
     );
   return `/order?${params}`;
+}
+export function combinedCartOrderHref(once: ShopCart, plan: ShopCart) {
+  const onceParams = new URLSearchParams(cartOrderHref(once, "once").split("?")[1]);
+  onceParams.set("nextPlan", cartOrderHref(plan, "plan").split("?")[1]);
+  return `/order?${onceParams}`;
 }
 export function cartMatchesOrder(
   cart: ShopCart,

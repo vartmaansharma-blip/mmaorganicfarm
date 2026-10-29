@@ -40,6 +40,8 @@ type OrderPageProps = {
     schedule?: string;
     start?: string;
     routine?: string;
+    nextPlan?: string;
+    combineWith?: string;
   }>;
 };
 
@@ -241,6 +243,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           <input name="schedule" type="hidden" value={params.schedule ?? ""} />
           <input name="routine" type="hidden" value={params.routine ?? ""} />
           <input name="start" type="hidden" value={params.start ?? ""} />
+          {params.nextPlan ? <input name="nextPlan" type="hidden" value={params.nextPlan} /> : null}
+          {params.combineWith ? <input name="combineWith" type="hidden" value={params.combineWith} /> : null}
           {params.error ? (
             <p className={styles.error} role="alert">
               {params.error}
@@ -327,7 +331,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           )}
 
           <button className={styles.submitButton} type="submit">
-            Save &amp; review order <span>→</span>
+            {params.nextPlan ? "Continue to scheduled details" : params.combineWith ? "Review combined checkout" : "Save & review order"} <span>→</span>
           </button>
           <p className={styles.note}>
             These details are saved securely to your account. No order is placed

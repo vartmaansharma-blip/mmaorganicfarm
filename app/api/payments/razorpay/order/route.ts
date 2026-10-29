@@ -60,6 +60,13 @@ export async function POST(request: Request) {
       { error: "This order is not available for payment." },
       { status: 409 },
     );
+  const { data: combined, error: combinedLookupError } = await createAdminClient().from("checkout_batches")
+    .select("id").or(`once_order_id.eq.${order.id},plan_order_id.eq.${order.id}`)
+    .limit(1).maybeSingle();
+  if (combinedLookupError)
+    return NextResponse.json({ error: "Payment preparation is temporarily unavailable." }, { status: 503 });
+  if (combined)
+    return NextResponse.json({ error: "This order is part of a combined checkout. Review both selected carts together." }, { status: 409 });
   if (order.discount_paise > 0 || order.discount_code)
     return NextResponse.json({ error: "Review a new order at the regular product price." }, { status: 409 });
   const modeError = paymentModeError(order.is_test);

@@ -46,6 +46,10 @@ export default async function ReviewPage({
     .eq("user_id", user.id)
     .maybeSingle();
   if (!order) redirect("/milk");
+  const { data: combined } = await supabase.from("checkout_batches")
+    .select("id,status").or(`once_order_id.eq.${order.id},plan_order_id.eq.${order.id}`)
+    .limit(1).maybeSingle();
+  if (combined) redirect(`/checkout/batch/${["paid", "test_captured"].includes(combined.status) ? "success" : "review"}?batch=${combined.id}`);
   if (order.status === "paid") redirect(`/checkout/success?order=${order.id}`);
   if (order.status === "cancelled") redirect("/account");
   const { data: items } = await supabase

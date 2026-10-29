@@ -1,9 +1,9 @@
 "use client";
 import { useEffect } from "react";
-import { cartMatchesOrder, emptyShopCart } from "@/lib/shop-cart";
+import { cartMatchesOrder, removePurchasedItems, selectedShopCart } from "@/lib/shop-cart";
 import { type ShopMode } from "@/lib/shop-draft";
 import { useShop } from "./shop-state";
-const key = "mma-cart-checkout-v1";
+const key = (orderId: string) => `mma-cart-checkout-v2:${orderId}`;
 export function CartCheckoutSync({
   orderId,
   mode,
@@ -28,25 +28,34 @@ export function CartCheckoutSync({
   useEffect(() => {
     if (!hydrated) return;
     if (mode !== "once" && mode !== "plan") return;
-    const cart = state.carts[mode as ShopMode],
-      snapshot = JSON.stringify(cart);
+    const cart = state.carts[mode as ShopMode];
+    const selected = selectedShopCart(cart);
     try {
       if (paid) {
-        const saved = JSON.parse(sessionStorage.getItem(key) ?? "null");
+        const saved = JSON.parse(localStorage.getItem(key(orderId)) ?? "null");
         if (saved?.orderId === orderId && saved?.mode === mode) {
-          sessionStorage.removeItem(key);
-          if (saved.snapshot === snapshot)
+          localStorage.removeItem(key(orderId));
+          const { cart: next, changed } = removePurchasedItems(cart, saved.items);
+          if (changed)
             update({
               ...state,
-              carts: { ...state.carts, [mode]: emptyShopCart(cart.start) },
+              carts: { ...state.carts, [mode]: next },
             });
         }
         return;
       }
-      if (start && items && cartMatchesOrder(cart, mode, start, items, routine))
-        sessionStorage.setItem(
-          key,
-          JSON.stringify({ orderId, mode, snapshot }),
+      if (start && items && cartMatchesOrder(selected, mode, start, items, routine))
+        localStorage.setItem(
+          key(orderId),
+          JSON.stringify({
+            orderId,
+            mode,
+            items: Object.fromEntries(
+              (["milk", "paneer", "ghee"] as const)
+                .filter((id) => selected[id])
+                .map((id) => [id, JSON.stringify(selected[id])]),
+            ),
+          }),
         );
     } catch {
       /* Storage is optional. A failed or unconfirmed payment never clears a basket. */
