@@ -4,7 +4,7 @@ import { createMacroVideo } from '../lib/hero-macro-video.ts';
 
 class Clip extends EventTarget {
   src = ''; readyState = 2; currentTime = 0; ended = false;
-  error = null; plays = 0; pauses = 0; playbackRate = 3;
+  duration = 3.041667; error = null; plays = 0; pauses = 0; playbackRate = 3;
   getAttribute() { return this.src; }
   removeAttribute() { this.src = ''; }
   canPlayType() { return 'probably'; }
@@ -30,7 +30,10 @@ test('one forward shot plays from zero at 1x and reveals only a presented frame'
   assert.equal(clip.plays, 1, 'no repeated play calls or frame seeking');
   assert.equal(clip.currentTime, 2.5);
   assert.equal(media.tick(0).visible, true);
-  clip.ended = true;
+  clip.ended = true; clip.dispatchEvent(new Event('ended'));
+  assert.equal(media.tick(16).phase, 'finishing');
+  assert.equal(clip.currentTime, clip.duration - .001, 'one buffered final seek, only after playback ends');
+  clip.present();
   assert.equal(media.tick(16).phase, 'ended');
   media.stop();
   assert.equal(media.tick(0).visible, false, 'reverse uses the static photograph');
@@ -71,4 +74,18 @@ test('visibility resume continues from the same frame, and stop invalidates pend
   assert.equal(media.tick(0).phase, 'idle');
   media.dispose();
   assert.equal(clip.src, '');
+});
+
+
+test('final-frame preparation is bounded, accepts a seeked paint fallback, and never replays', async () => {
+  for (const decoded of [false, true]) {
+    const clip = new Clip(); const media = createMacroVideo(clip, () => {});
+    media.begin(); media.tick(16); await Promise.resolve();
+    clip.ended = true; clip.dispatchEvent(new Event('ended'));
+    if (decoded) clip.dispatchEvent(new Event('seeked'));
+    for (let i = 0; i < 130; i++) media.tick(16);
+    assert.equal(media.tick(0).phase, decoded ? 'ended' : 'fallback');
+    assert.equal(clip.plays, 1);
+    media.dispose();
+  }
 });

@@ -1,8 +1,9 @@
 /** Native media adapter. The hero timeline alone decides when this shot runs. */
 export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) {
-  let phase: "idle" | "starting" | "playing" | "ended" | "fallback" = "idle";
+  let phase: "idle" | "starting" | "playing" | "finishing" | "ended" | "fallback" = "idle";
   let visible = false, requested = false, suspended = false, disposed = false;
   let generation = 0, callback = 0, stalledMs = 0, lastMediaTime = 0;
+  let finishFrames = 0;
   const cancelFrame = () => {
     if (callback) video.cancelVideoFrameCallback(callback);
     callback = 0;
@@ -25,6 +26,7 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
     video.load();
   };
   const requestPlay = () => {
+    cancelFrame();
     requested = true;
     const token = generation;
     const reveal = () => {
@@ -49,13 +51,38 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
       }
     });
   };
+  const complete = () => {
+    if (disposed || phase !== "finishing") return;
+    cancelFrame();
+    phase = "ended";
+    visible = true;
+    schedule();
+  };
+  const finish = () => {
+    if (phase !== "playing" && phase !== "starting") return;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) { fallback(); return; }
+    phase = "finishing";
+    stalledMs = finishFrames = 0;
+    cancelFrame();
+    const token = generation;
+    if (typeof video.requestVideoFrameCallback === "function") callback = video.requestVideoFrameCallback(() => {
+      callback = 0;
+      if (token === generation) complete();
+    });
+    // Playback has already emitted ended at 1x. One final, buffered seek makes
+    // the retained image deterministic before the overhead dissolve. No scrubbing.
+    try { video.currentTime = Math.max(0, video.duration - .001); }
+    catch { fallback(); }
+    schedule();
+  };
+  const seeked = () => { if (phase === "finishing") { finishFrames = 2; schedule(); } };
   const begin = () => {
     generation++;
     cancelFrame();
     video.pause();
     phase = video.error ? "fallback" : "starting";
     visible = requested = suspended = false;
-    stalledMs = lastMediaTime = 0;
+    stalledMs = lastMediaTime = finishFrames = 0;
     prepare();
     // One reset per deliberate forward visit; never seek while playing/reversing.
     if (video.currentTime) video.currentTime = 0;
@@ -65,13 +92,17 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
   const tick = (elapsedMs: number) => {
     if (phase === "starting" || phase === "playing") {
       if (!requested && !suspended && video.readyState >= 2) requestPlay();
-      if (video.ended) phase = "ended";
-      else {
-        stalledMs = video.currentTime > lastMediaTime + .001 ? 0 : stalledMs + Math.max(0, elapsedMs);
-        lastMediaTime = video.currentTime;
-        // Loading, rejected autoplay and stalled decodes cannot trap scroll.
-        if (stalledMs >= 2000) fallback();
-      }
+      stalledMs = video.currentTime > lastMediaTime + .001 ? 0 : stalledMs + Math.max(0, elapsedMs);
+      lastMediaTime = video.currentTime;
+      // Loading, rejected autoplay and stalled decodes cannot trap scroll.
+      if (stalledMs >= 2000) fallback();
+    }
+    if (phase === "finishing") {
+      stalledMs += Math.max(0, elapsedMs);
+      // Paused seeks to the same already-present frame may omit a frame callback.
+      // After seeked, two paints also suffice; failed seeks retain bounded fallback.
+      if (elapsedMs > 0 && finishFrames > 0 && --finishFrames === 0) complete();
+      else if (stalledMs >= 2000) fallback();
     }
     return { phase, visible, time: video.currentTime * 1000 };
   };
@@ -87,14 +118,19 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
     phase = "idle";
     visible = false;
     requested = false;
+    finishFrames = 0;
   };
   video.addEventListener("error", fallback);
+  video.addEventListener("ended", finish);
+  video.addEventListener("seeked", seeked);
   return {
     prepare, begin, tick, pause, resume, stop,
     dispose() {
       disposed = true;
       stop();
       video.removeEventListener("error", fallback);
+      video.removeEventListener("ended", finish);
+      video.removeEventListener("seeked", seeked);
       video.removeAttribute("src");
       video.load();
     },

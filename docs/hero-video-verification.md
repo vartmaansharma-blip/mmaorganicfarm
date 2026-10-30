@@ -1,6 +1,6 @@
 # Approved coffee-swirl integration verification — 30 October 2026
 
-Base: `main` at `4b0e36702ec8ce785f0c2e93893092cf5d8981d9`. Application code is `27550c05ba3305789c59c4ffe59fccaaddb7f588`; the subsequent evidence commit changes only tests, documentation and captures. Only the hero macro, its clock/media adapter, related documentation and test fixtures change.
+Base: `main` at `4b0e36702ec8ce785f0c2e93893092cf5d8981d9`. The final native-ended adapter confirms a buffered last-frame presentation before overhead. Final application/evidence revisions are recorded in PR #28. Only the hero macro, its clock/media adapter, related documentation and test fixtures change.
 
 ## Verified source
 
@@ -8,9 +8,11 @@ Base: `main` at `4b0e36702ec8ce785f0c2e93893092cf5d8981d9`. Application code is 
 
 ## Checks
 
+The initial complete matrix below preceded the final-frame hold. The final-frame change passes its production build, 118 unit checks, TypeScript, lint and targeted WebKit desktop check; the complete final matrix is being refreshed before delivery.
+
 | Check | Result |
 | --- | --- |
-| Production build and `npm test` | Pass, 117 tests including media integrity, timeline, lifecycle-adapter and existing commerce/auth checks. |
+| Production build and `npm test` | Pass, 118 tests including media integrity, timeline, lifecycle-adapter and existing commerce/auth checks. |
 | TypeScript | Pass. |
 | ESLint | Zero errors; one pre-existing image warning in untouched `public-information-layout.tsx`. |
 | Chromium and WebKit, 390×844 and 1440×960, dark/light | Pass: all eight scenarios. Playback starts at time zero, opening presentation callbacks arrive within one 24fps frame, decoded liquid moves without black frames, 1× muted playback occurs once, poster/video crop matches, credit stays visible, overhead waits for ended state, scroll unlocks and reverse uses the still. |

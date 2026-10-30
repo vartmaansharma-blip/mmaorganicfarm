@@ -22,7 +22,7 @@ const results = [];
 const state = (page, expected) => page.waitForFunction(s => document.getElementById('home')?.dataset.state === s, expected);
 async function observe(page) {
   await page.addInitScript(() => {
-    window.clipEvents = []; window.clipFrames = []; window.shotEvents = [];
+    window.clipEvents = []; window.clipFrames = []; window.shotEvents = []; window.clipEndPixels = null;
     for (const type of ['play', 'playing', 'pause', 'ended', 'error']) document.addEventListener(type, event => {
       if (event.target.tagName !== 'VIDEO') return;
       const video = event.target;
@@ -44,11 +44,16 @@ async function observe(page) {
       const root = document.getElementById('home');
       if (!root) return;
       new MutationObserver(() => {
+        const video = root.querySelector('video');
+        if (root.dataset.videoState === 'ended' && !window.clipEndPixels) {
+          const canvas = document.createElement('canvas'); canvas.width = 24; canvas.height = 14;
+          const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0, 24, 14);
+          window.clipEndPixels = Array.from(ctx.getImageData(0, 0, 24, 14).data).join(',');
+        }
         const stage = root.dataset.filmStage;
         if (window.shotEvents.at(-1)?.stage === stage) return;
-        const video = root.querySelector('video');
-        window.shotEvents.push({ stage, state: root.dataset.state, time: video.currentTime, ended: video.ended, at: performance.now() });
-      }).observe(root, { attributes: true, attributeFilter: ['data-film-stage'] });
+        window.shotEvents.push({ stage, state: root.dataset.state, time: video.currentTime, ended: video.ended, media: root.dataset.videoState, at: performance.now() });
+      }).observe(root, { attributes: true, attributeFilter: ['data-film-stage', 'data-video-state'] });
     });
   });
 }
@@ -95,24 +100,32 @@ async function shot(page, engine, width, theme) {
       const ctx = canvas.getContext('2d'); ctx.drawImage(element, 0, 0, 24, 14);
       return Array.from(ctx.getImageData(0, 0, 24, 14).data).join(',');
     };
-    const retained = fingerprint(video);
+    // Sample the presented final hold, before WebKit can cull the faded-out layer.
+    const retained = window.clipEndPixels;
+    if (!retained) return { matches: false, reason: 'No native ended frame was captured' };
     const reference = document.createElement('video'); reference.muted = true; reference.preload = 'auto'; reference.src = video.currentSrc;
     await new Promise((resolve, reject) => { reference.onloadeddata = resolve; reference.onerror = reject; });
     reference.currentTime = reference.duration - .001;
     await new Promise(resolve => { reference.onseeked = resolve; });
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    const matches = retained === fingerprint(reference); reference.removeAttribute('src'); reference.load();
-    return matches;
+    const expected = fingerprint(reference);
+    const actualPixels = retained.split(',').map(Number), expectedPixels = expected.split(',').map(Number);
+    const errors = actualPixels.map((value, i) => Math.abs(value - expectedPixels[i])).filter((_, i) => i % 4 !== 3);
+    const comparison = { matches: retained === expected, meanError: errors.reduce((a,b) => a+b, 0) / errors.length, maxError: Math.max(...errors), time: video.currentTime, referenceTime: reference.currentTime, referenceReadyState: reference.readyState };
+    reference.removeAttribute('src'); reference.load();
+    return comparison;
   });
   const report = await page.evaluate(() => ({ events: window.clipEvents, shots: window.shotEvents, frames: window.clipFrames.map(frame => ({ time: frame.time, brightness: frame.brightness })), distinctFrames: new Set(window.clipFrames.map(frame => frame.fingerprint)).size, held: document.body.style.position, filmTime: document.getElementById('home').dataset.filmTime }));
   await writeFile(path.join(output, `${engine}-${width}-${theme}-frames.json`), JSON.stringify(report, null, 2));
-  assert.equal(finalFrameMatches, true, 'retained end pixels match an independently decoded final source frame');
-  report.finalFrameMatches = finalFrameMatches;
+  await writeFile(path.join(output, `${engine}-${width}-${theme}-final-comparison.json`), JSON.stringify(finalFrameMatches, null, 2));
+  assert.equal(finalFrameMatches.matches, true, 'presented final hold equals an independently decoded final source frame');
+  report.finalFrameMatches = finalFrameMatches.matches;
+  report.finalFrameComparison = finalFrameMatches;
   const plays = report.events.filter(e => e.type === 'play');
   assert.equal(plays.length, 1);
   assert.ok(plays[0].time < .05, 'first playback starts at the actual first frame');
   assert.ok(report.events.some(e => e.type === 'ended' && e.time >= 3.04), 'full clip ends before leaving the macro');
-  assert.ok(report.shots.some(s => s.stage === 'overhead-pull' && s.ended && s.time >= 3.04));
+  assert.ok(report.shots.some(s => s.stage === 'overhead-pull' && s.media === 'ended' && s.time >= 3.04));
   assert.ok(report.frames.length >= 30 && report.distinctFrames > 20, 'decoded liquid is moving');
   assert.ok(report.frames.every(frame => frame.brightness > 15), 'no black decoded frames');
   assert.ok(report.frames[0].time <= .05, 'presentation begins within one source frame of time zero');
