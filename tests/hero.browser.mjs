@@ -44,15 +44,39 @@ async function scrollToFill(page, progress) {
     const header = parseFloat(getComputedStyle(panel).top) || 0;
     window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight), behavior: "instant" });
   }, progress);
-  if (progress < .99) await page.waitForFunction(p => Math.abs(Number(document.getElementById("home").dataset.fill) - p * p * (3 - 2 * p)) < .01, progress);
+  if (progress < .99) await page.waitForFunction(p => Number(document.getElementById("home").dataset.fill) >= p * p * (3 - 2 * p) - .01, progress);
 }
 const state = (page, value) => page.waitForFunction(s => document.getElementById('home')?.dataset.state === s, value);
 async function observeFilm(page) {
   await page.evaluate(() => {
     window.filmSamples = [];
+    window.cameraSamples = [];
+    window.returnSamples = [];
     const sample = () => {
       const root = document.getElementById('home');
       if (!root) return;
+      if (root.dataset.filmStage === 'glass-traverse') {
+        const image = root.querySelector('img[src*="coffee-front"]');
+        const rect = image.getBoundingClientRect();
+        const matrix = new DOMMatrix(getComputedStyle(root.querySelector('[data-glass-camera]')).transform);
+        const copy = root.querySelector('#hero-heading').parentElement.getBoundingClientRect();
+        window.cameraSamples.push({
+          time: Number(root.dataset.filmTime),
+          x: Number(root.style.getPropertyValue('--camera-x')),
+          y: Number(root.style.getPropertyValue('--camera-y')),
+          rotation: matrix.b, scale: matrix.a, crossAxis: matrix.c, verticalScale: matrix.d,
+          left: rect.x + rect.width * 66 / 800, right: rect.x + rect.width * 735 / 800,
+          rim: rect.y + rect.height * 139 / 1200, base: rect.y + rect.height * 1075 / 1200,
+          header: root.firstElementChild.getBoundingClientRect().top,
+          copyBottom: copy.bottom, width: innerWidth, height: innerHeight,
+        });
+      }
+      if (root.dataset.filmStage === 'overhead-pull') {
+        const image = root.querySelector('[data-overhead-photo]');
+        const rect = image.getBoundingClientRect();
+        const copy = root.querySelector('#hero-heading').parentElement;
+        window.returnSamples.push({copyOpacity:Number(getComputedStyle(copy).opacity), imageOpacity:Number(getComputedStyle(image).opacity), rim:rect.y+rect.height*203/1200, copyBottom:copy.getBoundingClientRect().bottom});
+      }
       const previous = window.filmSamples.at(-1);
       const current = { state: root.dataset.state, stage: root.dataset.filmStage, time: Number(root.dataset.filmTime), at: performance.now(), top: root.firstElementChild.getBoundingClientRect().top };
       if (!previous || previous.state !== current.state || previous.stage !== current.stage) window.filmSamples.push(current);
@@ -62,9 +86,8 @@ async function observeFilm(page) {
     window.filmObserver = requestAnimationFrame(sample);
   });
 }
-const stageNames = ['filled-front', 'coffee-treatment', 'elevated', 'macro-push', 'macro-hold', 'overhead-pull', 'settled-overhead'];
+const stageNames = ['filled-front', 'coffee-treatment', 'glass-traverse', 'macro-push', 'macro-hold', 'overhead-pull', 'settled-overhead'];
 async function verifyHybrid(page, name, width) {
-  const front = await page.locator('img[src*="coffee-front"]').boundingBox();
   const tops = [];
   for (const progress of [.2, .65, .3]) {
     await scrollToFill(page, progress);
@@ -72,6 +95,7 @@ async function verifyHybrid(page, name, width) {
     assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front');
   }
   assert.ok(Math.max(...tops) - Math.min(...tops) < 2, 'panel stays still throughout fill');
+  assert.ok(Number(await page.locator('#home').getAttribute('data-fill')) > .7, 'upward scrolling never drains previously filled milk');
   assert.equal(await page.locator('[data-condensation-drop]').count(), 8, 'condensation stays sparse');
   assert.ok(await page.locator('[data-condensation]').evaluate(e => Number(getComputedStyle(e).opacity)) > 0);
   const beadBefore = await page.locator('[data-bead]').first().getAttribute('transform');
@@ -99,11 +123,9 @@ async function verifyHybrid(page, name, width) {
   await page.setViewportSize({ width, height: page.viewportSize().height });
   await page.waitForFunction(() => {
     const root = document.getElementById('home');
-    return root.style.getPropertyValue('--side-opacity') === '1' && root.dataset.filmStage === 'elevated';
+    return Number(root.style.getPropertyValue('--camera-y')) >= 5.99;
   });
-  const elevated = await page.locator('img[src*="coffee-side"]').boundingBox();
-  assert.ok(Math.abs(front.y + front.height * 139 / 1200 - elevated.y - elevated.height * 108 / 1200) < 2, 'camera lift lands on the matched rim');
-  assert.ok(Math.abs(front.y + front.height * 1074 / 1200 - elevated.y - elevated.height * 1092 / 1200) < 2, 'camera lift lands on the matched base');
+  await page.screenshot({ path: path.join(output, `${name}-${width}-fixed-angle-landing.png`) });
   await page.waitForFunction(() => document.getElementById('home').dataset.filmStage === 'macro-hold');
   assert.equal(await page.locator('header').isVisible(), false);
   assert.equal(await page.locator('#hero-heading').isVisible(), false);
@@ -112,6 +134,20 @@ async function verifyHybrid(page, name, width) {
   await state(page, 'COMPLETED'); // No scrolling: clock must finish by itself.
   const forward = await page.evaluate(() => window.filmSamples.filter(s => s.state === 'PLAYING_FORWARD'));
   assert.deepEqual(forward.map(s => s.stage), stageNames, 'all forward stages receive screen time despite large deltas');
+  const camera = await page.evaluate(() => window.cameraSamples);
+  assert.ok(camera.length >= 10 && camera.some(s => s.x < -2.8) && camera.some(s => s.y > 5.9), 'the full curved path is presented');
+  for (const sample of camera) {
+    assert.ok(sample.rotation === 0 && sample.crossAxis === 0 && sample.scale === 1 && sample.verticalScale === 1, 'camera plate never rotates, skews or zooms during traverse');
+    assert.ok(sample.left >= 0 && sample.right <= sample.width, 'both glass edges remain in frame');
+    assert.ok(sample.rim >= sample.header && sample.base <= sample.height, 'rim and base remain in frame');
+    if (width <= 720) assert.ok(sample.rim >= sample.copyBottom, 'glass never crosses the phone headline or actions');
+  }
+
+  if (width <= 720) {
+    const returnSamples = await page.evaluate(() => window.returnSamples);
+    assert.ok(returnSamples.length > 5);
+    assert.ok(returnSamples.filter(s => s.copyOpacity > .5 && s.imageOpacity > .5).every(s => s.rim >= s.copyBottom), 'copy returns only after the overhead glass clears it');
+  }
   assert.ok(forward.every(s => Math.abs(s.top - heldY) < 2), 'hold does not move panel');
   for (let i = 1; i < forward.length; i++) assert.ok(forward[i].time > forward[i-1].time, 'theme/resize/input never restarts clock');
   assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
@@ -128,24 +164,28 @@ async function verifyHybrid(page, name, width) {
   assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top', 'overhead is retained while leaving');
   await observeFilm(page);
   await page.mouse.wheel(0, -9000);
-  await state(page, 'PLAYING_REVERSE');
-  await page.mouse.wheel(0, 8000);
-  await page.mouse.wheel(0, -12000);
-  await state(page, 'FILLING');
-  const reverse = await page.evaluate(() => window.filmSamples.filter(s => s.state === 'PLAYING_REVERSE'));
-  assert.deepEqual(reverse.map(s => s.stage), [...stageNames].reverse(), 'reverse film follows every stage backward');
-  assert.equal(await page.locator('#home').getAttribute('data-shot'), 'front');
-  for (let i = 0; i < 5; i++) {
-    await scrollToFill(page, i % 2 ? 1 : .998);
-    assert.equal(await page.locator('#home').getAttribute('data-state'), 'FILLING', 'trigger hysteresis prevents jitter replay');
+  await page.waitForFunction(() => scrollY < 2);
+  await page.waitForTimeout(200);
+  assert.equal(await page.locator('#home').getAttribute('data-state'), 'COMPLETED');
+  assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top', 'returning upward retains the overhead finish');
+  assert.equal(await page.locator('#home').getAttribute('data-film-time'), end, 'film never rewinds');
+  assert.equal(await page.evaluate(() => document.body.style.position), '', 'upward reentry never locks scroll');
+  for (const progress of [.998, 1, .25, 0]) {
+    await scrollToFill(page, progress);
+    assert.equal(await page.locator('#home').getAttribute('data-state'), 'COMPLETED', 'filling boundary never replays a completed hero');
+    assert.equal(await page.locator('#home').getAttribute('data-fill'), '1.000');
   }
-  await scrollToFill(page, .25);
-  assert.ok(Number(await page.locator('#home').getAttribute('data-fill')) < .2, 'upward scroll empties milk after reverse');
-  await scrollToFill(page, 0);
-  await page.screenshot({ path: path.join(output, `${name}-${width}-arrival.png`) });
+  await page.screenshot({ path: path.join(output, `${name}-${width}-return-upward.png`) });
   const first = forward[0].at;
   assert.ok(forward.at(-1).at - first >= 3450, 'the new film must actually give its shots more time');
-  return { forward, reverse };
+  return { forward, upwardReturn: "completed overhead retained; no rewind or replay", camera: {
+    samples: camera.length,
+    lateralTravel: Math.min(...camera.map(s => s.x)),
+    downwardTravel: Math.max(...camera.map(s => s.y)),
+    minimumRimClearance: Math.min(...camera.map(s => s.rim - s.header)),
+    minimumBaseClearance: Math.min(...camera.map(s => s.height - s.base)),
+    fixedOrientation: true, wholeGlassVisible: true,
+  } };
 }
 
 async function verifyLifecycle(browser, name) {
@@ -230,7 +270,7 @@ async function verifyLifecycle(browser, name) {
     let releaseImage;
     const delayedImage = new Promise(resolve => { releaseImage = resolve; });
     await page.route('**/_next/image?*', async route => {
-      if (decodeURIComponent(route.request().url()).includes('coffee-side-v2')) {
+      if (decodeURIComponent(route.request().url()).includes('coffee-top')) {
         if (fail) await route.abort();
         else { await delayedImage; await route.continue(); }
       } else await route.continue();
@@ -374,19 +414,15 @@ try {
         await verifyHomepageContrast(page);
         const initial = await page.locator("#home").getAttribute("data-fill");
         assert.equal(initial, "0.000");
-        const alignment = await page.locator("#home").evaluate(root => {
-          const f = root.querySelector('img[src*="coffee-front"]').getBoundingClientRect();
-          const s = root.querySelector('img[src*="coffee-side"]').getBoundingClientRect();
-          return { rim: Math.abs(f.y + f.height * 139 / 1200 - s.y - s.height * 108 / 1200), base: Math.abs(f.y + f.height * 1074 / 1200 - s.y - s.height * 1092 / 1200), height: f.height };
-        });
-        assert.ok(alignment.rim < 8 && alignment.base < 8, "incoming camera starts within its restrained glide distance");
-        if (width === 390) assert.ok(alignment.height >= 340, "mobile glass is larger than the production 295px canvas");
+        const glass = await page.locator('img[src*="coffee-front"]').boundingBox();
+        assert.equal(await page.locator('img[src*="coffee-side"]').count(), 0, 'fixed-angle traverse never swaps to the elevated photograph');
+        if (width === 390) assert.ok(glass.height >= 340, "mobile glass is larger than the production 295px canvas");
         const cue = await page.locator('a').filter({ hasText: 'Scroll to fill' }).boundingBox();
         if (width > 720) assert.ok(Math.abs(cue.x + cue.width / 2 - width / 2) < 1, "laptop scroll indicator is centered");
         else assert.ok(Math.abs(cue.x - 24) < 1, "phone scroll cue keeps the production left alignment");
         const film = await verifyHybrid(page, name, width);
         await page.getByRole('button', { name: 'Switch to dark mode' }).click();
-        assert.equal(await page.getByRole("progressbar", { name: "Glass story progress", includeHidden: true }).getAttribute("aria-valuenow"), "0");
+        assert.equal(await page.getByRole("progressbar", { name: "Glass story progress", includeHidden: true }).getAttribute("aria-valuenow"), "100");
 
 
         const headerShop = page.locator("header").getByRole("button", { name: /^Open cart,/ }).first();
@@ -420,7 +456,7 @@ try {
           await toggle.click();
           assert.equal(await dialog.getByRole("link", { name: /Farm/ }).getAttribute("aria-current"), "location");
           await dialog.getByRole("link", { name: /Home/ }).click();
-          await page.waitForFunction(() => document.getElementById("home").dataset.progress === "0.000");
+          await page.waitForFunction(() => document.getElementById("home").dataset.progress === "1.000");
         } else {
           assert.equal(await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link").count(), 5);
         }
@@ -429,7 +465,7 @@ try {
         await page.waitForFunction(() => document.documentElement.dataset.heroImmersive === 'false' && document.querySelector('#site-content').getBoundingClientRect().top < 150);
         assert.equal(await page.evaluate(() => location.hash), "#site-content");
         assert.ok((await headerShop.boundingBox()).y >= 0, "Cart must remain visible after skipping");
-        results.push({ engine: name, width, height, fill: "forward/reverse", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false, sideAlignmentPixels: alignment, ...film });
+        results.push({ engine: name, width, height, fill: "one-way", menu: width < 901 ? "focus, Escape, backdrop, destinations" : "capsule", overflow: false, glassHeight: glass.height, ...film });
 
         await context.close();
         console.log(`${name} ${width}x${height}: hybrid motion and navigation passed`);

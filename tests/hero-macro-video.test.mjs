@@ -26,17 +26,18 @@ test('one forward shot plays from zero at 1x and reveals only a presented frame'
   assert.equal(media.tick(16).visible, false);
   await Promise.resolve();
   clip.present();
-  for (let i = 1; i <= 100; i++) { clip.currentTime = i / 40; media.tick(25); }
+  for (let i = 1; i < 60; i++) { clip.currentTime = i / 40; media.tick(25); }
   assert.equal(clip.plays, 1, 'no repeated play calls or frame seeking');
-  assert.equal(clip.currentTime, 2.5);
+  assert.equal(clip.currentTime, 1.475);
   assert.equal(media.tick(0).visible, true);
-  clip.ended = true; clip.dispatchEvent(new Event('ended'));
+  clip.currentTime = 1.5;
   assert.equal(media.tick(16).phase, 'finishing');
-  assert.equal(clip.currentTime, clip.duration - .001, 'one buffered final seek, only after playback ends');
+  assert.equal(clip.currentTime, 1.499, 'retain the frame immediately before the 1.5-second source out');
+  assert.equal(clip.ended, false, 'the selected excerpt finishes before the full source ends');
   clip.present();
   assert.equal(media.tick(16).phase, 'ended');
   media.stop();
-  assert.equal(media.tick(0).visible, false, 'reverse uses the static photograph');
+  assert.equal(media.tick(0).visible, false, 'cancellation hides the media');
   assert.equal(clip.plays, 1);
 });
 
@@ -81,7 +82,7 @@ test('final-frame preparation is bounded, accepts a seeked paint fallback, and n
   for (const decoded of [false, true]) {
     const clip = new Clip(); const media = createMacroVideo(clip, () => {});
     media.begin(); media.tick(16); await Promise.resolve();
-    clip.ended = true; clip.dispatchEvent(new Event('ended'));
+    clip.currentTime = 1.5; media.tick(16);
     if (decoded) clip.dispatchEvent(new Event('seeked'));
     for (let i = 0; i < 130; i++) media.tick(16);
     assert.equal(media.tick(0).phase, decoded ? 'ended' : 'fallback');

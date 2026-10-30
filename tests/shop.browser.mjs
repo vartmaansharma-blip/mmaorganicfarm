@@ -279,7 +279,7 @@ try {
   const first = await photo.getAttribute("href");
   await page.getByRole("switch", { name: "Scheduled orders" }).uncheck();
   await page.getByRole("button", { name: /Open cart,/ }).click();
-  await page.waitForTimeout(3250);
+  await page.waitForFunction(first => document.querySelector('[class*="heroPhoto"]').getAttribute('href') !== first, first, {timeout:9000});
   assert.notEqual(
     await photo.getAttribute("href"),
     first,
@@ -290,10 +290,10 @@ try {
   await photo.click();
   await page.waitForURL(`**${destination}`);
   await page.goBack();
-  await page.waitForTimeout(3250);
+  await page.waitForFunction(() => document.querySelector('[class*="heroPhoto"]').getAttribute('href') !== '#counter-title', undefined, {timeout:9000});
   assert.notEqual(
     await photo.getAttribute("href"),
-    "/shop/milk",
+    "#counter-title",
     "return to shop resumes autoplay",
   );
   await page.goto(`${base}/shop/milk`, { waitUntil: "networkidle" });
@@ -373,7 +373,7 @@ try {
   await bootstrap(reduced);
   await rp.goto(`${base}/shop`, { waitUntil: "networkidle" });
   const before = await rp.locator("[class*=heroPhoto]").getAttribute("href");
-  await rp.waitForTimeout(3250);
+  await rp.waitForTimeout(6800);
   assert.equal(
     await rp.locator("[class*=heroPhoto]").getAttribute("href"),
     before,

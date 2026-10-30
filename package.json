@@ -14,6 +14,7 @@
     "db:generate": "drizzle-kit generate",
     "test:browser": "node tests/hero.browser.mjs",
     "test:hero-video": "node tests/hero-video.browser.mjs",
+    "test:shop-hero": "node tests/shop-hero.browser.mjs",
     "typecheck": "tsc --noEmit",
     "test:customer-ui": "node tests/customer-system.browser.mjs",
     "test:shop": "node tests/shop.browser.mjs",

@@ -1,5 +1,5 @@
 /** Native media adapter. The hero timeline alone decides when this shot runs. */
-export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) {
+export function createMacroVideo(video: HTMLVideoElement, schedule: () => void, sourceOutMs = 1500) {
   let phase: "idle" | "starting" | "playing" | "finishing" | "ended" | "fallback" = "idle";
   let visible = false, requested = false, suspended = false, disposed = false;
   let generation = 0, callback = 0, stalledMs = 0, lastMediaTime = 0;
@@ -62,6 +62,7 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
     if (phase !== "playing" && phase !== "starting") return;
     if (!Number.isFinite(video.duration) || video.duration <= 0) { fallback(); return; }
     phase = "finishing";
+    video.pause();
     stalledMs = finishFrames = 0;
     cancelFrame();
     const token = generation;
@@ -69,9 +70,10 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
       callback = 0;
       if (token === generation) complete();
     });
-    // Playback has already emitted ended at 1x. One final, buffered seek makes
-    // the retained image deterministic before the overhead dissolve. No scrubbing.
-    try { video.currentTime = Math.max(0, video.duration - .001); }
+    // Retain the last frame inside the selected source range. The original file
+    // and its playback speed stay intact; one buffered seek prevents a stale
+    // retained frame in WebKit. This is an edit point, not continuous scrubbing.
+    try { video.currentTime = Math.max(0, Math.min(video.duration, sourceOutMs / 1000) - .001); }
     catch { fallback(); }
     schedule();
   };
@@ -84,7 +86,7 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
     visible = requested = suspended = false;
     stalledMs = lastMediaTime = finishFrames = 0;
     prepare();
-    // One reset per deliberate forward visit; never seek while playing/reversing.
+    // One reset per deliberate forward visit; no backward playback or scrubbing.
     if (video.currentTime) video.currentTime = 0;
     video.playbackRate = video.defaultPlaybackRate = 1;
     video.muted = video.defaultMuted = true;
@@ -94,6 +96,7 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void) 
       if (!requested && !suspended && video.readyState >= 2) requestPlay();
       stalledMs = video.currentTime > lastMediaTime + .001 ? 0 : stalledMs + Math.max(0, elapsedMs);
       lastMediaTime = video.currentTime;
+      if (!suspended && video.currentTime * 1000 >= sourceOutMs) finish();
       // Loading, rejected autoplay and stalled decodes cannot trap scroll.
       if (stalledMs >= 2000) fallback();
     }
