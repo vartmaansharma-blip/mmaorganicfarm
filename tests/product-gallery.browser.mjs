@@ -27,10 +27,10 @@ try {
     if (i === 99) throw new Error('Owned gallery preview did not start');
     await new Promise(resolve => setTimeout(resolve, 200));
   }
-  for (const [engine, driver] of Object.entries({ chromium, webkit })) {
+  for (const [engine, driver] of Object.entries({ chromium, webkit }).filter(([name]) => !process.env.GALLERY_BROWSERS || process.env.GALLERY_BROWSERS.split(',').includes(name))) {
     const browser = await driver.launch();
     try {
-      for (const width of [390, 1440]) for (const theme of ['dark', 'light']) for (const id of ['milk', 'paneer', 'ghee']) {
+      for (const width of [390, 1440].filter(width => !process.env.GALLERY_WIDTHS || process.env.GALLERY_WIDTHS.split(',').includes(String(width)))) for (const theme of (process.env.GALLERY_THEMES || 'dark,light').split(',')) for (const id of (process.env.GALLERY_PRODUCTS || 'milk,paneer,ghee').split(',')) {
         const context = await browser.newContext({ viewport: { width, height: 960 } });
         const page = await context.newPage(); const errors = [];
         page.on('pageerror', error => errors.push(error.message));
