@@ -65,11 +65,6 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void, 
     video.pause();
     stalledMs = finishFrames = 0;
     cancelFrame();
-    const token = generation;
-    if (typeof video.requestVideoFrameCallback === "function") callback = video.requestVideoFrameCallback(() => {
-      callback = 0;
-      if (token === generation) complete();
-    });
     // Retain the last frame inside the selected source range. The original file
     // and its playback speed stay intact; one buffered seek prevents a stale
     // retained frame in WebKit. This is an edit point, not continuous scrubbing.
@@ -77,7 +72,19 @@ export function createMacroVideo(video: HTMLVideoElement, schedule: () => void, 
     catch { fallback(); }
     schedule();
   };
-  const seeked = () => { if (phase === "finishing") { finishFrames = 2; schedule(); } };
+  const seeked = () => {
+    if (phase !== "finishing") return;
+    // A playing frame can still be queued when pause/seek runs. Only request
+    // the retained-frame callback after seeked, so it cannot confirm old pixels.
+    cancelFrame();
+    const token = generation;
+    if (typeof video.requestVideoFrameCallback === "function") callback = video.requestVideoFrameCallback(() => {
+      callback = 0;
+      if (token === generation) complete();
+    });
+    finishFrames = 2;
+    schedule();
+  };
   const begin = () => {
     generation++;
     cancelFrame();

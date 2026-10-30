@@ -11,7 +11,7 @@ class Clip extends EventTarget {
   load() {}
   play() { this.plays++; return this.playResult ?? Promise.resolve(); }
   pause() { this.pauses++; }
-  requestVideoFrameCallback(fn) { this.present = fn; return 1; }
+  requestVideoFrameCallback(fn) { this.present = (...args) => { this.present = undefined; fn(...args); }; return 1; }
   cancelVideoFrameCallback() { this.present = undefined; }
 }
 
@@ -34,6 +34,8 @@ test('one forward shot plays from zero at 1x and reveals only a presented frame'
   assert.equal(media.tick(16).phase, 'finishing');
   assert.equal(clip.currentTime, 1.499, 'retain the frame immediately before the 1.5-second source out');
   assert.equal(clip.ended, false, 'the selected excerpt finishes before the full source ends');
+  assert.equal(clip.present, undefined, 'a queued playing frame cannot confirm the new seek');
+  clip.dispatchEvent(new Event('seeked'));
   clip.present();
   assert.equal(media.tick(16).phase, 'ended');
   media.stop();

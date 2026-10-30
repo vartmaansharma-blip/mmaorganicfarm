@@ -24,10 +24,10 @@ try {
     if (i===99) throw new Error('Owned shop preview did not start');
     await new Promise(resolve => setTimeout(resolve,200));
   }
-  for (const [engine, driver] of Object.entries({chromium,webkit})) {
+  for (const [engine, driver] of Object.entries({chromium,webkit}).filter(([name]) => !process.env.SHOP_HERO_BROWSERS || process.env.SHOP_HERO_BROWSERS.split(',').includes(name))) {
     const browser = await driver.launch();
     try {
-      for (const width of [320,390,768,1440]) for (const theme of ['dark','light']) {
+      for (const width of [320,390,768,1440].filter(width => !process.env.SHOP_HERO_WIDTHS || process.env.SHOP_HERO_WIDTHS.split(',').includes(String(width)))) for (const theme of (process.env.SHOP_HERO_THEMES || 'dark,light').split(',')) {
         const context = await browser.newContext({viewport:{width,height:width===320?700:960},...(width===390 && theme==='dark'?{recordVideo:{dir:path.join(output,'recordings'),size:{width,height:960}}}:{})});
         await context.addInitScript(theme => localStorage.setItem('mma-theme',theme), theme);
         const page=await context.newPage();
@@ -68,6 +68,7 @@ try {
         results.push({engine,width,theme,basketFirst:true,forwardOrder:['basket','milk','paneer','ghee'],fixedFrame:true,maskedReveal:true,runtimeErrors:0});
         console.log(`${engine} ${width} ${theme}: basket, reveal, forward controls passed`);
       }
+      if (process.env.SHOP_HERO_SHOTS_ONLY) continue;
       const context=await browser.newContext({viewport:{width:1440,height:960}}); const page=await context.newPage();
       await page.goto(base+'/shop',{waitUntil:'networkidle'});await page.locator('[data-shop-hero] img').evaluateAll(images=>Promise.all(images.map(image=>image.decode())));
       await page.getByRole('button',{name:'Pause product photographs'}).click();await page.mouse.move(1,1);await page.locator('body').click({position:{x:1,y:1}});
