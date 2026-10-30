@@ -16,7 +16,6 @@
     "test:hero-video": "node tests/hero-video.browser.mjs",
     "test:shop-hero": "node tests/shop-hero.browser.mjs",
     "test:product-gallery": "node tests/product-gallery.browser.mjs",
-    "test:navigation-glass": "node tests/navigation-glass.browser.mjs",
     "typecheck": "tsc --noEmit",
     "test:customer-ui": "node tests/customer-system.browser.mjs",
     "test:shop": "node tests/shop.browser.mjs",

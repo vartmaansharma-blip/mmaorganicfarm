@@ -1,0 +1,2144 @@
+{
+  "date": "2026-10-30",
+  "runtimeHead": "d46e22374b120815b2bc4d21f80ecac13a3d4d27",
+  "preview": {
+    "deploymentId": "dpl_CUWWCe5MseeegQMfjGjsghpNmbfn",
+    "url": "https://mmaorganicfarm-nlifqytl3-vartmaansharma-blips-projects.vercel.app",
+    "state": "READY"
+  },
+  "local": {
+    "build": "pass",
+    "typecheck": "pass",
+    "unitTests": 127,
+    "lint": {
+      "errors": 0,
+      "existingWarnings": 1
+    },
+    "shop": [
+      {
+        "engine": "chromium",
+        "width": 320,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 320,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 768,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 768,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "lifecycle": "keyboard focus, hidden/resume, no wrap, static reduced motion, no hero controls"
+      },
+      {
+        "engine": "webkit",
+        "width": 320,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 320,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 768,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 768,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "light",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "lifecycle": "keyboard focus, hidden/resume, no wrap, static reduced motion, no hero controls"
+      }
+    ],
+    "productGalleries": [
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "light",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "light",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "light",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "light",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "light",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "light",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "reducedMotion": "static by default with immediate manual thumbnails"
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "light",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "light",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "light",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "light",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "light",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "light",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "reducedMotion": "static by default with immediate manual thumbnails"
+      }
+    ]
+  },
+  "hosted": {
+    "hero": [
+      {
+        "engine": "chromium",
+        "width": 320,
+        "height": 568,
+        "fill": "one-way",
+        "menu": "focus, Escape, backdrop, destinations",
+        "overflow": false,
+        "glassHeight": 198.796875,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 2812.2000000476837,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 133,
+            "at": 2944.5,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 600,
+            "at": 3451,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1450,
+            "at": 4313.400000035763,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 4770.100000023842,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 8328.700000047684,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4417,
+            "at": 8843.800000011921,
+            "top": 80
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 48,
+          "lateralTravel": -2.9999993408203673,
+          "downwardTravel": 6,
+          "minimumRimClearance": 249.63073229471843,
+          "minimumBaseClearance": 71.3798828125,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "height": 844,
+        "fill": "one-way",
+        "menu": "focus, Escape, backdrop, destinations",
+        "overflow": false,
+        "glassHeight": 354.46875,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 2341.900000035763,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 133,
+            "at": 2490.699999988079,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 617,
+            "at": 2975.800000011921,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1450,
+            "at": 3807.600000023842,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 4279.5,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 6508.100000023842,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4417,
+            "at": 7023.199999988079,
+            "top": 80
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 50,
+          "lateralTravel": -2.9999993408203673,
+          "downwardTravel": 6,
+          "minimumRimClearance": 335.4005444335937,
+          "minimumBaseClearance": 130.845703125,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "chromium",
+        "width": 768,
+        "height": 1024,
+        "fill": "one-way",
+        "menu": "focus, Escape, backdrop, destinations",
+        "overflow": false,
+        "glassHeight": 473.015625,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 2359.900000035763,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 133,
+            "at": 2507.7000000476837,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 617,
+            "at": 2994.900000035763,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1450,
+            "at": 3824.800000011921,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 4292.700000047684,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 6493.300000011921,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4417,
+            "at": 7007.5,
+            "top": 80
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 50,
+          "lateralTravel": -2.9999993408203673,
+          "downwardTravel": 6,
+          "minimumRimClearance": 226.8944088236491,
+          "minimumBaseClearance": 319.7724609375,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "height": 960,
+        "fill": "one-way",
+        "menu": "capsule",
+        "overflow": false,
+        "glassHeight": 630,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 2316.699999988079,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 133,
+            "at": 2465,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 600,
+            "at": 2932.2999999523163,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1450,
+            "at": 3782.099999964237,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 4308.199999988079,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 6632.799999952316,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4417,
+            "at": 7182,
+            "top": 126
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 47,
+          "lateralTravel": -2.9999993408203673,
+          "downwardTravel": 6,
+          "minimumRimClearance": 102.17499694824218,
+          "minimumBaseClearance": 202.625,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+      },
+      {
+        "engine": "chromium",
+        "connectedPublicPages": 9,
+        "themes": 2,
+        "typography": "shared",
+        "textContrastMinimum": 4.5,
+        "measured": [
+          {
+            "theme": "dark",
+            "pair": "text/page",
+            "ratio": 15.03
+          },
+          {
+            "theme": "dark",
+            "pair": "muted/page",
+            "ratio": 10.4
+          },
+          {
+            "theme": "dark",
+            "pair": "muted/surface",
+            "ratio": 8.04
+          },
+          {
+            "theme": "dark",
+            "pair": "on-action/action",
+            "ratio": 9.2
+          },
+          {
+            "theme": "dark",
+            "pair": "on-selected/selected",
+            "ratio": 8.49
+          },
+          {
+            "theme": "dark",
+            "pair": "success-text/success-bg",
+            "ratio": 9.19
+          },
+          {
+            "theme": "dark",
+            "pair": "error-text/error-bg",
+            "ratio": 8.74
+          },
+          {
+            "theme": "dark",
+            "pair": "warning-text/warning-bg",
+            "ratio": 8.45
+          },
+          {
+            "theme": "light",
+            "pair": "text/page",
+            "ratio": 10.78
+          },
+          {
+            "theme": "light",
+            "pair": "muted/page",
+            "ratio": 5.21
+          },
+          {
+            "theme": "light",
+            "pair": "muted/surface",
+            "ratio": 5.67
+          },
+          {
+            "theme": "light",
+            "pair": "on-action/action",
+            "ratio": 7.61
+          },
+          {
+            "theme": "light",
+            "pair": "on-selected/selected",
+            "ratio": 5.77
+          },
+          {
+            "theme": "light",
+            "pair": "success-text/success-bg",
+            "ratio": 8.82
+          },
+          {
+            "theme": "light",
+            "pair": "error-text/error-bg",
+            "ratio": 7.39
+          },
+          {
+            "theme": "light",
+            "pair": "warning-text/warning-bg",
+            "ratio": 6.39
+          }
+        ]
+      },
+      {
+        "engine": "chromium",
+        "reducedMotion": "static",
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 320,
+        "height": 568,
+        "fill": "one-way",
+        "menu": "focus, Escape, backdrop, destinations",
+        "overflow": false,
+        "glassHeight": 198.796875,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 4741,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 134,
+            "at": 4907,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 602,
+            "at": 5380,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1444,
+            "at": 6217,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 6846,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 9195,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4400,
+            "at": 9692,
+            "top": 80
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 25,
+          "lateralTravel": -2.999406782774294,
+          "downwardTravel": 6,
+          "minimumRimClearance": 249.61855224609377,
+          "minimumBaseClearance": 71.3798828125,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "height": 844,
+        "fill": "one-way",
+        "menu": "focus, Escape, backdrop, destinations",
+        "overflow": false,
+        "glassHeight": 354.46875,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 4448,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 147,
+            "at": 4679,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 611,
+            "at": 5145,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1450,
+            "at": 5981,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 6447,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 8580,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4401,
+            "at": 9078,
+            "top": 80
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 25,
+          "lateralTravel": -2.990519196634189,
+          "downwardTravel": 6,
+          "minimumRimClearance": 335.413056640625,
+          "minimumBaseClearance": 130.861328125,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "webkit",
+        "width": 768,
+        "height": 1024,
+        "fill": "one-way",
+        "menu": "focus, Escape, backdrop, destinations",
+        "overflow": false,
+        "glassHeight": 473.03125,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 4544,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 133,
+            "at": 4711,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 633,
+            "at": 5213,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1467,
+            "at": 6043,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 6481,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 8613,
+            "top": 80
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4428,
+            "at": 9144,
+            "top": 80
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 25,
+          "lateralTravel": -2.9999340825805643,
+          "downwardTravel": 6,
+          "minimumRimClearance": 226.89715657552085,
+          "minimumBaseClearance": 319.75846354166674,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "height": 960,
+        "fill": "one-way",
+        "menu": "capsule",
+        "overflow": false,
+        "glassHeight": 630,
+        "forward": [
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "filled-front",
+            "time": 0,
+            "at": 4794,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "coffee-treatment",
+            "time": 134,
+            "at": 5062,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "glass-traverse",
+            "time": 600,
+            "at": 5529,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-push",
+            "time": 1458,
+            "at": 6395,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "macro-hold",
+            "time": 1900,
+            "at": 6864,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "overhead-pull",
+            "time": 3900,
+            "at": 8998,
+            "top": 126
+          },
+          {
+            "state": "PLAYING_FORWARD",
+            "stage": "settled-overhead",
+            "time": 4410,
+            "at": 9505,
+            "top": 126
+          }
+        ],
+        "upwardReturn": "completed overhead retained; no rewind or replay",
+        "camera": {
+          "samples": 26,
+          "lateralTravel": -3,
+          "downwardTravel": 6,
+          "minimumRimClearance": 102.17499694824218,
+          "minimumBaseClearance": 202.625,
+          "fixedOrientation": true,
+          "wholeGlassVisible": true
+        }
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+      },
+      {
+        "engine": "webkit",
+        "connectedPublicPages": 9,
+        "themes": 2,
+        "typography": "shared",
+        "textContrastMinimum": 4.5,
+        "measured": [
+          {
+            "theme": "dark",
+            "pair": "text/page",
+            "ratio": 15.03
+          },
+          {
+            "theme": "dark",
+            "pair": "muted/page",
+            "ratio": 10.4
+          },
+          {
+            "theme": "dark",
+            "pair": "muted/surface",
+            "ratio": 8.04
+          },
+          {
+            "theme": "dark",
+            "pair": "on-action/action",
+            "ratio": 9.2
+          },
+          {
+            "theme": "dark",
+            "pair": "on-selected/selected",
+            "ratio": 8.49
+          },
+          {
+            "theme": "dark",
+            "pair": "success-text/success-bg",
+            "ratio": 9.19
+          },
+          {
+            "theme": "dark",
+            "pair": "error-text/error-bg",
+            "ratio": 8.74
+          },
+          {
+            "theme": "dark",
+            "pair": "warning-text/warning-bg",
+            "ratio": 8.45
+          },
+          {
+            "theme": "light",
+            "pair": "text/page",
+            "ratio": 10.78
+          },
+          {
+            "theme": "light",
+            "pair": "muted/page",
+            "ratio": 5.21
+          },
+          {
+            "theme": "light",
+            "pair": "muted/surface",
+            "ratio": 5.67
+          },
+          {
+            "theme": "light",
+            "pair": "on-action/action",
+            "ratio": 7.61
+          },
+          {
+            "theme": "light",
+            "pair": "on-selected/selected",
+            "ratio": 5.77
+          },
+          {
+            "theme": "light",
+            "pair": "success-text/success-bg",
+            "ratio": 8.82
+          },
+          {
+            "theme": "light",
+            "pair": "error-text/error-bg",
+            "ratio": 7.39
+          },
+          {
+            "theme": "light",
+            "pair": "warning-text/warning-bg",
+            "ratio": 6.39
+          }
+        ]
+      },
+      {
+        "engine": "webkit",
+        "reducedMotion": "static",
+        "runtimeErrors": 0
+      }
+    ],
+    "video": [
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "decodedSamples": 49,
+        "distinctFrames": 48,
+        "firstSourceTime": 0.041667,
+        "lastSourceTime": 1.958333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0.0001,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": false
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "light",
+        "decodedSamples": 49,
+        "distinctFrames": 48,
+        "firstSourceTime": 0.041667,
+        "lastSourceTime": 1.958333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0.0001,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": false
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "decodedSamples": 48,
+        "distinctFrames": 47,
+        "firstSourceTime": 0.041667,
+        "lastSourceTime": 1.958333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0.0002,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": false
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "light",
+        "decodedSamples": 49,
+        "distinctFrames": 48,
+        "firstSourceTime": 0.041667,
+        "lastSourceTime": 1.958333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0.0002,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": false
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "decodedSamples": 29,
+        "distinctFrames": 29,
+        "firstSourceTime": 0.041666666666666664,
+        "lastSourceTime": 1.9583333333333333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": false
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "light",
+        "decodedSamples": 41,
+        "distinctFrames": 41,
+        "firstSourceTime": 0.041666666666666664,
+        "lastSourceTime": 1.9583333333333333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": false
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "decodedSamples": 36,
+        "distinctFrames": 36,
+        "firstSourceTime": 0.041666666666666664,
+        "lastSourceTime": 1.9583333333333333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": false
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "light",
+        "decodedSamples": 42,
+        "distinctFrames": 42,
+        "firstSourceTime": 0.041666666666666664,
+        "lastSourceTime": 1.9583333333333333,
+        "filmTimeMs": 4700,
+        "nativePlayEvents": 1,
+        "sourceOut": {
+          "matches": true,
+          "meanError": 0,
+          "maxError": 0,
+          "time": 1.999,
+          "referenceTime": 1.999,
+          "referenceReadyState": 4
+        },
+        "stages": [
+          {
+            "stage": "filled-front",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "coffee-treatment",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "glass-traverse",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-push",
+            "sourceTime": 0,
+            "media": "idle"
+          },
+          {
+            "stage": "macro-hold",
+            "sourceTime": 0,
+            "media": "starting"
+          },
+          {
+            "stage": "overhead-pull",
+            "sourceTime": 1.999,
+            "media": "ended"
+          },
+          {
+            "stage": "settled-overhead",
+            "sourceTime": 1.999,
+            "media": "ended"
+          }
+        ],
+        "isolatedRerun": true
+      }
+    ],
+    "videoFailureAndLifecycle": {
+      "chromium": "Visibility/resume, skip and five failure cases passed before the final WebKit case failed its sample-count assertion.",
+      "webkit": [
+        {
+          "engine": "webkit",
+          "lifecycle": "macro visibility pause/resume and skip release"
+        },
+        {
+          "engine": "webkit",
+          "fallback": "failed",
+          "requests": 2
+        },
+        {
+          "engine": "webkit",
+          "fallback": "slow",
+          "requests": 1
+        },
+        {
+          "engine": "webkit",
+          "fallback": "rejected",
+          "requests": 0
+        },
+        {
+          "engine": "webkit",
+          "fallback": "stalled",
+          "requests": 0
+        },
+        {
+          "engine": "webkit",
+          "fallback": "reduced",
+          "requests": 0
+        }
+      ]
+    },
+    "shop": [
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "lifecycle": "keyboard focus, hidden/resume, no wrap, static reduced motion, no hero controls"
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "basketFirst": true,
+        "forwardOrder": [
+          "basket",
+          "milk",
+          "paneer",
+          "ghee"
+        ],
+        "fixedFrame": true,
+        "maskedReveal": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "lifecycle": "keyboard focus, hidden/resume, no wrap, static reduced motion, no hero controls"
+      }
+    ],
+    "productGalleries": [
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 390,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "width": 1440,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "chromium",
+        "reducedMotion": "static by default with immediate manual thumbnails"
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 390,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "id": "milk",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "id": "paneer",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "width": 1440,
+        "theme": "dark",
+        "id": "ghee",
+        "auto": true,
+        "thumbnails": true,
+        "keyboard": true,
+        "swipe": true,
+        "stableFrame": true,
+        "quantityPreserved": true,
+        "scheduledGallery": true,
+        "runtimeErrors": 0
+      },
+      {
+        "engine": "webkit",
+        "reducedMotion": "static by default with immediate manual thumbnails"
+      }
+    ]
+  },
+  "rerun": {
+    "case": "WebKit 1440px light",
+    "initialDecodedSamples": 18,
+    "initialFinalFrameMatches": true,
+    "reason": "Three browser suites were running concurrently. The isolated rerun retained the same assertions and recording.",
+    "isolatedDecodedSamples": 42,
+    "isolatedFinalFrameMatches": true
+  },
+  "limitations": [
+    "Desktop Chromium and WebKit with emulated phone viewports; no physical iPhone/Safari or Android test.",
+    "Fixed-angle movement is a 2D photographic approximation, not a reconstructed 3D camera view.",
+    "Commercial-use evidence for the exact supplied Kling output remains unverified.",
+    "No production database or customer/payment writes were performed."
+  ],
+  "paused": {
+    "sidebar": "Excluded from release; saved locally on codex/paused-glass-sidebar",
+    "commercialPermissionFollowUp": "Paused by user; no message sent or subscription purchased"
+  }
+}

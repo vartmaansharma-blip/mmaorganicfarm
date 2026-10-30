@@ -1,4 +1,6 @@
-# Approved coffee-swirl integration verification — 30 October 2026
+# Historical full-length coffee-swirl verification — 30 October 2026
+
+This records the earlier full-length, reversible edit. It is retained as historical evidence. The current forward-only 4.7-second film, two-second source excerpt, shop and product galleries are documented in [hero-choreography-review.md](hero-choreography-review.md). Its current release authority supersedes the draft-only language below.
 
 Base: `main` at `4b0e36702ec8ce785f0c2e93893092cf5d8981d9`. The final native-ended adapter confirms a buffered last-frame presentation before overhead. Final application/evidence revisions are recorded in PR #28. Only the hero macro, its clock/media adapter, related documentation and test fixtures change.
 

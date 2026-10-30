@@ -62,3 +62,9 @@ The current choreography supersedes the historical film-duration/creep descripti
 Source SHA-256: `cc255f456ffa3304be88bcdc40fc1fd9671c46762b4ca0d82ed4039e5b206612`. The source watermark remains in the MP4. A viewport credit keeps attribution visible on responsive crops. Source-account commercial rights are unverified; this is preview work pending evidence before production. See `docs/homepage-hero.md` and `docs/hero-video-verification.md`.
 
 After native `ended`, the adapter performs one buffered final-frame seek and waits for presentation before overhead. It never seeks frame by frame or plays the clip in reverse. Final-frame preparation is bounded to 2000ms, including browsers that need `seeked` plus two paints.
+
+## Current forward-only edit — 30 October 2026
+
+This supersedes the historical reverse, elevated-angle and full-length timing notes above. The film is now 4.7 seconds after filling. Coffee originates at the liquid surface; a fixed-angle downward quadratic traverse keeps the frontal glass intact, followed by a registered photographic push, the source interval `[0, 2s)` at native 1×, and an overhead pullback. The user requested an extra 0.5 second of swirl after the initial shortened edit. The adapter confirms the selected final frame at 1.999s before exiting. The original source file is unchanged. No reverse, upward draining or reentry replay occurs. The elevated source image is retained as a source asset and is not rendered or requested. This is a 2D photographic camera study, not reconstructed 3D geometry.
+
+The user authorized completing these revisions and merging to main on 30 October, superseding the earlier draft-only instruction. Exact-clip commercial-use evidence remains unverified; attribution is preserved. Current validation is recorded in `docs/hero-choreography-review.md`; earlier full-length/reversible result files are historical.
