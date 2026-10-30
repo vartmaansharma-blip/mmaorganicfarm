@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+import { ProductGallery } from "./product-gallery";
 import Link from "next/link";
 import { useState } from "react";
 import { FARM_PRODUCTS, type FarmProductSelection } from "@/lib/farm-products";
@@ -175,16 +175,7 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
         ← Back to the counter
       </Link>
       <div className={styles.detailGrid}>
-        <div className={styles.detailPhoto}>
-          <Image
-            src={p.image}
-            alt={p.alt}
-            width={800}
-            height={1000}
-            sizes="(max-width: 700px) 90vw, 45vw"
-            priority
-          />
-        </div>
+        <ProductGallery id={id} />
         <div className={styles.detailCopy}>
           <p className={styles.eyebrow}>M’ma Organic Farm</p>
           <div className={styles.productTitle}>

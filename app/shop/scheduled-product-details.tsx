@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ProductGallery } from "./product-gallery";
 import Link from "next/link";
 import { useState } from "react";
 import { firstMonthEnds } from "@/lib/delivery-pricing";
@@ -87,16 +87,7 @@ export function ScheduledProductDetails({ id }: { id: ShopProductId }) {
         ← Back to the counter
       </Link>
       <div className={styles.detailGrid}>
-        <div className={styles.detailPhoto}>
-          <Image
-            src={p.image}
-            alt={p.alt}
-            width={800}
-            height={1000}
-            priority
-            sizes="(max-width: 700px) 90vw, 45vw"
-          />
-        </div>
+        <ProductGallery id={id} />
         <div className={styles.detailCopy}>
           <p className={styles.eyebrow}>M’ma Organic Farm</p>
           <div className={styles.productTitle}>

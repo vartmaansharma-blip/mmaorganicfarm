@@ -2,7 +2,7 @@
 
 Generated with the built-in image-generation tool on 30 October 2026 at the user's request. The three existing product photographs supplied the milk bottle, paneer and 500 g ghee identity references. The selected image is served as `public/shop/farm-basket-olive.webp`; WebP conversion changes only encoding, not composition. The original generated PNG is retained locally in `work/hero-critique/basket-olive-original.png`.
 
-This is an illustrative collection photograph, not a new purchasable hamper or bundled price. The first slide links to the existing three-product catalogue. Individual slides retain their existing product pages and current catalogue prices.
+This is an illustrative collection photograph, not a new purchasable hamper or bundled price. The first slide opens the milk product page. Individual slides retain their existing product pages and current catalogue prices.
 
 The wrapped paneer is a proposed presentation concept requested by the user; it does not establish the physical packaging currently used for delivery. The new olive scene supersedes the rejected beige catalogue-style composition.
 

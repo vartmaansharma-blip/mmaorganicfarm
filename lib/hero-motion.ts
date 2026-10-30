@@ -13,8 +13,8 @@ export function heroProgress(top: number, height: number, panelHeight: number, h
 }
 
 /** A photographic film: anticipation, a fixed-angle traverse, then the macro. */
-// Editorial source range [0, 1.5s), played at 1x from the untouched 73-frame file.
-export const MACRO_VIDEO_DURATION_MS = 1500;
+// Editorial source range [0, 2s), played at 1x from the untouched 73-frame file.
+export const MACRO_VIDEO_DURATION_MS = 2000;
 export const FILM_CUES = {
   coffeeStart: 120,
   coffeeEnd: 440,

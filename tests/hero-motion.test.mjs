@@ -97,7 +97,7 @@ test('full-screen macro stays bounded to the hero, including direct anchor exits
 
 test('directed rhythm gives the camera traverse room while preserving the longer macro payoff', () => {
   const cue = FILM_CUES;
-  assert.ok(Math.abs(FILM_DURATION_MS - 4200) < .000001);
+  assert.ok(Math.abs(FILM_DURATION_MS - 4700) < .000001);
   assert.ok(Math.abs(cue.overheadStart - cue.macroFull - MACRO_VIDEO_DURATION_MS) < .000001);
   assert.ok(cue.coffeeStart >= 120, 'full milk registers before treatment');
   assert.ok(cue.cameraStart - cue.coffeeEnd >= 160, 'coffee gets a clean frontal hold');

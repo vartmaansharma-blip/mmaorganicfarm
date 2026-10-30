@@ -30,9 +30,9 @@ test('one forward shot plays from zero at 1x and reveals only a presented frame'
   assert.equal(clip.plays, 1, 'no repeated play calls or frame seeking');
   assert.equal(clip.currentTime, 1.475);
   assert.equal(media.tick(0).visible, true);
-  clip.currentTime = 1.5;
+  clip.currentTime = 2;
   assert.equal(media.tick(16).phase, 'finishing');
-  assert.equal(clip.currentTime, 1.499, 'retain the frame immediately before the 1.5-second source out');
+  assert.equal(clip.currentTime, 1.999, 'retain the frame immediately before the 2-second source out');
   assert.equal(clip.ended, false, 'the selected excerpt finishes before the full source ends');
   assert.equal(clip.present, undefined, 'a queued playing frame cannot confirm the new seek');
   clip.dispatchEvent(new Event('seeked'));
@@ -84,7 +84,7 @@ test('final-frame preparation is bounded, accepts a seeked paint fallback, and n
   for (const decoded of [false, true]) {
     const clip = new Clip(); const media = createMacroVideo(clip, () => {});
     media.begin(); media.tick(16); await Promise.resolve();
-    clip.currentTime = 1.5; media.tick(16);
+    clip.currentTime = 2; media.tick(16);
     if (decoded) clip.dispatchEvent(new Event('seeked'));
     for (let i = 0; i < 130; i++) media.tick(16);
     assert.equal(media.tick(0).phase, decoded ? 'ended' : 'fallback');

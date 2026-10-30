@@ -1,18 +1,27 @@
-# Individual product galleries — planned, not implemented
+# Individual product galleries — implemented
 
-The user supplied additional milk-pasture, paneer-salad and ghee-drip images for the individual product pages, then requested planning before implementation. These are separate from the shop's opening basket and its collection-to-product sequence.
+The shop's automatic collection hero and each product's photo gallery have separate roles. The shop hero has no Pause, Play or Next controls; its basket opens milk and each subsequent image opens its corresponding product page.
 
-## Proposed interaction
+## Interaction
 
-- Existing product image opens first; additional imagery follows in a fixed photographic frame.
-- Autoplay is the default, with a six-second readable hold. Touch swipe and desktop arrows advance immediately and reset the timer.
-- Pause while a visitor touches, hovers, focuses controls, opens a zoomed image, leaves the viewport or hides the tab. Provide an accessible Pause control.
-- Use a short overlapping reveal with restrained image movement. Keep frame size, product title, price and purchase actions stable.
-- Progress count and labeled controls remain visible. Reduced motion uses static manual image changes.
-- Keep product selection, quantity, schedule and cart state intact during image changes. Avoid any body scroll lock.
+Each product opens with its existing main image. The supporting photograph follows automatically after a six-second hold and a successful decode. A restrained overlapping dissolve and slight horizontal drift keep the photographic frame stable. The gallery cycles between its two images.
 
-## Inputs and next review
+Thumbnails sit beside the main frame on desktop and below it on phones. Visitors can select a thumbnail, swipe horizontally, or focus the photograph and use arrow keys. Hover, keyboard focus, active touch, hidden tabs and leaving the viewport suspend automatic advancement. Reduced motion keeps the first image static and allows immediate manual selection. There is no opt-in Play action.
 
-References supplied: `M’ma Farms Pure Cow Ghee Drip.png`, `Floating Paneer Salad Toss.png`, `Farm Fresh Milk by the Pasture.png`. The milk and ghee images are visible in the conversation; the paneer attachment was not readable. The supplied Desktop paths were not available during the local check, so none of these optional source files has been copied or replaced with a regenerated approximation.
+The same `ProductGallery` component is used by one-time and scheduled product pages. Image state does not update product quantity, dates, schedule, cart or pricing. Supporting photographs use `object-fit: contain` so the full composition remains visible, including the paneer salad and ghee drip.
 
-Before implementation, confirm the readable source files, inspect crop and image count per product, and review one phone and one desktop sequence. The accepted direction uses automatic playback, not opt-in Play.
+## Source images
+
+The original supplied Desktop paths were unavailable. The already-authored `feat/product-extra-imagery` branch contained the matching images. These three WebP assets were visually inspected and copied byte-for-byte from commit `0b0f4b6ccccbcc5e89b0a70ff9b31188342c728b`; none of that branch's ordering, page or motion code was merged.
+
+| Product | Supporting asset | Supplied reference |
+| --- | --- | --- |
+| Milk | `public/shop/milk-pasture.webp` | Farm Fresh Milk by the Pasture.png |
+| Paneer | `public/shop/paneer-serving.webp` | Floating Paneer Salad Toss.png |
+| Ghee | `public/shop/ghee-serving.webp` | M’ma Farms Pure Cow Ghee Drip.png |
+
+No new product imagery was generated for these galleries. The basket is a separate generated image documented in [shop-basket-image.md](shop-basket-image.md).
+
+## Verification
+
+`tests/product-gallery.browser.mjs` checks automatic progression, responsive thumbnails, keyboard and pointer swipe, complete supporting-image framing, no layout shift, preservation of the chosen quantity, galleries in scheduled mode, reduced motion and runtime errors in Chromium and WebKit at phone and desktop widths and both themes. Timer waits are advanced with Playwright's clock; photographic transitions are allowed to render before visual captures. This is browser emulation, not a physical-device claim.

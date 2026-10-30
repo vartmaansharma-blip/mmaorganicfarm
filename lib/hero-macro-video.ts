@@ -1,5 +1,5 @@
 /** Native media adapter. The hero timeline alone decides when this shot runs. */
-export function createMacroVideo(video: HTMLVideoElement, schedule: () => void, sourceOutMs = 1500) {
+export function createMacroVideo(video: HTMLVideoElement, schedule: () => void, sourceOutMs = 2000) {
   let phase: "idle" | "starting" | "playing" | "finishing" | "ended" | "fallback" = "idle";
   let visible = false, requested = false, suspended = false, disposed = false;
   let generation = 0, callback = 0, stalledMs = 0, lastMediaTime = 0;

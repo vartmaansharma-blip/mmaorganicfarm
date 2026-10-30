@@ -13,7 +13,7 @@ const SLIDES = [
     name: "Three everyday favourites",
     image: "/shop/farm-basket-olive.webp",
     alt: "A woven basket holding M’ma milk, a 500 g ghee jar and a wrapped 500 g paneer pack",
-    href: "#counter-title",
+    href: "/shop/milk",
   },
   ...SHOP_PRODUCTS.map(product => ({ ...product, href: `/shop/${product.id}` })),
 ];
@@ -22,7 +22,6 @@ export function ShopHero() {
   const { prices } = useProductPricing();
   const section = useRef<HTMLElement>(null);
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const engaged = hovered || focused;
@@ -51,10 +50,10 @@ export function ShopHero() {
 
   useEffect(() => {
     // Decode before revealing. The collection progresses once, basket to ghee.
-    if (reduced || paused || engaged || !visible || !inView || last || !loaded.includes(SLIDES[index + 1].id)) return;
+    if (reduced || engaged || !visible || !inView || last || !loaded.includes(SLIDES[index + 1].id)) return;
     const timer = setTimeout(() => setIndex(current => Math.min(current + 1, SLIDES.length - 1)), index === 0 ? 6500 : 5500);
     return () => clearTimeout(timer);
-  }, [index, reduced, paused, engaged, visible, inView, last, loaded]);
+  }, [index, reduced, engaged, visible, inView, last, loaded]);
 
   const slide = SLIDES[index];
   return (
@@ -67,8 +66,8 @@ export function ShopHero() {
         <h1 id="shop-title">Bring M’ma<br />home<span>.</span></h1>
         <p>Milk, paneer and ghee.<br />Good things for your everyday.</p>
       </div>
-      <Link className={styles.heroPhoto} href={slide.href} onPointerDown={() => setPaused(true)}
-        aria-label={slide.id === "basket" ? "Explore all three farm products" : `Explore ${slide.name}`}>
+      <Link className={styles.heroPhoto} href={slide.href}
+        aria-label={slide.id === "basket" ? "Explore farm milk" : `Explore ${slide.name}`}>
         {SLIDES.map((item, i) => (
           <span key={item.id} className={styles.slide} data-position={i === index ? "current" : i < index ? "previous" : "next"} aria-hidden={i !== index}>
             <Image src={item.image} alt={item.alt} fill
@@ -94,8 +93,7 @@ export function ShopHero() {
         <div className={styles.heroControls}>
           <span className={styles.slideCount} aria-label={`Photograph ${index + 1} of ${SLIDES.length}`}>{String(index + 1).padStart(2, "0")} <span aria-hidden="true">/ {String(SLIDES.length).padStart(2, "0")}</span></span>
           <div className={styles.slideProgress} aria-hidden="true">{SLIDES.map((item, i) => <span key={item.id} data-filled={i <= index} />)}</div>
-          {!reduced && <button type="button" onClick={() => setPaused(current => !current)} aria-label={paused ? "Play product photographs" : "Pause product photographs"} aria-pressed={paused} disabled={last}>{paused ? "Play" : "Pause"}</button>}
-          <button type="button" onClick={() => setIndex(current => Math.min(current + 1, SLIDES.length - 1))} disabled={last || !loaded.includes(SLIDES[index + 1]?.id)} aria-label={last ? "Last product photograph" : "Next product photograph"}>Next <span aria-hidden="true">↗</span></button>
+
         </div>
       </div>
     </section>

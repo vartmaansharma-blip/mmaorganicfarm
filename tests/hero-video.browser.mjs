@@ -91,7 +91,7 @@ async function shot(page, engine, width, theme) {
   assert.equal(await credit.evaluate(e => Number(getComputedStyle(e).opacity)), 1);
   const bounds = await credit.boundingBox();
   assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y > 0, 'attribution remains in frame in portrait and landscape');
-  await page.waitForFunction(() => document.querySelector('#home video').currentTime > 1.35);
+  await page.waitForFunction(() => document.querySelector('#home video').currentTime > 1.85);
   await page.screenshot({ path: path.join(output, `${engine}-${width}-${theme}-macro-end.png`) });
   await state(page, 'COMPLETED');
   const finalFrameMatches = await page.locator('video').evaluate(async video => {
@@ -105,7 +105,7 @@ async function shot(page, engine, width, theme) {
     if (!retained) return { matches: false, reason: 'No source-out frame was captured' };
     const reference = document.createElement('video'); reference.muted = true; reference.preload = 'auto'; reference.src = video.currentSrc;
     await new Promise((resolve, reject) => { reference.onloadeddata = resolve; reference.onerror = reject; });
-    reference.currentTime = 1.499;
+    reference.currentTime = 1.999;
     await new Promise(resolve => { reference.onseeked = resolve; });
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const expected = fingerprint(reference);
@@ -124,14 +124,14 @@ async function shot(page, engine, width, theme) {
   const plays = report.events.filter(e => e.type === 'play');
   assert.equal(plays.length, 1);
   assert.ok(plays[0].time < .05, 'first playback starts at the actual first frame');
-  assert.equal(report.events.some(e => e.type === 'ended'), false, 'the 1.5-second excerpt does not wait for the full source to end');
-  assert.ok(report.shots.some(s => s.stage === 'overhead-pull' && s.media === 'ended' && s.time >= 1.49 && s.time <= 1.51));
+  assert.equal(report.events.some(e => e.type === 'ended'), false, 'the 2-second excerpt does not wait for the full source to end');
+  assert.ok(report.shots.some(s => s.stage === 'overhead-pull' && s.media === 'ended' && s.time >= 1.99 && s.time <= 2.01));
   assert.ok(report.frames.length >= 24 && report.distinctFrames > 20, 'decoded liquid is moving');
   assert.ok(report.frames.every(frame => frame.brightness > 15), 'no black decoded frames');
   assert.ok(report.frames[0].time <= .05, 'presentation begins within one source frame of time zero');
-  assert.ok(report.frames.at(-1).time >= 1.4, 'presentation callbacks span the clip; the exact retained final frame is checked separately');
+  assert.ok(report.frames.at(-1).time >= 1.9, 'presentation callbacks span the clip; the exact retained final frame is checked separately');
   assert.equal(report.held, '');
-  assert.equal(report.filmTime, '4200');
+  assert.equal(report.filmTime, '4700');
   await page.screenshot({ path: path.join(output, `${engine}-${width}-${theme}-overhead.png`) });
   await page.mouse.wheel(0, 350); await page.waitForTimeout(150); await page.mouse.wheel(0, -9000);
   await page.waitForFunction(() => scrollY < 2);
@@ -220,7 +220,7 @@ try {
         results.push(await shot(page, engine, width, theme));
         assert.deepEqual(errors, []);
         await context.close();
-        console.log(`${engine} ${width} ${theme}: silent 1.5-second excerpt, boundaries and one-way return passed`);
+        console.log(`${engine} ${width} ${theme}: silent 2-second excerpt, boundaries and one-way return passed`);
       }
       if (!process.env.HERO_SHOTS_ONLY) { await lifecycle(browser, engine); await fallbacks(browser, engine); }
     } finally { await browser.close(); }
