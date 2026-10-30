@@ -47,6 +47,33 @@ test('test/live mode and preview protection fail closed', () => {
   assert.match(paymentModeError(true, 'rzp_live_synthetic', 'production'), /does not match/);
   assert.match(paymentModeError(false, 'rzp_live_synthetic', 'preview'), /disabled in previews/);
 });
+test('new live checkouts stay disabled until explicitly enabled', () => {
+  const { liveCheckoutError } = load('lib/payment-mode.ts');
+  assert.match(liveCheckoutError('rzp_live_synthetic', undefined), /not enabled/);
+  assert.match(liveCheckoutError('rzp_live_synthetic', 'false'), /not enabled/);
+  assert.equal(liveCheckoutError('rzp_live_synthetic', 'true'), null);
+  assert.equal(liveCheckoutError('rzp_test_synthetic', 'false'), null);
+  for (const value of ['', 'TRUE', '1', 'true ', ' true'])
+    assert.match(liveCheckoutError('rzp_live_synthetic', value), /not enabled/);
+});
+test('public checkout readiness is read-only and never exposes credentials', async () => {
+  for (const [key, flag, expected] of [
+    ['rzp_live_synthetic', 'false', false],
+    ['rzp_live_synthetic', undefined, false],
+    ['rzp_live_synthetic', 'true', true],
+    ['rzp_test_synthetic', 'true', false],
+    ['invalid', 'true', false],
+  ]) {
+    const { GET } = load('app/api/payments/razorpay/order/route.ts', {
+      'next/server': { NextResponse: { json: (body, options) => ({ body, options }) } },
+      '@/lib/supabase/server': { createClient: () => assert.fail('readiness cannot access customers') },
+      '@/lib/supabase/admin': { createAdminClient: () => assert.fail('readiness cannot access the database') },
+    }, { RAZORPAY_KEY_ID: key, RAZORPAY_LIVE_CHECKOUT_ENABLED: flag });
+    const result = await GET();
+    assert.deepEqual(result.body, { mode: key.startsWith('rzp_live_') ? 'live' : key.startsWith('rzp_test_') ? 'test' : null, liveCheckoutEnabled: expected });
+    assert.equal(result.options.headers['Cache-Control'], 'no-store');
+  }
+});
 test('only definitive provider rejections permit checkout recovery', () => {
   const { RazorpayRequestError } = load('lib/razorpay.ts');
   for (const code of [400, 401, 403, 422]) assert.equal(new RazorpayRequestError(code).definitelyRejected, true);
@@ -68,18 +95,19 @@ function client(order, events, respond = () => ({})) {
   } };
 }
 test('captured test payments are tagged and never activate plans, fulfilment, capacity or notifications', async () => {
-  const events = []; let consumed = false;
+  const events = []; let recorded;
   const order = { id: 'synthetic', user_id: 'user', delivery_plan_id: 'plan', purchase_mode: 'plan', total_paise: 6200, is_test: true };
   const admin = client(order, events, q => q.op === 'select' ? { data: order } : { data: {}, error: null });
+  admin.rpc = async (name, args) => { recorded = {name,args}; return {data:{status:'paid',isTest:true},error:null}; };
   const { recordCapturedPayment } = load('lib/checkout-server.ts', {
     '@/lib/supabase/admin': { createAdminClient: () => admin },
-    '@/lib/production-capacity': { consumeOrderCapacity: () => { consumed = true; } },
   }, testEnv);
-  await recordCapturedPayment({ amount: 6200, orderId: order.id, paymentId: 'pay_synthetic', providerOrderId: 'order_synthetic' });
-  assert.equal(events.find(e => e.table === 'payments').payload.is_test, true);
+  await recordCapturedPayment({ amount: 6200, currency: 'INR', orderId: order.id, paymentId: 'pay_synthetic', providerOrderId: 'order_synthetic' });
+  assert.equal(recorded.name, 'record_razorpay_payment');
+  assert.equal(recorded.args.p_is_test, true);
   assert.equal(events.some(e => e.table === 'orders' && e.op === 'update'), false);
   assert.equal(events.some(e => ['delivery_plans','customer_notifications','delivery_exceptions'].includes(e.table)), false);
-  assert.equal(consumed, false);
+  assert.equal(events.every(e => e.op === 'select'), true);
 });
 test('test keys cannot record a live customer payment', async () => {
   const events = []; const order = { id: 'synthetic', total_paise: 6200, is_test: false };
@@ -88,7 +116,7 @@ test('test keys cannot record a live customer payment', async () => {
     '@/lib/supabase/admin': { createAdminClient: () => admin },
     '@/lib/production-capacity': { consumeOrderCapacity: () => assert.fail('must not consume') },
   }, testEnv);
-  await assert.rejects(() => recordCapturedPayment({ amount: 6200 }), /does not match/);
+  await assert.rejects(() => recordCapturedPayment({ amount: 6200, currency: 'INR' }), /does not match/);
   assert.equal(events.some(e => e.op !== 'select'), false);
 });
 async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, expectedAmount = null } = {}) {
@@ -115,7 +143,7 @@ async function prepare({ failure, claimError = false, isTest = false, env, provi
     '@/lib/razorpay': { hasRazorpayConfig: () => true, RazorpayRequestError, publicRazorpayKey: () => 'synthetic', createRazorpayOrder: async (input) => {
       providerAmount = input.amount; providerCalls++; if (failure === 'network') throw new Error('network timeout'); if (failure) throw new RazorpayRequestError(failure); return { id: 'order_synthetic' };
     } },
-  }, env ?? { RAZORPAY_KEY_ID: 'rzp_live_synthetic', VERCEL_ENV: 'production' });
+  }, env ?? { RAZORPAY_KEY_ID: 'rzp_live_synthetic', RAZORPAY_LIVE_CHECKOUT_ENABLED: 'true', VERCEL_ENV: 'production' });
   const result = await POST({ json: async () => ({ orderId: order.id, termsAccepted: true, expectedAmountPaise: expectedAmount ?? order.total_paise }) });
   return { result, events, providerCalls, providerAmount, released, reserved };
 }
@@ -136,6 +164,13 @@ test('uncertain provider outcomes and competing claims stay frozen with capacity
 test('test/live mismatch rejects before capacity, claims or provider requests', async () => {
   const r = await prepare({ env: testEnv });
   assert.equal(r.result.status, 409); assert.equal(r.providerCalls, 0); assert.equal(r.reserved, 0);
+});
+test('live checkout guard returns before capacity reservation and Razorpay creation', async () => {
+  const r = await prepare({ env: { RAZORPAY_KEY_ID: 'rzp_live_synthetic', RAZORPAY_LIVE_CHECKOUT_ENABLED: 'false', VERCEL_ENV: 'production' } });
+  assert.equal(r.result.status, 503);
+  assert.match(r.result.body.error, /Live checkout is not enabled/);
+  assert.equal(r.providerCalls, 0);
+  assert.equal(r.reserved, 0);
 });
 test('test checkout bypasses real capacity and returns an explicit test result', async () => {
   const r = await prepare({ env: testEnv, isTest: true });
@@ -213,4 +248,68 @@ test('checkout displays exact paise amounts', () => {
   assert.equal(formatCheckoutAmount(6890), '₹68.90');
   assert.equal(formatCheckoutAmount(310), '₹3.10');
   assert.equal(formatCheckoutAmount(7200), '₹72');
+});
+
+test('disabled live checkout does not disable capture recovery and a missing transaction never falls back to partial writes', async () => {
+  const events = [], calls = [];
+  const order = { id:'synthetic',total_paise:6200,is_test:false };
+  const admin = client(order,events,()=>({data:order,error:null}));
+  let fail = false;
+  admin.rpc = async (name,args) => { calls.push({name,args}); return fail ? {error:{message:'function unavailable'}} : {data:{status:'paid'}}; };
+  const { recordCapturedPayment, recordAuthorizedPayment } = load('lib/checkout-server.ts', {
+    '@/lib/supabase/admin':{createAdminClient:()=>admin},
+  }, {RAZORPAY_KEY_ID:'rzp_live_synthetic',RAZORPAY_LIVE_CHECKOUT_ENABLED:'false',VERCEL_ENV:'production'});
+  const input={amount:6200,currency:'INR',orderId:order.id,paymentId:'pay_synthetic',providerOrderId:'order_synthetic'};
+  assert.equal((await recordCapturedPayment(input)).status,'paid');
+  assert.equal((await recordAuthorizedPayment(input)).status,'paid');
+  assert.equal(calls[0].args.p_status,'captured');
+  assert.equal(calls[1].args.p_status,'authorized');
+  fail=true;
+  await assert.rejects(recordCapturedPayment(input),/Do not pay again/);
+  assert.equal(events.every(e=>e.op==='select'),true);
+});
+
+async function receiveWebhook({ invalidSignature=false, existing=false, missingOrder=false, lookupError=false, insertError=null, captureError=false, invalidJson=false, payment={}, event='payment.captured' }={}) {
+  const events=[],captured=[];
+  const payload=invalidJson?'broken':JSON.stringify({event,payload:{payment:{entity:{id:'pay_synthetic',order_id:'order_synthetic',amount:6200,currency:'INR',status:'captured',...payment}}}});
+  const {createHmac}=await import('node:crypto');
+  const signature=invalidSignature?'bad':createHmac('sha256','synthetic-webhook').update(payload).digest('hex');
+  const admin=client(null,events,q=>{
+    if(q.table==='payment_webhook_events'&&q.op==='select')return{data:existing?{event_id:'event_synthetic'}:null,error:lookupError?{message:'offline'}:null};
+    if(q.table==='orders')return{data:missingOrder?null:{id:'synthetic'},error:null};
+    if(q.table==='payment_webhook_events'&&q.op==='insert')return{error:insertError};
+    return{data:null,error:null};
+  });
+  const {POST}=load('app/api/payments/razorpay/webhook/route.ts',{
+    'next/server':{NextResponse:{json:(body,options)=>({body,status:options?.status??200})}},
+    '@/lib/checkout-server':{recordCapturedPayment:async input=>{captured.push(input);if(captureError)throw Error('offline');return{status:'paid'};}},
+    '@/lib/supabase/admin':{createAdminClient:()=>admin,hasSupabaseAdminConfig:()=>true},
+  },{RAZORPAY_WEBHOOK_SECRET:'synthetic-webhook',RAZORPAY_LIVE_CHECKOUT_ENABLED:'false'});
+  const result=await POST({text:async()=>payload,headers:new Headers({'x-razorpay-signature':signature,'x-razorpay-event-id':'event_synthetic'})});
+  return{result,events,captured};
+}
+test('signed capture and order-paid webhooks stay available with live checkout disabled',async()=>{
+  for(const event of ['payment.captured','order.paid']){
+    const r=await receiveWebhook({event});
+    assert.equal(r.result.status,200);assert.equal(r.captured.length,1);
+    assert.equal(r.captured[0].currency,'INR');
+    assert.equal(r.events.at(-1).op,'insert');
+  }
+});
+test('webhook signature, JSON and capture currency are validated before acknowledgement',async()=>{
+  for(const [options,status] of [[{invalidSignature:true},401],[{invalidJson:true},400],[{payment:{currency:'USD'}},400],[{payment:{amount:62.5}},400],[{payment:{status:'authorized'}},400]]){
+    const r=await receiveWebhook(options);assert.equal(r.result.status,status);
+    assert.equal(r.captured.length,0);assert.equal(r.events.some(e=>e.op==='insert'),false);
+  }
+});
+test('webhook retries survive event lookup, missing order, capture and event logging failures',async()=>{
+  for(const options of [{lookupError:true},{missingOrder:true},{captureError:true},{insertError:{code:'unavailable'}}]){
+    const r=await receiveWebhook(options);assert.equal(r.result.status,503);
+  }
+});
+test('known webhook duplicates and simultaneous event insert conflicts are acknowledged safely',async()=>{
+  const known=await receiveWebhook({existing:true});
+  assert.equal(known.result.body.duplicate,true);assert.equal(known.captured.length,0);
+  const concurrent=await receiveWebhook({insertError:{code:'23505'}});
+  assert.equal(concurrent.result.status,200);assert.equal(concurrent.captured.length,1);
 });
