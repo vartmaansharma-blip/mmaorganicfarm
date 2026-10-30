@@ -8,7 +8,7 @@ Base: `main` at `4b0e36702ec8ce785f0c2e93893092cf5d8981d9`. The final native-end
 
 ## Checks
 
-The initial complete matrix below preceded the final-frame hold. The final-frame change passes its production build, 118 unit checks, TypeScript, lint and targeted WebKit desktop check; the complete final matrix is being refreshed before delivery.
+Application revision: `800d85b34c3ae2151fd6d3518028b01a80773821`. The video adapter waits for full native playback, then confirms the final buffered frame before overhead. Subsequent changes record evidence only. Native playback completion and the immutable file are checked separately from presented-frame callbacks, which browsers may omit under capture load.
 
 | Check | Result |
 | --- | --- |
@@ -16,10 +16,10 @@ The initial complete matrix below preceded the final-frame hold. The final-frame
 | TypeScript | Pass. |
 | ESLint | Zero errors; one pre-existing image warning in untouched `public-information-layout.tsx`. |
 | Chromium and WebKit, 390×844 and 1440×960, dark/light | Pass: all eight scenarios. Playback starts at time zero, opening presentation callbacks arrive within one 24fps frame, decoded liquid moves without black frames, 1× muted playback occurs once, poster/video crop matches, credit stays visible, overhead waits for ended state, scroll unlocks and reverse uses the still. |
-| Retained final pixels | Pass in all eight scenarios: equal to an independent decode of the final source frame. This avoids assuming WebKit delivers a callback for every displayed frame during screenshots. WebKit rounds duration to 3.042s; media atoms remain exactly 73/24s. |
+| Presented final hold | Pass in all eight scenarios: exact equality with an independent decode of the final source frame, after native playback emits `ended`. One buffered final seek avoids the inconsistent final image observed in hosted WebKit before this correction. WebKit rounds duration to 3.042s; media atoms remain exactly 73/24s. |
 | Video visibility and skip | Pass in both engines: pause/resume without rewinding, followed by immediate skip release. |
 | Media failure and reduced-motion matrix | Pass: ten scenarios across both engines covering failed/slow loading, rejected autoplay, stalled playback and reduced motion. Late video does not replace the selected fallback. |
-| Existing hero/public-route browser matrix | Pass: 18 engine/viewport cases (320, 360, 375, 390, 430, 768, 1024, 1200 and 1440px in Chromium and WebKit); all forward/reverse stages, filling, keyboard/menu, scroll lock/unlock, theme/resize, skip, back/forward, anchors, visibility and image-failure checks. Nine connected public routes pass in both themes in each engine. Zero page runtime errors. |
+| Existing hero/public-route browser matrix | Pass: eight final engine/viewport cases (320, 390, 768 and 1440px in Chromium and WebKit); all forward/reverse stages, filling, keyboard/menu, scroll lock/unlock, theme/resize, skip, back/forward, anchors, visibility and image-failure checks. Nine connected public routes pass in both themes in each engine. Zero page runtime errors. |
 | Hosted preview | The exact deployed head, canonical preview URL and hosted verification result are recorded in [draft PR #28](https://github.com/vartmaansharma-blip/mmaorganicfarm/pull/28). This table records the completed local production-build checks. |
 
 ## Reproduce
@@ -31,10 +31,10 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_hero_browser_fixture npm tes
 npm run typecheck
 npm run lint
 HERO_BROWSERS=chromium,webkit npm run test:hero-video
-HERO_TEST_PORT=3104 HERO_BROWSERS=chromium,webkit npm run test:browser
+HERO_TEST_PORT=3104 HERO_BROWSERS=chromium,webkit HERO_WIDTHS=320,390,768,1440 npm run test:browser
 ```
 
-Run the browser commands sequentially. Their local protocol fixture permits only anonymous catalogue GETs and rejects writes. It exists because the current homepage requires a catalogue response. There are no production credentials or customer records in these checks. Browser artifacts are in `work/hero-video-verification/` and `work/hero-verification/`. [Measured video results](hero-video-results.json) and [complete hero/public-route results](hero-video-regression-results.json) include source hash, presented-frame samples, native media events, stage timing and final-frame equality. WebM recordings remain in the local artifact folders. The hosted preview result will be recorded in the PR against the final deployed head; no test credential or temporary access token is committed.
+Run the browser commands sequentially. Their local protocol fixture permits only anonymous catalogue GETs and rejects writes. It exists because the current homepage requires a catalogue response. There are no production credentials or customer records in these checks. Browser artifacts are in `work/hero-video-verification/` and `work/hero-verification/`. [Measured video results](hero-video-results.json) and [complete hero/public-route results](hero-video-regression-results.json) include source hash, presented-frame samples, native media events, stage timing and final-frame equality. WebM recordings remain in the local artifact folders. The hosted preview result is recorded in the PR against the final deployed head; no test credential or temporary access token is committed.
 
 ## Release boundary
 

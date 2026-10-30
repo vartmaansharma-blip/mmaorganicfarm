@@ -23,31 +23,31 @@
     "events": [
       {
         "type": "play",
-        "time": 0.003,
+        "time": 0.0022,
         "rate": 1,
         "muted": true,
-        "at": 3168
+        "at": 3232.899999976158
       },
       {
         "type": "playing",
-        "time": 0.0031,
+        "time": 0.0024,
         "rate": 1,
         "muted": true,
-        "at": 3168.199999988079
+        "at": 3233.099999964237
       },
       {
         "type": "pause",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 6209.099999964237
+        "at": 6274.599999964237
       },
       {
         "type": "ended",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 6209.199999988079
+        "at": 6274.599999964237
       }
     ],
     "shots": [
@@ -56,49 +56,56 @@
         "state": "FILLING",
         "time": 0,
         "ended": false,
-        "at": 368.5999999642372
+        "media": "idle",
+        "at": 500
       },
       {
         "stage": "coffee-treatment",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1232.3999999761581
+        "media": "idle",
+        "at": 1296.800000011921
       },
       {
         "stage": "elevated",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1865.5
+        "media": "idle",
+        "at": 1930.3999999761581
       },
       {
         "stage": "macro-push",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2848.2999999523163
+        "media": "idle",
+        "at": 2913.5
       },
       {
         "stage": "macro-hold",
         "state": "PLAYING_FORWARD",
-        "time": 0.0011,
+        "time": 0.0003,
         "ended": false,
-        "at": 3166.099999964237
+        "media": "starting",
+        "at": 3231
       },
       {
         "stage": "overhead-pull",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 6215.199999988079
+        "media": "ended",
+        "at": 6464.300000011921
       },
       {
         "stage": "settled-overhead",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 6582
+        "media": "ended",
+        "at": 6829.899999976158
       }
     ],
     "frames": [
@@ -389,12 +396,24 @@
       {
         "time": 3,
         "brightness": 118.18055555555556
+      },
+      {
+        "time": 3,
+        "brightness": 118.18055555555556
       }
     ],
     "distinctFrames": 72,
     "held": "",
     "filmTime": "6222",
-    "finalFrameMatches": true
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.040667,
+      "referenceTime": 3.040667,
+      "referenceReadyState": 4
+    }
   },
   {
     "engine": "chromium",
@@ -414,31 +433,31 @@
     "events": [
       {
         "type": "play",
-        "time": 0.0027,
+        "time": 0.0017,
         "rate": 1,
         "muted": true,
-        "at": 3113.300000011921
+        "at": 2912.800000011921
       },
       {
         "type": "playing",
-        "time": 0.0028,
+        "time": 0.0019,
         "rate": 1,
         "muted": true,
-        "at": 3113.400000035763
+        "at": 2913
       },
       {
         "type": "pause",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 6154.400000035763
+        "at": 5954.599999964237
       },
       {
         "type": "ended",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 6154.600000023842
+        "at": 5954.599999964237
       }
     ],
     "shots": [
@@ -447,49 +466,56 @@
         "state": "FILLING",
         "time": 0,
         "ended": false,
-        "at": 343.80000001192093
+        "media": "idle",
+        "at": 128
       },
       {
         "stage": "coffee-treatment",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1176.800000011921
+        "media": "idle",
+        "at": 961
       },
       {
         "stage": "elevated",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1809.699999988079
+        "media": "idle",
+        "at": 1610.5999999642372
       },
       {
         "stage": "macro-push",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2793.300000011921
+        "media": "idle",
+        "at": 2594.699999988079
       },
       {
         "stage": "macro-hold",
         "state": "PLAYING_FORWARD",
-        "time": 0.0005,
+        "time": 0.0001,
         "ended": false,
-        "at": 3111.100000023842
+        "media": "starting",
+        "at": 2911.199999988079
       },
       {
         "stage": "overhead-pull",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 6159.600000023842
+        "media": "ended",
+        "at": 6145
       },
       {
         "stage": "settled-overhead",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 6526.300000011921
+        "media": "ended",
+        "at": 6510.599999964237
       }
     ],
     "frames": [
@@ -780,12 +806,24 @@
       {
         "time": 3,
         "brightness": 118.18055555555556
+      },
+      {
+        "time": 3,
+        "brightness": 118.18055555555556
       }
     ],
     "distinctFrames": 72,
     "held": "",
     "filmTime": "6222",
-    "finalFrameMatches": true
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.040667,
+      "referenceTime": 3.040667,
+      "referenceReadyState": 4
+    }
   },
   {
     "engine": "chromium",
@@ -805,31 +843,31 @@
     "events": [
       {
         "type": "play",
-        "time": 0.0017,
+        "time": 0.0015,
         "rate": 1,
         "muted": true,
-        "at": 2906
+        "at": 2907.699999988079
       },
       {
         "type": "playing",
-        "time": 0.0018,
+        "time": 0.0016,
         "rate": 1,
         "muted": true,
-        "at": 2906.099999964237
+        "at": 2907.800000011921
       },
       {
         "type": "pause",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 5947.5
+        "at": 5949.300000011921
       },
       {
         "type": "ended",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 5947.599999964237
+        "at": 5949.399999976158
       }
     ],
     "shots": [
@@ -838,49 +876,56 @@
         "state": "FILLING",
         "time": 0,
         "ended": false,
-        "at": 120.39999997615814
+        "media": "idle",
+        "at": 122.39999997615814
       },
       {
         "stage": "coffee-treatment",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 970.3000000119209
+        "media": "idle",
+        "at": 956.3999999761581
       },
       {
         "stage": "elevated",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1603.800000011921
+        "media": "idle",
+        "at": 1605.800000011921
       },
       {
         "stage": "macro-push",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2587.399999976158
+        "media": "idle",
+        "at": 2589.699999988079
       },
       {
         "stage": "macro-hold",
         "state": "PLAYING_FORWARD",
-        "time": 0.0002,
+        "time": 0.0001,
         "ended": false,
-        "at": 2904.5
+        "media": "starting",
+        "at": 2906.199999988079
       },
       {
         "stage": "overhead-pull",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 5954
+        "media": "ended",
+        "at": 6190.699999988079
       },
       {
         "stage": "settled-overhead",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 6326.099999964237
+        "media": "ended",
+        "at": 6556.100000023842
       }
     ],
     "frames": [
@@ -1171,12 +1216,24 @@
       {
         "time": 3,
         "brightness": 118.18055555555556
+      },
+      {
+        "time": 3,
+        "brightness": 118.18055555555556
       }
     ],
     "distinctFrames": 72,
     "held": "",
     "filmTime": "6222",
-    "finalFrameMatches": true
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.040667,
+      "referenceTime": 3.040667,
+      "referenceReadyState": 4
+    }
   },
   {
     "engine": "chromium",
@@ -1196,31 +1253,31 @@
     "events": [
       {
         "type": "play",
-        "time": 0.0017,
+        "time": 0.0014,
         "rate": 1,
         "muted": true,
-        "at": 2963.800000011921
+        "at": 2909.399999976158
       },
       {
         "type": "playing",
-        "time": 0.0018,
+        "time": 0.0015,
         "rate": 1,
         "muted": true,
-        "at": 2963.899999976158
+        "at": 2909.5
       },
       {
         "type": "pause",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 6005.800000011921
+        "at": 5951.600000023842
       },
       {
         "type": "ended",
         "time": 3.041667,
         "rate": 1,
         "muted": true,
-        "at": 6005.899999976158
+        "at": 5951.699999988079
       }
     ],
     "shots": [
@@ -1229,49 +1286,56 @@
         "state": "FILLING",
         "time": 0,
         "ended": false,
-        "at": 179.5
+        "media": "idle",
+        "at": 124.60000002384186
       },
       {
         "stage": "coffee-treatment",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1029.5
+        "media": "idle",
+        "at": 974.6000000238419
       },
       {
         "stage": "elevated",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1662.699999988079
+        "media": "idle",
+        "at": 1608.199999988079
       },
       {
         "stage": "macro-push",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2646.099999964237
+        "media": "idle",
+        "at": 2591.600000023842
       },
       {
         "stage": "macro-hold",
         "state": "PLAYING_FORWARD",
         "time": 0.0001,
         "ended": false,
-        "at": 2962.099999964237
+        "media": "starting",
+        "at": 2908
       },
       {
         "stage": "overhead-pull",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 6012.699999988079
+        "media": "ended",
+        "at": 6192.5
       },
       {
         "stage": "settled-overhead",
         "state": "PLAYING_FORWARD",
-        "time": 3.041667,
+        "time": 3.040667,
         "ended": true,
-        "at": 6378.399999976158
+        "media": "ended",
+        "at": 6558
       }
     ],
     "frames": [
@@ -1562,12 +1626,24 @@
       {
         "time": 3,
         "brightness": 118.18055555555556
+      },
+      {
+        "time": 3,
+        "brightness": 118.18055555555556
       }
     ],
     "distinctFrames": 72,
     "held": "",
     "filmTime": "6222",
-    "finalFrameMatches": true
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.040667,
+      "referenceTime": 3.040667,
+      "referenceReadyState": 4
+    }
   },
   {
     "engine": "chromium",
@@ -1619,28 +1695,28 @@
         "time": 0,
         "rate": 1,
         "muted": true,
-        "at": 3241
+        "at": 3271
       },
       {
         "type": "playing",
         "time": 0,
         "rate": 1,
         "muted": true,
-        "at": 3241
+        "at": 3271
       },
       {
         "type": "pause",
         "time": 3.042,
         "rate": 1,
         "muted": true,
-        "at": 6296
+        "at": 6327
       },
       {
         "type": "ended",
         "time": 3.042,
         "rate": 1,
         "muted": true,
-        "at": 6296
+        "at": 6327
       }
     ],
     "shots": [
@@ -1649,49 +1725,56 @@
         "state": "FILLING",
         "time": 0,
         "ended": false,
-        "at": 478
+        "media": "idle",
+        "at": 541
       },
       {
         "stage": "coffee-treatment",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1304
+        "media": "idle",
+        "at": 1264
       },
       {
         "stage": "elevated",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1937
+        "media": "idle",
+        "at": 1962
       },
       {
         "stage": "macro-push",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2903
+        "media": "idle",
+        "at": 2964
       },
       {
         "stage": "macro-hold",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 3238
+        "media": "starting",
+        "at": 3266
       },
       {
         "stage": "overhead-pull",
         "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6305
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 6443
       },
       {
         "stage": "settled-overhead",
         "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6672
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 6802
       }
     ],
     "frames": [
@@ -1726,10 +1809,6 @@
       {
         "time": 0.3333333333333333,
         "brightness": 124.18948412698413
-      },
-      {
-        "time": 0.375,
-        "brightness": 124.3045634920635
       },
       {
         "time": 0.4166666666666667,
@@ -1804,20 +1883,12 @@
         "brightness": 125.25992063492063
       },
       {
-        "time": 1.2083333333333333,
-        "brightness": 125.56051587301587
-      },
-      {
         "time": 1.25,
         "brightness": 125.73015873015873
       },
       {
         "time": 1.2916666666666667,
         "brightness": 125.8561507936508
-      },
-      {
-        "time": 1.3333333333333333,
-        "brightness": 125.83829365079364
       },
       {
         "time": 1.375,
@@ -1832,10 +1903,6 @@
         "brightness": 125.87797619047619
       },
       {
-        "time": 1.5,
-        "brightness": 125.8561507936508
-      },
-      {
         "time": 1.5416666666666667,
         "brightness": 125.875
       },
@@ -1848,20 +1915,44 @@
         "brightness": 125.79960317460318
       },
       {
-        "time": 1.7083333333333333,
-        "brightness": 125.87003968253968
+        "time": 1.6666666666666667,
+        "brightness": 125.86507936507937
+      },
+      {
+        "time": 1.75,
+        "brightness": 126.02182539682539
+      },
+      {
+        "time": 1.7916666666666667,
+        "brightness": 126.31944444444444
       },
       {
         "time": 1.875,
         "brightness": 126.5625
       },
       {
+        "time": 1.9166666666666667,
+        "brightness": 126.56746031746032
+      },
+      {
+        "time": 1.9583333333333333,
+        "brightness": 126.52380952380952
+      },
+      {
         "time": 2,
         "brightness": 126.5625
       },
       {
+        "time": 2.0416666666666665,
+        "brightness": 126.38988095238095
+      },
+      {
         "time": 2.0833333333333335,
         "brightness": 126.09722222222223
+      },
+      {
+        "time": 2.125,
+        "brightness": 125.76587301587301
       },
       {
         "time": 2.1666666666666665,
@@ -1872,32 +1963,32 @@
         "brightness": 125.27777777777777
       },
       {
+        "time": 2.2916666666666665,
+        "brightness": 125.15178571428571
+      },
+      {
         "time": 2.3333333333333335,
         "brightness": 125.07936507936508
       },
       {
-        "time": 2.375,
-        "brightness": 124.86011904761905
+        "time": 2.4166666666666665,
+        "brightness": 124.69444444444444
       },
       {
-        "time": 2.5416666666666665,
-        "brightness": 123.93353174603175
+        "time": 2.4583333333333335,
+        "brightness": 124.3829365079365
+      },
+      {
+        "time": 2.5,
+        "brightness": 124.09325396825396
       },
       {
         "time": 2.5833333333333335,
         "brightness": 123.85912698412699
       },
       {
-        "time": 2.625,
-        "brightness": 123.80952380952381
-      },
-      {
         "time": 2.6666666666666665,
         "brightness": 123.77182539682539
-      },
-      {
-        "time": 2.7083333333333335,
-        "brightness": 123.61607142857143
       },
       {
         "time": 2.75,
@@ -1908,16 +1999,8 @@
         "brightness": 123.45238095238095
       },
       {
-        "time": 2.8333333333333335,
-        "brightness": 123.57142857142857
-      },
-      {
         "time": 2.875,
         "brightness": 123.49007936507937
-      },
-      {
-        "time": 2.9166666666666665,
-        "brightness": 123.55555555555556
       },
       {
         "time": 2.9583333333333335,
@@ -1931,7 +2014,15 @@
     "distinctFrames": 58,
     "held": "",
     "filmTime": "6222",
-    "finalFrameMatches": true
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.041,
+      "referenceTime": 3.041,
+      "referenceReadyState": 4
+    }
   },
   {
     "engine": "webkit",
@@ -1954,28 +2045,28 @@
         "time": 0,
         "rate": 1,
         "muted": true,
-        "at": 3153
+        "at": 3134
       },
       {
         "type": "playing",
         "time": 0,
         "rate": 1,
         "muted": true,
-        "at": 3153
+        "at": 3135
       },
       {
         "type": "pause",
         "time": 3.042,
         "rate": 1,
         "muted": true,
-        "at": 6229
+        "at": 6192
       },
       {
         "type": "ended",
         "time": 3.042,
         "rate": 1,
         "muted": true,
-        "at": 6229
+        "at": 6192
       }
     ],
     "shots": [
@@ -1984,49 +2075,56 @@
         "state": "FILLING",
         "time": 0,
         "ended": false,
-        "at": 345
+        "media": "idle",
+        "at": 331
       },
       {
         "stage": "coffee-treatment",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1179
+        "media": "idle",
+        "at": 1164
       },
       {
         "stage": "elevated",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1845
+        "media": "idle",
+        "at": 1831
       },
       {
         "stage": "macro-push",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2812
+        "media": "idle",
+        "at": 2802
       },
       {
         "stage": "macro-hold",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 3148
+        "media": "starting",
+        "at": 3131
       },
       {
         "stage": "overhead-pull",
         "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6247
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 6309
       },
       {
         "stage": "settled-overhead",
         "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6614
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 6666
       }
     ],
     "frames": [
@@ -2041,6 +2139,10 @@
       {
         "time": 0.08333333333333333,
         "brightness": 123.16269841269842
+      },
+      {
+        "time": 0.16666666666666666,
+        "brightness": 123.9454365079365
       },
       {
         "time": 0.20833333333333334,
@@ -2079,349 +2181,6 @@
         "brightness": 124.61507936507937
       },
       {
-        "time": 0.625,
-        "brightness": 124.77281746031746
-      },
-      {
-        "time": 0.6666666666666666,
-        "brightness": 124.62202380952381
-      },
-      {
-        "time": 0.7083333333333334,
-        "brightness": 124.37896825396825
-      },
-      {
-        "time": 0.7916666666666666,
-        "brightness": 123.99107142857143
-      },
-      {
-        "time": 0.8333333333333334,
-        "brightness": 123.72123015873017
-      },
-      {
-        "time": 0.875,
-        "brightness": 124.02678571428571
-      },
-      {
-        "time": 0.9583333333333334,
-        "brightness": 124.75
-      },
-      {
-        "time": 1,
-        "brightness": 124.9047619047619
-      },
-      {
-        "time": 1.0416666666666667,
-        "brightness": 125.00198412698413
-      },
-      {
-        "time": 1.0833333333333333,
-        "brightness": 125.23412698412699
-      },
-      {
-        "time": 1.1666666666666667,
-        "brightness": 125.25992063492063
-      },
-      {
-        "time": 1.2083333333333333,
-        "brightness": 125.56051587301587
-      },
-      {
-        "time": 1.25,
-        "brightness": 125.73015873015873
-      },
-      {
-        "time": 1.2916666666666667,
-        "brightness": 125.8561507936508
-      },
-      {
-        "time": 1.3333333333333333,
-        "brightness": 125.83829365079364
-      },
-      {
-        "time": 1.375,
-        "brightness": 125.75694444444444
-      },
-      {
-        "time": 1.4166666666666667,
-        "brightness": 125.77083333333333
-      },
-      {
-        "time": 1.4583333333333333,
-        "brightness": 125.87797619047619
-      },
-      {
-        "time": 1.5416666666666667,
-        "brightness": 125.875
-      },
-      {
-        "time": 1.5833333333333333,
-        "brightness": 125.88789682539682
-      },
-      {
-        "time": 1.625,
-        "brightness": 125.79960317460318
-      },
-      {
-        "time": 1.6666666666666667,
-        "brightness": 125.86507936507937
-      },
-      {
-        "time": 1.7083333333333333,
-        "brightness": 125.87003968253968
-      },
-      {
-        "time": 1.75,
-        "brightness": 126.02182539682539
-      },
-      {
-        "time": 1.7916666666666667,
-        "brightness": 126.31944444444444
-      },
-      {
-        "time": 1.8333333333333333,
-        "brightness": 126.41468253968254
-      },
-      {
-        "time": 1.875,
-        "brightness": 126.5625
-      },
-      {
-        "time": 1.9166666666666667,
-        "brightness": 126.56746031746032
-      },
-      {
-        "time": 2,
-        "brightness": 126.5625
-      },
-      {
-        "time": 2.0416666666666665,
-        "brightness": 126.38988095238095
-      },
-      {
-        "time": 2.0833333333333335,
-        "brightness": 126.09722222222223
-      },
-      {
-        "time": 2.1666666666666665,
-        "brightness": 125.39880952380952
-      },
-      {
-        "time": 2.2083333333333335,
-        "brightness": 125.27777777777777
-      },
-      {
-        "time": 2.2916666666666665,
-        "brightness": 125.15178571428571
-      },
-      {
-        "time": 2.3333333333333335,
-        "brightness": 125.07936507936508
-      },
-      {
-        "time": 2.375,
-        "brightness": 124.86011904761905
-      },
-      {
-        "time": 2.4583333333333335,
-        "brightness": 124.3829365079365
-      },
-      {
-        "time": 2.5,
-        "brightness": 124.09325396825396
-      },
-      {
-        "time": 2.5416666666666665,
-        "brightness": 123.93353174603175
-      },
-      {
-        "time": 2.625,
-        "brightness": 123.80952380952381
-      },
-      {
-        "time": 2.6666666666666665,
-        "brightness": 123.77182539682539
-      },
-      {
-        "time": 2.7083333333333335,
-        "brightness": 123.61607142857143
-      },
-      {
-        "time": 2.75,
-        "brightness": 123.63690476190476
-      },
-      {
-        "time": 2.7916666666666665,
-        "brightness": 123.45238095238095
-      },
-      {
-        "time": 2.8333333333333335,
-        "brightness": 123.57142857142857
-      },
-      {
-        "time": 2.875,
-        "brightness": 123.49007936507937
-      },
-      {
-        "time": 2.9583333333333335,
-        "brightness": 123.52777777777777
-      },
-      {
-        "time": 3,
-        "brightness": 123.53373015873017
-      }
-    ],
-    "distinctFrames": 60,
-    "held": "",
-    "filmTime": "6222",
-    "finalFrameMatches": true
-  },
-  {
-    "engine": "webkit",
-    "width": 1440,
-    "theme": "dark",
-    "format": {
-      "duration": 3.042,
-      "width": 1284,
-      "height": 724,
-      "muted": true,
-      "inline": true,
-      "controls": false,
-      "loop": false,
-      "rate": 1,
-      "fit": "cover"
-    },
-    "events": [
-      {
-        "type": "play",
-        "time": 0,
-        "rate": 1,
-        "muted": true,
-        "at": 3151
-      },
-      {
-        "type": "playing",
-        "time": 0,
-        "rate": 1,
-        "muted": true,
-        "at": 3151
-      },
-      {
-        "type": "pause",
-        "time": 3.042,
-        "rate": 1,
-        "muted": true,
-        "at": 6208
-      },
-      {
-        "type": "ended",
-        "time": 3.042,
-        "rate": 1,
-        "muted": true,
-        "at": 6208
-      }
-    ],
-    "shots": [
-      {
-        "stage": "filled-front",
-        "state": "FILLING",
-        "time": 0,
-        "ended": false,
-        "at": 353
-      },
-      {
-        "stage": "coffee-treatment",
-        "state": "PLAYING_FORWARD",
-        "time": 0,
-        "ended": false,
-        "at": 1185
-      },
-      {
-        "stage": "elevated",
-        "state": "PLAYING_FORWARD",
-        "time": 0,
-        "ended": false,
-        "at": 1847
-      },
-      {
-        "stage": "macro-push",
-        "state": "PLAYING_FORWARD",
-        "time": 0,
-        "ended": false,
-        "at": 2815
-      },
-      {
-        "stage": "macro-hold",
-        "state": "PLAYING_FORWARD",
-        "time": 0,
-        "ended": false,
-        "at": 3148
-      },
-      {
-        "stage": "overhead-pull",
-        "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6215
-      },
-      {
-        "stage": "settled-overhead",
-        "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6582
-      }
-    ],
-    "frames": [
-      {
-        "time": 0,
-        "brightness": 122.42261904761905
-      },
-      {
-        "time": 0.041666666666666664,
-        "brightness": 122.7688492063492
-      },
-      {
-        "time": 0.08333333333333333,
-        "brightness": 123.16269841269842
-      },
-      {
-        "time": 0.16666666666666666,
-        "brightness": 123.9454365079365
-      },
-      {
-        "time": 0.20833333333333334,
-        "brightness": 124.26289682539682
-      },
-      {
-        "time": 0.25,
-        "brightness": 124.26388888888889
-      },
-      {
-        "time": 0.2916666666666667,
-        "brightness": 124.30555555555556
-      },
-      {
-        "time": 0.375,
-        "brightness": 124.3045634920635
-      },
-      {
-        "time": 0.4166666666666667,
-        "brightness": 124.52182539682539
-      },
-      {
-        "time": 0.4583333333333333,
-        "brightness": 124.6984126984127
-      },
-      {
-        "time": 0.5,
-        "brightness": 124.58035714285714
-      },
-      {
-        "time": 0.5416666666666666,
-        "brightness": 124.61507936507937
-      },
-      {
         "time": 0.5833333333333334,
         "brightness": 124.79861111111111
       },
@@ -2432,6 +2191,10 @@
       {
         "time": 0.6666666666666666,
         "brightness": 124.62202380952381
+      },
+      {
+        "time": 0.7083333333333334,
+        "brightness": 124.37896825396825
       },
       {
         "time": 0.75,
@@ -2478,12 +2241,20 @@
         "brightness": 125.25992063492063
       },
       {
+        "time": 1.2083333333333333,
+        "brightness": 125.56051587301587
+      },
+      {
         "time": 1.25,
         "brightness": 125.73015873015873
       },
       {
         "time": 1.2916666666666667,
         "brightness": 125.8561507936508
+      },
+      {
+        "time": 1.3333333333333333,
+        "brightness": 125.83829365079364
       },
       {
         "time": 1.375,
@@ -2610,6 +2381,10 @@
         "brightness": 123.77182539682539
       },
       {
+        "time": 2.7083333333333335,
+        "brightness": 123.61607142857143
+      },
+      {
         "time": 2.75,
         "brightness": 123.63690476190476
       },
@@ -2622,19 +2397,39 @@
         "brightness": 123.57142857142857
       },
       {
+        "time": 2.875,
+        "brightness": 123.49007936507937
+      },
+      {
+        "time": 2.9583333333333335,
+        "brightness": 123.52777777777777
+      },
+      {
+        "time": 3,
+        "brightness": 123.53373015873017
+      },
+      {
         "time": 3,
         "brightness": 123.53373015873017
       }
     ],
-    "distinctFrames": 63,
+    "distinctFrames": 70,
     "held": "",
     "filmTime": "6222",
-    "finalFrameMatches": true
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.041,
+      "referenceTime": 3.041,
+      "referenceReadyState": 4
+    }
   },
   {
     "engine": "webkit",
     "width": 1440,
-    "theme": "light",
+    "theme": "dark",
     "format": {
       "duration": 3.042,
       "width": 1284,
@@ -2652,28 +2447,28 @@
         "time": 0,
         "rate": 1,
         "muted": true,
-        "at": 2945
+        "at": 3166
       },
       {
         "type": "playing",
         "time": 0,
         "rate": 1,
         "muted": true,
-        "at": 2945
+        "at": 3166
       },
       {
         "type": "pause",
         "time": 3.042,
         "rate": 1,
         "muted": true,
-        "at": 5997
+        "at": 6283
       },
       {
         "type": "ended",
         "time": 3.042,
         "rate": 1,
         "muted": true,
-        "at": 5997
+        "at": 6285
       }
     ],
     "shots": [
@@ -2682,49 +2477,56 @@
         "state": "FILLING",
         "time": 0,
         "ended": false,
-        "at": 142
+        "media": "idle",
+        "at": 366
       },
       {
         "stage": "coffee-treatment",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 975
+        "media": "idle",
+        "at": 1195
       },
       {
         "stage": "elevated",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 1642
+        "media": "idle",
+        "at": 1835
       },
       {
         "stage": "macro-push",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2609
+        "media": "idle",
+        "at": 2827
       },
       {
         "stage": "macro-hold",
         "state": "PLAYING_FORWARD",
         "time": 0,
         "ended": false,
-        "at": 2943
+        "media": "starting",
+        "at": 3163
       },
       {
         "stage": "overhead-pull",
         "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6010
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 6612
       },
       {
         "stage": "settled-overhead",
         "state": "PLAYING_FORWARD",
-        "time": 3.042,
-        "ended": true,
-        "at": 6383
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 7532
       }
     ],
     "frames": [
@@ -2777,6 +2579,10 @@
         "brightness": 124.79861111111111
       },
       {
+        "time": 0.625,
+        "brightness": 124.77281746031746
+      },
+      {
         "time": 0.6666666666666666,
         "brightness": 124.62202380952381
       },
@@ -2787,10 +2593,6 @@
       {
         "time": 0.75,
         "brightness": 124.18849206349206
-      },
-      {
-        "time": 0.7916666666666666,
-        "brightness": 123.99107142857143
       },
       {
         "time": 0.8333333333333334,
@@ -2869,8 +2671,302 @@
         "brightness": 125.79960317460318
       },
       {
-        "time": 1.6666666666666667,
-        "brightness": 125.86507936507937
+        "time": 1.75,
+        "brightness": 126.02182539682539
+      },
+      {
+        "time": 1.8333333333333333,
+        "brightness": 126.41468253968254
+      },
+      {
+        "time": 1.9583333333333333,
+        "brightness": 126.52380952380952
+      },
+      {
+        "time": 2.125,
+        "brightness": 125.76587301587301
+      },
+      {
+        "time": 2.25,
+        "brightness": 125.26190476190476
+      },
+      {
+        "time": 2.375,
+        "brightness": 124.86011904761905
+      },
+      {
+        "time": 2.4583333333333335,
+        "brightness": 124.3829365079365
+      },
+      {
+        "time": 2.8333333333333335,
+        "brightness": 123.57142857142857
+      },
+      {
+        "time": 3,
+        "brightness": 123.53373015873017
+      }
+    ],
+    "distinctFrames": 44,
+    "held": "",
+    "filmTime": "6222",
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.041,
+      "referenceTime": 3.041,
+      "referenceReadyState": 4
+    }
+  },
+  {
+    "engine": "webkit",
+    "width": 1440,
+    "theme": "light",
+    "format": {
+      "duration": 3.042,
+      "width": 1284,
+      "height": 724,
+      "muted": true,
+      "inline": true,
+      "controls": false,
+      "loop": false,
+      "rate": 1,
+      "fit": "cover"
+    },
+    "events": [
+      {
+        "type": "play",
+        "time": 0,
+        "rate": 1,
+        "muted": true,
+        "at": 3019
+      },
+      {
+        "type": "playing",
+        "time": 0,
+        "rate": 1,
+        "muted": true,
+        "at": 3019
+      },
+      {
+        "type": "pause",
+        "time": 3.042,
+        "rate": 1,
+        "muted": true,
+        "at": 6072
+      },
+      {
+        "type": "ended",
+        "time": 3.042,
+        "rate": 1,
+        "muted": true,
+        "at": 6072
+      }
+    ],
+    "shots": [
+      {
+        "stage": "filled-front",
+        "state": "FILLING",
+        "time": 0,
+        "ended": false,
+        "media": "idle",
+        "at": 220
+      },
+      {
+        "stage": "coffee-treatment",
+        "state": "PLAYING_FORWARD",
+        "time": 0,
+        "ended": false,
+        "media": "idle",
+        "at": 1040
+      },
+      {
+        "stage": "elevated",
+        "state": "PLAYING_FORWARD",
+        "time": 0,
+        "ended": false,
+        "media": "idle",
+        "at": 1713
+      },
+      {
+        "stage": "macro-push",
+        "state": "PLAYING_FORWARD",
+        "time": 0,
+        "ended": false,
+        "media": "idle",
+        "at": 2674
+      },
+      {
+        "stage": "macro-hold",
+        "state": "PLAYING_FORWARD",
+        "time": 0,
+        "ended": false,
+        "media": "starting",
+        "at": 3016
+      },
+      {
+        "stage": "overhead-pull",
+        "state": "PLAYING_FORWARD",
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 6190
+      },
+      {
+        "stage": "settled-overhead",
+        "state": "PLAYING_FORWARD",
+        "time": 3.041,
+        "ended": false,
+        "media": "ended",
+        "at": 6578
+      }
+    ],
+    "frames": [
+      {
+        "time": 0,
+        "brightness": 122.42261904761905
+      },
+      {
+        "time": 0.041666666666666664,
+        "brightness": 122.7688492063492
+      },
+      {
+        "time": 0.08333333333333333,
+        "brightness": 123.16269841269842
+      },
+      {
+        "time": 0.20833333333333334,
+        "brightness": 124.26289682539682
+      },
+      {
+        "time": 0.25,
+        "brightness": 124.26388888888889
+      },
+      {
+        "time": 0.2916666666666667,
+        "brightness": 124.30555555555556
+      },
+      {
+        "time": 0.3333333333333333,
+        "brightness": 124.18948412698413
+      },
+      {
+        "time": 0.375,
+        "brightness": 124.3045634920635
+      },
+      {
+        "time": 0.4166666666666667,
+        "brightness": 124.52182539682539
+      },
+      {
+        "time": 0.4583333333333333,
+        "brightness": 124.6984126984127
+      },
+      {
+        "time": 0.5,
+        "brightness": 124.58035714285714
+      },
+      {
+        "time": 0.5416666666666666,
+        "brightness": 124.61507936507937
+      },
+      {
+        "time": 0.5833333333333334,
+        "brightness": 124.79861111111111
+      },
+      {
+        "time": 0.625,
+        "brightness": 124.77281746031746
+      },
+      {
+        "time": 0.6666666666666666,
+        "brightness": 124.62202380952381
+      },
+      {
+        "time": 0.7083333333333334,
+        "brightness": 124.37896825396825
+      },
+      {
+        "time": 0.75,
+        "brightness": 124.18849206349206
+      },
+      {
+        "time": 0.7916666666666666,
+        "brightness": 123.99107142857143
+      },
+      {
+        "time": 0.8333333333333334,
+        "brightness": 123.72123015873017
+      },
+      {
+        "time": 0.875,
+        "brightness": 124.02678571428571
+      },
+      {
+        "time": 0.9166666666666666,
+        "brightness": 124.33234126984127
+      },
+      {
+        "time": 0.9583333333333334,
+        "brightness": 124.75
+      },
+      {
+        "time": 1,
+        "brightness": 124.9047619047619
+      },
+      {
+        "time": 1.0416666666666667,
+        "brightness": 125.00198412698413
+      },
+      {
+        "time": 1.0833333333333333,
+        "brightness": 125.23412698412699
+      },
+      {
+        "time": 1.125,
+        "brightness": 125.37996031746032
+      },
+      {
+        "time": 1.1666666666666667,
+        "brightness": 125.25992063492063
+      },
+      {
+        "time": 1.2083333333333333,
+        "brightness": 125.56051587301587
+      },
+      {
+        "time": 1.25,
+        "brightness": 125.73015873015873
+      },
+      {
+        "time": 1.2916666666666667,
+        "brightness": 125.8561507936508
+      },
+      {
+        "time": 1.375,
+        "brightness": 125.75694444444444
+      },
+      {
+        "time": 1.4166666666666667,
+        "brightness": 125.77083333333333
+      },
+      {
+        "time": 1.4583333333333333,
+        "brightness": 125.87797619047619
+      },
+      {
+        "time": 1.5416666666666667,
+        "brightness": 125.875
+      },
+      {
+        "time": 1.5833333333333333,
+        "brightness": 125.88789682539682
+      },
+      {
+        "time": 1.625,
+        "brightness": 125.79960317460318
       },
       {
         "time": 1.7083333333333333,
@@ -2945,6 +3041,10 @@
         "brightness": 124.69444444444444
       },
       {
+        "time": 2.4583333333333335,
+        "brightness": 124.3829365079365
+      },
+      {
         "time": 2.5,
         "brightness": 124.09325396825396
       },
@@ -2965,10 +3065,6 @@
         "brightness": 123.77182539682539
       },
       {
-        "time": 2.7083333333333335,
-        "brightness": 123.61607142857143
-      },
-      {
         "time": 2.75,
         "brightness": 123.63690476190476
       },
@@ -2981,8 +3077,8 @@
         "brightness": 123.57142857142857
       },
       {
-        "time": 2.875,
-        "brightness": 123.49007936507937
+        "time": 2.9166666666666665,
+        "brightness": 123.55555555555556
       },
       {
         "time": 3,
@@ -2992,7 +3088,15 @@
     "distinctFrames": 65,
     "held": "",
     "filmTime": "6222",
-    "finalFrameMatches": true
+    "finalFrameMatches": true,
+    "finalFrameComparison": {
+      "matches": true,
+      "meanError": 0,
+      "maxError": 0,
+      "time": 3.041,
+      "referenceTime": 3.041,
+      "referenceReadyState": 4
+    }
   },
   {
     "engine": "webkit",

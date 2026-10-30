@@ -16,164 +16,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 905.1999999880791,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 317,
-        "at": 1236.8999999761581,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 950,
-        "at": 1870.3999999761581,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1933,
-        "at": 2853.399999976158,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3170.7999999523163,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6220.099999964237,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5648,
-        "at": 6586.699999988079,
-        "top": 80
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 7420.599999964237,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5638,
-        "at": 8003.599999964237,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5272,
-        "at": 8369.699999988079,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2238,
-        "at": 11402.799999952316,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1905,
-        "at": 11735.899999976158,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 939,
-        "at": 12702.899999976158,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 288,
-        "at": 13352.799999952316,
-        "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "chromium",
-    "width": 360,
-    "height": 740,
-    "fill": "forward/reverse",
-    "menu": "focus, Escape, backdrop, destinations",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 2.592636210123711,
-      "base": 3.5609970092773438,
-      "height": 310.796875
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 920.0999999642372,
+        "at": 842.5999999642372,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
         "time": 300,
-        "at": 1236.3999999761581,
+        "at": 1157.699999988079,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
         "time": 950,
-        "at": 1885.199999988079,
+        "at": 1807.699999988079,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
         "time": 1933,
-        "at": 2868.800000011921,
+        "at": 2790.899999976158,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3185.699999988079,
+        "at": 3111.599999964237,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 6235.5,
+        "at": 6356.899999976158,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
         "time": 5648,
-        "at": 6601.300000011921,
+        "at": 6723.599999964237,
         "top": 80
       }
     ],
@@ -182,164 +67,49 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 7451.899999976158,
+        "at": 7557.399999976158,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
         "time": 5638,
-        "at": 8035,
+        "at": 8140.300000011921,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
         "time": 5272,
-        "at": 8401.599999964237,
+        "at": 8506.899999976158,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
-        "time": 2238,
-        "at": 11434.899999976158,
+        "time": 2239,
+        "at": 11540.099999964237,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
         "time": 1905,
-        "at": 11768.399999976158,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 938,
-        "at": 12734.300000011921,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 288,
-        "at": 13384.699999988079,
-        "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "chromium",
-    "width": 375,
-    "height": 812,
-    "fill": "forward/reverse",
-    "menu": "focus, Escape, backdrop, destinations",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 2.844867045084637,
-      "base": 3.907435607910088,
-      "height": 341.03125
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 873.8000000119209,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 317,
-        "at": 1206.3999999761581,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 950,
-        "at": 1840.0999999642372,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1933,
-        "at": 2822.5,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3140.399999976158,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6188.800000011921,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5648,
-        "at": 6554.899999976158,
-        "top": 80
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 7405.199999988079,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5638,
-        "at": 7988.800000011921,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5272,
-        "at": 8355.399999976158,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2238,
-        "at": 11388.099999964237,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1905,
-        "at": 11722.300000011921,
+        "at": 11873.5,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
         "time": 939,
-        "at": 12688.300000011921,
+        "at": 12839.899999976158,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
         "time": 289,
-        "at": 13339,
+        "at": 13490.099999964237,
         "top": 80
       }
     ]
@@ -361,49 +131,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 920.7999999523163,
+        "at": 877.2000000476837,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
         "time": 300,
-        "at": 1236.5999999642372,
+        "at": 1192.7000000476837,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
         "time": 950,
-        "at": 1886.3999999761581,
+        "at": 1842.300000011921,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
         "time": 1933,
-        "at": 2870.199999988079,
+        "at": 2826.300000011921,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3186.599999964237,
+        "at": 3143,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 6236.399999976158,
+        "at": 6375,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
         "time": 5648,
-        "at": 6603.399999976158,
+        "at": 6742.800000011921,
         "top": 80
       }
     ],
@@ -412,164 +182,49 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 7420,
+        "at": 7559.300000011921,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
         "time": 5638,
-        "at": 8003.199999988079,
+        "at": 8142.600000023842,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
         "time": 5272,
-        "at": 8370.099999964237,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2239,
-        "at": 11403.099999964237,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1905,
-        "at": 11736.299999952316,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 939,
-        "at": 12703.099999964237,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 289,
-        "at": 13353,
-        "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "chromium",
-    "width": 430,
-    "height": 932,
-    "fill": "forward/reverse",
-    "menu": "focus, Escape, backdrop, destinations",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 3.0030950927734494,
-      "base": 4.124797973632781,
-      "height": 360
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 874.6000000238419,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 300,
-        "at": 1207.300000011921,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 950,
-        "at": 1857.300000011921,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1933,
-        "at": 2840.300000011921,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3157.600000023842,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6207.100000023842,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5648,
-        "at": 6572.900000035763,
-        "top": 80
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 7423.300000011921,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5638,
-        "at": 8006.5,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5272,
-        "at": 8372.900000035763,
+        "at": 8509.5,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
         "time": 2238,
-        "at": 11406.699999988079,
+        "at": 11542.400000035763,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
         "time": 1905,
-        "at": 11739.900000035763,
+        "at": 11875.400000035763,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
-        "time": 938,
-        "at": 12706.100000023842,
+        "time": 939,
+        "at": 12842,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
         "time": 289,
-        "at": 13356.699999988079,
+        "at": 13492.400000035763,
         "top": 80
       }
     ]
@@ -591,49 +246,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 1482.699999988079,
+        "at": 874.4000000357628,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
-        "time": 316,
-        "at": 1825.800000011921,
+        "time": 317,
+        "at": 1206.6000000238419,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
         "time": 950,
-        "at": 2459.5,
+        "at": 1839.199999988079,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
         "time": 1933,
-        "at": 3461.199999988079,
+        "at": 2823.400000035763,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3841,
+        "at": 3139.900000035763,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 7068,
+        "at": 6388.900000035763,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
         "time": 5648,
-        "at": 7525.5,
+        "at": 6755.5,
         "top": 80
       }
     ],
@@ -642,280 +297,50 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 8708.199999988079,
+        "at": 7606.100000023842,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
         "time": 5638,
-        "at": 9291,
+        "at": 8189.100000023842,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
         "time": 5272,
-        "at": 9664.800000011921,
+        "at": 8555.600000023842,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
-        "time": 2239,
-        "at": 12692.699999988079,
+        "time": 2238,
+        "at": 11592.800000011921,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
         "time": 1905,
-        "at": 13024.099999964237,
+        "at": 11922.100000023842,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
         "time": 939,
-        "at": 13991.099999964237,
+        "at": 12887.699999988079,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
         "time": 289,
-        "at": 14640.099999964237,
+        "at": 13537.900000035763,
         "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "chromium",
-    "width": 1024,
-    "height": 768,
-    "fill": "forward/reverse",
-    "menu": "capsule",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 5.255424804687507,
-      "base": 7.218342285156268,
-      "height": 630
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 964.8999999761581,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 317,
-        "at": 1312.8999999761581,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 950,
-        "at": 1946.199999988079,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1933,
-        "at": 2930.5,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3246.899999976158,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6302.100000023842,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5648,
-        "at": 6661.899999976158,
-        "top": 126
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 7563.100000023842,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5638,
-        "at": 8145.100000023842,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5272,
-        "at": 8512.800000011921,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2239,
-        "at": 11547.300000011921,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1905,
-        "at": 11878.100000023842,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 938,
-        "at": 12845.300000011921,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 289,
-        "at": 13495.5,
-        "top": 126
-      }
-    ]
-  },
-  {
-    "engine": "chromium",
-    "width": 1200,
-    "height": 630,
-    "fill": "forward/reverse",
-    "menu": "capsule",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 3.286711527506526,
-      "base": 4.514321594238311,
-      "height": 394
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 1150.5999999642372,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 300,
-        "at": 1482.0999999642372,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 950,
-        "at": 2132.899999976158,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1933,
-        "at": 3115.599999964237,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3432.899999976158,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6481.5,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5648,
-        "at": 6906.5,
-        "top": 126
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 8081.799999952316,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5638,
-        "at": 8664.699999988079,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5272,
-        "at": 9031.199999988079,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2238,
-        "at": 12067,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1905,
-        "at": 12397.799999952316,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 922,
-        "at": 13482.299999952316,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 288,
-        "at": 14114.399999976158,
-        "top": 126
       }
     ]
   },
@@ -936,49 +361,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 1079,
+        "at": 941.6000000238419,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
-        "time": 317,
-        "at": 1428.2000000476837,
+        "time": 316,
+        "at": 1274,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
         "time": 950,
-        "at": 2061.400000035763,
+        "at": 1907,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
         "time": 1933,
-        "at": 3094.5,
+        "at": 2890.699999988079,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3416.100000023842,
+        "at": 3208,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 6910.100000023842,
+        "at": 6443.100000023842,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
         "time": 5648,
-        "at": 7283.200000047684,
+        "at": 6807.400000035763,
         "top": 126
       }
     ],
@@ -987,49 +412,49 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 8244,
+        "at": 7674.300000011921,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
         "time": 5638,
-        "at": 8826.700000047684,
+        "at": 8256.800000011921,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
         "time": 5272,
-        "at": 9200.200000047684,
+        "at": 8624.199999988079,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
-        "time": 2239,
-        "at": 12229.700000047684,
+        "time": 2238,
+        "at": 11656.800000011921,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
         "time": 1905,
-        "at": 12560.400000035763,
+        "at": 11990.600000023842,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
-        "time": 939,
-        "at": 13527,
+        "time": 938,
+        "at": 12956.800000011921,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
-        "time": 289,
-        "at": 14177.100000023842,
+        "time": 288,
+        "at": 13607.199999988079,
         "top": 126
       }
     ]
@@ -1155,49 +580,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 1016,
+        "at": 987,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
-        "time": 302,
-        "at": 1351,
+        "time": 332,
+        "at": 1352,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
-        "time": 970,
-        "at": 2020,
+        "time": 966,
+        "at": 1987,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
-        "time": 1936,
-        "at": 2986,
+        "time": 1933,
+        "at": 2954,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3322,
+        "at": 3291,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 6401,
+        "at": 6472,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
-        "time": 5650,
-        "at": 6769,
+        "time": 5642,
+        "at": 6841,
         "top": 80
       }
     ],
@@ -1206,279 +631,49 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 7668,
+        "at": 7738,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
         "time": 5622,
-        "at": 8269,
+        "at": 8340,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
         "time": 5255,
-        "at": 8635,
+        "at": 8704,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
-        "time": 2222,
-        "at": 11670,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1887,
-        "at": 12002,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 913,
-        "at": 12970,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 286,
-        "at": 13603,
-        "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "webkit",
-    "width": 360,
-    "height": 740,
-    "fill": "forward/reverse",
-    "menu": "focus, Escape, backdrop, destinations",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 2.6004209391276163,
-      "base": 3.568806762695317,
-      "height": 310.796875
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 990,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 331,
-        "at": 1356,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 964,
-        "at": 1988,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1932,
-        "at": 2956,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3295,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6390,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5649,
-        "at": 6757,
-        "top": 80
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 7656,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5622,
-        "at": 8257,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5256,
-        "at": 8624,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2221,
-        "at": 11659,
+        "time": 2219,
+        "at": 11755,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
         "time": 1920,
-        "at": 11960,
+        "at": 12039,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
         "time": 920,
-        "at": 12960,
+        "at": 13039,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
-        "time": 288,
-        "at": 13593,
-        "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "webkit",
-    "width": 375,
-    "height": 812,
-    "fill": "forward/reverse",
-    "menu": "focus, Escape, backdrop, destinations",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 2.8436796061197924,
-      "base": 3.9062731933593113,
-      "height": 341.03125
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 992,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 333,
-        "at": 1357,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 967,
-        "at": 1991,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1934,
-        "at": 2958,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3293,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6360,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5649,
-        "at": 6726,
-        "top": 80
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 7625,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5622,
-        "at": 8225,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5256,
-        "at": 8591,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2222,
-        "at": 11627,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1888,
-        "at": 11959,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 921,
-        "at": 12927,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 287,
-        "at": 13560,
+        "time": 286,
+        "at": 13672,
         "top": 80
       }
     ]
@@ -1500,164 +695,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 1018,
+        "at": 991,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
-        "time": 330,
-        "at": 1385,
+        "time": 326,
+        "at": 1357,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
-        "time": 954,
-        "at": 2118,
+        "time": 962,
+        "at": 1993,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
-        "time": 1921,
-        "at": 3120,
+        "time": 1926,
+        "at": 2958,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3458,
+        "at": 3294,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 6553,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5659,
-        "at": 6930,
-        "top": 80
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 9021,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5622,
-        "at": 9620,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5260,
-        "at": 9987,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2227,
-        "at": 13020,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1892,
-        "at": 13354,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 926,
-        "at": 14321,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 284,
-        "at": 14955,
-        "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "webkit",
-    "width": 430,
-    "height": 932,
-    "fill": "forward/reverse",
-    "menu": "focus, Escape, backdrop, destinations",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 3.0030950927734494,
-      "base": 4.124797973632781,
-      "height": 360
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 1024,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 300,
-        "at": 1356,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 967,
-        "at": 2023,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1934,
-        "at": 2990,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3325,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6393,
+        "at": 6460,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
         "time": 5648,
-        "at": 6758,
+        "at": 6824,
         "top": 80
       }
     ],
@@ -1666,49 +746,49 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 7625,
+        "at": 7692,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
-        "time": 5622,
-        "at": 8224,
+        "time": 5621,
+        "at": 8292,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
-        "time": 5255,
-        "at": 8591,
+        "time": 5258,
+        "at": 8661,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
-        "time": 2221,
-        "at": 11625,
+        "time": 2224,
+        "at": 11701,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
-        "time": 1888,
-        "at": 11959,
+        "time": 1890,
+        "at": 12028,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
-        "time": 920,
-        "at": 12927,
+        "time": 923,
+        "at": 12994,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
-        "time": 287,
-        "at": 13560,
+        "time": 289,
+        "at": 13627,
         "top": 80
       }
     ]
@@ -1730,49 +810,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 1024,
+        "at": 991,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
         "time": 300,
-        "at": 1359,
+        "at": 1325,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
         "time": 966,
-        "at": 2024,
+        "at": 1991,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
-        "time": 1933,
-        "at": 2991,
+        "time": 1934,
+        "at": 2958,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3325,
+        "at": 3292,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 6393,
+        "at": 6458,
         "top": 80
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
-        "time": 5649,
-        "at": 6761,
+        "time": 5648,
+        "at": 6824,
         "top": 80
       }
     ],
@@ -1781,280 +861,50 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 7658,
+        "at": 7725,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
-        "time": 5620,
-        "at": 8259,
+        "time": 5622,
+        "at": 8324,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
-        "time": 5254,
-        "at": 8625,
+        "time": 5255,
+        "at": 8692,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
         "time": 2219,
-        "at": 11660,
+        "at": 11725,
         "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
-        "time": 1919,
-        "at": 11960,
+        "time": 1920,
+        "at": 12027,
         "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 918,
-        "at": 12961,
-        "top": 80
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 285,
-        "at": 13594,
-        "top": 80
-      }
-    ]
-  },
-  {
-    "engine": "webkit",
-    "width": 1024,
-    "height": 768,
-    "fill": "forward/reverse",
-    "menu": "capsule",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 5.255424804687507,
-      "base": 7.218342285156268,
-      "height": 630
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 1011,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 300,
-        "at": 1347,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 967,
-        "at": 2013,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1934,
-        "at": 2982,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 3318,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 6413,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5649,
-        "at": 6780,
-        "top": 126
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 7681,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5620,
-        "at": 8281,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5256,
-        "at": 8647,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2220,
-        "at": 11681,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1887,
-        "at": 12015,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "coffee-treatment",
-        "time": 918,
-        "at": 12983,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "filled-front",
-        "time": 288,
-        "at": 13616,
-        "top": 126
-      }
-    ]
-  },
-  {
-    "engine": "webkit",
-    "width": 1200,
-    "height": 630,
-    "fill": "forward/reverse",
-    "menu": "capsule",
-    "overflow": false,
-    "sideAlignmentPixels": {
-      "rim": 3.2867240397135546,
-      "base": 4.514309082031275,
-      "height": 394
-    },
-    "forward": [
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "filled-front",
-        "time": 0,
-        "at": 2840,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "coffee-treatment",
-        "time": 301,
-        "at": 3138,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "elevated",
-        "time": 945,
-        "at": 3937,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-push",
-        "time": 1945,
-        "at": 4938,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "macro-hold",
-        "time": 2240,
-        "at": 5240,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "overhead-pull",
-        "time": 5282,
-        "at": 8306,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_FORWARD",
-        "stage": "settled-overhead",
-        "time": 5649,
-        "at": 8672,
-        "top": 126
-      }
-    ],
-    "reverse": [
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "settled-overhead",
-        "time": 6222,
-        "at": 9706,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "overhead-pull",
-        "time": 5622,
-        "at": 10305,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-hold",
-        "time": 5255,
-        "at": 10672,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "macro-push",
-        "time": 2221,
-        "at": 13724,
-        "top": 126
-      },
-      {
-        "state": "PLAYING_REVERSE",
-        "stage": "elevated",
-        "time": 1888,
-        "at": 14040,
-        "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
         "time": 921,
-        "at": 15008,
-        "top": 126
+        "at": 13027,
+        "top": 80
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
-        "time": 287,
-        "at": 15641,
-        "top": 126
+        "time": 288,
+        "at": 13661,
+        "top": 80
       }
     ]
   },
@@ -2075,49 +925,49 @@
         "state": "PLAYING_FORWARD",
         "stage": "filled-front",
         "time": 0,
-        "at": 1055,
+        "at": 1022,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "coffee-treatment",
-        "time": 334,
-        "at": 1431,
+        "time": 301,
+        "at": 1355,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "elevated",
-        "time": 958,
-        "at": 2055,
+        "time": 968,
+        "at": 2022,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-push",
-        "time": 1940,
-        "at": 3040,
+        "time": 1934,
+        "at": 2989,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "macro-hold",
         "time": 2240,
-        "at": 3360,
+        "at": 3331,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "overhead-pull",
         "time": 5282,
-        "at": 6424,
+        "at": 6489,
         "top": 126
       },
       {
         "state": "PLAYING_FORWARD",
         "stage": "settled-overhead",
-        "time": 5647,
-        "at": 6789,
+        "time": 5661,
+        "at": 6867,
         "top": 126
       }
     ],
@@ -2126,49 +976,49 @@
         "state": "PLAYING_REVERSE",
         "stage": "settled-overhead",
         "time": 6222,
-        "at": 7690,
+        "at": 7789,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "overhead-pull",
-        "time": 5622,
-        "at": 8290,
+        "time": 5623,
+        "at": 8390,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-hold",
-        "time": 5256,
-        "at": 8663,
+        "time": 5255,
+        "at": 8765,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "macro-push",
-        "time": 2222,
-        "at": 11691,
+        "time": 2231,
+        "at": 11802,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "elevated",
-        "time": 1895,
-        "at": 12025,
+        "time": 1898,
+        "at": 12123,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "coffee-treatment",
-        "time": 934,
-        "at": 12991,
+        "time": 931,
+        "at": 13096,
         "top": 126
       },
       {
         "state": "PLAYING_REVERSE",
         "stage": "filled-front",
-        "time": 300,
-        "at": 13624,
+        "time": 297,
+        "at": 13725,
         "top": 126
       }
     ]
