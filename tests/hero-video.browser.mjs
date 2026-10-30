@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, webkit } from 'playwright';
 import { startPublicCatalogueFixture } from './helpers/public-catalogue-fixture.mjs';
 
+const access = process.env.HERO_ACCESS_FILE ? JSON.parse(await readFile(process.env.HERO_ACCESS_FILE, 'utf8')) : null;
 const port = process.env.HERO_TEST_PORT || '3103';
 const base = process.env.BASE_URL || `http://127.0.0.1:${port}`;
 const output = path.resolve(process.env.HERO_ARTIFACT_DIR || 'work/hero-video-verification');
@@ -52,6 +54,10 @@ async function observe(page) {
 }
 async function fresh(context, theme = 'dark') {
   await context.addInitScript(t => { localStorage.setItem('mama-theme', t); }, theme);
+  if (access) {
+    assert.equal(new URL(access.url).origin, new URL(base).origin, 'preview access is scoped to the tested origin');
+    try { assert.equal((await context.request.get(access.url)).status(), 200); } catch { throw Error('Protected preview access could not be established.'); }
+  }
   const page = await context.newPage();
   await observe(page);
   await page.goto(base, { waitUntil: 'networkidle' });
@@ -67,7 +73,9 @@ async function shot(page, engine, width, theme) {
   await start(page);
   await page.waitForFunction(() => document.querySelector('#home video').currentTime > .08 && document.getElementById('home').dataset.videoVisible === 'true');
   const format = await page.locator('#home video').evaluate(v => ({ duration: v.duration, width: v.videoWidth, height: v.videoHeight, muted: v.muted, inline: v.playsInline, controls: v.controls, loop: v.loop, rate: v.playbackRate, fit: getComputedStyle(v).objectFit }));
-  assert.deepEqual(format, { duration: 3.041667, width: 1284, height: 724, muted: true, inline: true, controls: false, loop: false, rate: 1, fit: 'cover' });
+  const { duration, ...presentation } = format;
+  assert.ok(Math.abs(duration - 3.041667) < .001, 'browser duration rounding stays within 1ms of the exact media duration');
+  assert.deepEqual(presentation, { width: 1284, height: 724, muted: true, inline: true, controls: false, loop: false, rate: 1, fit: 'cover' });
   const crops = await page.locator('#home video').evaluate(v => {
     const img = v.previousElementSibling;
     return [v, img].map(e => ({ box: e.getBoundingClientRect().toJSON(), fit: getComputedStyle(e).objectFit, position: getComputedStyle(e).objectPosition, transform: getComputedStyle(e).transform }));
@@ -81,7 +89,25 @@ async function shot(page, engine, width, theme) {
   await page.waitForFunction(() => document.querySelector('#home video').currentTime > 2.85);
   await page.screenshot({ path: path.join(output, `${engine}-${width}-${theme}-macro-end.png`) });
   await state(page, 'COMPLETED');
-  const report = await page.evaluate(() => ({ events: window.clipEvents, shots: window.shotEvents, frames: window.clipFrames.map(({ fingerprint, ...frame }) => frame), distinctFrames: new Set(window.clipFrames.map(frame => frame.fingerprint)).size, held: document.body.style.position, filmTime: document.getElementById('home').dataset.filmTime }));
+  const finalFrameMatches = await page.locator('video').evaluate(async video => {
+    const fingerprint = element => {
+      const canvas = document.createElement('canvas'); canvas.width = 24; canvas.height = 14;
+      const ctx = canvas.getContext('2d'); ctx.drawImage(element, 0, 0, 24, 14);
+      return Array.from(ctx.getImageData(0, 0, 24, 14).data).join(',');
+    };
+    const retained = fingerprint(video);
+    const reference = document.createElement('video'); reference.muted = true; reference.preload = 'auto'; reference.src = video.currentSrc;
+    await new Promise((resolve, reject) => { reference.onloadeddata = resolve; reference.onerror = reject; });
+    reference.currentTime = reference.duration - .001;
+    await new Promise(resolve => { reference.onseeked = resolve; });
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const matches = retained === fingerprint(reference); reference.removeAttribute('src'); reference.load();
+    return matches;
+  });
+  const report = await page.evaluate(() => ({ events: window.clipEvents, shots: window.shotEvents, frames: window.clipFrames.map(frame => ({ time: frame.time, brightness: frame.brightness })), distinctFrames: new Set(window.clipFrames.map(frame => frame.fingerprint)).size, held: document.body.style.position, filmTime: document.getElementById('home').dataset.filmTime }));
+  await writeFile(path.join(output, `${engine}-${width}-${theme}-frames.json`), JSON.stringify(report, null, 2));
+  assert.equal(finalFrameMatches, true, 'retained end pixels match an independently decoded final source frame');
+  report.finalFrameMatches = finalFrameMatches;
   const plays = report.events.filter(e => e.type === 'play');
   assert.equal(plays.length, 1);
   assert.ok(plays[0].time < .05, 'first playback starts at the actual first frame');
@@ -89,7 +115,8 @@ async function shot(page, engine, width, theme) {
   assert.ok(report.shots.some(s => s.stage === 'overhead-pull' && s.ended && s.time >= 3.04));
   assert.ok(report.frames.length >= 30 && report.distinctFrames > 20, 'decoded liquid is moving');
   assert.ok(report.frames.every(frame => frame.brightness > 15), 'no black decoded frames');
-  assert.ok(report.frames[0].time <= .05 && report.frames.at(-1).time >= 2.95, 'first and final frames are presented');
+  assert.ok(report.frames[0].time <= .05, 'presentation begins within one source frame of time zero');
+  assert.ok(report.frames.at(-1).time >= 2.8, 'presentation callbacks span the clip; the exact retained final frame is checked separately');
   assert.equal(report.held, '');
   assert.equal(report.filmTime, '6222');
   await page.screenshot({ path: path.join(output, `${engine}-${width}-${theme}-overhead.png`) });
@@ -156,15 +183,26 @@ async function fallbacks(browser, engine) {
 try {
   for (let i = 0; i < 100; i++) {
     if (server?.exitCode !== null && server?.exitCode !== undefined) throw Error(log);
-    if (!server || /Ready in/.test(log)) { try { if ((await fetch(base, { signal: AbortSignal.timeout(2000) })).ok) break; } catch {} }
+    if (!server) break;
+    if (/Ready in/.test(log)) { try { if ((await fetch(base, { signal: AbortSignal.timeout(2000) })).ok) break; } catch {} }
     await new Promise(resolve => setTimeout(resolve, 200));
   }
+  let checkedAsset = false;
   for (const engine of (process.env.HERO_BROWSERS || 'chromium,webkit').split(',')) {
     const browser = await ({ chromium, webkit })[engine].launch();
     try {
-      for (const width of [390, 1440]) for (const theme of ['dark', 'light']) {
+      for (const width of [390, 1440].filter(width => !process.env.HERO_WIDTHS || process.env.HERO_WIDTHS.split(',').includes(String(width)))) for (const theme of (process.env.HERO_THEMES || 'dark,light').split(',')) {
         const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 960 }, hasTouch: width === 390, recordVideo: { dir: path.join(output, 'recordings'), size: { width, height: width === 390 ? 844 : 960 } } });
         const page = await fresh(context, theme);
+        if (!checkedAsset) {
+          const asset = await context.request.get(`${base}/hero/coffee-macro-motion.mp4`);
+          assert.equal(asset.status(), 200);
+          const bytes = await asset.body();
+          const sha256 = createHash('sha256').update(bytes).digest('hex');
+          assert.equal(sha256, 'cc255f456ffa3304be88bcdc40fc1fd9671c46762b4ca0d82ed4039e5b206612');
+          results.push({ asset: 'coffee-macro-motion.mp4', bytes: bytes.length, sha256, audio: 'none: identical to atom-verified source' });
+          checkedAsset = true;
+        }
         assert.equal(await page.locator('video').getAttribute('src'), null);
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         results.push(await shot(page, engine, width, theme));
@@ -172,7 +210,7 @@ try {
         await context.close();
         console.log(`${engine} ${width} ${theme}: silent full playback, boundaries and reverse passed`);
       }
-      await lifecycle(browser, engine); await fallbacks(browser, engine);
+      if (!process.env.HERO_SHOTS_ONLY) { await lifecycle(browser, engine); await fallbacks(browser, engine); }
     } finally { await browser.close(); }
   }
   await writeFile(path.join(output, 'results.json'), JSON.stringify(results, null, 2));

@@ -33,6 +33,8 @@ test('approved MP4 is byte-identical, H.264, 1284×724, 73/24 seconds and has no
   const clock = child(mdia, 'mdhd').start;
   const offset = clock + (bytes[clock] === 1 ? 20 : 12);
   assert.ok(Math.abs(bytes.readUInt32BE(offset + 4) / bytes.readUInt32BE(offset) - 73 / 24) < 1e-6);
-  const samples = child(child(child(mdia, 'minf'), 'stbl'), 'stsd').start;
+  const table = child(child(mdia, 'minf'), 'stbl');
+  assert.equal(bytes.readUInt32BE(child(table, 'stsz').start + 8), 73, 'all 73 original video frames remain');
+  const samples = child(table, 'stsd').start;
   assert.equal(bytes.toString('ascii', samples + 12, samples + 16), 'avc1');
 });
