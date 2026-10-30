@@ -21,21 +21,23 @@ export default async function Success({ searchParams }: { searchParams: Promise<
   const { data: testPayments } = order.is_test ? await supabase.from("payments").select("status")
     .eq("order_id", order.id).eq("user_id", user.id).eq("is_test", true).eq("status", "captured").limit(1) : { data: null };
   const paid = order.is_test ? Boolean(testPayments?.length) : order.status === "paid";
+  const confirmedLive = paid && !order.is_test;
+  const paidDetail = order.purchase_mode === "plan" ? "Your selected delivery plan is active and saved in your profile."
+    : order.purchase_mode === "adjustment" ? "The additional milk is saved in your calendar."
+    : "Your farm order is saved in your profile.";
   const intro = order.is_test
     ? "This is a simulated payment. No delivery plan was activated and no farm fulfilment was created."
-    : paid ? order.purchase_mode === "plan" ? "Your selected delivery plan is active and saved in your profile."
-      : order.purchase_mode === "adjustment" ? "Your payment is complete and the additional milk is saved in your calendar."
-      : "Your farm order is paid and saved in your profile."
+    : paid ? `Your payment of ${formatCheckoutAmount(order.total_paise)} was received and your order is confirmed. ${paidDetail}`
     : "Do not pay again. We will activate the order as soon as Razorpay confirms it.";
   return <main className={styles.page}>
-    {paid && !order.is_test ? <CartCheckoutSync orderId={order.id} mode={order.purchase_mode} paid /> : null}
+    {confirmedLive ? <CartCheckoutSync orderId={order.id} mode={order.purchase_mode} paid /> : null}
     <div className="customer-success-heading">
       <Link className={styles.brand} href="/"><Image src="/mma-logo.png" alt="" width={72} height={62} /><span>M&apos;ma Organic Farm</span></Link>
       <PageNavigationControls />
     </div>
-    <section className={styles.content}>
-      <span className={styles.mark}>{paid ? "✓" : "…"}</span><p>Step 4 of 4</p>
-      <h1>{order.is_test ? "Test payment status." : paid ? "Your order is confirmed." : "Payment is being confirmed."}</h1>
+    <section className={confirmedLive ? `${styles.content} ${styles.confirmed}` : styles.content}>
+      <span className={styles.mark} aria-hidden="true">{paid ? "✓" : "…"}</span><p>Step 4 of 4</p>
+      <h1>{order.is_test ? "Test payment status." : paid ? "Payment complete." : "Payment is being confirmed."}</h1>
       <p className={styles.intro}>{intro}</p>
       <dl>
         <div><dt>Order</dt><dd>{order.id.slice(0, 8).toUpperCase()}</dd></div>
