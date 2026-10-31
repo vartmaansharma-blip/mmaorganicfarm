@@ -158,7 +158,7 @@ export function RisingGlassHero() {
       fillPeak = fill;
       const values = filmFrame(film.time);
       // Failed imagery never reveals a blank camera layer.
-      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, cameraProgress: 0, cameraX: 0, cameraY: 0, cameraPush: 0, top: 0, macro: 0, macroOpacity: 0, macroDrift: 0, overheadSettle: 1 });
+      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, cameraProgress: 0, cameraX: 0, cameraY: 0, cameraPush: 0, top: 0, macro: 0, macroOpacity: 0, macroDrift: 0, overheadSettle: 1, brandReveal: 0 });
       const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
       const liquid = liquidGeometry(fill);
       if (!macroOrigin || (values.macro === 0 && values.top === 0)) macroOrigin = cameraPhoto.getBoundingClientRect();
@@ -180,6 +180,7 @@ export function RisingGlassHero() {
       root.style.setProperty("--overhead-x", `${framing.topX}px`);
       root.style.setProperty("--overhead-y", `${framing.topY}px`);
       root.style.setProperty("--top-opacity", String(Math.min(1, values.top * 8)));
+      root.style.setProperty("--brand-reveal", String(values.brandReveal));
       root.style.setProperty("--macro-opacity", String(curtain.opacity));
       root.style.setProperty("--macro-progress", String(values.macro));
       root.style.setProperty("--macro-offset", `${curtain.offsetY}px`);
@@ -394,6 +395,9 @@ export function RisingGlassHero() {
               </svg>
             </div>
             <Image data-overhead-photo className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
+            <div className={styles.brandArt} aria-hidden="true" data-brand-art>
+              <Image src="/hero/mma-farms-latte.webp" alt="" fill loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
+            </div>
           </div>
         </div>
 
