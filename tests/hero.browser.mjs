@@ -86,7 +86,7 @@ async function observeFilm(page) {
     window.filmObserver = requestAnimationFrame(sample);
   });
 }
-const stageNames = ['filled-front', 'coffee-treatment', 'glass-traverse', 'macro-push', 'macro-hold', 'overhead-pull', 'settled-overhead'];
+const stageNames = ['filled-front', 'coffee-treatment', 'glass-traverse', 'macro-push', 'macro-hold', 'overhead-pull', 'settled-overhead', 'milk-lettering-reveal'];
 async function verifyHybrid(page, name, width) {
   const tops = [];
   for (const progress of [.2, .65, .3]) {
@@ -153,6 +153,7 @@ async function verifyHybrid(page, name, width) {
   assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
   assert.equal(await page.evaluate(() => document.body.style.position), '');
   assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top');
+  assert.ok(await page.locator('[data-brand-art]').evaluate(e => Number(getComputedStyle(e).opacity)) > .99, 'branded coffee letters remain visible in final overhead');
   assert.equal(await page.locator('header').isVisible(), true);
   await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
   const end = await page.locator('#home').getAttribute('data-film-time');
