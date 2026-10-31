@@ -24,7 +24,8 @@ export const FILM_CUES = {
   macroFull: 1900,
   overheadStart: 1900 + MACRO_VIDEO_DURATION_MS,
   overheadFull: 2400 + MACRO_VIDEO_DURATION_MS,
-  end: 2700 + MACRO_VIDEO_DURATION_MS,
+  // Let the lettering emerge only after the original overhead coffee shot has settled.
+  end: 3400 + MACRO_VIDEO_DURATION_MS,
 } as const;
 export const FILM_DURATION_MS = FILM_CUES.end;
 export const FILM_STAGES = [
@@ -35,6 +36,7 @@ export const FILM_STAGES = [
   { at: FILM_CUES.macroFull, name: "macro-hold" },
   { at: FILM_CUES.overheadStart, name: "overhead-pull" },
   { at: FILM_CUES.overheadFull, name: "settled-overhead" },
+  { at: FILM_CUES.overheadFull + 80, name: "milk-lettering-reveal" },
 ] as const;
 export type HeroState = "FILLING" | "PLAYING_FORWARD" | "COMPLETED";
 export type HeroFilm = { state: HeroState; time: number };
@@ -75,7 +77,8 @@ export function filmFrame(time: number) {
     macroOpacity: easeBetween(easeBetween(t, cue.macroStart, cue.macroFull), .76, 1) * (1 - easeBetween(top, 0, .35)),
     // Retained timeline weight for the macro; the video supplies its motion.
     macroDrift: easeBetween(t, cue.macroFull, cue.overheadStart) * (1 - top),
-    overheadSettle: easeBetween(t, cue.overheadFull, cue.end),
+    overheadSettle: easeBetween(t, cue.overheadFull, cue.overheadFull + 300),
+    brandReveal: easeBetween(t, cue.overheadFull + 100, cue.end - 100),
     stage: [...FILM_STAGES].reverse().find(stage => t >= stage.at)!.name,
   };
 }
