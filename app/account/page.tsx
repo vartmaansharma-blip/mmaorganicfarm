@@ -17,6 +17,7 @@ import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 import {
   markNotificationsRead,
+  saveCustomerDeliveryDetails,
   signOut,
 } from "./actions";
 import styles from "./account.module.css";
@@ -299,11 +300,15 @@ export default async function AccountPage({
             </dl>
           ) : null}
 
-          <Link prefetch={false} className={styles.editDetails} href="/order">
-            {hasDeliveryDetails
-              ? "Update delivery details"
-              : "Add delivery details"}
-          </Link>
+          <form action={saveCustomerDeliveryDetails} className={styles.deliveryDetailsForm}>
+            <h3>Delivery details</h3>
+            <p className={styles.formHelp}>Use the address where you want your farm orders delivered.</p>
+            <label>Mobile number<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required minLength={10} defaultValue={profile?.phone ?? ""} placeholder="10-digit mobile number" /></label>
+            <label>Delivery address<textarea name="address" rows={3} autoComplete="street-address" required maxLength={300} defaultValue={profile?.address_line ?? ""} placeholder="House, street, area and landmark" /></label>
+            <label>PIN code <span>(optional)</span><input name="postal_code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="postal-code" defaultValue={profile?.postal_code ?? ""} placeholder="6-digit PIN" /></label>
+            <p className={styles.formHelp}>Updates to an already dispatched delivery require farm confirmation.</p>
+            <button type="submit">Save delivery details</button>
+          </form>
         </section>
 
         {profile?.address_line ? <DeliveryPin key={`${profile.address_line}:${profile.updated_at}`} address={profile.address_line} saved={pinResult.data} available={!pinResult.error} /> : null}
