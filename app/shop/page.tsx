@@ -1,3 +1,4 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -5,13 +6,7 @@ import Link from "next/link";
 import { SHOP_PRODUCTS } from "@/lib/shop-products";
 import { ShopHero } from "./shop-hero";
 import styles from "./shop.module.css";
-export const metadata: Metadata = {
-  title: "Farm Shop",
-  description:
-    "Discover M’ma milk, paneer and ghee. Choose a single delivery or build your delivery routine.",
-  alternates: { canonical: "/shop" },
-  robots: { index: true, follow: true },
-};
+export const metadata: Metadata = publicMetadata("/shop", "Farm Shop", "Discover M’ma milk, paneer and ghee. Choose a single delivery or build your delivery routine.");
 export default async function ShopPage() {
   const { prices } = await readProductCatalogue();
   return (

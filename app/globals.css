@@ -25,24 +25,24 @@
 /* Brand palette. HSL values are shared by the existing semantic aliases below. */
 :root, :root.dark, :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: 150 28% 7%;
-  --foreground: 44 100% 97%;
+  --background: 145.71 14.89% 9.22%;
+  --foreground: 41.54 56.52% 95.49%;
   --card: 148 25% 10%;
-  --card-foreground: 44 100% 97%;
+  --card-foreground: 41.54 56.52% 95.49%;
   --muted: 147 25% 14%;
   --muted-foreground: 94 10% 73%;
-  --border: 44 100% 97% / .10;
-  --input: 44 100% 97% / .14;
-  --primary: 45 100% 65%;
-  --primary-foreground: 48 14% 7%;
-  --secondary: 157 47% 15%;
-  --secondary-foreground: 44 100% 97%;
-  --accent: 146 50% 53%;
-  --accent-foreground: 48 14% 7%;
-  --ring: 45 100% 65%;
+  --border: 41.54 56.52% 95.49% / .10;
+  --input: 41.54 56.52% 95.49% / .14;
+  --primary: 44.12 89.47% 62.75%;
+  --primary-foreground: 145.71 14.89% 9.22%;
+  --secondary: 158 26.79% 21.96%;
+  --secondary-foreground: 41.54 56.52% 95.49%;
+  --accent: 111.43 23.33% 88.24%;
+  --accent-foreground: 145.71 14.89% 9.22%;
+  --ring: 44.12 89.47% 62.75%;
   --radius: 1rem;
-  --glass: 150 28% 7% / .55;
-  --glow: 45 100% 65% / .28;
+  --glass: 145.71 14.89% 9.22% / .55;
+  --glow: 44.12 89.47% 62.75% / .28;
   --color-accent: hsl(var(--accent));
   --color-accent-contrast: hsl(var(--accent-foreground));
   --color-warning: hsl(45 100% 74%);
@@ -57,24 +57,24 @@
 }
 :root.light, :root[data-theme="light"] {
   color-scheme: light;
-  --background: 44 100% 97%;
-  --foreground: 48 14% 7%;
+  --background: 41.54 56.52% 95.49%;
+  --foreground: 145.71 14.89% 9.22%;
   --card: 44 100% 99%;
-  --card-foreground: 48 14% 7%;
-  --muted: 104 50% 90%;
+  --card-foreground: 145.71 14.89% 9.22%;
+  --muted: 111.43 23.33% 88.24%;
   --muted-foreground: 48 8% 32%;
   --border: 43 36% 86%;
   --input: 43 36% 86%;
-  --primary: 45 100% 65%;
-  --primary-foreground: 48 14% 7%;
-  --secondary: 157 47% 15%;
-  --secondary-foreground: 44 100% 97%;
-  --accent: 145 54% 40%;
-  --accent-foreground: 44 100% 97%;
-  --ring: 157 47% 15%;
-  --glass: 44 100% 97% / .6;
-  --glow: 45 100% 65% / .55;
-  /* Forest protects small-text contrast; meadow remains available for large accents. */
+  --primary: 44.12 89.47% 62.75%;
+  --primary-foreground: 145.71 14.89% 9.22%;
+  --secondary: 158 26.79% 21.96%;
+  --secondary-foreground: 41.54 56.52% 95.49%;
+  --accent: 158 26.79% 21.96%;
+  --accent-foreground: 41.54 56.52% 95.49%;
+  --ring: 158 26.79% 21.96%;
+  --glass: 41.54 56.52% 95.49% / .6;
+  --glow: 44.12 89.47% 62.75% / .55;
+  /* Deep Pine protects small-text contrast on Milk Ivory. */
   --color-accent: hsl(var(--secondary));
   --color-accent-contrast: hsl(var(--secondary-foreground));
   --color-warning: hsl(42 88% 24%);
@@ -117,12 +117,12 @@
   --color-on-closing-action: hsl(var(--primary-foreground));
   --color-closing-action-hover: var(--color-action-primary-hover);
   --color-glass: hsl(var(--glass));
-  --color-scrim: hsl(150 28% 7% / .55);
-  --color-overlay: hsl(150 28% 7% / .82);
-  --color-on-overlay: hsl(44 100% 97%);
-  --color-overlay-border: hsl(44 100% 97% / .35);
-  --color-on-overlay-muted: hsl(44 100% 97% / .85);
-  --color-soft-shadow: hsl(157 47% 15% / .12);
+  --color-scrim: hsl(145.71 14.89% 9.22% / .55);
+  --color-overlay: hsl(145.71 14.89% 9.22% / .82);
+  --color-on-overlay: hsl(41.54 56.52% 95.49%);
+  --color-overlay-border: hsl(41.54 56.52% 95.49% / .35);
+  --color-on-overlay-muted: hsl(41.54 56.52% 95.49% / .85);
+  --color-soft-shadow: hsl(158 26.79% 21.96% / .12);
   --color-milk-highlight: hsl(44 100% 98%);
   --color-milk-shade: hsl(44 47% 87%);
   --color-milk-edge: hsl(44 36% 79% / .65);
@@ -548,8 +548,10 @@ h1 {
   gap: 24px;
   padding: 0 20px;
   border: 1px solid var(--ink);
-  border-radius: 4px;
-  font-weight: 800;
+  border-radius: var(--ui-radius-control);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 

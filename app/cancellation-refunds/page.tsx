@@ -1,11 +1,8 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 
-export const metadata: Metadata = {
-  title: "Cancellation and Refund Policy",
-  description:
-    "Cancellation, carry-forward, and refund rules for M'ma Organic Farm orders.",
-};
+export const metadata: Metadata = publicMetadata("/cancellation-refunds", "Cancellation and Refund Policy", "Cancellation, carry-forward, and refund rules for M'ma Organic Farm orders.");
 
 export default function CancellationRefundsPage() {
   return (

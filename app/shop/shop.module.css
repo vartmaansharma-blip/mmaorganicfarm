@@ -494,9 +494,9 @@
   background: var(--color-action-primary);
   color: var(--color-action-primary-text);
   border: 0;
-  border-radius: 30px;
+  border-radius: var(--ui-radius-control);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   text-align: left;
   transition: transform 150ms;
 }

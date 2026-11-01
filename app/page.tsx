@@ -35,8 +35,8 @@ const features = [
   },
   {
     number: "02",
-    title: "Change a delivery",
-    copy: "Skip a day when needed; that paid delivery moves to the end of your plan.",
+    title: "Review your schedule",
+    copy: "Choose your dates within one prepaid calendar month and review them before payment.",
   },
   {
     number: "03",
@@ -285,11 +285,11 @@ export default async function Home() {
         <section className="closing-section">
           <p className="eyebrow">Ready for a better milk routine?</p>
           <h2>
-            Build your 30-delivery
+            Build your monthly
             <br />
             {" "}milk plan today.
           </h2>
-          <p>Choose your days, adjust the litres, and skip a delivery when life changes.</p>
+          <p>Choose your dates and quantities, then review your schedule before payment.</p>
           <div className="closing-actions">
             <a className="button button-dark" href={orderPath} data-conversion="plan_cta_click" data-location="landing">
               Start my milk plan <span>↗</span>
