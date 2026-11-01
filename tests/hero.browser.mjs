@@ -439,7 +439,7 @@ try {
           await toggle.click();
           const dialog = page.getByRole("dialog");
           assert.equal(await dialog.isVisible(), true);
-          await dialog.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+          await dialog.evaluate(element => Promise.allSettled(element.getAnimations().map(animation => animation.finished)));
           const glass = await dialog.evaluate(element => { const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const ctx=canvas.getContext('2d');ctx.fillStyle=getComputedStyle(element).backgroundColor;ctx.fillRect(0,0,1,1);return { alpha:ctx.getImageData(0,0,1,1).data[3]/255, backdrop:getComputedStyle(element,'::backdrop').backdropFilter || getComputedStyle(element,'::backdrop').webkitBackdropFilter }; });
           assert.ok(glass.alpha > 0 && glass.alpha < 1, 'glass menu retains a translucent tinted surface');
           assert.match(glass.backdrop, /blur/, 'modal backdrop softens the page behind navigation');
