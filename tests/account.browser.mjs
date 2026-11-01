@@ -64,6 +64,9 @@ try{
     for(const theme of ['dark','light']){
      scenario='out';fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
      if(await page.locator('html').getAttribute('data-theme')!==theme)await page.getByRole('button',{name:/Switch to .* mode/}).click();
+     await page.waitForFunction(()=>!document.getAnimations().some(a=>a instanceof CSSTransition && ['color','background-color','border-color'].includes(a.transitionProperty) && a.playState==='running'));
+     const navigationColour=await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).evaluate(e=>{const probe=document.createElement('i');probe.style.color='var(--color-nav-active)';document.body.append(probe);const expected=getComputedStyle(probe).color;probe.remove();return {actual:getComputedStyle(e).color,expected};});
+     assert.equal(navigationColour.actual,navigationColour.expected,'account navigation follows the shared brand palette');
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${engine} ${width} ${theme} Today overflow`);
      assert.equal(await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).getAttribute('aria-current'),'page');
      await page.locator('[data-scene-state]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-scene-state]').dataset.motion==='running');
