@@ -443,15 +443,15 @@ export default async function AccountPage({
         {section === "schedule" ? <>
           {plansError ? <p className={styles.noticeError}>We couldn’t load your schedule. Please refresh to try again.</p> : null}
           {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=schedule&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly" : "Weekly"} plan {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
-          {deliveryPlan ? <section className={styles.scheduleSurface}>
-          <div className={styles.upcomingHeading}><div><h2>Next deliveries</h2><p>Choose a date to review or change it.</p></div><Link href={`/calendar?plan=${deliveryPlan.id}`}>Open calendar →</Link></div>
+          {deliveryPlan ? <section className={styles.scheduleSurface} aria-label="Upcoming delivery schedule">
+          
             <section
               className={styles.upcomingSchedule}
               aria-labelledby="upcoming-deliveries-heading"
             >
               <div className={styles.upcomingHeading}>
                 <div>
-                  <h3 id="upcoming-deliveries-heading">Next 7 days</h3>
+                  <h2 id="upcoming-deliveries-heading">Next 7 days</h2>
                   <p>Tap a date to see its delivery details.</p>
                 </div>
                 <Link href={`/calendar?plan=${deliveryPlan.id}`}>
@@ -500,7 +500,7 @@ export default async function AccountPage({
 
 
           <div className={styles.scheduleActions}><Link href={`/calendar?plan=${deliveryPlan.id}`}>Skip or change a date →</Link><Link href={`/calendar?plan=${deliveryPlan.id}`}>Pause multiple days →</Link></div>
-          <p className={styles.scheduleNote}>Changes are available from tomorrow onward. Today's dispatched deliveries cannot be cancelled through this calendar.</p>
+          <p className={styles.scheduleNote}>Changes begin tomorrow. For help with today’s delivery, contact the farm.</p>
           </section> : !plansError ? <div className={styles.emptyPanel}><h2>No delivery schedule yet.</h2><p>Your confirmed plan's dates will appear here.</p><Link className={styles.startOrder} href="/milk">Explore milk plans</Link></div> : null}
           <CustomerDeliveryHistory userId={user.id} />
         </> : null}
