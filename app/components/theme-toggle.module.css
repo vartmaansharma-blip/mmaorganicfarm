@@ -1,7 +1,7 @@
 .toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border: 1px solid var(--hero-line); border-radius: 50%; background: transparent; color: var(--hero-ink); cursor: pointer; }
 .toggle:hover { background: var(--hero-hover); }
-.toggle:focus-visible { outline: 2px solid var(--hero-ink); outline-offset: 3px; }
-.toggle { transition: background-color 160ms ease, transform 160ms ease; }
+.toggle:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
+.toggle { transition: background-color 200ms ease, transform 160ms ease; }
 .toggle:active { transform: scale(.94); }
 .toggle svg { transition: transform 180ms ease; }
 @media (hover: hover) and (pointer: fine) { .toggle:hover svg { transform: rotate(12deg); } }

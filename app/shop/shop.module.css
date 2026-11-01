@@ -64,7 +64,7 @@
 }
 .mode input:checked {
   background: var(--color-action-primary);
-  border-color: var(--color-action-primary);
+  border-color: var(--color-text-highlight);
 }
 .mode input:checked:before {
   background: var(--color-action-primary-text);
@@ -118,7 +118,7 @@
   margin: 0 0 22px;
 }
 .intro h1 span {
-  color: var(--color-action-primary);
+  color: var(--color-text-highlight);
 }
 .intro > p:last-child {
   color: var(--color-text-secondary);
@@ -137,7 +137,7 @@
   justify-self: end;
   border-radius: 180px 180px 14px 14px;
   overflow: hidden;
-  background: #e6cfab;
+  background: var(--color-surface-hover);
   isolation: isolate;
   animation: shopPhotoArrival 1000ms cubic-bezier(.22, 1, .36, 1) both;
 }
@@ -838,3 +838,6 @@
   font-size: 13px;
   margin: 18px 0;
 }
+
+.heroPhoto::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: var(--color-photo-tint); }
+.slide img { filter: saturate(1.03) sepia(.025); }

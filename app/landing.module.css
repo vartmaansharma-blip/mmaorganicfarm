@@ -13,15 +13,15 @@
 .content :global(.button-dark:hover) { background: var(--color-closing-action-hover); }
 .content :global(.feature-list div) { border-color: var(--hero-line); }
 .content :global(.eyebrow), .content :global(.story-metrics strong) { color: var(--hero-accent); }
-.content :global(.closing-section), .content :global(.ticker), .content :global(.site-footer) { color: var(--color-on-botanical); background: var(--color-section-botanical); }
+.content :global(.closing-section), .content :global(.site-footer) { color: var(--color-on-botanical); background: var(--color-section-botanical); }
 .content :global(.closing-section .eyebrow) { color: var(--color-on-botanical-muted); }
 .content :global(.closing-section .button-light) { color: var(--color-on-botanical); border-color: var(--color-on-botanical-muted); background: transparent; }
-.content :global(.closing-section .button-light:hover) { background: rgb(255 255 255 / .1); }
+.content :global(.closing-section .button-light:hover) { background: hsl(var(--secondary-foreground) / .1); }
 .content :global(.site-footer a) { color: var(--color-on-botanical); }
 .content :global(.footer-identity p), .content :global(.footer-copyright) { color: var(--color-on-botanical-muted); }
 .content :global(.site-footer a:focus-visible), .content :global(.closing-section a:focus-visible) { outline: 2px solid var(--color-on-botanical); outline-offset: 4px; }
 .content :global(.button) { border-radius: var(--ui-radius-control); transition: transform 140ms ease; }
-.content :global(.button:hover) { transform: translateY(-1px); box-shadow: none; transition: transform 140ms ease, background-color 160ms ease; }
+.content :global(.button:hover) { transform: translateY(-2px); box-shadow: none; transition: transform 140ms ease, background-color 200ms ease; }
 .content :global(.button:active) { transform: scale(.98); }
 .content :global(.button:focus-visible) { outline: 2px solid var(--ui-focus); outline-offset: 4px; }
 
@@ -31,7 +31,7 @@
 @media (prefers-reduced-motion: reduce) { .content :global(.ticker div) { animation: none; } .content :global(.button) { transition: none; transform: none; } }
 
 /* Keep the existing dark price badge readable in both themes. */
-.content :global(.price-tag) { color: #fff; }
+.content :global(.price-tag) { color: var(--color-on-overlay); background: var(--color-overlay); border-color: var(--color-overlay-border); }
 
 /* Sage surfaces connect the farm story with the hero and scheduling controls. */
 .content :global(.about-section) { background: var(--hero-surface); }
@@ -67,3 +67,11 @@
     }
   }
 }
+
+/* Butter belongs to the moving banner and primary actions, not every panel. */
+.content :global(.ticker) { color: hsl(var(--primary-foreground)); background: hsl(var(--primary)); border-block: 1px solid hsl(var(--primary-foreground)); }
+.content :global(.official-grid article), .content :global(.glass-story) { border: 1px solid var(--hero-line); border-radius: var(--radius); box-shadow: var(--color-card-shadow); }
+.content :global(.milk-visual), .content :global(.farm-card) { border-radius: var(--radius); overflow: hidden; isolation: isolate; }
+.content :global(.milk-visual)::after, .content :global(.farm-card)::after { content: ""; position: absolute; inset: 0; background: var(--color-photo-tint); pointer-events: none; }
+.content :global(.farm-card figcaption), .content :global(.price-tag) { z-index: 1; }
+.content :global(.farm-card img), .content :global(.milk-visual img) { filter: saturate(1.03) sepia(.025); }

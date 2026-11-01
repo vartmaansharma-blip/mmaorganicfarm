@@ -351,7 +351,7 @@ async function verifyConnectedPages(browser, name) {
           editorialContract: bodyStyle.getPropertyValue('--font-fraunces').trim().split(',')[0].trim(),
           interfaceContract: bodyStyle.getPropertyValue('--font-space-grotesk').trim().split(',')[0].trim(),
           headingColor: getComputedStyle(heading).color, headingBackground: background,
-          tokens: Object.fromEntries(keys.map(k => [k, style.getPropertyValue('--ui-' + k).trim()])) };
+          tokens: Object.fromEntries(keys.map(k => { const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const ctx=canvas.getContext('2d');ctx.fillStyle=style.getPropertyValue('--ui-'+k).trim();ctx.fillRect(0,0,1,1);const rgb=[...ctx.getImageData(0,0,1,1).data].slice(0,3);return [k,`rgb(${rgb.join(',')})`]; })) };
       });
       assert.equal(state.overflow, false, `${route} ${theme} mobile overflow`);
       const face = value => value.split(',')[0].replace(/["']/g, '').trim();

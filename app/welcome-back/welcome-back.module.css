@@ -1,7 +1,7 @@
 .page {
   min-height: 100svh;
-  background: #fffdf5;
-  color: #143d2b;
+  background: var(--color-background);
+  color: var(--color-text-primary);
   padding: 0 5vw 64px;
 }
 .header {
@@ -41,7 +41,7 @@
   display: inline-block;
   padding: 8px 13px;
   border-radius: 99px;
-  background: #e4f4d8;
+  background: var(--color-surface-hover);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -59,7 +59,7 @@
   font-size: 16px;
   line-height: 1.65;
   max-width: 47ch;
-  color: #496454;
+  color: var(--color-text-secondary);
 }
 .invitation {
   display: flex;
@@ -67,7 +67,7 @@
   align-items: center;
   margin: 28px 0;
   padding: 20px 0;
-  border-block: 1px solid #dce5d8;
+  border-block: 1px solid var(--color-border);
 }
 .invitation > span {
   display: grid;
@@ -75,8 +75,8 @@
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  background: #ffc857;
-  color: #143d2b;
+  background: var(--color-action-primary);
+  color: var(--color-text-primary);
   font-size: 22px;
   flex-shrink: 0;
 }
@@ -86,7 +86,7 @@
 }
 .invitation p {
   margin: 0;
-  color: #496454;
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -98,15 +98,15 @@
   align-items: center;
   gap: 24px;
   padding: 14px 24px;
-  background: #087f5b;
-  color: white;
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
   font-size: 15px;
   font-weight: 650;
   max-width: 440px;
   margin-top: 22px;
 }
 .primary:hover {
-  background: #066646;
+  background: var(--color-action-primary-hover);
 }
 .copy .hint {
   font-size: 12px;
@@ -115,20 +115,20 @@
 .copy .terms {
   font-size: 11px;
   line-height: 1.7;
-  color: #637565;
+  color: var(--color-text-secondary);
   margin: 26px 0 0;
   max-width: 60ch;
 }
 .notice {
   padding: 15px 18px;
-  background: #e7f4eb;
+  background: var(--color-surface);
   border-radius: 16px;
   font-size: 14px !important;
 }
 .picture {
   border-radius: 32px;
   overflow: hidden;
-  box-shadow: 0 22px 70px #30481b12;
+  box-shadow: 0 22px 70px var(--color-soft-shadow);
 }
 .picture img {
   display: block;
@@ -136,7 +136,7 @@
   height: auto;
 }
 .page :is(a, button, input):focus-visible {
-  outline: 3px solid #e19c16;
+  outline: 3px solid var(--color-focus-ring);
   outline-offset: 4px;
 }
 @media (max-width: 760px) {
