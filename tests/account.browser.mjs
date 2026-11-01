@@ -73,7 +73,7 @@ try{
       await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).click();await page.waitForLoadState('networkidle');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${section} ${width} overflow`);
       assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
-      if(section==='Account'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'Update delivery details'}).getAttribute('href'),'/order');}
+      if(section==='Account'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Save delivery details'}).count(),1);assert.equal(await page.getByRole('textbox',{name:'Delivery address'}).count(),1);}
       if(section==='Orders') {
        const tabs=page.getByRole('navigation',{name:'Order status'});
        assert.equal(await tabs.getByRole('link',{name:'Paid orders'}).getAttribute('aria-current'),'page');
