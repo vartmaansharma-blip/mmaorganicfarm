@@ -1,4 +1,4 @@
-# GPS routing — web increment, review pending
+# GPS routing — web increment and live installation
 
 Based on main `8316f2a81757cf9c2ce19e01c21516ac8e186c89`. This implementation is a foreground web workflow. It does not implement an Android background service, locked-screen tracking, offline delivery replay, a field-tested ETA or a measured efficiency gain.
 
@@ -39,13 +39,15 @@ The manager read model refreshes every 20 seconds only while the GPS page is vis
 
 Proposals bind to the immutable run manifest, run/config versions and pending visit set. Approval/acceptance reject stale proposals. Automatic adoption records the authorising manager/config version and checks that this manager is still active. The existing operational-day lock serialises outcomes, custody and GPS changes. Commands use request keys for replay protection; mismatched actor/action/payload reuse is denied. Location upload bypasses the permanent event log so individual fixes are not copied into audit history; the planning reservation also excludes its transient position snapshot.
 
-Only one latest fix per run is stored. Proposal origins are retained for starting-point validation. The service-only `purge_old_gps_positions()` command deletes fixes older than one day and removes proposal origins older than one day. **A deployment must schedule and verify this cleanup before activation.** No scheduler or hosted configuration was changed here. Audit events retain policy and decision metadata, not the stream of driver positions. Device-supplied GPS can be inaccurate or spoofed and is not independently verified evidence of distance or delivery.
+Only one latest fix per run is stored. Proposal origins are retained for starting-point validation. The service-only `purge_old_gps_positions()` command deletes fixes older than one day and removes proposal origins older than one day. The live `gps-location-cleanup` database job is active at minute 17 of each hour. Installation verified the schedule and service-role invocation; the first scheduled execution has not yet been observed. Audit events retain policy and decision metadata, not the stream of driver positions. Device-supplied GPS can be inaccurate or spoofed and is not independently verified evidence of distance or delivery.
 
-## Local SQL / release boundary
+## Live installation — 1 November 2026
 
-`supabase/pending/gps_route_execution.sql` was created from CLI template `20261101134235_gps_route_execution.sql`, then moved outside deployable migration history under the owner's explicit approval for local schema/tests only. It depends on the merged routing and driver-run foundations. There are no new files under `supabase/migrations/` and no hosted SQL was executed.
+The owner subsequently requested installation on the live system, extending the earlier local-only approval. PR #37 was merged as `82e106b1b94c7010e86e74b18cb8e1aba14c68f1`; its production deployment is READY. The reviewed pending SQL was promoted to `supabase/migrations/20261101143540_gps_route_execution.sql` and applied to the MmaFarms project. `20261101143557_gps_location_cleanup.sql` enables the native database scheduler and registers the hourly cleanup. Local filenames were aligned with the versions recorded by the hosted migration tool after CLI template creation.
 
-Before production: review the pending SQL/grants, schedule cleanup, run hosted acceptance with permissioned accounts, configure restricted provider access, verify actual farm coordinates and vehicle mode, then pilot with real Android devices. Keep the feature off until those checks pass. Existing paid entitlements, prices, payments, stock accounting and commercial delivery records are unchanged by GPS commands.
+Verification confirmed all five GPS tables have RLS and no direct anonymous/authenticated access, the active-admin workspace RPC returns the expected empty workspace, authenticated callers cannot store provider results, and the service role can invoke cleanup. Before/after commercial counts remained 87 orders, zero runs and zero delivery outcomes. No real run, destination, driver position or delivery outcome was created by installation. Security advisors introduced only the expected informational notices for private tables with no direct-access policies; existing warnings were unchanged.
+
+Google Routes credentials are not present in production, so automatic road calls remain disabled pending provider setup. The manager must configure actual farm/return coordinates and create/release an assigned run before a driver can use the workflow. Do not invent farm coordinates. Restricted provider access, real Android testing and a permissioned farm pilot remain outstanding. Existing prices, payments, stock accounting and commercial delivery records were unchanged.
 
 ## Verification
 
@@ -56,7 +58,7 @@ Verified locally on 1 November 2026:
 - All 32 GPS, driver-run and routing database checks passed. The eight GPS checks were rerun after the final policy-reuse correction and passed, including disabling reuse without reviving an older policy.
 - All eight GPS browser journeys passed: Chromium and WebKit, 390px and 1440px, light and dark themes. These cover both start modes, automatic adoption, optional review, GPS denial/stop, the delivery record following the accepted sequence, and no overflow at 320px.
 - The existing Chromium 390px driver journey passed through load acknowledgement, release, delivery and balanced closeout; its unavailable-schema fallback also passed.
-- Latest remote main was rechecked and remained at the base SHA above. No hosted database or provider configuration was changed.
+- Initial implementation checks used the base SHA above. The later explicitly requested live installation is documented separately; the Google provider remains unconfigured.
 
 Commands:
 
@@ -69,7 +71,7 @@ node --test --test-concurrency=1 tests/database/gps-routing.integration.mjs test
 node tests/gps-routing.browser.mjs
 ```
 
-The database and browser suites execute the pending SQL only in disposable PostgreSQL. Browser provider responses come from an explicit test-process preload; production code has no fixture-provider mode. The tests use fictional households and synthetic coordinates; they do not charge a provider, create hosted accounts or write production deliveries. Evidence is generated in `work/gps-routing/`. The proposed CI and evidence-upload template is in `docs/verification/gps-routing-checks.yml`; it is inactive because GitHub rejected adding a workflow with the connected account's current permissions. A workflow-authorized account can review and move it into `.github/workflows/`. These checks do not replace a real-device/farm pilot.
+The database and browser suites execute the GPS schema migration in disposable PostgreSQL. The hourly scheduler migration is verified on hosted Postgres, where pg_cron is available. Browser provider responses come from an explicit test-process preload; production code has no fixture-provider mode. The tests use fictional households and synthetic coordinates; they do not charge a provider, create hosted accounts or write production deliveries. Evidence is generated in `work/gps-routing/`. The proposed CI and evidence-upload template is in `docs/verification/gps-routing-checks.yml`; it is inactive because GitHub rejected adding a workflow with the connected account's current permissions. A workflow-authorized account can review and move it into `.github/workflows/`. These checks do not replace a real-device/farm pilot.
 
 Official references checked during implementation:
 

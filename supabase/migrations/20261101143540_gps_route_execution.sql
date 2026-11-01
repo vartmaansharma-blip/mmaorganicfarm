@@ -1,5 +1,4 @@
--- Generated with `supabase migration new gps_route_execution`, then kept pending.
--- LOCAL REVIEW ONLY: do not move to migrations/ or apply to a hosted database without approval.
+-- GPS schema authorized for live installation on 1 November 2026.
 -- Requires routing and driver-run foundations. Does not modify commercial obligations.
 create table private.gps_run_config (
  run_id uuid primary key references public.delivery_runs(id), version integer not null default 1,
