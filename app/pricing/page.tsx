@@ -1,13 +1,10 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 import { FARM_PRODUCTS } from "@/lib/farm-products";
 
-export const metadata: Metadata = {
-  title: "Product Pricing",
-  description:
-    "Current M'ma Organic Farm product prices for Jamshedpur customers.",
-};
+export const metadata: Metadata = publicMetadata("/pricing", "Product Pricing", "Current M'ma Organic Farm product prices for Jamshedpur customers.");
 
 export default async function PricingPage() {
   const { prices } = await readProductCatalogue();
