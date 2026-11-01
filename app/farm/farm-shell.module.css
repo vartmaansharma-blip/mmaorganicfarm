@@ -196,3 +196,16 @@
   .menuBackdrop,.menuClose,.saveNotice { display:none!important; }
   .shell * { animation:none!important; transition:none!important; }
 }
+
+/* The GPS workspace carries the approved customer palette into its complete shell. */
+.shell:has([data-gps-workspace]) { --farm-ink:#141b17; --farm-muted:#59675e; --farm-line:#d9dfd3; --farm-soft:#edf1e7; --farm-surface:#fffdf8; --farm-green:#29473c; --farm-mango:#f5c84b; background:#faf6ed; }
+:global(html[data-theme="dark"]) .shell:has([data-gps-workspace]) { --farm-ink:#faf6ed; --farm-muted:#b5c2b5; --farm-line:#3e5143; --farm-soft:#26372c; --farm-surface:#1d2821; --farm-green:#dce8da; background:#141b17; color-scheme:dark; }
+.shell:has([data-gps-workspace]) :is(.topbar,.sidebar) { background:var(--farm-surface); }
+.shell:has([data-gps-workspace]) .topbar::before { background:linear-gradient(90deg,#29473c 0 55%,#f5c84b 55% 78%,#dce8da 78% 100%); }
+.shell:has([data-gps-workspace]) :is(.navCaption,.navGroup h2,.navGroup a,.brandCaption small,.workspaceLabel,.staff) { color:var(--farm-muted); }
+.shell:has([data-gps-workspace]) .brandCaption strong { color:var(--farm-ink); }
+.shell:has([data-gps-workspace]) .navGroup a:hover { background:var(--farm-soft); color:var(--farm-ink); }
+.shell:has([data-gps-workspace]) .navGroup a[aria-current="page"] { background:#29473c; color:#faf6ed; box-shadow:none; }
+.shell:has([data-gps-workspace]) .navGroup a[aria-current="page"] .navIcon { color:#f5c84b; }
+.shell:has([data-gps-workspace]) :is(.navIcon,.collapseButton,.mobileToggle,.menuClose) { color:var(--farm-ink); }
+.shell:has([data-gps-workspace]) :is(a,button,input,select):focus-visible { outline-color:#f5c84b; }
