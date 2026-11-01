@@ -104,7 +104,7 @@
   --color-action-secondary-text: hsl(var(--foreground));
   --color-focus-ring: hsl(var(--ring));
   --color-input-background: hsl(var(--card));
-  --color-input-border: color-mix(in srgb, hsl(var(--foreground)) 48%, hsl(var(--card)));
+  --color-input-border: color-mix(in srgb, hsl(var(--foreground)) 65%, hsl(var(--card)));
   --color-success: var(--color-accent);
   --color-success-surface: color-mix(in srgb, hsl(var(--accent)) 14%, hsl(var(--card)));
   /* Errors retain their labels and icons, with the brand's amber feedback palette. */
