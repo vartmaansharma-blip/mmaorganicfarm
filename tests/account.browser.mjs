@@ -74,7 +74,12 @@ try{
     const context=await browser.newContext({viewport:{width,height:900}});await context.addCookies([sessionCookie]);const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
     for(const theme of ['dark','light']){
      scenario='out';fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
-     if(await page.locator('html').getAttribute('data-theme')!==theme)await page.getByRole('button',{name:/Switch to .* mode/}).click();
+     if(await page.locator('html').getAttribute('data-theme')!==theme){
+      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Account',exact:true}).click();
+      await page.getByRole('button',{name:/Switch to .* mode/}).click();
+      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).click();
+      await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
+     }
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${engine} ${width} ${theme} Today overflow`);
      assert.equal(await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).getAttribute('aria-current'),'page');
      await page.locator('[data-scene-state]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-scene-state]').dataset.motion==='running');
