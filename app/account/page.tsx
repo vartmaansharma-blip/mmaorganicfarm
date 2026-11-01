@@ -425,6 +425,7 @@ export default async function AccountPage({
           {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=schedule&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly" : "Weekly"} plan {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
           {deliveryPlan?.status === "pending_confirmation" ? <div className={styles.emptyPanel}><h2>Plan awaiting confirmation.</h2><p>We’ll show your confirmed delivery dates here once payment and the plan are verified.</p><Link className={styles.startOrder} href="/account?section=orders&order_view=pending">Check payments</Link></div> : deliveryPlan ? <section className={styles.scheduleSurface} aria-label="Upcoming delivery schedule">
           
+            <div className={styles.scheduleActions}><Link href={`/calendar?plan=${deliveryPlan.id}#date-heading`}>Change a delivery date →</Link><Link href={`/calendar?plan=${deliveryPlan.id}#pause-heading`}>Pause multiple days →</Link></div>
             <section
               className={styles.upcomingSchedule}
               aria-labelledby="upcoming-deliveries-heading"
@@ -461,16 +462,14 @@ export default async function AccountPage({
                             ? "Milk skipped"
                             : milk
                               ? `${milk.quantity} L milk`
-                              : "No milk"}
+                              : addOns.length ? "Add-ons only" : "No delivery"}
                       </strong>
                       <small>
                         {addOns.length
                           ? addOns
                               .map((item) => productName(item.productKey))
                               .join(" · ")
-                          : day.paused
-                            ? "No delivery"
-                            : "Open date"}
+                          : day.paused ? "No delivery" : milkSkipped ? "Skipped" : milk ? "Scheduled" : "Rest day"}
                       </small>
                     </Link>
                   );
@@ -479,7 +478,7 @@ export default async function AccountPage({
             </section>
 
 
-          <div className={styles.scheduleActions}><Link href={`/calendar?plan=${deliveryPlan.id}`}>Skip or change a date →</Link><Link href={`/calendar?plan=${deliveryPlan.id}`}>Pause multiple days →</Link></div>
+          
           <p className={styles.scheduleNote}>Changes begin tomorrow. For help with today’s delivery, contact the farm.</p>
           </section> : !plansError ? <div className={styles.emptyPanel}><h2>No delivery schedule yet.</h2><p>Confirmed delivery dates will appear here.</p><Link className={styles.startOrder} href="/milk">Explore milk plans</Link></div> : null}
           <CustomerDeliveryHistory userId={user.id} />
