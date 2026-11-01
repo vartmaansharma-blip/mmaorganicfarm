@@ -52,7 +52,7 @@ const stub=createServer(async(req,res)=>{
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
 });
-await new Promise(resolve=>stub.listen(0,'127.0.0.1',resolve));
+await new Promise(resolve=>stub.listen(Number(process.env.ACCOUNT_FIXTURE_PORT || 0),'127.0.0.1',resolve));
 const stubPort=stub.address().port;
 const appPort=Number(process.env.ACCOUNT_TEST_PORT || 3226);
 const base=`http://127.0.0.1:${appPort}`;
