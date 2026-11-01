@@ -9,6 +9,7 @@ const groups = [
     items: [
       ["Overview", "/farm"],
       ["Routes", "/farm/routes"],
+      ["GPS routes", "/farm/gps"],
       ["Delivery runs", "/farm/runs"],
       ["Deliveries", "/farm/delivery-sheet"],
       ["Inbox", "/farm/exceptions"],
@@ -48,6 +49,7 @@ const groups = [
 const iconPaths: Record<string, string> = {
   "/farm": "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   "/farm/runs": "M3 5h11v12H3z M14 9h4l3 4v4h-7 M6 17v2 M18 17v2 M6 9h5",
+  "/farm/gps": "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 7a5 5 0 1 0 0 10a5 5 0 0 0 0-10",
   "/farm/routes":
     "M6 5a2 2 0 1 0 0 .1M6 7v7a4 4 0 0 0 4 4h6 M18 16a2 2 0 1 0 0 4a2 2 0 0 0 0-4 M9 5h7a3 3 0 0 1 0 6h-4",
   "/farm/delivery-sheet":
@@ -70,6 +72,7 @@ const dated = new Set([
   "/farm",
   "/farm/routes",
   "/farm/runs",
+  "/farm/gps",
   "/farm/delivery-sheet",
   "/farm/exceptions",
   "/farm/reconciliation",
@@ -103,6 +106,7 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
             items: [
               ["My run", "/farm/runs"],
               ["My route", "/farm/delivery-sheet"],
+              ["GPS route", "/farm/gps"],
             ],
           },
         ]

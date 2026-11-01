@@ -1,0 +1,42 @@
+# Reviewable CI template. Move to .github/workflows/ using a workflow-authorized account.
+# It is intentionally inactive here: the connected GitHub account lacks workflow scope.
+name: GPS routing verification
+on:
+  pull_request:
+    paths:
+      - 'app/farm/**'
+      - 'lib/gps-*.ts'
+      - 'supabase/pending/gps_route_execution.sql'
+      - 'tests/**'
+      - '.github/workflows/gps-routing-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gps-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+      - run: node --experimental-strip-types --test tests/*.test.mjs
+      - name: GPS, assignment and run custody database checks
+        run: node --test --test-concurrency=1 tests/database/gps-routing.integration.mjs tests/database/driver-runs.integration.mjs tests/database/routing-foundation.integration.mjs
+      - name: Synthetic GPS and routing browser journeys
+        run: node tests/gps-routing.browser.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: gps-routing-browser-evidence
+          path: work/gps-routing/
+          retention-days: 7

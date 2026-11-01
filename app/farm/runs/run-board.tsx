@@ -286,6 +286,7 @@ function RunCard({
         <span className={styles.status}>{runStatus[run.status]}</span>
       </header>
       <Progress status={run.status} />
+      <Link prefetch={false} className={styles.textLink} href={`/farm/gps?date=${date}`}>GPS planning and position ↗</Link>
       <div key={run.status} ref={body} className={styles.runBody}>
         <div className={styles.brief}>
           <h3 tabIndex={-1}>
@@ -478,7 +479,7 @@ function RunCard({
               />
             </label>
             <p className={styles.helper}>
-              Start when you leave the farm. The journey clock begins when you
+              Start after collecting and checking your assigned load. The journey clock begins when you
               save.
             </p>
           </Operation>
