@@ -1,6 +1,5 @@
 import { DeliveryPin } from "./delivery-pin";
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
-import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import { AccountNavigation, accountSections, type AccountSection } from "./account-navigation";
 import { AccountDate, TodayDelivery } from "./today-delivery";
 import { ThemeToggle } from "@/app/components/theme-toggle";
@@ -213,7 +212,6 @@ export default async function AccountPage({
           <Link className={styles.back} href="/milk">
             Back to shop
           </Link>
-          <PageNavigationControls />
         </div>
       </header>
 
@@ -534,7 +532,7 @@ export default async function AccountPage({
                   </span>
                   <span>
                     <b>{formatCheckoutAmount(order.status === "paid" ? (order.paid_total_paise ?? order.total_paise) : order.total_paise)}</b>
-                    <small>{order.status === "paid" ? "Paid" : order.status === "pending_payment" ? "Payment started" : order.status === "payment_failed" ? "Payment failed" : "Cancelled"}</small>
+                    <small className={styles.orderStatus} data-status={order.status}>{order.status === "paid" ? "✓ Paid" : order.status === "pending_payment" ? "Payment started" : order.status === "payment_failed" ? "Payment failed" : "Cancelled"}</small>
                   </span>
                 </summary>
                 <div className={styles.orderDetail}>
@@ -619,14 +617,6 @@ export default async function AccountPage({
         ) : null}
 
         </> : null}
-        <div className={styles.accountFooter}>
-          <span>Signed in as {email}</span>
-          {section !== "settings" ? <form action={signOut}>
-            <button className={styles.signOut} type="submit">
-              Sign out
-            </button>
-          </form> : null}
-        </div>
       </section>
       </div>
     </main>
