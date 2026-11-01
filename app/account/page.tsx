@@ -112,12 +112,10 @@ export default async function AccountPage({
   const googleConnected = user.identities?.some(
     (identity) => identity.provider === "google",
   );
-  const hasPhone = Boolean(profile?.phone?.trim());
   const hasAddress = Boolean(profile?.address_line?.trim());
   const pinResult = section === "settings" && profile?.address_line
     ? await supabase.from("customer_delivery_pins").select("latitude,longitude,accuracy_metres").eq("user_id",user.id).maybeSingle()
     : { data: null, error: null };
-  const hasDeliveryDetails = hasPhone || hasAddress;
   const deliveryPlan = selectedPlan ?? null;
   const totalPlanBalance = (deliveryPlans ?? []).reduce(
     (total, plan) =>
@@ -232,7 +230,7 @@ export default async function AccountPage({
             <h1>{section === "today" ? "Your day, made fresh." : section === "schedule" ? "Delivery schedule" : section === "plans" ? "My plans" : section === "orders" ? "Your orders" : "Your account"}</h1>
             <p className={styles.intro}>{section === "today" ? "Today's delivery, at a glance." : section === "schedule" ? "See what's coming. Change eligible future deliveries." : section === "plans" ? "Your subscriptions and everyday routine." : section === "orders" ? "Paid purchases first. Unfinished checkouts stay separate." : "Your details and delivery preferences."}</p>
           </div>
-          {section === "today" ? <AccountDate initialDate={todayInIndia()} /> : <Link className={styles.startOrder} href="/milk">Start an order</Link>}
+          {section === "today" ? <AccountDate initialDate={todayInIndia()} /> : null}
         </div>
         {section === "today" ? <>
           <Link className={styles.todayAddress} href="/account?section=settings">
@@ -276,27 +274,6 @@ export default async function AccountPage({
               {googleConnected ? "Google connected" : "Email account"}
             </span>
           </div>
-
-          {hasDeliveryDetails ? (
-            <dl className={styles.details}>
-              {hasPhone ? (
-                <div>
-                  <dt>Phone</dt>
-                  <dd>{profile?.phone}</dd>
-                </div>
-              ) : null}
-              {hasAddress ? (
-                <div>
-                  <dt>Delivery address</dt>
-                  <dd>
-                    {[profile?.address_line, profile?.postal_code]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
-          ) : null}
 
           <form action={saveCustomerDeliveryDetails} className={styles.deliveryDetailsForm}>
             <h3>Delivery details</h3>
