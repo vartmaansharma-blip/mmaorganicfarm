@@ -6,7 +6,7 @@ on:
     paths:
       - 'app/farm/**'
       - 'lib/gps-*.ts'
-      - 'supabase/pending/gps_route_execution.sql'
+      - 'supabase/migrations/*_gps_*.sql'
       - 'tests/**'
       - '.github/workflows/gps-routing-checks.yml'
   workflow_dispatch:

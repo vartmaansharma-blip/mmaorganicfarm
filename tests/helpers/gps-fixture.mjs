@@ -11,7 +11,7 @@ export async function gpsFixture() {
     await db.query(
       await readFile(
         new URL(
-          "../../supabase/pending/gps_route_execution.sql",
+          "../../supabase/migrations/20261101143540_gps_route_execution.sql",
           import.meta.url,
         ),
         "utf8",
