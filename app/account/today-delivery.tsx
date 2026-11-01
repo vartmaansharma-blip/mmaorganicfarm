@@ -103,8 +103,8 @@ export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null })
     </section>
     {snapshot ? <>
       <nav className={styles.todayActions} aria-label="Quick delivery actions">
-        <Link className={styles.todayActionPrimary} href="/calendar">
-          <span aria-hidden="true">↗</span><span><strong>Manage next delivery</strong><small>Skip, adjust or pause future dates</small></span>
+        <Link className={styles.todayActionPrimary} href={snapshot.confirmedPlans ? "/calendar" : snapshot.awaitingConfirmation ? "/account?section=orders&order_view=pending" : "/milk"}>
+          <span aria-hidden="true">↗</span><span><strong>{snapshot.confirmedPlans ? "Manage next delivery" : snapshot.awaitingConfirmation ? "Check your payment" : "Start a delivery plan"}</strong><small>{snapshot.confirmedPlans ? "Skip, adjust or pause future dates" : snapshot.awaitingConfirmation ? "Review any pending payment" : "Choose milk and farm favourites"}</small></span>
         </Link>
         <Link className={styles.todayActionSecondary} href="/contact">
           <span aria-hidden="true">?</span><span><strong>Get delivery help</strong><small>Something missing or incorrect?</small></span>
