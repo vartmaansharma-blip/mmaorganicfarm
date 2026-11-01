@@ -303,6 +303,13 @@ function contrast(foreground, background) {
 }
 
 async function verifyHomepageContrast(page) {
+  // Check the final palette, after the specified 200ms theme colour transition.
+  await page.waitForFunction(() => {
+    const probe=document.createElement('i');
+    probe.style.backgroundColor='var(--color-background)';document.body.append(probe);
+    const target=getComputedStyle(probe).backgroundColor;probe.remove();
+    return getComputedStyle(document.body).backgroundColor===target;
+  });
   const colors = await page.locator('#hero-heading, #home p, #home a, .confidence-strip p, .glass-story > p, .story-metrics strong, .story-metrics span, .button, .closing-section .eyebrow, .ticker').evaluateAll(elements => elements.map(element => {
     let ancestor = element;
     let background;
@@ -313,7 +320,7 @@ async function verifyHomepageContrast(page) {
     }
     return { label: element.textContent.trim().slice(0, 35), text: getComputedStyle(element).color, background };
   }));
-  for (const color of colors) assert.ok(contrast(color.text, color.background) >= 4.5, `homepage contrast: ${color.label}`);
+  for (const color of colors) assert.ok(contrast(color.text, color.background) >= 4.5, `homepage contrast: ${JSON.stringify(color)} ratio=${contrast(color.text, color.background)}`);
 }
 
 async function verifyConnectedPages(browser, name) {
