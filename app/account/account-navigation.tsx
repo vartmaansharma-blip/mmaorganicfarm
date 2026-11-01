@@ -1,12 +1,13 @@
 import Link from "next/link";
 import styles from "./account.module.css";
 
-export const accountSections = ["today", "deliveries", "orders", "settings"] as const;
+export const accountSections = ["today", "schedule", "plans", "orders", "settings"] as const;
 export type AccountSection = (typeof accountSections)[number];
-const labels = { today: "Today", deliveries: "Deliveries", orders: "Orders", settings: "Settings" };
+const labels = { today: "Today", schedule: "Schedule", plans: "My Plans", orders: "Orders", settings: "Account" };
 const paths = {
   today: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1" /></>,
-  deliveries: <><path d="M3 6h12v12H3zM15 10h4l3 4v4h-7" /><circle cx="7" cy="19" r="2" /><circle cx="18" cy="19" r="2" /></>,
+  schedule: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-13 4h3m-3 3h3"/></>,
+  plans: <><path d="M4 7a8 8 0 0 1 14-2l2 2M20 17a8 8 0 0 1-14 2l-2-2"/><path d="M20 3v4h-4M4 21v-4h4"/></>,
   orders: <><path d="M6 3h12v19l-3-2-3 2-3-2-3 2V3Z" /><path d="M9 8h6m-6 4h6m-6 4h3" /></>,
   settings: <><circle cx="12" cy="8" r="4" /><path d="M4 22v-3a8 8 0 0 1 16 0v3" /></>,
 };
