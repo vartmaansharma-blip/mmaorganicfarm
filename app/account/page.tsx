@@ -36,7 +36,7 @@ export default async function AccountPage({
   searchParams: Promise<{ error?: string; message?: string; section?: string; plan?: string; order_view?: string; order_page?: string }>;
 }) {
   const params = await searchParams;
-  const requestedSection = params.section === "deliveries" ? "plans" : params.section;
+  const requestedSection = params.section === "plans" ? "plans" : params.section;
   const section: AccountSection = accountSections.includes(requestedSection as AccountSection) ? requestedSection as AccountSection : "today";
   const orderView = params.order_view === "pending" || params.order_view === "other" ? params.order_view : "paid";
   const requestedPage = Number(params.order_page ?? "1");
@@ -595,7 +595,7 @@ export default async function AccountPage({
         ) : null}
 
         </> : null}
-        {section === "deliveries" ? <>
+        {section === "plans" ? <>
         {requestsError ? <p className={styles.noticeError}>Cancellation requests couldn’t be loaded. Please refresh.</p> : null}
         {(cancellationRequests?.length ?? 0) > 0 ? (
           <section
