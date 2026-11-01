@@ -36,7 +36,18 @@ const stub=createServer(async(req,res)=>{
   data=rows();
   if(url.searchParams.get('status')==='eq.delivered')data=data.filter(r=>r.status==='delivered');
  }
- if(url.pathname.endsWith('/orders'))data=scenario==='none'?[]:[{id:'00000000-0000-4000-8000-000000000004',status:'paid',purchase_mode:'plan',total_paise:62000,paid_total_paise:62000,start_date:date,created_at:new Date().toISOString(),order_items:[{...product(),id:'item1'}]}];
+ if(url.pathname.endsWith('/orders')) {
+  const paid={id:'00000000-0000-4000-8000-000000000004',status:'paid',purchase_mode:'plan',total_paise:62000,paid_total_paise:62000,start_date:date,created_at:new Date().toISOString(),order_items:[{...product(),id:'item1'}]};
+  const draft={...paid,id:'00000000-0000-4000-8000-000000000005',status:'draft',paid_total_paise:null,order_items:[{...product(),id:'item2',product_name:'Draft-only item'}]};
+  const pending={...paid,id:'00000000-0000-4000-8000-000000000006',status:'pending_payment',paid_total_paise:null,order_items:[{...product(),id:'item3',product_name:'Pending checkout'}]};
+  data=scenario==='none'?[]:[paid,draft,pending];
+  const status=url.searchParams.get('status')||'';
+  if(status.startsWith('in.(')&&status.endsWith(')')) {
+    const allowed=status.slice(4,-1).split(',');
+    data=data.filter(order=>allowed.includes(order.status));
+  }
+  res.setHeader('content-range',data.length?'0-'+(data.length-1)+'/'+data.length:'*/0');
+}
  if(url.pathname.endsWith('/customer_notifications'))data=[{id:'update1',title:'Your plan is confirmed',message:'Your delivery dates are saved.',created_at:new Date().toISOString(),read_at:null}];
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
@@ -78,6 +89,13 @@ try{
        const tabs=page.getByRole('navigation',{name:'Order status'});
        assert.equal(await tabs.getByRole('link',{name:'Paid orders'}).getAttribute('aria-current'),'page');
        assert.equal(await page.getByRole('heading',{name:'Paid purchases'}).count(),1);
+       assert.equal(await page.getByText('Draft-only item').count(),0,'draft order must not appear in paid purchase history');
+       if(width===390&&theme==='light') {
+        await tabs.getByRole('link',{name:'To pay'}).click();
+        await page.getByRole('heading',{name:'Payments needing attention'}).waitFor();
+        assert.equal(await page.getByText('Draft-only item').count(),0,'draft must not pollute pending orders');
+        await page.getByRole('link',{name:'Review and complete payment →'}).waitFor();
+       }
       }
       if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-${section.toLowerCase()}.png`),fullPage:true});
      }
