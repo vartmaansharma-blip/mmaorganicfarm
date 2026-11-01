@@ -504,7 +504,7 @@ export default async function AccountPage({
 
           <div className={styles.scheduleActions}><Link href={`/calendar?plan=${deliveryPlan.id}`}>Skip or change a date →</Link><Link href={`/calendar?plan=${deliveryPlan.id}`}>Pause multiple days →</Link></div>
           <p className={styles.scheduleNote}>Changes begin tomorrow. For help with today’s delivery, contact the farm.</p>
-          </section> : !plansError ? <div className={styles.emptyPanel}><h2>No delivery schedule yet.</h2><p>Your confirmed plan's dates will appear here.</p><Link className={styles.startOrder} href="/milk">Explore milk plans</Link></div> : null}
+          </section> : !plansError ? <div className={styles.emptyPanel}><h2>No delivery schedule yet.</h2><p>Confirmed delivery dates will appear here.</p><Link className={styles.startOrder} href="/milk">Explore milk plans</Link></div> : null}
           <CustomerDeliveryHistory userId={user.id} />
         </> : null}
         {section === "orders" ? <>
