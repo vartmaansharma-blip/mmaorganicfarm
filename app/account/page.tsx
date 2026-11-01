@@ -95,7 +95,7 @@ export default async function AccountPage({
       : Promise.resolve({ data: [], error: null, count: 0 }),
   ]);
 
-  const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.[0];
+  const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.find(plan => plan.status === "active" || plan.status === "paused") ?? deliveryPlans?.[0];
   const todaySnapshot = await todayResult;
   const { data: monthlyCompleted } =
     section === "plans" && selectedPlan?.billing_model === "calendar_month"
@@ -448,7 +448,7 @@ export default async function AccountPage({
         {section === "schedule" ? <>
           {plansError ? <p className={styles.noticeError}>We couldn’t load your schedule. Please refresh to try again.</p> : null}
           {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=schedule&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly" : "Weekly"} plan {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
-          {deliveryPlan ? <section className={styles.scheduleSurface} aria-label="Upcoming delivery schedule">
+          {deliveryPlan?.status === "pending_confirmation" ? <div className={styles.emptyPanel}><h2>Plan awaiting confirmation.</h2><p>We’ll show your confirmed delivery dates here once payment and the plan are verified.</p><Link className={styles.startOrder} href="/account?section=orders&order_view=pending">Check payments</Link></div> : deliveryPlan ? <section className={styles.scheduleSurface} aria-label="Upcoming delivery schedule">
           
             <section
               className={styles.upcomingSchedule}
