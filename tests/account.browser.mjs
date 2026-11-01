@@ -69,14 +69,19 @@ try{
      await page.locator('[data-scene-state]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-scene-state]').dataset.motion==='running');
      await page.getByRole('button',{name:'Pause animation',exact:true}).click();assert.equal(await page.locator('[data-scene-state]').getAttribute('data-motion'),'paused');await page.getByRole('button',{name:'Resume animation',exact:true}).click();
      if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-today.png`),fullPage:true});
-     for(const section of ['Deliveries','Orders','Settings']){
+     for(const section of ['Schedule','My Plans','Orders','Account']){
       await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).click();await page.waitForLoadState('networkidle');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${section} ${width} overflow`);
       assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
-      if(section==='Settings'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'Update delivery details'}).getAttribute('href'),'/order');}
+      if(section==='Account'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'Update delivery details'}).getAttribute('href'),'/order');}
+      if(section==='Orders') {
+       const tabs=page.getByRole('navigation',{name:'Order status'});
+       assert.equal(await tabs.getByRole('link',{name:'Paid orders'}).getAttribute('aria-current'),'page');
+       assert.equal(await page.getByRole('heading',{name:'Paid purchases'}).count(),1);
+      }
       if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-${section.toLowerCase()}.png`),fullPage:true});
      }
-     results.push({engine,width,theme,sections:4,overflow:false});
+     results.push({engine,width,theme,sections:5,overflow:false});
     }
     assert.deepEqual(errors,[]);await context.close();
    }
@@ -99,5 +104,5 @@ try{
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
  const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')),'fixture permits no production mutations');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
- console.log(JSON.stringify({layouts:results.length,sections:4,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
+ console.log(JSON.stringify({layouts:results.length,sections:5,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}
