@@ -41,7 +41,7 @@ const stub=createServer(async(req,res)=>{
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
 });
-await new Promise(resolve=>stub.listen(0,'127.0.0.1',resolve));
+await new Promise(resolve=>stub.listen(Number(process.env.ACCOUNT_FIXTURE_PORT || 0),'127.0.0.1',resolve));
 const stubPort=stub.address().port;
 const appPort=Number(process.env.ACCOUNT_TEST_PORT || 3226);
 const base=`http://127.0.0.1:${appPort}`;
@@ -68,7 +68,10 @@ try{
      assert.equal(await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).getAttribute('aria-current'),'page');
      await page.locator('[data-scene-state]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-scene-state]').dataset.motion==='running');
      await page.getByRole('button',{name:'Pause animation',exact:true}).click();assert.equal(await page.locator('[data-scene-state]').getAttribute('data-motion'),'paused');await page.getByRole('button',{name:'Resume animation',exact:true}).click();
-     if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-today.png`),fullPage:true});
+     assert.equal(await page.getByRole('definition').filter({hasText:'No estimate yet'}).count(),1,'never invent a customer ETA');
+     assert.equal(await page.getByRole('definition').filter({hasText:'Not shared yet'}).count(),1,'never invent a driver location');
+     assert.equal(await page.getByRole('link',{name:/Manage next delivery/}).getAttribute('href'),'/calendar');
+     if([320,390,1440].includes(width))await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-today.png`),fullPage:true});
      for(const section of ['Deliveries','Orders','Settings']){
       await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).click();await page.waitForLoadState('networkidle');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${section} ${width} overflow`);
@@ -81,12 +84,14 @@ try{
     assert.deepEqual(errors,[]);await context.close();
    }
    const context=await browser.newContext({viewport:{width:390,height:844}});await context.addCookies([sessionCookie]);const page=await context.newPage();
-   for(const state of ['preparing','delivered','partial','none','pending','paused']){
+   for(const state of ['scheduled','preparing','delivered','partial','none','pending','paused']){
     scenario=state;fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});
-    const expected={preparing:'preparing',delivered:'delivered',partial:'attention',none:'none',pending:'setup',paused:'paused'}[state];assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),expected);
+    const expected={scheduled:'scheduled',preparing:'preparing',delivered:'delivered',partial:'attention',none:'none',pending:'setup',paused:'paused'}[state];assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),expected);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${state} overflow`);
     if(state==='pending'){assert.equal(await page.getByRole('link',{name:'Orders & payment →',exact:true}).getAttribute('href'),'/account?section=orders');assert.ok((await page.locator('[data-scene-state]').boundingBox()).height<110,'unconfirmed delivery scene stays compact');}
-    if(state!=='out')assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).count(),0);
+    if(state==='preparing'){await page.getByRole('button',{name:'Pause animation',exact:true}).click();assert.equal(await page.locator('[data-scene-state]').getAttribute('data-motion'),'paused');await page.getByRole('button',{name:'Resume animation',exact:true}).click();}
+    else assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).count(),0);
+    if(state==='scheduled')assert.equal(await page.locator('[data-scene-state]').evaluate(e=>e.getAnimations({subtree:true}).length),0,'scheduled delivery must not animate movement');
     await page.screenshot({path:path.join(output,`${engine}-390-${state}.png`),fullPage:true});
    }
    scenario='out';await page.goto(`${base}/account`,{waitUntil:'networkidle'});fail=true;await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByText('Showing the last successful update',{exact:false}).waitFor();assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'out');await page.screenshot({path:path.join(output,`${engine}-390-stale.png`),fullPage:true});
@@ -98,6 +103,6 @@ try{
  }
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
  const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')),'fixture permits no production mutations');
- await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
- console.log(JSON.stringify({layouts:results.length,sections:4,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
+ await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:7,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
+ console.log(JSON.stringify({layouts:results.length,sections:4,states:7,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}

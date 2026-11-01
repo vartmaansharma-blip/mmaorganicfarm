@@ -1,0 +1,55 @@
+.scene {
+  --scene-sky:#b9e6ff; --scene-sun:#ffbd1f; --scene-cloud:#fffef7;
+  --scene-hill-back:#c3e5ab; --scene-hill-front:#91ce9e; --scene-outline:#243b53;
+  --scene-barn:#fff1cc; --scene-roof:#ec6a59; --scene-cream:#fffdf5;
+  --scene-fence:#b08b58; --scene-tree:#3d9b78; --scene-tree-light:#68b78a;
+  --scene-home:#ffdec0; --scene-home-roof:#8e83c8; --scene-door:#599caa;
+  --scene-road:#efdfbc; --scene-road-edge:#bfae87; --scene-road-mark:#fff8e9;
+  --scene-wheel:#33465b; --scene-wheel-hub:#d7e6e9; --scene-scooter:#ffce4a;
+  --scene-box:#5da8b8; --scene-box-ink:#f4fcff; --scene-trousers:#394c7e;
+  --scene-shirt:#fc9f73; --scene-skin:#d99c70; --scene-helmet:#f26655;
+  --scene-peach:#f3b7a2; --scene-confirm:#238465;
+  margin:0; overflow:hidden;
+}
+.art { height:230px; background:linear-gradient(180deg,var(--scene-sky),#effbff); overflow:hidden; }
+.art svg { display:block; width:100%; height:100%; }
+.caption { display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:40px; padding:0 22px; background:var(--today-blue-soft,#edf7ff); color:var(--today-muted,#536679); font-size:10px; }
+.motionControl { display:inline-flex; align-items:center; min-height:40px; padding:4px 0 4px 10px; color:inherit; border:0; background:none; font:500 10px var(--font-sans); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.rider { transform:translateX(290px); transition:transform 900ms cubic-bezier(.2,.7,.3,1); }
+.scene[data-scene-state=scheduled] .rider,.scene[data-scene-state=preparing] .rider { transform:translateX(155px); }
+.packing { opacity:0; }
+.scene[data-scene-state=preparing] .packing { opacity:1; animation:packing 2s ease-in-out infinite; }
+.scene[data-scene-state=preparing] .packingSpark { animation:spark 2s ease-in-out infinite; }
+.scene[data-scene-state=out] .bounce { animation:bob 1.4s ease-in-out infinite; }
+.scene[data-scene-state=out] .roadmarks { animation:road 1.8s linear infinite; }
+.scene[data-scene-state=out] .clouds { animation:clouds 12s ease-in-out infinite alternate; }
+.scene[data-scene-state=out] .spokeBack { animation:backWheel 800ms linear infinite; }
+.scene[data-scene-state=out] .spokeFront { animation:frontWheel 800ms linear infinite; }
+.scene[data-scene-state=delivered] .rider { transform:translateX(483px); }
+.completion { opacity:0; }
+.scene[data-scene-state=delivered] .completion { opacity:1; animation:confirm 650ms ease-out both; }
+.scene:is([data-scene-state=setup],[data-scene-state=none],[data-scene-state=paused],[data-scene-state=skipped],[data-scene-state=cancelled]) .rider { display:none; }
+.scene:is([data-scene-state=setup],[data-scene-state=none],[data-scene-state=paused],[data-scene-state=skipped],[data-scene-state=cancelled]) .art { height:70px; }
+.scene:is([data-scene-state=setup],[data-scene-state=none],[data-scene-state=paused],[data-scene-state=skipped],[data-scene-state=cancelled]) .caption { min-height:25px; }
+.scene[data-motion=paused] * { animation-play-state:paused!important; }
+@keyframes bob { 50% { transform:translateY(-2px); } }
+@keyframes road { to { stroke-dashoffset:51; } }
+@keyframes clouds { to { transform:translateX(-16px); } }
+@keyframes backWheel { to { transform:rotate(360deg); } }
+@keyframes frontWheel { to { transform:rotate(360deg); } }
+.spokeBack { transform-origin:10px 185px; }
+.spokeFront { transform-origin:95px 185px; }
+@keyframes packing { 50% { transform:translateY(-4px); } }
+@keyframes spark { 0%,100% { opacity:.25; } 50% { opacity:1; } }
+@keyframes confirm { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+:global(html[data-theme=dark]) .scene {
+  --scene-sky:#213e61; --scene-sun:#ffd363; --scene-cloud:#748eac;
+  --scene-hill-back:#3f685c; --scene-hill-front:#57836a; --scene-outline:#182941;
+  --scene-barn:#f1d89d; --scene-roof:#ec8770; --scene-cream:#fff2d3;
+  --scene-tree:#5ea98b; --scene-tree-light:#80bd91; --scene-home:#ecc4a7;
+  --scene-home-roof:#aa9cdb; --scene-door:#73b7c4; --scene-road:#79745e;
+  --scene-road-edge:#a29a78; --scene-road-mark:#e0d2a4;
+}
+:global(html[data-theme=dark]) .art { background:linear-gradient(180deg,var(--scene-sky),#345471); }
+@media(max-width:700px) { .art { height:170px; } .caption { padding:0 17px; font-size:10px; } .motionControl { font-size:10px; } }
+@media(prefers-reduced-motion:reduce) { .scene *, .scene *:before, .scene *:after { animation:none!important; transition:none!important; } .motionControl { display:none; } }

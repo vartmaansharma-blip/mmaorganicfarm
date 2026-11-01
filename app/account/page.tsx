@@ -221,14 +221,13 @@ export default async function AccountPage({
         <div className={styles.pageHeading}>
           <div>
             <p className={styles.eyebrow}>{section === "today" ? `Welcome, ${name.split(/\s+/)[0]}` : "My M’ma"}</p>
-            <h1>{section === "today" ? "Today" : section === "deliveries" ? "Your deliveries" : section === "orders" ? "Orders" : "Settings"}</h1>
-            <p className={styles.intro}>{section === "today" ? "A little closer to the farm, every day." : section === "deliveries" ? "Your routine, upcoming dates and recorded delivery results." : section === "orders" ? "Your purchases and payment details, together." : "The details that make it yours."}</p>
+            <h1>{section === "today" ? "Today’s delivery" : section === "deliveries" ? "Your deliveries" : section === "orders" ? "Orders" : "Settings"}</h1>
+            <p className={styles.intro}>{section === "today" ? "Fresh from the farm. All the details at a glance." : section === "deliveries" ? "Your routine, upcoming dates and recorded delivery results." : section === "orders" ? "Your purchases and payment details, together." : "The details that make it yours."}</p>
           </div>
           {section === "today" ? <AccountDate initialDate={todayInIndia()} /> : <Link className={styles.startOrder} href="/milk">Start an order</Link>}
         </div>
         {section === "today" ? <>
-          <TodayDelivery initial={todaySnapshot} />
-          <Link className={styles.contactSummary} href="/account?section=settings"><span><strong>Delivering to you</strong><small>{hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : "Add your delivery address in Settings."}</small></span><span>Manage details →</span></Link>
+          <TodayDelivery initial={todaySnapshot} address={hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : null} />
         </> : null}
         {section === "settings" ? <>
         {profileError ? <p className={styles.noticeError}>Your personal details couldn’t be loaded. Please refresh this page.</p> : null}

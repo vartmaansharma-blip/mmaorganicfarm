@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { DeliverySnapshot, DeliveryState } from "@/lib/customer-delivery";
 import { productName } from "@/lib/delivery-calendar";
 import { DeliveryScene } from "./delivery-scene";
 import styles from "./account.module.css";
+import vibrant from "./today-vibrant.module.css";
 
 export const deliveryLabels: Record<DeliveryState, string> = {
   scheduled: "Scheduled for today", preparing: "Getting your delivery ready", out: "On the way to you",
@@ -13,16 +14,16 @@ export const deliveryLabels: Record<DeliveryState, string> = {
   skipped: "Today’s delivery is skipped", cancelled: "Today’s delivery is cancelled", none: "A quiet day at your doorstep", setup: "Your delivery isn’t confirmed yet",
 };
 const descriptions: Record<DeliveryState, string> = {
-  scheduled: "Your items are scheduled. We’re waiting for the farm’s next delivery update.",
-  preparing: "The farm team is getting your items ready for today’s delivery.",
-  out: "Your delivery is out with the farm team. We’ll show the recorded result here.",
-  delivered: "All of today’s items have been recorded as delivered. Enjoy a little farm goodness.",
-  attention: "Some items are still outstanding or need confirmation. See each delivery below.",
-  paused: "There’s no delivery while your plan is paused. Your next scheduled dates appear below.",
-  skipped: "No delivery is expected for the skipped items today. Check your calendar for the next date.",
-  cancelled: "These delivery records are cancelled. Contact the farm if you need help with the next step.",
-  none: "No delivery is scheduled for today. Your next confirmed dates will appear below.",
-  setup: "A saved order or plan is awaiting payment or farm confirmation. Check Orders for its payment status or contact the farm.",
+  scheduled: "Confirmed on today’s schedule.",
+  preparing: "Your farm favourites are being prepared.",
+  out: "Out for delivery with the farm team.",
+  delivered: "Recorded as delivered by the farm.",
+  attention: "Check the outstanding quantities below.",
+  paused: "No deliveries during your pause.",
+  skipped: "No delivery expected for skipped items.",
+  cancelled: "These delivery records are cancelled.",
+  none: "Your next confirmed delivery appears below.",
+  setup: "Payment or farm confirmation is still pending.",
 };
 const visitLabels: Record<DeliveryState, string> = { ...deliveryLabels, delivered: "Delivered", scheduled: "Scheduled", attention: "Outstanding items", out: "On the way", preparing: "Preparing", cancelled: "Cancelled", skipped: "Approved skip" };
 // Assemble parts explicitly: Safari and Node use different punctuation/spacing in en-IN.
@@ -49,7 +50,7 @@ export function AccountDate({ initialDate }: { initialDate: string }) {
   return <time className={styles.todayDate} dateTime={date}>{formatCalendarDate(date)}</time>;
 }
 
-export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null }) {
+export function TodayDelivery({ initial, address }: { initial: DeliverySnapshot | null; address?: string | null }) {
   const [snapshot, setSnapshot] = useState(initial);
   const [error, setError] = useState(initial ? "" : "We couldn’t load your delivery updates. Please try again.");
   const [busy, setBusy] = useState(false);
@@ -83,27 +84,61 @@ export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null })
   }, [refresh]);
   const state = snapshot?.state ?? "none";
   const progress = ({ scheduled: 1, preparing: 2, out: 3, delivered: 4 } as Partial<Record<DeliveryState, number>>)[state] ?? 0;
-  return <div className={styles.todaySurface}>
-    <section className={styles.deliveryCard} data-delivery-state={snapshot ? state : "error"} aria-labelledby="today-delivery-title">
-      <div className={styles.deliveryTop}>
-        <div><p className={styles.eyebrow}>Today’s delivery</p><h2 id="today-delivery-title">{snapshot ? deliveryLabels[state] : "Delivery updates unavailable"}</h2><p className={styles.deliveryCopy}>{snapshot ? descriptions[state] : "Your schedule is safe. We’ll show the latest delivery status when we can reconnect."}</p></div>
-        <button className={styles.refresh} type="button" onClick={() => void refresh(true)} disabled={busy} aria-label={busy ? "Refreshing delivery updates" : "Refresh delivery updates"}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5 8a8 8 0 0 1 14-3l1 7M4 12l1 7a8 8 0 0 0 14-3"/></svg><span>{busy ? "Updating" : "Refresh"}</span></button>
+  return <div className={vibrant.today}>
+    <Link className={vibrant.address} href="/account?section=settings">
+      <span className={vibrant.addressIcon}><TodayIcon kind="pin" /></span>
+      <span><strong>{address ? "Your delivery address" : "Add your delivery address"}</strong><small>{address ?? "Save your address in Settings"}</small></span>
+      <span className={vibrant.addressAction}>Manage →</span>
+    </Link>
+    <section className={vibrant.deliveryCard} data-delivery-state={snapshot ? state : "error"} aria-labelledby="today-delivery-title">
+      <div className={vibrant.hero}>
+        <div className={vibrant.journey}>
+          <div className={vibrant.deliveryTop}>
+            <div><span className={vibrant.statusBadge}><span aria-hidden="true" />{snapshot ? visitLabels[state] : "Update unavailable"}</span><h2 id="today-delivery-title">{snapshot ? deliveryLabels[state] : "Delivery updates unavailable"}</h2><p className={vibrant.deliveryCopy}>{snapshot ? descriptions[state] : "Your schedule is safe. We’ll show the latest status when we reconnect."}</p></div>
+            <button className={vibrant.refresh} type="button" onClick={() => void refresh(true)} disabled={busy} aria-label={busy ? "Refreshing delivery updates" : "Refresh delivery updates"}><TodayIcon kind="refresh" /></button>
+          </div>
+          <div className={vibrant.sceneArea}>{snapshot ? <DeliveryScene state={state} /> : <div className={vibrant.unavailable}><TodayIcon kind="help" /><span>Waiting for a farm update</span></div>}</div>
+        </div>
+        {snapshot ? <div className={vibrant.deliveryBag}>
+          <div className={vibrant.bagHeading}><span className={vibrant.bagIcon}><TodayIcon kind="bag" /></span><h3>Your delivery</h3></div>
+          {snapshot.visits.length ? snapshot.visits.map((visit, index) => <div className={vibrant.visit} key={visit.key}>
+            {snapshot.visits.length > 1 ? <div className={vibrant.visitHeading}><strong>Delivery {index + 1}</strong><span>{visitLabels[visit.state]}</span></div> : null}
+            {visit.items.map((item, i) => <div className={vibrant.deliveryItem} key={`${item.product_key}:${i}`}><span className={vibrant.productIcon}><TodayIcon kind={item.product_key === "milk" ? "bottle" : "bag"} /></span><div><strong>{item.quantity} <span>{item.unit}</span></strong><small>{productName(item.product_key)}</small></div>{item.fulfilled_quantity != null && ["attention", "delivered"].includes(state) ? <p className={vibrant.fulfilment}>{Number(item.fulfilled_quantity)} delivered · {Math.max(0, item.quantity - Number(item.fulfilled_quantity))} {item.unit} outstanding</p> : null}</div>)}
+            {visit.followUpApproved && visit.followUp ? <p className={vibrant.followUp}>Approved follow-up: {formatCalendarDate(visit.followUp)}. Outstanding until delivered.</p> : visit.state === "attention" || visit.state === "skipped" ? <p className={vibrant.followUp}>See delivery history or contact the farm for a follow-up.</p> : null}
+          </div>) : <p className={vibrant.emptyCopy}>{state === "setup" ? "Awaiting confirmation" : "No items due today"}</p>}
+          {snapshot.visits.length && ["scheduled", "preparing", "out"].includes(state) ? <dl className={vibrant.tracking} aria-label="Delivery tracking availability"><div><dt><TodayIcon kind="clock" />Arrival time</dt><dd>No estimate yet</dd></div><div><dt><TodayIcon kind="pin" />Live location</dt><dd>Not shared yet</dd></div></dl> : null}
+          {snapshot.completedAt ? <div className={vibrant.confirmed}><TodayIcon kind="check" /><span>Confirmed at <strong>{time(snapshot.completedAt)} IST</strong></span></div> : null}
+        </div> : null}
       </div>
-      {error ? <div className={styles.refreshError} role="status">{error}{snapshot ? <span>Showing the last successful update for {formatCalendarDate(snapshot.date)}.</span> : null}<a href="/sign-in">Check sign-in</a></div> : null}
-      {snapshot ? <>
-        <DeliveryScene state={state} />
-        {progress > 0 ? <ol className={styles.deliverySteps} aria-label="Delivery stages">{["Scheduled", "Preparing", "On the way", "Delivered"].map((label, i) => <li key={label} data-reached={i < progress} aria-current={i === progress - 1 ? "step" : undefined}>{label}</li>)}</ol> : null}
-        {snapshot.visits.length ? <div className={styles.visitList}>{snapshot.visits.map((visit, index) => <div className={styles.visit} key={visit.key}>
-          <div className={styles.visitHeading}><strong>{snapshot.visits.length > 1 ? `Delivery ${index + 1}` : "Your items"}</strong><span>{visitLabels[visit.state]}</span></div>
-          {visit.items.map((item, i) => <div className={styles.deliveryItem} key={`${item.product_key}:${i}`}><span>{productName(item.product_key)}</span><strong>{item.quantity} {item.unit}</strong>{item.fulfilled_quantity != null && ["attention", "delivered"].includes(state) ? <small>{Number(item.fulfilled_quantity)} delivered · {Math.max(0, item.quantity - Number(item.fulfilled_quantity))} {item.unit} outstanding</small> : null}</div>)}
-          {visit.followUpApproved && visit.followUp ? <p className={styles.followUp}>Farm-approved follow-up: {formatCalendarDate(visit.followUp)}. It remains outstanding until delivered.</p> : visit.state === "attention" || visit.state === "skipped" ? <p className={styles.followUp}>Check delivery history for any recorded follow-up, or contact the farm for an update.</p> : null}
-        </div>)}</div> : null}
-        <div className={styles.deliveryBottom}><span>{snapshot.completedAt ? `Confirmed at ${time(snapshot.completedAt)} IST` : snapshot.updatedAt ? `Farm update · ${time(snapshot.updatedAt)} IST` : `Schedule checked · ${time(snapshot.checkedAt)} IST`}</span><Link href={state === "setup" ? "/account?section=orders" : state === "attention" || state === "cancelled" ? "/contact" : "/account?section=deliveries"}>{state === "setup" ? "Orders & payment →" : state === "attention" || state === "cancelled" ? "Contact the farm ↗" : "Delivery details →"}</Link></div>
-      </> : <div className={styles.deliveryBottom}><button className={styles.textAction} type="button" disabled={busy} onClick={() => void refresh(true)}>Try again →</button><a href="/contact">Contact the farm ↗</a></div>}
+      {progress > 0 ? <ol className={vibrant.deliverySteps} aria-label="Delivery stages">{["Scheduled", "Preparing", "On the way", "Delivered"].map((label, i) => <li key={label} data-reached={i < progress} aria-current={i === progress - 1 ? "step" : undefined}><span className={vibrant.stepIcon}><TodayIcon kind={(["calendar", "bag", "scooter", "check"] as const)[i]} /></span><span>{label}</span></li>)}</ol> : null}
+      {error ? <div className={vibrant.refreshError} role="status">{error}{snapshot ? <span>Showing the last successful update for {formatCalendarDate(snapshot.date)}.</span> : null}<Link href="/sign-in">Check sign-in</Link></div> : null}
+      {snapshot ? <div className={vibrant.deliveryBottom}><span>{snapshot.completedAt ? `Confirmed at ${time(snapshot.completedAt)} IST` : snapshot.updatedAt ? `Farm update · ${time(snapshot.updatedAt)} IST` : `Schedule checked · ${time(snapshot.checkedAt)} IST`}</span><Link href={state === "setup" ? "/account?section=orders" : state === "attention" || state === "cancelled" ? "/contact" : "/account?section=deliveries"}>{state === "setup" ? "Orders & payment →" : state === "attention" || state === "cancelled" ? "Contact the farm ↗" : "Delivery details →"}</Link></div> : <div className={vibrant.deliveryBottom}><button className={vibrant.textAction} type="button" disabled={busy} onClick={() => void refresh(true)}>Try again →</button><Link href="/contact">Contact the farm ↗</Link></div>}
     </section>
-    {snapshot ? <div className={styles.todayGrid}>
-      <section className={styles.quietPanel} aria-labelledby="coming-up-heading"><h2 id="coming-up-heading">Coming up</h2>{snapshot.upcoming.length ? snapshot.upcoming.map(day => <Link className={styles.summaryRow} href={`/account?section=deliveries&date=${day.date}`} key={day.date}><span><strong>{formatCalendarDate(day.date)}</strong><small>{day.items.map(i => `${productName(i.product_key)} · ${i.quantity} ${i.unit}`).join(" · ")}</small></span><span aria-hidden="true">↗</span></Link>) : <p className={styles.emptyCopy}>No upcoming dates confirmed in the next 60 days.</p>}<Link className={styles.textAction} href="/account?section=deliveries">View deliveries →</Link></section>
-      <section className={styles.quietPanel} aria-labelledby="your-plan-heading"><h2 id="your-plan-heading">Your plans</h2><Link className={styles.summaryRow} href="/account?section=deliveries"><span><strong>{snapshot.confirmedPlans ? `${snapshot.confirmedPlans} confirmed ${snapshot.confirmedPlans === 1 ? "plan" : "plans"}` : "A routine that fits your day"}</strong><small>{snapshot.awaitingConfirmation ? "An order or plan still needs confirmation." : snapshot.confirmedPlans ? "Your schedules, changes and delivery history." : "Choose fresh milk and farm favourites."}</small></span><span aria-hidden="true">↗</span></Link><Link className={styles.summaryRow} href="/account?section=orders"><span><strong>Orders & payments</strong><small>Receipts, one-time orders and payment status.</small></span><span aria-hidden="true">↗</span></Link><Link className={styles.textAction} href="/milk">Explore the farm shop →</Link></section>
-    </div> : null}
+    {snapshot ? <>
+      <nav className={vibrant.actions} aria-label="Quick delivery actions">
+        <Link className={vibrant.primaryAction} href={snapshot.confirmedPlans ? "/calendar" : snapshot.awaitingConfirmation ? "/account?section=orders" : "/milk"}><TodayIcon kind={snapshot.confirmedPlans ? "calendar" : "bag"} /><span><strong>{snapshot.confirmedPlans ? "Manage next delivery" : snapshot.awaitingConfirmation ? "Check your payment" : "Start a delivery plan"}</strong><small>{snapshot.confirmedPlans ? "Skip, adjust or pause future dates" : snapshot.awaitingConfirmation ? "Review pending orders" : "Choose your farm favourites"}</small></span><span aria-hidden="true">↗</span></Link>
+        <Link className={vibrant.helpAction} href="/contact"><TodayIcon kind="help" /><span><strong>Get delivery help</strong><small>Talk to the farm</small></span><span aria-hidden="true">↗</span></Link>
+      </nav>
+      {snapshot.confirmedPlans ? <p className={vibrant.cutoff}><TodayIcon kind="lock" />Changes begin tomorrow. Today’s delivery needs farm assistance.</p> : null}
+      <section className={vibrant.upcoming} aria-labelledby="coming-up-heading"><div className={vibrant.upcomingHeading}><h2 id="coming-up-heading">Coming up next</h2><Link href="/account?section=deliveries">View deliveries →</Link></div>{snapshot.upcoming.length ? <Link className={vibrant.nextDelivery} href={`/account?section=deliveries&date=${snapshot.upcoming[0].date}`}><span className={vibrant.nextIcon}><TodayIcon kind="calendar" /></span><span><strong>{formatCalendarDate(snapshot.upcoming[0].date)}</strong><small>{snapshot.upcoming[0].items.map(i => `${productName(i.product_key)} · ${i.quantity} ${i.unit}`).join(" · ")}</small></span><span aria-hidden="true">→</span></Link> : <p className={vibrant.emptyCopy}>No upcoming dates confirmed in the next 60 days.</p>}</section>
+      <div className={vibrant.planLinks}><Link href="/account?section=deliveries">Your plans & delivery history →</Link><Link href="/account?section=orders">Orders & payments →</Link></div>
+    </> : null}
   </div>;
+}
+
+type TodayIconKind = "pin" | "refresh" | "help" | "bag" | "bottle" | "clock" | "check" | "calendar" | "scooter" | "lock";
+function TodayIcon({ kind }: { kind: TodayIconKind }) {
+  const paths: Record<TodayIconKind, ReactNode> = {
+    pin: <><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></>,
+    refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5 8a8 8 0 0 1 14-3l1 7M4 12l1 7a8 8 0 0 0 14-3" /></>,
+    help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3 2.4c-.5.3-.5 1-.5 1.6M12 16h.01" /></>,
+    bag: <><path d="M4 7h16l-1 14H5L4 7Z" /><path d="M8 7V5a4 4 0 0 1 8 0v2m-7 6 2 2 4-4" /></>,
+    bottle: <><path d="M9 2h6v5l4 5v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8l4-5V2Zm-1 0h8M6 13h12M6 18h12" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    check: <path d="m5 12 4 4L19 6" />,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4m10-4v4M3 10h18m-13 4h3m-3 3h3" /></>,
+    scooter: <><circle cx="5" cy="18" r="3" /><circle cx="19" cy="18" r="3" /><path d="M5 15h5l2-7h4l3 7M9 18h5l3-4M14 4h3l2 5M2 11h5" /></>,
+    lock: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>,
+  };
+  return <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[kind]}</svg>;
 }
