@@ -495,69 +495,48 @@ export default async function AccountPage({
         <CustomerDeliveryHistory userId={user.id} />
         </> : null}
         {section === "orders" ? <>
-        {ordersError ? <p className={styles.noticeError}>We couldn’t load your orders. Please refresh to try again.</p> : null}
-        {!orders?.length && !ordersError ? <div className={styles.emptyPanel}><h2>Good things start at the farm.</h2><p>Your orders and payment status will appear here after your first order.</p><Link className={styles.startOrder} href="/milk">Visit the shop</Link></div> : null}
-        {(orders?.length ?? 0) > 0 ? (
-          <section
-            className={styles.ordersSection}
-            aria-labelledby="orders-heading"
-          >
+          <nav className={styles.orderTabs} aria-label="Order status">
+            {([{ id: "paid", label: "Paid orders" }, { id: "pending", label: "To pay" }, { id: "other", label: "Cancelled" }] as const).map(tab =>
+              <Link key={tab.id} href={`/account?section=orders&order_view=${tab.id}`} aria-current={orderView === tab.id ? "page" : undefined}>{tab.label}</Link>)}
+          </nav>
+          {ordersError ? <p className={styles.noticeError} role="alert">We couldn’t load your orders. Please refresh to try again.</p> : null}
+          {!orders?.length && !ordersError ? <div className={styles.emptyPanel}>
+            <h2>{orderView === "paid" ? "No paid orders yet." : orderView === "pending" ? "Nothing to pay right now." : "No cancelled orders."}</h2>
+            <p>{orderView === "paid" ? "Your paid purchases and their details will appear here." : orderView === "pending" ? "Only payments needing attention appear here. Drafts stay out of your order history." : "Cancelled purchases are kept here for reference."}</p>
+            {orderView === "paid" ? <Link className={styles.startOrder} href="/milk">Shop fresh products</Link> : null}
+          </div> : null}
+          {(orders?.length ?? 0) > 0 ? <section className={styles.ordersSection} aria-labelledby="orders-heading">
             <div className={styles.sectionHeading}>
-              <h2 id="orders-heading">Order history</h2>
-              <p>Every order remains attached to this customer profile.</p>
+              <h2 id="orders-heading">{orderView === "paid" ? "Paid purchases" : orderView === "pending" ? "Payments needing attention" : "Cancelled purchases"}</h2>
+              <p>{orderCount ?? 0} {orderCount === 1 ? "order" : "orders"} · Most recent first</p>
             </div>
             <div className={styles.orderHistory}>
-              {orders?.map((order, index) => (
-                <details key={order.id} open={index === 0}>
-                  <summary>
-                    <span>
-                      <strong>
-                        {order.purchase_mode === "plan"
-                          ? "Scheduled plan"
-                          : order.purchase_mode === "adjustment"
-                            ? "Milk quantity change"
-                            : "One-time order"}
-                      </strong>
-                      <small>
-                        {new Date(order.created_at).toLocaleDateString(
-                          "en-IN",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        )}
-                      </small>
-                    </span>
-                    <span>
-                      <b>
-                        {formatCheckoutAmount(
-                          order.paid_total_paise ?? order.total_paise,
-                        )}
-                      </b>
-                      <small>{order.status.replaceAll("_", " ")}</small>
-                    </span>
-                  </summary>
-                  <div>
-                    {(order.order_items ?? []).map((item) => (
-                      <p key={item.id}>
-                        <span>{item.product_name}</span>
-                        <b>
-                          {Number(item.quantity)} {item.unit}
-                        </b>
-                      </p>
-                    ))}
-                    <small>
-                      Order MMA-{order.id.slice(0, 8).toUpperCase()} · Delivery{" "}
-                      {formatPlanStartDate(order.start_date)}
-                    </small>
-                  </div>
-                </details>
-              ))}
+              {orders?.map((order, index) => <details key={order.id} open={index === 0}>
+                <summary>
+                  <span>
+                    <strong>{order.purchase_mode === "plan" ? "Scheduled milk plan" : order.purchase_mode === "adjustment" ? "Milk quantity change" : "One-time purchase"}</strong>
+                    <small>{new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · MMA-{order.id.slice(0, 8).toUpperCase()}</small>
+                  </span>
+                  <span>
+                    <b>{formatCheckoutAmount(order.status === "paid" ? (order.paid_total_paise ?? order.total_paise) : order.total_paise)}</b>
+                    <small>{order.status === "paid" ? "Paid" : order.status === "pending_payment" ? "Payment started" : order.status === "payment_failed" ? "Payment failed" : "Cancelled"}</small>
+                  </span>
+                </summary>
+                <div className={styles.orderDetail}>
+                  {(order.order_items ?? []).map(item => <p key={item.id}><span>{item.product_name}</span><b>{Number(item.quantity)} {item.unit}</b></p>)}
+                  <p><span>Order total</span><b>{formatCheckoutAmount(order.total_paise)}</b></p>
+                  {order.status === "paid" ? <p><span>Amount paid</span><b>{formatCheckoutAmount(order.paid_total_paise ?? order.total_paise)}</b></p> : null}
+                  <small>{order.purchase_mode === "plan" ? "Plan starts" : "Delivery"} {formatPlanStartDate(order.start_date)}. Delivery progress is shown in Today and Schedule.</small>
+                  {["pending_payment", "payment_failed"].includes(order.status) ? <Link className={styles.paymentAction} href={`/checkout/review?order=${order.id}`}>Review and complete payment →</Link> : null}
+                </div>
+              </details>)}
             </div>
-          </section>
-        ) : null}
-
+            <nav className={styles.orderPagination} aria-label="Order pages">
+              {orderPage > 1 ? <Link href={`/account?section=orders&order_view=${orderView}&order_page=${orderPage - 1}`}>← Previous</Link> : <span />}
+              <span>Page {orderPage}</span>
+              {(orderCount ?? 0) > orderPage * orderPageSize ? <Link href={`/account?section=orders&order_view=${orderView}&order_page=${orderPage + 1}`}>Next →</Link> : <span />}
+            </nav>
+          </section> : null}
         </> : null}
 
         {section === "today" ? <>
