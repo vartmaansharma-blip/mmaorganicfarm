@@ -74,9 +74,9 @@ export default async function RootLayout({
 }>) {
   const catalogue = await readProductCatalogue();
   return (
-    <html className={`dark ${editorial.variable} ${interfaceFont.variable}`} data-theme="dark" data-scroll-behavior="smooth" lang="en" suppressHydrationWarning>
+    <html className={`light ${editorial.variable} ${interfaceFont.variable}`} data-theme="light" data-scroll-behavior="smooth" lang="en" suppressHydrationWarning>
       <head>
-        <script id="mama-theme" dangerouslySetInnerHTML={{ __html: `(function(){var t='dark';try{var v=localStorage.getItem('mma-theme');if(v===null){v=localStorage.getItem('mama-theme');if(v==='light'||v==='dark')try{localStorage.setItem('mma-theme',v)}catch(e){}}if(v==='light')t='light'}catch(e){}var r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t;r.classList.toggle('dark',t==='dark');r.classList.toggle('light',t==='light')})()` }} />
+        <script id="mama-theme" dangerouslySetInnerHTML={{ __html: `(function(){var t='light';try{var v=localStorage.getItem('mma-theme');if(v===null){v=localStorage.getItem('mama-theme');if(v==='light'||v==='dark')try{localStorage.setItem('mma-theme',v)}catch(e){}}if(v==='dark')t='dark'}catch(e){}var r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t;r.classList.toggle('dark',t==='dark');r.classList.toggle('light',t==='light')})()` }} />
       </head>
       <body><ProductPricingProvider catalogue={catalogue}><ShopProvider minimumDate={nextDeliveryDateInIndia()}>{children}</ShopProvider></ProductPricingProvider></body>
     </html>

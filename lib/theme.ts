@@ -3,7 +3,7 @@ export const THEME_STORAGE_KEY = "mma-theme";
 const THEME_EVENT = "mama-theme-change";
 
 export function getTheme(): Theme {
-  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 function applyTheme(theme: Theme) {
@@ -23,7 +23,7 @@ export function setTheme(theme: Theme) {
 export function subscribeToTheme(callback: () => void) {
   const syncTab = (event: StorageEvent) => {
     if (event.key !== THEME_STORAGE_KEY) return;
-    const theme = event.newValue === "light" ? "light" : "dark";
+    const theme = event.newValue === "dark" ? "dark" : "light";
     applyTheme(theme);
     callback();
   };
@@ -35,4 +35,4 @@ export function subscribeToTheme(callback: () => void) {
   };
 }
 
-export function getServerTheme(): Theme { return "dark"; }
+export function getServerTheme(): Theme { return "light"; }

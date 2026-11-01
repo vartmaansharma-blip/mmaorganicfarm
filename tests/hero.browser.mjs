@@ -325,6 +325,7 @@ async function verifyHomepageContrast(page) {
 
 async function verifyConnectedPages(browser, name) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  await context.addInitScript(() => { if (localStorage.getItem('mma-theme') === null) localStorage.setItem('mma-theme','dark'); });
   const page = await context.newPage();
   const routes = ['/sign-in', '/forgot-password', '/reset-password', '/pricing', '/shipping', '/contact', '/terms', '/privacy', '/cancellation-refunds'];
   const errors = [];
@@ -398,6 +399,8 @@ try {
       for (const [width, height] of [[320, 568], [360, 740], [375, 812], [390, 844], [430, 932], [768, 1024], [1024, 768], [1200, 630], [1440, 960]].filter(([width]) => !process.env.HERO_WIDTHS || process.env.HERO_WIDTHS.split(",").includes(String(width)))) {
         const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 901, ...([390,1440].includes(width) ? { recordVideo: { dir: path.join(output, "recordings"), size: { width, height } } } : {}) });
 
+        // Motion acceptance explicitly exercises dark, independently of the site default.
+        await context.addInitScript(() => { if (localStorage.getItem('mma-theme') === null) localStorage.setItem('mma-theme','dark'); });
         const page = await context.newPage();
         page.setDefaultNavigationTimeout(60000);
         page.on("pageerror", error => errors.push(error.message));
