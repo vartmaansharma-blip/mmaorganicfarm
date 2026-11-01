@@ -41,7 +41,7 @@ const stub=createServer(async(req,res)=>{
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
 });
-await new Promise(resolve=>stub.listen(0,'127.0.0.1',resolve));
+await new Promise(resolve=>stub.listen(Number(process.env.ACCOUNT_FIXTURE_PORT || 0),'127.0.0.1',resolve));
 const stubPort=stub.address().port;
 const appPort=Number(process.env.ACCOUNT_TEST_PORT || 3226);
 const base=`http://127.0.0.1:${appPort}`;
@@ -64,13 +64,17 @@ try{
     for(const theme of ['dark','light']){
      scenario='out';fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
      if(await page.locator('html').getAttribute('data-theme')!==theme)await page.getByRole('button',{name:/Switch to .* mode/}).click();
+     await page.waitForFunction(()=>!document.getAnimations().some(a=>a instanceof CSSTransition && ['color','background-color','border-color'].includes(a.transitionProperty) && a.playState==='running'));
+     const navigationColour=await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).evaluate(e=>{const probe=document.createElement('i');probe.style.color='var(--color-nav-active)';document.body.append(probe);const expected=getComputedStyle(probe).color;probe.remove();return {actual:getComputedStyle(e).color,expected};});
+     assert.equal(navigationColour.actual,navigationColour.expected,'account navigation follows the shared brand palette');
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${engine} ${width} ${theme} Today overflow`);
      assert.equal(await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).getAttribute('aria-current'),'page');
      await page.locator('[data-scene-state]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-scene-state]').dataset.motion==='running');
      await page.getByRole('button',{name:'Pause animation',exact:true}).click();assert.equal(await page.locator('[data-scene-state]').getAttribute('data-motion'),'paused');await page.getByRole('button',{name:'Resume animation',exact:true}).click();
      if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-today.png`),fullPage:true});
      for(const section of ['Deliveries','Orders','Settings']){
-      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).click();await page.waitForLoadState('networkidle');
+      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).click();await page.waitForURL(url=>url.searchParams.get('section')===section.toLowerCase());
+      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).and(page.locator('[aria-current=page]')).waitFor();
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${section} ${width} overflow`);
       assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
       if(section==='Settings'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'Update delivery details'}).getAttribute('href'),'/order');}

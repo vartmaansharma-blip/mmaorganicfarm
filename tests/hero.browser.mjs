@@ -303,6 +303,13 @@ function contrast(foreground, background) {
 }
 
 async function verifyHomepageContrast(page) {
+  // Check the final palette, after the specified 200ms theme colour transition.
+  await page.waitForFunction(() => {
+    const probe=document.createElement('i');
+    probe.style.backgroundColor='var(--color-background)';document.body.append(probe);
+    const target=getComputedStyle(probe).backgroundColor;probe.remove();
+    return getComputedStyle(document.body).backgroundColor===target && !document.getAnimations().some(a => a instanceof CSSTransition && ['color','background-color','border-color'].includes(a.transitionProperty) && a.playState==='running');
+  });
   const colors = await page.locator('#hero-heading, #home p, #home a, .confidence-strip p, .glass-story > p, .story-metrics strong, .story-metrics span, .button, .closing-section .eyebrow, .ticker').evaluateAll(elements => elements.map(element => {
     let ancestor = element;
     let background;
@@ -313,7 +320,7 @@ async function verifyHomepageContrast(page) {
     }
     return { label: element.textContent.trim().slice(0, 35), text: getComputedStyle(element).color, background };
   }));
-  for (const color of colors) assert.ok(contrast(color.text, color.background) >= 4.5, `homepage contrast: ${color.label}`);
+  for (const color of colors) assert.ok(contrast(color.text, color.background) >= 4.5, `homepage contrast: ${JSON.stringify(color)} ratio=${contrast(color.text, color.background)}`);
 }
 
 async function verifyConnectedPages(browser, name) {
@@ -351,7 +358,7 @@ async function verifyConnectedPages(browser, name) {
           editorialContract: bodyStyle.getPropertyValue('--font-fraunces').trim().split(',')[0].trim(),
           interfaceContract: bodyStyle.getPropertyValue('--font-space-grotesk').trim().split(',')[0].trim(),
           headingColor: getComputedStyle(heading).color, headingBackground: background,
-          tokens: Object.fromEntries(keys.map(k => [k, style.getPropertyValue('--ui-' + k).trim()])) };
+          tokens: Object.fromEntries(keys.map(k => { const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const ctx=canvas.getContext('2d');ctx.fillStyle=style.getPropertyValue('--ui-'+k).trim();ctx.fillRect(0,0,1,1);const rgb=[...ctx.getImageData(0,0,1,1).data].slice(0,3);return [k,`rgb(${rgb.join(',')})`]; })) };
       });
       assert.equal(state.overflow, false, `${route} ${theme} mobile overflow`);
       const face = value => value.split(',')[0].replace(/["']/g, '').trim();
@@ -432,9 +439,9 @@ try {
           await toggle.click();
           const dialog = page.getByRole("dialog");
           assert.equal(await dialog.isVisible(), true);
-          await dialog.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
-          const glass = await dialog.evaluate(element => ({ surface: getComputedStyle(element).backgroundColor, backdrop: getComputedStyle(element, '::backdrop').backdropFilter || getComputedStyle(element, '::backdrop').webkitBackdropFilter }));
-          assert.match(glass.surface, /rgba\(/, 'glass menu retains a translucent tinted surface');
+          await dialog.evaluate(element => Promise.allSettled(element.getAnimations().map(animation => animation.finished)));
+          const glass = await dialog.evaluate(element => { const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const ctx=canvas.getContext('2d');ctx.fillStyle=getComputedStyle(element).backgroundColor;ctx.fillRect(0,0,1,1);return { alpha:ctx.getImageData(0,0,1,1).data[3]/255, backdrop:getComputedStyle(element,'::backdrop').backdropFilter || getComputedStyle(element,'::backdrop').webkitBackdropFilter }; });
+          assert.ok(glass.alpha > 0 && glass.alpha < 1, 'glass menu retains a translucent tinted surface');
           assert.match(glass.backdrop, /blur/, 'modal backdrop softens the page behind navigation');
           assert.equal(await dialog.getByRole("navigation").getByRole("link").count(), 5);
           for (let i = 0; i < 10; i++) {

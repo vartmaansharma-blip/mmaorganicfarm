@@ -12,6 +12,7 @@
     "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
+    "test:palette": "node tests/palette.browser.mjs",
     "test:browser": "node tests/hero.browser.mjs",
     "test:hero-video": "node tests/hero-video.browser.mjs",
     "test:shop-hero": "node tests/shop-hero.browser.mjs",
