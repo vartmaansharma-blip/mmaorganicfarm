@@ -94,7 +94,7 @@
   margin: 0;
 }
 .heading h2 span {
-  color: var(--color-action-primary);
+  color: var(--color-text-highlight);
 }
 .heading > button {
   border: 1px solid var(--color-border);
