@@ -17,7 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:4100
+      ACCOUNT_FIXTURE_PORT: "4100"
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_local_fixture
     steps:
       - name: Checkout
