@@ -234,7 +234,7 @@ export default async function AccountPage({
         </div>
         {section === "today" ? <>
           <Link className={styles.todayAddress} href="/account?section=settings">
-            <span className={styles.addressIcon} aria-hidden="true">⌖</span>
+            <span className={styles.addressIcon} aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
             <span className={styles.addressCopy}><strong>Delivering to your saved address</strong><small>{hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : "Add a delivery address to your account."}</small></span>
             <span className={styles.addressManage}>Manage →</span>
           </Link>
