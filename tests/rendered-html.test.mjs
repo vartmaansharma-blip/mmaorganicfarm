@@ -1019,7 +1019,7 @@ test("keeps operational edits consistent and recoverable", async () => {
   assert.match(routingFields, /currentRoute\?\.areaId === nextAreaId/);
   assert.match(routingFields, /Assign automatically in this area/);
   assert.match(routingFields, /disabled=\{!areaId\}/);
-  assert.match(routesStyles, /\.area\{overflow:visible\}/);
+  assert.match(routesStyles, /\.area\s*\{\s*overflow:\s*visible;?\s*\}/);
   assert.match(reliabilitySchema, /refresh_customer_route_impl\(v_customer\.user_id, false\)/);
   assert.match(reliabilitySchema, /resolve_cancellation_request_impl/);
   assert.match(reliabilitySchema, /for update/);

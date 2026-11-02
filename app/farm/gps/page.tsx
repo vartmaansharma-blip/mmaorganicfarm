@@ -31,7 +31,7 @@ export default async function GpsPage({
       <main className={styles.page} data-gps-workspace>
         <section className={styles.hero}>
           <div>
-            <p className={styles.eyebrow}>A clearer way forward</p>
+            <p className={styles.eyebrow}>GPS routing</p>
             <h1>GPS routes are awaiting activation.</h1>
             <p>
               The GPS database update needs review before activation. Your
