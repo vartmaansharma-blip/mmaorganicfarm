@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { PullToRefresh } from "./pull-to-refresh";
+import { ThemeToggle } from "@/app/components/theme-toggle";
 import styles from "./farm-shell.module.css";
 let fallbackPreference = false;
 const preferenceKey = "mma-farm-sidebar-v2";
@@ -139,7 +140,7 @@ export function FarmWorkspaceShell({
         if (event.key === "Tab") {
           const controls = Array.from(
             sidebar.current?.querySelectorAll<HTMLElement>(
-              "a[href],button:not(:disabled)",
+              "a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)",
             ) ?? [],
           );
           if (!controls.length) return;
@@ -208,8 +209,10 @@ export function FarmWorkspaceShell({
           {brand}
         </div>
         <div className={styles.topbarContext}>
-          <span className={styles.workspaceLabel}>Your farm, in focus.</span>
           {staff}
+          <div className={styles.themeControl}>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
       <PullToRefresh surface={surface} />

@@ -87,6 +87,7 @@ function selection(raw, alias = "t") {
     .join(",");
 }
 export async function startFixtureServer(config, { port = 55479 } = {}) {
+  const inFlight = new Set();
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://127.0.0.1:${port}`);
     const token = (req.headers.authorization ?? "").replace(/^Bearer /i, "");
@@ -104,8 +105,11 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
     if (!url.pathname.startsWith("/rest/v1/"))
       return send(404, { message: "Fixture endpoint not supported" });
     const client = new Client(config);
-    await client.connect();
+    let finish;
+    const finished = new Promise(resolve => { finish = resolve; });
+    inFlight.add(finished);
     try {
+      await client.connect();
       await client.query("begin");
       if (!service) {
         await client.query(`set local role ${user ? "authenticated" : "anon"}`);
@@ -214,6 +218,8 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
       });
     } finally {
       await client.end();
+      inFlight.delete(finished);
+      finish();
     }
   });
   await new Promise((resolve, reject) => {
@@ -225,6 +231,7 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
     async stop() {
       server.closeAllConnections();
       await new Promise((resolve) => server.close(resolve));
+      await Promise.all(inFlight);
     },
   };
 }

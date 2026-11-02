@@ -1,5 +1,5 @@
 .section {
-  border: 1px solid #8fa494;
+  border: 1px solid var(--farm-line);
   border-radius: 12px;
   padding: 22px;
   margin: 24px 0;
@@ -22,7 +22,7 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 16px 0;
-  border-top: 1px solid #8fa494;
+  border-top: 1px solid var(--farm-line);
 }
 .section article > div {
   display: grid;

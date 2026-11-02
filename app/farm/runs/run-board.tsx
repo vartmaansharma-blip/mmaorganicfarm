@@ -286,29 +286,35 @@ function RunCard({
         <span className={styles.status}>{runStatus[run.status]}</span>
       </header>
       <Progress status={run.status} />
-      <Link prefetch={false} className={styles.textLink} href={`/farm/gps?date=${date}`}>GPS planning and position ↗</Link>
+      <Link
+        prefetch={false}
+        className={styles.textLink}
+        href={`/farm/gps?date=${date}`}
+      >
+        GPS planning and position ↗
+      </Link>
       <div key={run.status} ref={body} className={styles.runBody}>
         <div className={styles.brief}>
           <h3 tabIndex={-1}>
             {driver
               ? ((
                   {
-                    awaiting_ack: "A quick check before you go",
-                    released: "Ready when you are",
-                    in_progress: "Good things, on their way",
+                    awaiting_ack: "Check the assigned load",
+                    released: "Record departure",
+                    in_progress: "Run in progress",
                     returned: "Back at the farm",
-                    closed: "A day well delivered",
+                    closed: "Run closed",
                   } as Record<string, string>
-                )[run.status] ?? "Let’s get you ready")
+                )[run.status] ?? "Run preparation")
               : (
                   {
-                    loading: "Pack with confidence",
-                    awaiting_ack: "Ready for the driver’s check",
-                    acknowledged: "Checked and ready to release",
-                    released: "Ready for the road",
-                    in_progress: "Deliveries are under way",
-                    returned: "Bring the day into balance",
-                    closed: "Every quantity accounted for",
+                    loading: "Prepare the load",
+                    awaiting_ack: "Awaiting driver check",
+                    acknowledged: "Ready for release",
+                    released: "Run released",
+                    in_progress: "Run in progress",
+                    returned: "Review returned quantities",
+                    closed: "Run closed",
                     cancelled: "Run cancelled",
                   } as Record<string, string>
                 )[run.status]}
@@ -479,8 +485,8 @@ function RunCard({
               />
             </label>
             <p className={styles.helper}>
-              Start after collecting and checking your assigned load. The journey clock begins when you
-              save.
+              Start after collecting and checking your assigned load. The
+              journey clock begins when you save.
             </p>
           </Operation>
         ) : null}
@@ -706,18 +712,12 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
     >
       <section className={styles.welcome}>
         <div>
-          <p>{driver ? "M’ma delivery team" : "From our farm, with care"}</p>
-          <h1>
-            {driver
-              ? currentRuns.length
-                ? "Your day, in motion."
-                : "A good day,\none doorstep at a time."
-              : "Ready for\na smooth morning."}
-          </h1>
+          <p>Delivery operations</p>
+          <h1>{driver ? "My delivery runs" : "Delivery runs"}</h1>
           <span>
             {driver
-              ? "Your load, your journey, your next step. All in one place."
-              : "Bring the team, the load and the route together before anyone leaves."}
+              ? "Check your load, start your run and record deliveries."
+              : "Assign drivers and vehicles, confirm loads and release runs."}
           </span>
         </div>
         <div className={styles.dayMark}>
@@ -725,7 +725,7 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
           <strong>{formatCalendarDate(data.date)}</strong>
           <small>
             {driver
-              ? "Drive with care. Deliver with care."
+              ? "Assigned run status"
               : `${currentRuns.length} ${currentRuns.length === 1 ? "run" : "runs"} · ${currentRuns.filter((r) => r.status === "closed").length} closed`}
           </small>
         </div>

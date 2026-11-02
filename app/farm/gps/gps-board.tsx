@@ -390,12 +390,8 @@ export function GpsBoard({
     <main className={styles.page} data-gps-workspace>
       <header className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>The daily workspace</p>
-          <h1>
-            {driver
-              ? "Your route, thoughtfully planned."
-              : "A clear view of the road ahead."}
-          </h1>
+          <p className={styles.eyebrow}>Delivery operations</p>
+          <h1>{driver ? "My delivery route" : "GPS routing"}</h1>
         </div>
         <form className={styles.date}>
           <label>
@@ -408,12 +404,12 @@ export function GpsBoard({
       <section className={`${styles.hero} ${driver ? styles.driverHero : ""}`}>
         <div>
           <p className={styles.eyebrow}>
-            {driver ? "Your assigned work" : "Today, together"}
+            {driver ? "Your assigned work" : "Run summary"}
           </p>
           <h2>
             {driver
               ? (run?.route_name ?? "My delivery run")
-              : "A good morning,\nbeautifully in motion."}
+              : "Assigned delivery runs"}
           </h2>
           <p>
             {workspace.runs.length
