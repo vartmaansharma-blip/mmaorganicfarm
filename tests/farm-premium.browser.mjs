@@ -16,9 +16,15 @@ await fixture.db.query("update farm_staff set role='admin' where user_id=$1", [
   fixture.manager,
 ]);
 await fixture.release();
+let activateCompetingPlan;
 const bridge = await startFixtureServer(fixture.config, {
   port: 55493,
   manualOrders: Boolean(process.env.PREMIUM_MANUAL_ORDER_ONLY),
+  afterManualPlanLookup: async (client) => {
+    const activate = activateCompetingPlan;
+    activateCompetingPlan = undefined;
+    await activate?.(client);
+  },
 });
 let log = "";
 const server = spawn(
@@ -161,6 +167,35 @@ try {
               await order.getByRole("textbox", { name: "Payment reference" }).fill(reference);
               const submit = order.getByRole("button", { name: "Record paid order" });
               const feedback = order.getByRole("status").or(order.getByRole("alert"));
+
+              let competingPlan;
+              let competingOrder;
+              activateCompetingPlan = async (client) => {
+                competingPlan = (await client.query(
+                  "insert into delivery_plans(user_id,status,start_date,bottle_choice,purchased_deliveries) values($1,'pending_confirmation',$2,'return',30) returning id",
+                  [customer, date],
+                )).rows[0].id;
+                competingOrder = (await client.query(
+                  "insert into orders(user_id,delivery_plan_id,purchase_mode,status,bottle_choice,start_date,subtotal_paise,total_paise,phone_snapshot,address_snapshot) values($1,$2,'plan','pending_payment','return',$3,6200,6200,'0000000000','Fixture address') returning id",
+                  [customer, competingPlan, date],
+                )).rows[0].id;
+                await client.query("select capture_farm_order_payment($1,'cash','TEST-COMPETING-PLAN')", [competingOrder]);
+              };
+              await submit.click();
+              const conflict = order.getByRole("alert");
+              await conflict.waitFor({ timeout: 5000 });
+              assert.match(await conflict.innerText(), /already has a current plan/);
+              const remainingPlans = (await fixture.db.query(
+                "select id,status from delivery_plans where user_id=$1", [customer],
+              )).rows;
+              assert.deepEqual(remainingPlans, [{ id: competingPlan, status: "active" }]);
+              assert.equal((await fixture.db.query(
+                "select count(*)::int as count from payments where provider_payment_id=$1", [reference],
+              )).rows[0].count, 0);
+              await fixture.db.query("delete from payments where order_id=$1", [competingOrder]);
+              await fixture.db.query("delete from orders where id=$1", [competingOrder]);
+              await fixture.db.query("delete from delivery_plans where id=$1", [competingPlan]);
+              await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
 
               // Capacity can change after the manager has opened the form.
               const laterGheeDate = (await fixture.db.query(

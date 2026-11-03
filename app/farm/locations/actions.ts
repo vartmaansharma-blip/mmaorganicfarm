@@ -464,6 +464,7 @@ export async function recordCustomerOrder(formData: FormData) {
 
   let deliveryPlanId: string | null = null;
   if (monthlyRules && monthlyQuote) {
+    const existingPlanMessage = "This customer already has a current plan. Edit that schedule instead of recording another plan.";
     const { data: existingPlan, error: existingPlanError } = await admin
       .from("delivery_plans")
       .select("id")
@@ -476,7 +477,7 @@ export async function recordCustomerOrder(formData: FormData) {
       redirectWithMessage(
         returnTo,
         "error",
-        "This customer already has a current plan. Edit that schedule instead of recording another plan.",
+        existingPlanMessage,
       );
     }
 
@@ -496,7 +497,34 @@ export async function recordCustomerOrder(formData: FormData) {
       })
       .select("id")
       .single();
-    if (planError || !plan) redirectWithMessage(returnTo, "error", planError?.message ?? "The delivery plan could not be created.");
+    if (planError || !plan) {
+      redirectWithMessage(
+        returnTo,
+        "error",
+        planError?.code === "23505" || planError?.message === "This customer already has a current delivery plan"
+          ? existingPlanMessage
+          : planError?.message ?? "The delivery plan could not be created.",
+      );
+    }
+
+    // A different request can activate its plan between the first read and this
+    // insert. Holding the single pending-plan slot lets us recheck before writing
+    // any order or receipt.
+    const { data: activePlan, error: activePlanError } = await admin
+      .from("delivery_plans")
+      .select("id")
+      .eq("user_id", userId)
+      .in("status", ["active", "paused"])
+      .limit(1)
+      .maybeSingle();
+    if (activePlanError || activePlan) {
+      const { error: cleanupError } = await admin.from("delivery_plans").delete().eq("id", plan.id);
+      if (cleanupError) {
+        console.error("Unable to discard the conflicting manual plan", cleanupError.message);
+        redirectWithMessage(returnTo, "error", "The new plan was not recorded. Refresh the customer workspace before retrying.");
+      }
+      redirectWithMessage(returnTo, "error", activePlanError?.message ?? existingPlanMessage);
+    }
     deliveryPlanId = plan.id;
 
     const datedItems = monthlyQuote.days.flatMap(({ date, items }) =>

@@ -86,7 +86,7 @@ function selection(raw, alias = "t") {
     })
     .join(",");
 }
-export async function startFixtureServer(config, { port = 55479, manualOrders = false } = {}) {
+export async function startFixtureServer(config, { port = 55479, manualOrders = false, afterManualPlanLookup } = {}) {
   const manualOrderTables = new Set(["delivery_plans", "scheduled_delivery_items", "orders", "order_items"]);
   const manualOrderCommands = new Set(["refresh_customer_route", "reserve_order_capacity", "release_order_capacity", "capture_farm_order_payment"]);
   const inFlight = new Set();
@@ -228,6 +228,11 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
         const sql = `select ${selection(url.searchParams.get("select") || "*")} from public.${name(table)} t ${where.length ? "where " + where.join(" and ") : ""}${order} limit ${limit} offset ${offset}`;
         result = (await client.query(sql, values)).rows;
         }
+        if (
+          manualOrders && service && req.method === "GET" && table === "delivery_plans" &&
+          url.searchParams.get("select") === "id" &&
+          url.searchParams.get("status") === "in.(pending_confirmation,active,paused)"
+        ) await afterManualPlanLookup?.(client);
         if (req.headers.accept?.includes("application/vnd.pgrst.object+json"))
           result = result.length === 1 ? result[0] : null;
       }
