@@ -71,6 +71,21 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
     : { data: [] };
   const customerNames = new Map((customerProfiles ?? []).map((profile) => [profile.user_id, profile.full_name ?? "Customer"]));
   const {data: receiptChanges} = await admin.from("farm_change_log").select("id,reason,record_id,created_at").eq("record_type","payment").in("record_id", payments.map(p => p.id)).order("created_at",{ascending:false}).limit(25);
+  const orderIds = [...new Set(payments.map((payment) => payment.order_id))];
+  const { data: orderItems, error: orderItemsError } = orderIds.length
+    ? await admin.from("order_items")
+        .select("id,order_id,product_name,quantity,line_total_paise")
+        .in("order_id", orderIds)
+        .order("product_key")
+    : { data: [], error: null };
+  if (orderItemsError) throw orderItemsError;
+
+  const itemsByOrder = new Map<string, NonNullable<typeof orderItems>[number][]>();
+  for (const item of orderItems ?? []) {
+    const items = itemsByOrder.get(item.order_id) ?? [];
+    items.push(item);
+    itemsByOrder.set(item.order_id, items);
+  }
   const capturedTotal = payments.reduce((sum, payment) => sum + Number(payment.amount_paise), 0);
   const farmRecordedCount = payments.filter((payment) => payment.provider === "manual").length;
 
@@ -92,6 +107,16 @@ export default async function FarmPaymentsPage({ searchParams }: { searchParams:
       {payments.length ? payments.map((payment) => <article key={payment.id}>
         <div className={styles.rowHeading}><div><strong>{customerNames.get(payment.user_id) ?? "Customer"}</strong><span>Order MMA-{payment.order_id.slice(0, 8).toUpperCase()}</span></div><b>Confirmed</b></div>
         <p>{formatCheckoutAmount(payment.amount_paise)}</p>
+        {itemsByOrder.has(payment.order_id) ? (
+          <ul className={styles.receiptItems} aria-label="Items on the order">
+            {itemsByOrder.get(payment.order_id)?.map((item) => (
+              <li key={item.id}>
+                <span>{item.product_name} × {Number(item.quantity)}</span>
+                <span>{formatCheckoutAmount(Number(item.line_total_paise))}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <small>{payment.provider === "manual" && !payment.payment_method ? "Farm recorded" : paymentMethodLabel(payment.payment_method)} · {payment.provider_payment_id ?? payment.provider} · {new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}</small>
         {!customerId ? <Link prefetch={false} href={`/farm/customers/${payment.user_id}`}>Open customer</Link> : null}
         {payment.provider === "manual" ? <details className={styles.correction}><summary>Edit receipt details</summary><FarmForm action={correctPaymentDetails}>

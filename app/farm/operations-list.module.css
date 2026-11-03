@@ -347,3 +347,20 @@
     align-items: center;
   }
 }
+
+.receiptItems {
+  border-block: 1px solid var(--farm-line);
+  display: grid;
+  font-size: 13px;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.receiptItems li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+}

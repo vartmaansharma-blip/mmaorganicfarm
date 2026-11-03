@@ -157,6 +157,8 @@ try {
             if (process.env.PREMIUM_MANUAL_ORDER_ONLY && !results.length) {
               const date = await order.locator('input[name="startDate"]').inputValue();
               const expected = Number(await order.locator('input[name="expectedTotalPaise"]').inputValue());
+              const reference = "TEST-MONTHLY-PANEER-GHEE";
+              await order.getByRole("textbox", { name: "Payment reference" }).fill(reference);
               await order.getByRole("button", { name: "Record paid order" }).click();
               const feedback = order.getByRole("status").or(order.getByRole("alert"));
               await feedback.waitFor({ timeout: 5000 });
@@ -182,13 +184,19 @@ try {
                 { product_key: "ghee", quantity: 1 },
                 { product_key: "paneer", quantity: 2 },
               ]);
-              const sheet = await context.newPage();
+              const handoff = await context.newPage();
               try {
-                await sheet.goto(`${base}/farm/delivery-sheet?date=${date}`);
-                await sheet.getByText(/Fresh paneer · 2/).first().waitFor();
-                await sheet.getByText(/Farm ghee · 1/).first().waitFor();
+                await handoff.goto(`${base}/farm/payments?customer=${customer}`);
+                const financeReceipt = handoff.getByRole("article").filter({ hasText: reference });
+                await financeReceipt.getByText(`Order MMA-${receipt[0].id.slice(0, 8).toUpperCase()}`).waitFor();
+                await financeReceipt.getByText(/Fresh paneer × [1-9]/).waitFor();
+                await financeReceipt.getByText(/Farm ghee × [1-9]/).waitFor();
+
+                await handoff.goto(`${base}/farm/delivery-sheet?date=${date}`);
+                await handoff.getByText(/Fresh paneer · 2/).first().waitFor();
+                await handoff.getByText(/Farm ghee · 1/).first().waitFor();
               } finally {
-                await sheet.close();
+                await handoff.close();
               }
             }
           }
