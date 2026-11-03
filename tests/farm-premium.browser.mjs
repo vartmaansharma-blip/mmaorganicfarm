@@ -16,7 +16,10 @@ await fixture.db.query("update farm_staff set role='admin' where user_id=$1", [
   fixture.manager,
 ]);
 await fixture.release();
-const bridge = await startFixtureServer(fixture.config, { port: 55493 });
+const bridge = await startFixtureServer(fixture.config, {
+  port: 55493,
+  manualOrders: Boolean(process.env.PREMIUM_MANUAL_ORDER_ONLY),
+});
 let log = "";
 const server = spawn(
   process.execPath,
@@ -151,6 +154,43 @@ try {
             assert.equal(await order.getByLabel("Bottle").inputValue(), "none");
             await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
             assert.equal(await order.getByRole("button", { name: "Record paid order" }).isEnabled(), true, await order.innerText());
+            if (process.env.PREMIUM_MANUAL_ORDER_ONLY && !results.length) {
+              const date = await order.locator('input[name="startDate"]').inputValue();
+              const expected = Number(await order.locator('input[name="expectedTotalPaise"]').inputValue());
+              await order.getByRole("button", { name: "Record paid order" }).click();
+              const feedback = order.getByRole("status").or(order.getByRole("alert"));
+              await feedback.waitFor({ timeout: 5000 });
+              assert.match(await feedback.innerText(), /Paid order recorded/);
+              const receipt = (await fixture.db.query(
+                `select o.id, o.delivery_plan_id, p.amount_paise::int as amount, o.total_paise::int as total
+                 from orders o join payments p on p.order_id=o.id
+                 where o.user_id=$1 and o.purchase_mode='plan' and p.status='captured'`,
+                [customer],
+              )).rows;
+              assert.equal(receipt.length, 1);
+              assert.equal(receipt[0].amount, expected);
+              assert.equal(receipt[0].total, expected);
+              await fixture.db.query("select set_config('request.jwt.claim.sub',$1,false)", [fixture.manager]);
+              await fixture.db.query("select generate_daily_deliveries($1)", [date]);
+              const items = (await fixture.db.query(
+                `select i.product_key, i.quantity::int as quantity
+                 from daily_deliveries d join daily_delivery_items i on i.delivery_id=d.id
+                 where d.plan_id=$1 and d.delivery_date=$2 order by i.product_key`,
+                [receipt[0].delivery_plan_id, date],
+              )).rows;
+              assert.deepEqual(items, [
+                { product_key: "ghee", quantity: 1 },
+                { product_key: "paneer", quantity: 2 },
+              ]);
+              const sheet = await context.newPage();
+              try {
+                await sheet.goto(`${base}/farm/delivery-sheet?date=${date}`);
+                await sheet.getByText(/Fresh paneer · 2/).first().waitFor();
+                await sheet.getByText(/Farm ghee · 1/).first().waitFor();
+              } finally {
+                await sheet.close();
+              }
+            }
           }
           const diagnostics = await page.evaluate(() => {
             const main = document.querySelector("main");
