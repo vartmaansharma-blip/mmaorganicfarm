@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium, webkit } from "playwright";
 import { gpsFixture } from "./helpers/gps-fixture.mjs";
 import {
@@ -12,11 +12,24 @@ const output = "work/farm-premium",
   base = `http://127.0.0.1:${port}`;
 await mkdir(output, { recursive: true });
 const fixture = await gpsFixture();
+const atomicPayment = process.env.PREMIUM_ATOMIC_MONTHLY_PAYMENT === "1";
+if (atomicPayment) {
+  await fixture.db.query(await readFile(new URL("../docs/verification/record-monthly-farm-payment.local.sql", import.meta.url), "utf8"));
+}
 await fixture.db.query("update farm_staff set role='admin' where user_id=$1", [
   fixture.manager,
 ]);
 await fixture.release();
-const bridge = await startFixtureServer(fixture.config, { port: 55493 });
+let activateCompetingPlan;
+const bridge = await startFixtureServer(fixture.config, {
+  port: 55493,
+  manualOrders: Boolean(process.env.PREMIUM_MANUAL_ORDER_ONLY),
+  afterManualPlanLookup: async (client) => {
+    const activate = activateCompetingPlan;
+    activateCompetingPlan = undefined;
+    await activate?.(client);
+  },
+});
 let log = "";
 const server = spawn(
   process.execPath,
@@ -34,6 +47,7 @@ const server = spawn(
       NEXT_PUBLIC_SUPABASE_URL: bridge.url,
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "fixture-publishable",
       SUPABASE_SECRET_KEY: "local-service-fixture",
+      FARM_ATOMIC_MONTHLY_PAYMENT: atomicPayment ? "true" : "false",
     },
     stdio: ["ignore", "pipe", "pipe"],
   },
@@ -55,6 +69,8 @@ const customer =
       ["Sample household 1"],
     )
   ).rows[0]?.user_id ?? fixture.customer;
+await fixture.db.query("update customer_profiles set phone='0000000000',address_line='Fictional entrance' where user_id=$1", [customer]);
+await fixture.db.query("update production_capacity set daily_limit=1000");
 const allRoutes = [
   "",
   "/runs",
@@ -76,9 +92,9 @@ const allRoutes = [
   "/settings",
   "/staff",
 ];
-const routes = process.env.PREMIUM_OVERVIEW_ONLY
-  ? ["", "/capacity"]
-  : allRoutes;
+const routes = process.env.PREMIUM_MANUAL_ORDER_ONLY
+  ? [`/customers/${customer}`]
+  : process.env.PREMIUM_OVERVIEW_ONLY ? ["", "/capacity"] : allRoutes;
 const results = [];
 let browser;
 try {
@@ -136,6 +152,152 @@ try {
             (await details.count())
           )
             await details.click();
+          if (route === `/customers/${customer}`) {
+            const order = main.locator("#new-order");
+            await order.getByText("Record paid order", { exact: true }).click();
+            await order.getByRole("spinbutton", { name: /Fresh paneer/ }).fill("2");
+            await order.getByLabel("Fresh paneer repeat").selectOption("weekly");
+            await order.getByRole("spinbutton", { name: /Farm ghee/ }).fill("1");
+            await order.getByLabel("Farm ghee repeat").selectOption("fortnightly");
+            await order.getByText("Review dated deliveries", { exact: true }).click();
+            assert.ok(await order.getByText(/2 × Fresh paneer/).count() >= 4);
+            assert.ok(await order.getByText(/1 × Farm ghee/).count() >= 2);
+            assert.equal(await order.getByLabel("Bottle").inputValue(), "none");
+            await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
+            assert.equal(await order.getByRole("button", { name: "Record paid order" }).isEnabled(), true, await order.innerText());
+            if (process.env.PREMIUM_MANUAL_ORDER_ONLY && !results.length) {
+              const date = await order.locator('input[name="startDate"]').inputValue();
+              const recordingId = await order.locator('input[name="recordingId"]').inputValue();
+              const expected = Number(await order.locator('input[name="expectedTotalPaise"]').inputValue());
+              const reference = "TEST-MONTHLY-PANEER-GHEE";
+              await order.getByRole("textbox", { name: "Payment reference" }).fill(reference);
+              const submit = order.getByRole("button", { name: "Record paid order" });
+              const feedback = order.getByRole("status").or(order.getByRole("alert"));
+
+              if (!atomicPayment) {
+                let competingPlan;
+                let competingOrder;
+                activateCompetingPlan = async (client) => {
+                  competingPlan = (await client.query(
+                    "insert into delivery_plans(user_id,status,start_date,bottle_choice,purchased_deliveries) values($1,'pending_confirmation',$2,'return',30) returning id",
+                    [customer, date],
+                  )).rows[0].id;
+                  competingOrder = (await client.query(
+                    "insert into orders(user_id,delivery_plan_id,purchase_mode,status,bottle_choice,start_date,subtotal_paise,total_paise,phone_snapshot,address_snapshot) values($1,$2,'plan','pending_payment','return',$3,6200,6200,'0000000000','Fixture address') returning id",
+                    [customer, competingPlan, date],
+                  )).rows[0].id;
+                  await client.query("select capture_farm_order_payment($1,'cash','TEST-COMPETING-PLAN')", [competingOrder]);
+                };
+                await submit.click();
+                const conflict = order.getByRole("alert");
+                await conflict.waitFor({ timeout: 5000 });
+                assert.match(await conflict.innerText(), /already has a current plan/);
+                const remainingPlans = (await fixture.db.query(
+                  "select id,status from delivery_plans where user_id=$1", [customer],
+                )).rows;
+                assert.deepEqual(remainingPlans, [{ id: competingPlan, status: "active" }]);
+                assert.equal((await fixture.db.query(
+                  "select count(*)::int as count from payments where provider_payment_id=$1", [reference],
+                )).rows[0].count, 0);
+                await fixture.db.query("delete from payments where order_id=$1", [competingOrder]);
+                await fixture.db.query("delete from orders where id=$1", [competingOrder]);
+                await fixture.db.query("delete from delivery_plans where id=$1", [competingPlan]);
+                await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
+              }
+
+              // Capacity can change after the manager has opened the form.
+              const laterGheeDate = (await fixture.db.query(
+                "select ($1::date+14)::text as delivery_date", [date],
+              )).rows[0].delivery_date;
+              await fixture.db.query(
+                "insert into production_capacity_overrides(product_key,delivery_date,daily_limit) values('ghee',$1,0)",
+                [laterGheeDate],
+              );
+              await submit.click();
+              await order.getByRole("alert").filter({ hasText: "capacity is full" }).waitFor();
+              const rejected = (await fixture.db.query(
+                `select
+                  (select count(*)::int from orders where user_id=$1 and purchase_mode='plan') as orders,
+                  (select count(*)::int from delivery_plans where user_id=$1) as plans,
+                  (select count(*)::int from payments where provider_payment_id=$2) as receipts`,
+                [customer, reference],
+              )).rows[0];
+              assert.deepEqual(rejected, { orders: 0, plans: 0, receipts: 0 });
+
+              await fixture.db.query(
+                "delete from production_capacity_overrides where product_key='ghee' and delivery_date=$1",
+                [laterGheeDate],
+              );
+              await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
+              await submit.click();
+              await feedback.filter({ hasText: "Paid order recorded" }).waitFor({ timeout: 5000 });
+              const receipt = (await fixture.db.query(
+                `select o.id, o.delivery_plan_id, p.amount_paise::int as amount, o.total_paise::int as total
+                 from orders o join payments p on p.order_id=o.id
+                 where o.user_id=$1 and o.purchase_mode='plan' and p.status='captured'`,
+                [customer],
+              )).rows;
+              assert.equal(receipt.length, 1);
+              if (atomicPayment) assert.equal(receipt[0].id, recordingId);
+              assert.equal(receipt[0].amount, expected);
+              assert.equal(receipt[0].total, expected);
+              await fixture.db.query("select set_config('request.jwt.claim.sub',$1,false)", [fixture.manager]);
+              await fixture.db.query("select generate_daily_deliveries($1)", [date]);
+              const items = (await fixture.db.query(
+                `select i.product_key, i.quantity::int as quantity
+                 from daily_deliveries d join daily_delivery_items i on i.delivery_id=d.id
+                 where d.plan_id=$1 and d.delivery_date=$2 order by i.product_key`,
+                [receipt[0].delivery_plan_id, date],
+              )).rows;
+              assert.deepEqual(items, [
+                { product_key: "ghee", quantity: 1 },
+                { product_key: "paneer", quantity: 2 },
+              ]);
+              const handoff = await context.newPage();
+              try {
+                await handoff.goto(`${base}/farm/payments?customer=${customer}`);
+                const financeReceipt = handoff.getByRole("article").filter({ hasText: reference });
+                await financeReceipt.getByText(`Order MMA-${receipt[0].id.slice(0, 8).toUpperCase()}`).waitFor();
+                await financeReceipt.getByText(/Fresh paneer × [1-9]/).waitFor();
+                await financeReceipt.getByText(/Farm ghee × [1-9]/).waitFor();
+
+                await handoff.goto(`${base}/farm/delivery-sheet?date=${date}`);
+                await handoff.getByText(/Fresh paneer · 2 × 500 g/).first().waitFor();
+                await handoff.getByText(/Farm ghee · 1 × 500 g/).first().waitFor();
+              } finally {
+                await handoff.close();
+              }
+              const customerContext = await browser.newContext({
+                viewport: { width, height: 950 },
+              });
+              try {
+                await customerContext.addCookies([cookie(customer)]);
+                const calendar = await customerContext.newPage();
+                await calendar.goto(`${base}/calendar?plan=${receipt[0].delivery_plan_id}`);
+                const monthly = calendar.getByRole("region", { name: "Your monthly delivery plan" });
+                await monthly.getByText("See all delivery dates", { exact: true }).click();
+                const firstDelivery = monthly.getByRole("listitem").filter({
+                  has: calendar.locator(`time[datetime="${date}"]`),
+                });
+                await firstDelivery.getByText(/Fresh paneer · 2 × 500 g/).waitFor();
+                await firstDelivery.getByText(/Farm ghee · 1 × 500 g/).waitFor();
+                assert.ok(await monthly.getByText(/Fresh paneer · 2 × 500 g/).count() >= 4);
+                assert.ok(await monthly.getByText(/Farm ghee · 1 × 500 g/).count() >= 2);
+
+                await calendar.goto(`${base}/account?section=orders`);
+                const orderNumber = `Order MMA-${receipt[0].id.slice(0, 8).toUpperCase()}`;
+                const history = calendar.locator("details").filter({ hasText: orderNumber });
+                await history.getByText("Scheduled plan", { exact: true }).waitFor();
+                if (!(await history.getByText(orderNumber, { exact: false }).isVisible())) {
+                  await history.locator("summary").click();
+                }
+                await history.getByText("Fresh paneer", { exact: true }).waitFor();
+                await history.getByText("Farm ghee", { exact: true }).waitFor();
+              } finally {
+                await customerContext.close();
+              }
+            }
+          }
           const diagnostics = await page.evaluate(() => {
             const main = document.querySelector("main");
             const rgb = (s) => {

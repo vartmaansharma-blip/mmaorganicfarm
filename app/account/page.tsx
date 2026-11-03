@@ -11,7 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
-import { buildDeliveryCalendar, productName, todayInIndia } from "@/lib/delivery-calendar";
+import { buildDeliveryCalendar, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
@@ -530,7 +530,7 @@ export default async function AccountPage({
                       <p key={item.id}>
                         <span>{item.product_name}</span>
                         <b>
-                          {Number(item.quantity)} {item.unit}
+                          {formatDeliveryQuantity(item.quantity, item.unit)}
                         </b>
                       </p>
                     ))}

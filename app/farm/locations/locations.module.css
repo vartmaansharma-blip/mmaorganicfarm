@@ -897,8 +897,8 @@
   font-size: 12px;
 }
 .orderPreview {
-  background: var(--farm-pine);
-  color: var(--farm-ivory);
+  background: var(--farm-surface);
+  color: var(--farm-ink);
   display: grid;
   gap: 15px;
   padding: 17px;
@@ -956,12 +956,12 @@
 }
 .previewTotal dt,
 .previewTotal dd {
-  color: var(--farm-ivory);
+  color: var(--farm-ink);
   font-size: 14px;
   font-weight: 600;
 }
 .capacityCheck {
-  background: var(--farm-pine);
+  background: var(--farm-soft);
   border: 1px solid var(--farm-line-strong);
   border-radius: 12px;
   display: grid;
@@ -1010,9 +1010,11 @@
   background: var(--farm-warning);
   border-color: var(--farm-warning-line);
 }
+.capacityConflict,
 .capacityConflict > div span,
+.capacityConflict li span,
 .capacityConflict li b {
-  color: var(--farm-ivory);
+  color: var(--farm-warning-ink);
 }
 .formWarning {
   background: var(--farm-warning);

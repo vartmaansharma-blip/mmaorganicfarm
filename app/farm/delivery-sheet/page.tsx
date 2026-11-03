@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   formatCalendarDate,
+  formatDeliveryQuantity,
   productName,
   todayInIndia,
 } from "@/lib/delivery-calendar";
@@ -112,13 +113,6 @@ type RouteGroup = {
 
 function validDate(value: string | undefined) {
   return validOperationalDate(value);
-}
-
-function quantityLabel(item: DeliveryItem) {
-  const quantity = Number(item.quantity);
-  return /^1\s/.test(item.unit)
-    ? `${quantity} × ${item.unit}`
-    : `${quantity} ${item.unit}${quantity === 1 ? "" : "s"}`;
 }
 
 function phoneUrl(phone: string) {
@@ -927,7 +921,7 @@ export default async function DeliverySheetPage({
                           {(stop.daily_delivery_items ?? []).map((item) => (
                             <span key={item.product_key}>
                               {productName(item.product_key)} ·{" "}
-                              {quantityLabel(item)}
+                              {formatDeliveryQuantity(item.quantity, item.unit)}
                             </span>
                           ))}
                           {stop.bottle_return_required ? (

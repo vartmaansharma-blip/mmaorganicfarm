@@ -968,7 +968,9 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(manualOrderForm, /Record paid order/);
   assert.match(manualOrderForm, /Live · Paid order/);
   assert.match(manualOrderForm, /Capacity impact/);
-  assert.match(manualOrderForm, /calculatePlanPricing/);
+  assert.match(manualOrderForm, /quoteMonthlySchedule/);
+  assert.match(manualOrderForm, /Review dated deliveries/);
+  assert.match(actions, /scheduled_delivery_items/);
   assert.match(manualOrderForm, /orderReady \? <FormSubmitButton/);
   assert.match(actions, /createCustomerProfile/);
   assert.match(actions, /createManagedCustomer/);

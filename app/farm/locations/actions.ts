@@ -19,12 +19,13 @@ import {
   FARM_PRODUCTS,
   type FarmProductSelection,
 } from "@/lib/farm-products";
+import { quoteMonthlySchedule } from "@/lib/monthly-schedule";
+import { manualMonthlyRoutines } from "@/lib/manual-monthly-order";
+import { validShopDate } from "@/lib/shop-draft";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { MILK_PLAN_DAYS, type WeeklyMilkSchedule } from "@/lib/milk-plan";
 import {
   calculateOrderPricing,
-  calculatePlanPricing,
-  PLAN_DELIVERY_COUNT,
   type BottleChoice,
 } from "@/lib/order-pricing";
 import {
@@ -370,7 +371,7 @@ export async function recordCustomerOrder(formData: FormData) {
   const returnTo = customerReturnPath(formData, userId);
   const purchaseMode = textValue(formData, "purchaseMode") === "plan" ? "plan" : "once";
   const requestedBottle = textValue(formData, "bottleChoice");
-  const bottleChoice: BottleChoice = requestedBottle === "new"
+  const selectedBottle: BottleChoice = requestedBottle === "new"
     ? "new"
     : requestedBottle === "none"
       ? "none"
@@ -390,6 +391,25 @@ export async function recordCustomerOrder(formData: FormData) {
     Number(formData.get(`milkDay${index + 1}`) ?? 0),
   ) as WeeklyMilkSchedule;
 
+  const monthlyRules = purchaseMode === "plan" ? manualMonthlyRoutines(
+    startDate,
+    schedule,
+    (["paneer", "ghee"] as const).map((id) => ({
+      id,
+      quantity: Number(formData.get(`${id}Quantity`) ?? 0),
+      repeat: textValue(formData, `${id}Repeat`),
+      firstDate: textValue(formData, `${id}FirstDate`),
+    })),
+  ) : null;
+  const milkSelected = purchaseMode === "plan"
+    ? Boolean(monthlyRules?.some((rule) => rule.id === "milk"))
+    : onceMilk > 0;
+  const bottleChoice = purchaseMode === "once"
+    ? selectedBottle
+    : milkSelected && selectedBottle === "new"
+      ? "new"
+      : milkSelected ? "return" : "none";
+
   if (!userId) redirectWithMessage("/farm/locations", "error", "Choose a customer.");
   if (!paymentConfirmed || !paymentMethod) {
     redirectWithMessage(returnTo, "error", "Confirm the received payment and choose how it was paid.");
@@ -397,15 +417,11 @@ export async function recordCustomerOrder(formData: FormData) {
   if (paymentReference.length > 120) {
     redirectWithMessage(returnTo, "error", "The payment reference is too long.");
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || startDate < earliestStart) {
+  if (!validShopDate(startDate) || startDate < earliestStart) {
     redirectWithMessage(returnTo, "error", "Choose a valid delivery start date.");
   }
-  if (
-    purchaseMode === "plan" &&
-    (schedule.some((quantity) => !Number.isInteger(quantity) || quantity < 0 || quantity > 5) ||
-      schedule.every((quantity) => quantity === 0))
-  ) {
-    redirectWithMessage(returnTo, "error", "Add a valid seven-day milk schedule.");
+  if (purchaseMode === "plan" && !monthlyRules) {
+    redirectWithMessage(returnTo, "error", "Choose at least one product and valid delivery dates within the prepaid month.");
   }
   if (
     purchaseMode === "once" &&
@@ -436,17 +452,76 @@ export async function recordCustomerOrder(formData: FormData) {
   }
 
   const firstPlanStart = purchaseMode === "plan" ? await firstScheduledPlanStart(admin, userId) : null;
-  const pricing = purchaseMode === "plan"
-    ? calculatePlanPricing({ prices, bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
-    : calculateOrderPricing({ prices, bottleChoice, milkLitres: onceMilk, products });
+  const monthlyQuote = monthlyRules
+    ? quoteMonthlySchedule({ prices, bottleChoice, rules: monthlyRules, start: startDate, firstPlanStart: firstPlanStart ?? startDate })
+    : null;
+  const pricing = monthlyQuote ?? calculateOrderPricing({ prices, bottleChoice, milkLitres: onceMilk, products });
 
   if (textValue(formData, "catalogueRevision") !== revision || Number(formData.get("expectedTotalPaise")) !== priceInPaise(pricing.total)) {
     revalidatePath("/", "layout");
     redirectWithMessage(returnTo, "error", "Product prices changed. Review the current total and confirm the received payment again.");
   }
 
+  const monthlyItems = monthlyQuote && monthlyRules
+    ? monthlyRules.map(({ id, firstDate }) => ({
+        delivery_date: firstDate,
+        frequency: "once" as const,
+        line_total_paise: priceInPaise(monthlyQuote.productTotals[id]),
+        product_key: id,
+        product_name: id === "milk" ? "Fresh farm milk" : FARM_PRODUCTS.find((item) => item.id === id)!.name,
+        quantity: monthlyQuote.quantities[id],
+        scheduled_days: [],
+        unit: id === "milk" ? "litre" : "500 g",
+        unit_price_paise: priceInPaise(prices[id]),
+      }))
+    : null;
+
+  function finishRecording() {
+    revalidatePath("/farm");
+    revalidatePath("/farm/locations");
+    revalidatePath("/farm/routes");
+    revalidatePath("/farm/payments");
+    revalidatePath("/farm/orders");
+    revalidatePath("/farm/capacity");
+    revalidatePath("/farm/subscriptions");
+    revalidatePath("/farm/delivery-sheet");
+    revalidatePath("/account");
+    revalidatePath("/calendar");
+    revalidatePath(`/farm/customers/${userId}`);
+    const recorded = purchaseMode === "plan"
+      ? "Paid order recorded and schedule activated."
+      : "Paid one-time order recorded.";
+    const routing = assignedRouteId
+      ? "Route confirmed."
+      : "This customer still needs a route.";
+    redirectWithMessage(returnTo, "message", `${recorded} ${routing}`);
+  }
+
+  if (monthlyRules && monthlyItems && process.env.FARM_ATOMIC_MONTHLY_PAYMENT === "true") {
+    const orderId = textValue(formData, "recordingId");
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)) {
+      redirectWithMessage(returnTo, "error", "Reload the customer workspace before recording this payment.");
+    }
+    const { error } = await admin.rpc("record_monthly_farm_payment", {
+      p_order_id: orderId,
+      p_user_id: userId,
+      p_start_date: startDate,
+      p_bottle_choice: bottleChoice,
+      p_rules: monthlyRules,
+      p_items: monthlyItems,
+      p_catalog_revision: revision,
+      p_total_paise: priceInPaise(pricing.total),
+      p_bottle_paise: priceInPaise(pricing.bottleCharge),
+      p_payment_method: paymentMethod,
+      p_reference: paymentReference || `MANUAL-${orderId.toUpperCase()}`,
+    });
+    if (error) redirectWithMessage(returnTo, "error", error.message);
+    return finishRecording();
+  }
+
   let deliveryPlanId: string | null = null;
-  if (purchaseMode === "plan") {
+  if (monthlyRules && monthlyQuote) {
+    const existingPlanMessage = "This customer already has a current plan. Edit that schedule instead of recording another plan.";
     const { data: existingPlan, error: existingPlanError } = await admin
       .from("delivery_plans")
       .select("id")
@@ -459,7 +534,7 @@ export async function recordCustomerOrder(formData: FormData) {
       redirectWithMessage(
         returnTo,
         "error",
-        "This customer already has a current plan. Edit that schedule instead of recording another plan.",
+        existingPlanMessage,
       );
     }
 
@@ -469,29 +544,57 @@ export async function recordCustomerOrder(formData: FormData) {
         bottle_choice: bottleChoice,
         delivered_deliveries: 0,
         is_test: false,
-        purchased_deliveries: PLAN_DELIVERY_COUNT,
+        billing_model: "calendar_month",
+        period_end_exclusive: monthlyQuote.endExclusive,
+        schedule_rules: monthlyRules,
+        purchased_deliveries: 0,
         start_date: startDate,
         status: "pending_confirmation",
         user_id: userId,
       })
       .select("id")
       .single();
-    if (planError || !plan) redirectWithMessage(returnTo, "error", planError?.message ?? "The delivery plan could not be created.");
+    if (planError || !plan) {
+      redirectWithMessage(
+        returnTo,
+        "error",
+        planError?.code === "23505" || planError?.message === "This customer already has a current delivery plan"
+          ? existingPlanMessage
+          : planError?.message ?? "The delivery plan could not be created.",
+      );
+    }
+
+    // A different request can activate its plan between the first read and this
+    // insert. Holding the single pending-plan slot lets us recheck before writing
+    // any order or receipt.
+    const { data: activePlan, error: activePlanError } = await admin
+      .from("delivery_plans")
+      .select("id")
+      .eq("user_id", userId)
+      .in("status", ["active", "paused"])
+      .limit(1)
+      .maybeSingle();
+    if (activePlanError || activePlan) {
+      const { error: cleanupError } = await admin.from("delivery_plans").delete().eq("id", plan.id);
+      if (cleanupError) {
+        console.error("Unable to discard the conflicting manual plan", cleanupError.message);
+        redirectWithMessage(returnTo, "error", "The new plan was not recorded. Refresh the customer workspace before retrying.");
+      }
+      redirectWithMessage(returnTo, "error", activePlanError?.message ?? existingPlanMessage);
+    }
     deliveryPlanId = plan.id;
 
-    const weeklyItems = schedule.flatMap((quantity, index) =>
-      quantity > 0
-        ? [{
-            day_of_week: index + 1,
-            plan_id: plan.id,
-            product_key: "milk",
-            quantity,
-            unit: "litre",
-            user_id: userId,
-          }]
-        : [],
+    const datedItems = monthlyQuote.days.flatMap(({ date, items }) =>
+      items.map(({ id, quantity }) => ({
+        delivery_date: date,
+        plan_id: plan.id,
+        product_key: id,
+        quantity,
+        unit: id === "milk" ? "litre" : "500 g",
+        user_id: userId,
+      })),
     );
-    const { error: scheduleError } = await admin.from("weekly_delivery_items").insert(weeklyItems);
+    const { error: scheduleError } = await admin.from("scheduled_delivery_items").insert(datedItems);
     if (scheduleError) {
       await admin.from("delivery_plans").delete().eq("id", plan.id);
       redirectWithMessage(returnTo, "error", scheduleError.message);
@@ -530,39 +633,36 @@ export async function recordCustomerOrder(formData: FormData) {
     revalidatePath("/", "layout");
     redirectWithMessage(returnTo, "error", "Product prices changed. Review the new total before recording payment.");
   }
-  const scheduledDays = purchaseMode === "plan"
-    ? schedule.flatMap((quantity, index) => quantity > 0 ? [index + 1] : [])
-    : [];
-  const orderItems = [
-    ...(pricing.milkLitres > 0
-      ? [{
+  const orderItems = monthlyItems
+    ? monthlyItems.map((item) => ({ ...item, order_id: order.id, user_id: userId }))
+    : [
+        ...(pricing.milkLitres > 0 ? [{
           delivery_date: startDate,
-          frequency: purchaseMode === "plan" ? "weekly" : "once",
+          frequency: "once" as const,
           line_total_paise: priceInPaise(pricing.milkTotal),
           order_id: order.id,
           product_key: "milk",
           product_name: "Fresh farm milk",
           quantity: pricing.milkLitres,
-          scheduled_days: scheduledDays,
-          unit: purchaseMode === "plan" ? "litres / 30 deliveries" : "litre",
+          scheduled_days: [],
+          unit: "litre",
           unit_price_paise: priceInPaise(prices.milk),
           user_id: userId,
-        }]
-      : []),
-    ...products.map((product) => ({
-      delivery_date: startDate,
-      frequency: "once",
-      line_total_paise: priceInPaise((pricing.productTotals[product.id] ?? 0)),
-      order_id: order.id,
-      product_key: product.id,
-      product_name: product.name,
-      quantity: product.quantity,
-      scheduled_days: [],
-      unit: product.unit,
-      unit_price_paise: priceInPaise(product.price),
-      user_id: userId,
-    })),
-  ];
+        }] : []),
+        ...products.map((product) => ({
+          delivery_date: startDate,
+          frequency: "once" as const,
+          line_total_paise: priceInPaise(pricing.productTotals[product.id] ?? 0),
+          order_id: order.id,
+          product_key: product.id,
+          product_name: product.name,
+          quantity: product.quantity,
+          scheduled_days: [],
+          unit: product.unit,
+          unit_price_paise: priceInPaise(product.price),
+          user_id: userId,
+        })),
+      ];
   const { error: itemsError } = await admin.from("order_items").insert(orderItems);
   if (itemsError) {
     await admin.from("orders").delete().eq("id", order.id);
@@ -595,18 +695,7 @@ export async function recordCustomerOrder(formData: FormData) {
     redirectWithMessage(returnTo, "error", paymentError.message);
   }
 
-  revalidatePath("/farm");
-  revalidatePath("/farm/locations");
-  revalidatePath("/farm/routes");
-  revalidatePath("/farm/payments");
-  revalidatePath(`/farm/customers/${userId}`);
-  redirectWithMessage(
-    returnTo,
-    "message",
-    assignedRouteId
-      ? "Paid order recorded, schedule activated, and route confirmed."
-      : "Paid order recorded and schedule activated. This customer still needs a route.",
-  );
+  return finishRecording();
 }
 
 export async function deleteCustomerProfile(formData: FormData) {
