@@ -159,10 +159,35 @@ try {
               const expected = Number(await order.locator('input[name="expectedTotalPaise"]').inputValue());
               const reference = "TEST-MONTHLY-PANEER-GHEE";
               await order.getByRole("textbox", { name: "Payment reference" }).fill(reference);
-              await order.getByRole("button", { name: "Record paid order" }).click();
+              const submit = order.getByRole("button", { name: "Record paid order" });
               const feedback = order.getByRole("status").or(order.getByRole("alert"));
-              await feedback.waitFor({ timeout: 5000 });
-              assert.match(await feedback.innerText(), /Paid order recorded/);
+
+              // Capacity can change after the manager has opened the form.
+              const laterGheeDate = (await fixture.db.query(
+                "select ($1::date+14)::text as delivery_date", [date],
+              )).rows[0].delivery_date;
+              await fixture.db.query(
+                "insert into production_capacity_overrides(product_key,delivery_date,daily_limit) values('ghee',$1,0)",
+                [laterGheeDate],
+              );
+              await submit.click();
+              await order.getByRole("alert").filter({ hasText: "capacity is full" }).waitFor();
+              const rejected = (await fixture.db.query(
+                `select
+                  (select count(*)::int from orders where user_id=$1 and purchase_mode='plan') as orders,
+                  (select count(*)::int from delivery_plans where user_id=$1) as plans,
+                  (select count(*)::int from payments where provider_payment_id=$2) as receipts`,
+                [customer, reference],
+              )).rows[0];
+              assert.deepEqual(rejected, { orders: 0, plans: 0, receipts: 0 });
+
+              await fixture.db.query(
+                "delete from production_capacity_overrides where product_key='ghee' and delivery_date=$1",
+                [laterGheeDate],
+              );
+              await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
+              await submit.click();
+              await feedback.filter({ hasText: "Paid order recorded" }).waitFor({ timeout: 5000 });
               const receipt = (await fixture.db.query(
                 `select o.id, o.delivery_plan_id, p.amount_paise::int as amount, o.total_paise::int as total
                  from orders o join payments p on p.order_id=o.id
