@@ -606,3 +606,12 @@ test("manual monthly payment quotes independent paneer and ghee dates without re
   assert.equal(quote.bottleCharge, 0);
   assert.equal(manualMonthlyRoutines(start, emptyMilk, [{ ...extras[0], firstDate: "2026-12-07" }]), null);
 });
+
+test("delivery quantities distinguish a count of packs from the pack size", () => {
+  const { formatDeliveryQuantity } = load("lib/delivery-calendar.ts");
+  assert.equal(formatDeliveryQuantity("2", "500 g"), "2 × 500 g");
+  assert.equal(formatDeliveryQuantity(1, "500 g"), "1 × 500 g");
+  assert.equal(formatDeliveryQuantity(2, "1 kg"), "2 × 1 kg");
+  assert.equal(formatDeliveryQuantity(1, "litre"), "1 litre");
+  assert.equal(formatDeliveryQuantity(5, "litre"), "5 litres");
+});

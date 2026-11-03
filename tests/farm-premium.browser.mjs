@@ -193,10 +193,39 @@ try {
                 await financeReceipt.getByText(/Farm ghee × [1-9]/).waitFor();
 
                 await handoff.goto(`${base}/farm/delivery-sheet?date=${date}`);
-                await handoff.getByText(/Fresh paneer · 2/).first().waitFor();
-                await handoff.getByText(/Farm ghee · 1/).first().waitFor();
+                await handoff.getByText(/Fresh paneer · 2 × 500 g/).first().waitFor();
+                await handoff.getByText(/Farm ghee · 1 × 500 g/).first().waitFor();
               } finally {
                 await handoff.close();
+              }
+              const customerContext = await browser.newContext({
+                viewport: { width, height: 950 },
+              });
+              try {
+                await customerContext.addCookies([cookie(customer)]);
+                const calendar = await customerContext.newPage();
+                await calendar.goto(`${base}/calendar?plan=${receipt[0].delivery_plan_id}`);
+                const monthly = calendar.getByRole("region", { name: "Your monthly delivery plan" });
+                await monthly.getByText("See all delivery dates", { exact: true }).click();
+                const firstDelivery = monthly.getByRole("listitem").filter({
+                  has: calendar.locator(`time[datetime="${date}"]`),
+                });
+                await firstDelivery.getByText(/Fresh paneer · 2 × 500 g/).waitFor();
+                await firstDelivery.getByText(/Farm ghee · 1 × 500 g/).waitFor();
+                assert.ok(await monthly.getByText(/Fresh paneer · 2 × 500 g/).count() >= 4);
+                assert.ok(await monthly.getByText(/Farm ghee · 1 × 500 g/).count() >= 2);
+
+                await calendar.goto(`${base}/account?section=orders`);
+                const orderNumber = `Order MMA-${receipt[0].id.slice(0, 8).toUpperCase()}`;
+                const history = calendar.locator("details").filter({ hasText: orderNumber });
+                await history.getByText("Scheduled plan", { exact: true }).waitFor();
+                if (!(await history.getByText(orderNumber, { exact: false }).isVisible())) {
+                  await history.locator("summary").click();
+                }
+                await history.getByText("Fresh paneer", { exact: true }).waitFor();
+                await history.getByText("Farm ghee", { exact: true }).waitFor();
+              } finally {
+                await customerContext.close();
               }
             }
           }
