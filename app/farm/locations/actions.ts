@@ -399,6 +399,8 @@ export async function recordCustomerOrder(formData: FormData) {
       quantity: Number(formData.get(`${id}Quantity`) ?? 0),
       repeat: textValue(formData, `${id}Repeat`),
       firstDate: textValue(formData, `${id}FirstDate`),
+      dates: formData.getAll(`${id}DeliveryDate`).map(String),
+      weekdays: formData.getAll(`${id}Weekday`).map(Number),
     })),
   ) : null;
   const milkSelected = purchaseMode === "plan"

@@ -156,9 +156,15 @@ try {
             const order = main.locator("#new-order");
             await order.getByText("Record paid order", { exact: true }).click();
             await order.getByRole("spinbutton", { name: /Fresh paneer/ }).fill("2");
-            await order.getByLabel("Fresh paneer repeat").selectOption("weekly");
+            const firstDate = await order.locator('input[name="startDate"]').inputValue();
+            const firstWeekday = new Date(firstDate).getUTCDay() || 7;
+            await order.getByLabel("Fresh paneer repeat").selectOption("days");
+            await order.locator(`input[name="paneerWeekday"][value="${firstWeekday}"]`).check();
+            await order.locator(`input[name="paneerWeekday"][value="${firstWeekday % 7 + 1}"]`).check();
             await order.getByRole("spinbutton", { name: /Farm ghee/ }).fill("1");
-            await order.getByLabel("Farm ghee repeat").selectOption("fortnightly");
+            await order.getByLabel("Farm ghee repeat").selectOption("custom");
+            await order.locator('input[name="gheeDeliveryDate"]').nth(0).check();
+            await order.locator('input[name="gheeDeliveryDate"]').nth(13).check();
             await order.getByText("Review dated deliveries", { exact: true }).click();
             assert.ok(await order.getByText(/2 × Fresh paneer/).count() >= 4);
             assert.ok(await order.getByText(/1 × Farm ghee/).count() >= 2);
@@ -207,7 +213,7 @@ try {
 
               // Capacity can change after the manager has opened the form.
               const laterGheeDate = (await fixture.db.query(
-                "select ($1::date+14)::text as delivery_date", [date],
+                "select ($1::date+13)::text as delivery_date", [date],
               )).rows[0].delivery_date;
               await fixture.db.query(
                 "insert into production_capacity_overrides(product_key,delivery_date,daily_limit) values('ghee',$1,0)",
@@ -282,7 +288,11 @@ try {
                 await firstDelivery.getByText(/Fresh paneer · 2 × 500 g/).waitFor();
                 await firstDelivery.getByText(/Farm ghee · 1 × 500 g/).waitFor();
                 assert.ok(await monthly.getByText(/Fresh paneer · 2 × 500 g/).count() >= 4);
-                assert.ok(await monthly.getByText(/Farm ghee · 1 × 500 g/).count() >= 2);
+                assert.equal(await monthly.getByText(/Farm ghee · 1 × 500 g/).count(), 2);
+                const secondGhee = monthly.getByRole("listitem").filter({
+                  has: calendar.locator(`time[datetime="${laterGheeDate}"]`),
+                });
+                await secondGhee.getByText(/Farm ghee · 1 × 500 g/).waitFor();
 
                 await calendar.goto(`${base}/account?section=orders`);
                 const orderNumber = `Order MMA-${receipt[0].id.slice(0, 8).toUpperCase()}`;

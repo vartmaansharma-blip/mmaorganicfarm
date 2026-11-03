@@ -8,7 +8,7 @@ import {
   formatCalendarDate,
 } from "@/lib/delivery-calendar";
 import { manualMonthlyRoutines } from "@/lib/manual-monthly-order";
-import { quoteMonthlySchedule } from "@/lib/monthly-schedule";
+import { quoteMonthlySchedule, recommendedDates } from "@/lib/monthly-schedule";
 import { FARM_PRODUCTS } from "@/lib/farm-products";
 import { MILK_PLAN_DAYS, type WeeklyMilkSchedule } from "@/lib/milk-plan";
 import {
@@ -80,6 +80,9 @@ function OrderEditor({
   );
   const [productRepeat, setProductRepeat] = useState<Record<string, string>>({});
   const [productFirstDate, setProductFirstDate] = useState<Record<string, string>>({});
+  const [productDates, setProductDates] = useState<Record<string, string[]>>({});
+  const [productWeekdays, setProductWeekdays] = useState<Record<string, string[]>>({});
+  const availableDates = purchaseMode === "plan" ? recommendedDates("milk", startDate) : [];
   const milkSelected = purchaseMode === "plan"
     ? schedule.some((quantity) => quantity > 0)
     : milkLitres > 0;
@@ -94,6 +97,8 @@ function OrderEditor({
       quantity: productQuantities[id] ?? 0,
       repeat: productRepeat[id] ?? "once",
       firstDate: productFirstDate[id] ?? startDate,
+      dates: (productDates[id] ?? []).filter((date) => availableDates.includes(date)),
+      weekdays: (productWeekdays[id] ?? []).map(Number),
     })),
   ) : null;
   const monthlyQuote = monthlyRules ? quoteMonthlySchedule({
@@ -234,14 +239,60 @@ function OrderEditor({
                     <option value="once">Once</option>
                     <option value="weekly">Every week</option>
                     <option value="fortnightly">Every two weeks</option>
+                    <option value="days">Choose weekdays</option>
+                    <option value="custom">Choose exact dates</option>
                   </select>
                 </label>
-                <label>
-                  <span>First {product.name.toLowerCase()} delivery</span>
-                  <input name={`${product.id}FirstDate`} type="date" min={startDate} required
-                    value={productFirstDate[product.id] ?? startDate}
-                    onChange={(event) => setProductFirstDate((current) => ({ ...current, [product.id]: event.target.value }))} />
-                </label>
+                {productRepeat[product.id] !== "custom" && (
+                  <label>
+                    <span>{productRepeat[product.id] === "days"
+                      ? `${product.name} weekdays start from`
+                      : `First ${product.name.toLowerCase()} delivery`}</span>
+                    <input name={`${product.id}FirstDate`} type="date" min={startDate}
+                      max={availableDates.at(-1)} required value={productFirstDate[product.id] ?? startDate}
+                      onChange={(event) => setProductFirstDate((current) => ({ ...current, [product.id]: event.target.value }))} />
+                  </label>
+                )}
+                {productRepeat[product.id] === "days" && (
+                  <fieldset className={styles.productDays}>
+                    <legend>{product.name} delivery weekdays</legend>
+                    {MILK_PLAN_DAYS.map((day, index) => (
+                      <label key={day.short}>
+                        <input type="checkbox" name={`${product.id}Weekday`} value={index + 1}
+                          checked={(productWeekdays[product.id] ?? []).includes(String(index + 1))}
+                          onChange={(event) => {
+                            const { checked, value } = event.target;
+                            setProductWeekdays((current) => ({
+                              ...current,
+                              [product.id]: checked ? [...(current[product.id] ?? []), value]
+                                : (current[product.id] ?? []).filter((day) => day !== value),
+                            }));
+                          }} />
+                        <span>{day.short}</span>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
+                {productRepeat[product.id] === "custom" && (
+                  <fieldset className={styles.productDates}>
+                    <legend>{product.name} exact delivery dates</legend>
+                    {availableDates.map((date) => (
+                      <label key={date}>
+                        <input type="checkbox" name={`${product.id}DeliveryDate`} value={date}
+                          checked={(productDates[product.id] ?? []).includes(date)}
+                          onChange={(event) => {
+                            const { checked } = event.target;
+                            setProductDates((current) => ({
+                              ...current,
+                              [product.id]: checked ? [...(current[product.id] ?? []), date]
+                                : (current[product.id] ?? []).filter((entry) => entry !== date),
+                            }));
+                          }} />
+                        <span>{formatCalendarDate(date)}</span>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
               </>
             )}
             </div>
