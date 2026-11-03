@@ -1057,7 +1057,8 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /Weekly milk schedule/);
   assert.match(orderPage, /30-delivery plan total/);
   assert.match(orderPage, /calculateOrderPricing/);
-  assert.match(orderPage, /Save &amp; review order/);
+  assert.match(orderPage, /Save & review order/);
+  assert.match(orderPage, /Review combined checkout/);
   assert.match(orderStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(orderPage, /Delivery city/);
   assert.doesNotMatch(orderPage, /delivery time|payment method/i);

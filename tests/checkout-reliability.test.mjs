@@ -83,7 +83,7 @@ function client(order, events, respond = () => ({})) {
   return { from(table) {
     const q = { table, op: 'select', payload: null, filters: [] };
     const chain = {};
-    for (const op of ['select','update','upsert','insert','eq','is','limit']) chain[op] = (...args) => {
+    for (const op of ['select','update','upsert','insert','eq','is','or','limit']) chain[op] = (...args) => {
       if (['update','upsert','insert'].includes(op)) { q.op = op; q.payload = args[0]; }
       if (['eq','is'].includes(op)) q.filters.push([op, ...args]);
       return chain;
@@ -151,7 +151,7 @@ async function prepare({ failure, claimError = false, isTest = false, env, provi
     return { data: { billing_model: 'calendar_month', start_date: order.start_date, schedule_rules: [{ id: 'milk' }], scheduled_delivery_items: [] } };
   });
   userClient.auth = { getUser: async () => ({ data: { user: { id: 'user', user_metadata: {} } } }) };
-  const admin = client(order, events, q => ({ data: claimError && purchaseMode === 'once' && q.payload?.status === 'pending_payment' ? null : { id: order.id, razorpay_order_id: reboundProviderId ?? providerId }, error: updateError && q.payload?.razorpay_order_id ? { message: 'unavailable' } : null }));
+  const admin = client(order, events, q => q.table === 'checkout_batches' ? { data: null, error: null } : ({ data: claimError && purchaseMode === 'once' && q.payload?.status === 'pending_payment' ? null : { id: order.id, razorpay_order_id: reboundProviderId ?? providerId }, error: updateError && q.payload?.razorpay_order_id ? { message: 'unavailable' } : null }));
   admin.rpc = async () => ({ error: claimError ? { message: 'already claimed' } : null });
   const { RazorpayRequestError } = load('lib/razorpay.ts');
   const { POST } = load('app/api/payments/razorpay/order/route.ts', {
