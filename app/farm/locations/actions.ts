@@ -465,8 +465,8 @@ export async function recordCustomerOrder(formData: FormData) {
   }
 
   const monthlyItems = monthlyQuote && monthlyRules
-    ? monthlyRules.map(({ id, firstDate }) => ({
-        delivery_date: firstDate,
+    ? monthlyRules.map(({ id }) => ({
+        delivery_date: monthlyQuote.days.find((day) => day.items.some((item) => item.id === id))!.date,
         frequency: "once" as const,
         line_total_paise: priceInPaise(monthlyQuote.productTotals[id]),
         product_key: id,

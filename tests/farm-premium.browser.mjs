@@ -159,7 +159,7 @@ try {
             const firstDate = await order.locator('input[name="startDate"]').inputValue();
             const firstWeekday = new Date(firstDate).getUTCDay() || 7;
             await order.getByLabel("Fresh paneer repeat").selectOption("days");
-            await order.locator(`input[name="paneerWeekday"][value="${firstWeekday}"]`).check();
+            await order.locator(`input[name="paneerWeekday"][value="${(firstWeekday + 1) % 7 + 1}"]`).check();
             await order.locator(`input[name="paneerWeekday"][value="${firstWeekday % 7 + 1}"]`).check();
             await order.getByRole("spinbutton", { name: /Farm ghee/ }).fill("1");
             await order.getByLabel("Farm ghee repeat").selectOption("custom");
@@ -212,9 +212,9 @@ try {
               }
 
               // Capacity can change after the manager has opened the form.
-              const laterGheeDate = (await fixture.db.query(
-                "select ($1::date+13)::text as delivery_date", [date],
-              )).rows[0].delivery_date;
+              const { first_paneer: firstPaneerDate, later_ghee: laterGheeDate } = (await fixture.db.query(
+                "select ($1::date+1)::text as first_paneer, ($1::date+13)::text as later_ghee", [date],
+              )).rows[0];
               await fixture.db.query(
                 "insert into production_capacity_overrides(product_key,delivery_date,daily_limit) values('ghee',$1,0)",
                 [laterGheeDate],
@@ -248,12 +248,33 @@ try {
               assert.equal(receipt[0].amount, expected);
               assert.equal(receipt[0].total, expected);
               await fixture.db.query("select set_config('request.jwt.claim.sub',$1,false)", [fixture.manager]);
-              await fixture.db.query("select generate_daily_deliveries($1)", [date]);
+              const invoiceDates = (await fixture.db.query(
+                "select product_key,delivery_date from order_items where order_id=$1 order by product_key",
+                [receipt[0].id],
+              )).rows;
+              assert.deepEqual(invoiceDates, [
+                { product_key: "ghee", delivery_date: date },
+                { product_key: "paneer", delivery_date: firstPaneerDate },
+              ]);
+              const datedRows = (await fixture.db.query(
+                "select product_key,delivery_date from scheduled_delivery_items where plan_id=$1 order by delivery_date",
+                [receipt[0].delivery_plan_id],
+              )).rows;
+              assert.deepEqual(datedRows.filter((row) => row.product_key === "ghee").map((row) => row.delivery_date), [date, laterGheeDate]);
+              const expectedPaneerDates = (await fixture.db.query(
+                `select day::date as delivery_date
+                 from generate_series($1::date, ($1::date + interval '1 month')::date - 1, interval '1 day') day
+                 where extract(isodow from day) in ($2,$3) order by day`,
+                [date, firstWeekday % 7 + 1, (firstWeekday + 1) % 7 + 1],
+              )).rows.map((row) => row.delivery_date);
+              assert.deepEqual(datedRows.filter((row) => row.product_key === "paneer").map((row) => row.delivery_date), expectedPaneerDates);
+              for (const deliveryDate of [date, firstPaneerDate])
+                await fixture.db.query("select generate_daily_deliveries($1)", [deliveryDate]);
               const items = (await fixture.db.query(
                 `select i.product_key, i.quantity::int as quantity
                  from daily_deliveries d join daily_delivery_items i on i.delivery_id=d.id
-                 where d.plan_id=$1 and d.delivery_date=$2 order by i.product_key`,
-                [receipt[0].delivery_plan_id, date],
+                 where d.plan_id=$1 and d.delivery_date in ($2,$3) order by i.product_key`,
+                [receipt[0].delivery_plan_id, date, firstPaneerDate],
               )).rows;
               assert.deepEqual(items, [
                 { product_key: "ghee", quantity: 1 },
@@ -268,8 +289,9 @@ try {
                 await financeReceipt.getByText(/Farm ghee × [1-9]/).waitFor();
 
                 await handoff.goto(`${base}/farm/delivery-sheet?date=${date}`);
-                await handoff.getByText(/Fresh paneer · 2 × 500 g/).first().waitFor();
                 await handoff.getByText(/Farm ghee · 1 × 500 g/).first().waitFor();
+                await handoff.goto(`${base}/farm/delivery-sheet?date=${firstPaneerDate}`);
+                await handoff.getByText(/Fresh paneer · 2 × 500 g/).first().waitFor();
               } finally {
                 await handoff.close();
               }
@@ -285,8 +307,11 @@ try {
                 const firstDelivery = monthly.getByRole("listitem").filter({
                   has: calendar.locator(`time[datetime="${date}"]`),
                 });
-                await firstDelivery.getByText(/Fresh paneer · 2 × 500 g/).waitFor();
                 await firstDelivery.getByText(/Farm ghee · 1 × 500 g/).waitFor();
+                assert.equal(await firstDelivery.getByText(/Fresh paneer/).count(), 0);
+                await monthly.getByRole("listitem").filter({
+                  has: calendar.locator(`time[datetime="${firstPaneerDate}"]`),
+                }).getByText(/Fresh paneer · 2 × 500 g/).waitFor();
                 assert.ok(await monthly.getByText(/Fresh paneer · 2 × 500 g/).count() >= 4);
                 assert.equal(await monthly.getByText(/Farm ghee · 1 × 500 g/).count(), 2);
                 const secondGhee = monthly.getByRole("listitem").filter({
