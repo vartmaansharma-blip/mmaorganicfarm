@@ -57,6 +57,7 @@ function OrderEditor({
   userId,
 }: ManualOrderFormProps) {
   const { prices, revision } = useProductPricing();
+  const [recordingId] = useState(() => crypto.randomUUID());
   const [confirmedRevision, setConfirmedRevision] = useState("");
   const [purchaseMode, setPurchaseMode] = useState<"once" | "plan">("plan");
   const [schedule, setSchedule] = useState<WeeklyMilkSchedule>([0, 0, 0, 0, 0, 0, 0]);
@@ -140,6 +141,7 @@ function OrderEditor({
     <FarmForm action={recordCustomerOrder} className={styles.orderWorkspace}>
       <input type="hidden" name="catalogueRevision" value={revision} /><input type="hidden" name="expectedTotalPaise" value={Math.round(pricing.total * 100)} />
       <input name="userId" type="hidden" value={userId} />
+      <input name="recordingId" type="hidden" value={recordingId} />
       {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
       <div className={styles.orderEditor}>
         <fieldset className={styles.orderType}>

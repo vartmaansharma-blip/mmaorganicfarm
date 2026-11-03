@@ -88,7 +88,7 @@ function selection(raw, alias = "t") {
 }
 export async function startFixtureServer(config, { port = 55479, manualOrders = false, afterManualPlanLookup } = {}) {
   const manualOrderTables = new Set(["delivery_plans", "scheduled_delivery_items", "orders", "order_items"]);
-  const manualOrderCommands = new Set(["refresh_customer_route", "reserve_order_capacity", "release_order_capacity", "capture_farm_order_payment"]);
+  const manualOrderCommands = new Set(["refresh_customer_route", "reserve_order_capacity", "release_order_capacity", "capture_farm_order_payment", "record_monthly_farm_payment"]);
   const inFlight = new Set();
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://127.0.0.1:${port}`);
@@ -149,7 +149,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
                 await client.query(
                   `select public.${name(fn)}(${args}) value`,
                   entries.map(([key, v]) =>
-                    (key === "p_payload" || key === "p_quantities" || key === "p_prices") && v !== null
+                    (key === "p_payload" || key === "p_quantities" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
                       ? JSON.stringify(v)
                       : v,
                   ),

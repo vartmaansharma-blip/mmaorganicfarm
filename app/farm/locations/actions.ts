@@ -462,6 +462,59 @@ export async function recordCustomerOrder(formData: FormData) {
     redirectWithMessage(returnTo, "error", "Product prices changed. Review the current total and confirm the received payment again.");
   }
 
+  const monthlyItems = monthlyQuote && monthlyRules
+    ? monthlyRules.map(({ id, firstDate }) => ({
+        delivery_date: firstDate,
+        frequency: "once" as const,
+        line_total_paise: priceInPaise(monthlyQuote.productTotals[id]),
+        product_key: id,
+        product_name: id === "milk" ? "Fresh farm milk" : FARM_PRODUCTS.find((item) => item.id === id)!.name,
+        quantity: monthlyQuote.quantities[id],
+        scheduled_days: [],
+        unit: id === "milk" ? "litre" : "500 g",
+        unit_price_paise: priceInPaise(prices[id]),
+      }))
+    : null;
+
+  function finishRecording() {
+    revalidatePath("/farm");
+    revalidatePath("/farm/locations");
+    revalidatePath("/farm/routes");
+    revalidatePath("/farm/payments");
+    revalidatePath("/farm/delivery-sheet");
+    revalidatePath("/calendar");
+    revalidatePath(`/farm/customers/${userId}`);
+    redirectWithMessage(
+      returnTo,
+      "message",
+      assignedRouteId
+        ? "Paid order recorded, schedule activated, and route confirmed."
+        : "Paid order recorded and schedule activated. This customer still needs a route.",
+    );
+  }
+
+  if (monthlyRules && monthlyItems && process.env.FARM_ATOMIC_MONTHLY_PAYMENT === "true") {
+    const orderId = textValue(formData, "recordingId");
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)) {
+      redirectWithMessage(returnTo, "error", "Reload the customer workspace before recording this payment.");
+    }
+    const { error } = await admin.rpc("record_monthly_farm_payment", {
+      p_order_id: orderId,
+      p_user_id: userId,
+      p_start_date: startDate,
+      p_bottle_choice: bottleChoice,
+      p_rules: monthlyRules,
+      p_items: monthlyItems,
+      p_catalog_revision: revision,
+      p_total_paise: priceInPaise(pricing.total),
+      p_bottle_paise: priceInPaise(pricing.bottleCharge),
+      p_payment_method: paymentMethod,
+      p_reference: paymentReference || `MANUAL-${orderId.toUpperCase()}`,
+    });
+    if (error) redirectWithMessage(returnTo, "error", error.message);
+    return finishRecording();
+  }
+
   let deliveryPlanId: string | null = null;
   if (monthlyRules && monthlyQuote) {
     const existingPlanMessage = "This customer already has a current plan. Edit that schedule instead of recording another plan.";
@@ -576,20 +629,8 @@ export async function recordCustomerOrder(formData: FormData) {
     revalidatePath("/", "layout");
     redirectWithMessage(returnTo, "error", "Product prices changed. Review the new total before recording payment.");
   }
-  const orderItems = monthlyQuote && monthlyRules
-    ? monthlyRules.map(({ id, firstDate }) => ({
-        delivery_date: firstDate,
-        frequency: "once" as const,
-        line_total_paise: priceInPaise(monthlyQuote.productTotals[id]),
-        order_id: order.id,
-        product_key: id,
-        product_name: id === "milk" ? "Fresh farm milk" : FARM_PRODUCTS.find((item) => item.id === id)!.name,
-        quantity: monthlyQuote.quantities[id],
-        scheduled_days: [],
-        unit: id === "milk" ? "litre" : "500 g",
-        unit_price_paise: priceInPaise(prices[id]),
-        user_id: userId,
-      }))
+  const orderItems = monthlyItems
+    ? monthlyItems.map((item) => ({ ...item, order_id: order.id, user_id: userId }))
     : [
         ...(pricing.milkLitres > 0 ? [{
           delivery_date: startDate,
@@ -650,20 +691,7 @@ export async function recordCustomerOrder(formData: FormData) {
     redirectWithMessage(returnTo, "error", paymentError.message);
   }
 
-  revalidatePath("/farm");
-  revalidatePath("/farm/locations");
-  revalidatePath("/farm/routes");
-  revalidatePath("/farm/payments");
-  revalidatePath("/farm/delivery-sheet");
-  revalidatePath("/calendar");
-  revalidatePath(`/farm/customers/${userId}`);
-  redirectWithMessage(
-    returnTo,
-    "message",
-    assignedRouteId
-      ? "Paid order recorded, schedule activated, and route confirmed."
-      : "Paid order recorded and schedule activated. This customer still needs a route.",
-  );
+  return finishRecording();
 }
 
 export async function deleteCustomerProfile(formData: FormData) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { chromium, webkit } from "playwright";
 import { gpsFixture } from "./helpers/gps-fixture.mjs";
 import {
@@ -12,6 +12,10 @@ const output = "work/farm-premium",
   base = `http://127.0.0.1:${port}`;
 await mkdir(output, { recursive: true });
 const fixture = await gpsFixture();
+const atomicPayment = process.env.PREMIUM_ATOMIC_MONTHLY_PAYMENT === "1";
+if (atomicPayment) {
+  await fixture.db.query(await readFile(new URL("../docs/verification/record-monthly-farm-payment.local.sql", import.meta.url), "utf8"));
+}
 await fixture.db.query("update farm_staff set role='admin' where user_id=$1", [
   fixture.manager,
 ]);
@@ -43,6 +47,7 @@ const server = spawn(
       NEXT_PUBLIC_SUPABASE_URL: bridge.url,
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "fixture-publishable",
       SUPABASE_SECRET_KEY: "local-service-fixture",
+      FARM_ATOMIC_MONTHLY_PAYMENT: atomicPayment ? "true" : "false",
     },
     stdio: ["ignore", "pipe", "pipe"],
   },
@@ -162,40 +167,43 @@ try {
             assert.equal(await order.getByRole("button", { name: "Record paid order" }).isEnabled(), true, await order.innerText());
             if (process.env.PREMIUM_MANUAL_ORDER_ONLY && !results.length) {
               const date = await order.locator('input[name="startDate"]').inputValue();
+              const recordingId = await order.locator('input[name="recordingId"]').inputValue();
               const expected = Number(await order.locator('input[name="expectedTotalPaise"]').inputValue());
               const reference = "TEST-MONTHLY-PANEER-GHEE";
               await order.getByRole("textbox", { name: "Payment reference" }).fill(reference);
               const submit = order.getByRole("button", { name: "Record paid order" });
               const feedback = order.getByRole("status").or(order.getByRole("alert"));
 
-              let competingPlan;
-              let competingOrder;
-              activateCompetingPlan = async (client) => {
-                competingPlan = (await client.query(
-                  "insert into delivery_plans(user_id,status,start_date,bottle_choice,purchased_deliveries) values($1,'pending_confirmation',$2,'return',30) returning id",
-                  [customer, date],
-                )).rows[0].id;
-                competingOrder = (await client.query(
-                  "insert into orders(user_id,delivery_plan_id,purchase_mode,status,bottle_choice,start_date,subtotal_paise,total_paise,phone_snapshot,address_snapshot) values($1,$2,'plan','pending_payment','return',$3,6200,6200,'0000000000','Fixture address') returning id",
-                  [customer, competingPlan, date],
-                )).rows[0].id;
-                await client.query("select capture_farm_order_payment($1,'cash','TEST-COMPETING-PLAN')", [competingOrder]);
-              };
-              await submit.click();
-              const conflict = order.getByRole("alert");
-              await conflict.waitFor({ timeout: 5000 });
-              assert.match(await conflict.innerText(), /already has a current plan/);
-              const remainingPlans = (await fixture.db.query(
-                "select id,status from delivery_plans where user_id=$1", [customer],
-              )).rows;
-              assert.deepEqual(remainingPlans, [{ id: competingPlan, status: "active" }]);
-              assert.equal((await fixture.db.query(
-                "select count(*)::int as count from payments where provider_payment_id=$1", [reference],
-              )).rows[0].count, 0);
-              await fixture.db.query("delete from payments where order_id=$1", [competingOrder]);
-              await fixture.db.query("delete from orders where id=$1", [competingOrder]);
-              await fixture.db.query("delete from delivery_plans where id=$1", [competingPlan]);
-              await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
+              if (!atomicPayment) {
+                let competingPlan;
+                let competingOrder;
+                activateCompetingPlan = async (client) => {
+                  competingPlan = (await client.query(
+                    "insert into delivery_plans(user_id,status,start_date,bottle_choice,purchased_deliveries) values($1,'pending_confirmation',$2,'return',30) returning id",
+                    [customer, date],
+                  )).rows[0].id;
+                  competingOrder = (await client.query(
+                    "insert into orders(user_id,delivery_plan_id,purchase_mode,status,bottle_choice,start_date,subtotal_paise,total_paise,phone_snapshot,address_snapshot) values($1,$2,'plan','pending_payment','return',$3,6200,6200,'0000000000','Fixture address') returning id",
+                    [customer, competingPlan, date],
+                  )).rows[0].id;
+                  await client.query("select capture_farm_order_payment($1,'cash','TEST-COMPETING-PLAN')", [competingOrder]);
+                };
+                await submit.click();
+                const conflict = order.getByRole("alert");
+                await conflict.waitFor({ timeout: 5000 });
+                assert.match(await conflict.innerText(), /already has a current plan/);
+                const remainingPlans = (await fixture.db.query(
+                  "select id,status from delivery_plans where user_id=$1", [customer],
+                )).rows;
+                assert.deepEqual(remainingPlans, [{ id: competingPlan, status: "active" }]);
+                assert.equal((await fixture.db.query(
+                  "select count(*)::int as count from payments where provider_payment_id=$1", [reference],
+                )).rows[0].count, 0);
+                await fixture.db.query("delete from payments where order_id=$1", [competingOrder]);
+                await fixture.db.query("delete from orders where id=$1", [competingOrder]);
+                await fixture.db.query("delete from delivery_plans where id=$1", [competingPlan]);
+                await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
+              }
 
               // Capacity can change after the manager has opened the form.
               const laterGheeDate = (await fixture.db.query(
@@ -230,6 +238,7 @@ try {
                 [customer],
               )).rows;
               assert.equal(receipt.length, 1);
+              if (atomicPayment) assert.equal(receipt[0].id, recordingId);
               assert.equal(receipt[0].amount, expected);
               assert.equal(receipt[0].total, expected);
               await fixture.db.query("select set_config('request.jwt.claim.sub',$1,false)", [fixture.manager]);
