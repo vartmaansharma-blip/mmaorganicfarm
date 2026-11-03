@@ -615,3 +615,18 @@ test("delivery quantities distinguish a count of packs from the pack size", () =
   assert.equal(formatDeliveryQuantity(1, "litre"), "1 litre");
   assert.equal(formatDeliveryQuantity(5, "litre"), "5 litres");
 });
+
+test("farm-recorded products support independent weekdays and exact dates", () => {
+  const start = "2026-11-07";
+  const milk = [0, 0, 0, 0, 0, 0, 0];
+  const paneer = { id: "paneer", quantity: 2, repeat: "days", firstDate: start, weekdays: [1, 5] };
+  const ghee = { id: "ghee", quantity: 1, repeat: "custom", firstDate: "", dates: ["2026-11-23", "2026-11-11"] };
+  const rules = manualMonthlyRoutines(start, milk, [paneer, ghee]);
+  const quote = quoteMonthlySchedule({ start, rules, bottleChoice: "none" });
+  assert.deepEqual(quote.days.filter((day) => day.items.some((item) => item.id === "ghee")).map((day) => day.date), ["2026-11-11", "2026-11-23"]);
+  assert.ok(quote.days.filter((day) => day.items.some((item) => item.id === "paneer")).every(({ date }) =>
+    [1, 5].includes(new Date(date).getUTCDay()),
+  ));
+  assert.equal(manualMonthlyRoutines(start, milk, [{ ...ghee, dates: ["2026-12-07"] }]), null);
+  assert.equal(manualMonthlyRoutines(start, milk, [{ ...paneer, weekdays: [1, 1] }]), null);
+});

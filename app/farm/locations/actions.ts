@@ -399,6 +399,8 @@ export async function recordCustomerOrder(formData: FormData) {
       quantity: Number(formData.get(`${id}Quantity`) ?? 0),
       repeat: textValue(formData, `${id}Repeat`),
       firstDate: textValue(formData, `${id}FirstDate`),
+      dates: formData.getAll(`${id}DeliveryDate`).map(String),
+      weekdays: formData.getAll(`${id}Weekday`).map(Number),
     })),
   ) : null;
   const milkSelected = purchaseMode === "plan"
@@ -463,8 +465,8 @@ export async function recordCustomerOrder(formData: FormData) {
   }
 
   const monthlyItems = monthlyQuote && monthlyRules
-    ? monthlyRules.map(({ id, firstDate }) => ({
-        delivery_date: firstDate,
+    ? monthlyRules.map(({ id }) => ({
+        delivery_date: monthlyQuote.days.find((day) => day.items.some((item) => item.id === id))!.date,
         frequency: "once" as const,
         line_total_paise: priceInPaise(monthlyQuote.productTotals[id]),
         product_key: id,
