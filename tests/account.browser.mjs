@@ -16,21 +16,39 @@ const recordId='00000000-0000-4000-8000-000000000003';
 const date=indiaDate();
 const plus=n=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
 let scenario='out', fail=false;
+let deliveryDetails={phone:'9000000000',address_line:'Synthetic test address',postal_code:'400001'};
+const routeRefreshes=[];
 const requests=[];
 const product=(key='milk',quantity=2,fulfilled_quantity=null)=>({product_key:key,product_name:key==='milk'?'Fresh milk':'Fresh paneer',quantity,unit:key==='milk'?'L':'kg',fulfilled_quantity});
-const plan=()=>({id:planId,user_id:userId,status:scenario==='pending'?'pending_confirmation':scenario==='paused'?'paused':'active',start_date:date,billing_model:'calendar_month',period_end_exclusive:plus(30),purchased_deliveries:30,delivered_deliveries:0,bottle_choice:'return',weekly_delivery_items:[],scheduled_delivery_items:[0,1,2,3].map(n=>({...product(),delivery_date:plus(n)})),delivery_exceptions:[],delivery_pauses:[]});
+const plan=()=>({id:planId,user_id:userId,status:scenario==='pending'?'pending_confirmation':scenario==='paused'?'paused':'active',start_date:date,billing_model:scenario==='legacy'?'milk_credits':'calendar_month',period_end_exclusive:plus(30),purchased_deliveries:30,delivered_deliveries:0,bottle_choice:'return',weekly_delivery_items:[],scheduled_delivery_items:[0,1,2,3].map(n=>({...product(),delivery_date:plus(n)})),delivery_exceptions:[],delivery_pauses:[]});
 const rows=()=>['none','pending','paused'].includes(scenario)?[]:[{id:recordId,user_id:userId,plan_id:planId,order_id:null,delivery_date:date,visit_key:'local-visit',status:({out:'out_for_delivery',preparing:'ready',delivered:'delivered',partial:'failed'})[scenario]??'planned',updated_at:new Date().toISOString(),delivery_confirmed:scenario==='delivered',delivered_confirmed_at:scenario==='delivered'?new Date().toISOString():null,replacement_of_delivery_id:null,fulfilment_root_id:null,daily_delivery_items:scenario==='partial'?[product('milk',2,2),product('paneer',.5,0)]:[product('milk',2,scenario==='delivered'?2:null)]}];
 const user={id:userId,aud:'authenticated',role:'authenticated',email:'fixture@example.invalid',email_confirmed_at:new Date().toISOString(),created_at:new Date().toISOString(),app_metadata:{provider:'email',providers:['email']},user_metadata:{full_name:'Test Customer'},identities:[]};
 const stub=createServer(async(req,res)=>{
  const url=new URL(req.url,'http://127.0.0.1'); requests.push({path:url.pathname,query:Object.fromEntries(url.searchParams),method:req.method});
  res.setHeader('Content-Type','application/json');
  if(url.pathname==='/auth/v1/user'){res.end(JSON.stringify(user));return;}
+ if(req.method==='PATCH' && url.pathname==='/rest/v1/customer_profiles'){
+  assert.equal(url.searchParams.get('user_id'),`eq.${userId}`);
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const {phone,address_line,postal_code}=JSON.parse(raw);
+  deliveryDetails={phone,address_line,postal_code};
+  res.end(JSON.stringify({user_id:userId}));return;
+ }
+ if(req.method==='POST' && url.pathname==='/rest/v1/rpc/refresh_customer_route'){
+  let raw='';for await(const chunk of req)raw+=chunk;
+  routeRefreshes.push(JSON.parse(raw));
+  res.end('null');return;
+ }
  if(req.method!=='GET' && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
  if(url.pathname.endsWith("/farm_catalog_prices"))data={revision:"00000000-0000-4000-8000-000000000099",prices:{milk:6200,paneer:20000,ghee:37500,bottle:1000}};
- if(url.pathname.endsWith('/customer_profiles'))data={full_name:'Test Customer',email:user.email,avatar_url:null,phone:'9000000000',address_line:'Synthetic test address',postal_code:'400001'};
- if(url.pathname.endsWith('/delivery_plans'))data=scenario==='none'?[]:[plan()];
+ if(url.pathname.endsWith('/customer_profiles'))data={full_name:'Test Customer',email:user.email,avatar_url:null,...deliveryDetails};
+ if(url.pathname.endsWith('/delivery_plans')){
+  data=scenario==='none'?[]:[plan()];
+  const billing=url.searchParams.get('billing_model');
+  if(billing)data=data.filter(item=>billing===`eq.${item.billing_model}`);
+ }
  if(url.pathname.endsWith('/daily_deliveries')){
   if(fail){res.writeHead(503);res.end(JSON.stringify({message:'Synthetic delivery outage',code:'TEST'}));return;}
   data=rows();
@@ -58,7 +76,7 @@ try{
  for(const engine of (process.env.ACCOUNT_BROWSERS||'chromium,webkit').split(',')){
   const browser=await ({chromium,webkit})[engine].launch();
   try{
-   const anonymous=await browser.newContext();const anonymousPage=await anonymous.newPage();await anonymousPage.goto(`${base}/account`);assert.match(anonymousPage.url(),/\/sign-in/);const unauth=await anonymousPage.request.get(`${base}/api/account/delivery`);assert.equal(unauth.status(),401);assert.match(unauth.headers()['cache-control'],/no-store/);await anonymous.close();
+   const anonymous=await browser.newContext();const anonymousPage=await anonymous.newPage();await anonymousPage.goto(`${base}/account`);assert.match(anonymousPage.url(),/\/sign-in/);const unauth=await anonymousPage.request.get(`${base}/api/account/delivery`);assert.equal(unauth.status(),401);assert.match(unauth.headers()['cache-control'],/no-store/);await anonymousPage.goto(`${base}/milk?edit=plan`);assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/milk?edit=plan');await anonymous.close();
    for(const width of [320,390,768,1440]){
     const context=await browser.newContext({viewport:{width,height:900}});await context.addCookies([sessionCookie]);const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
     for(const theme of ['dark','light']){
@@ -77,7 +95,7 @@ try{
       await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).and(page.locator('[aria-current=page]')).waitFor();
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${section} ${width} overflow`);
       assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
-      if(section==='Settings'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'Update delivery details'}).getAttribute('href'),'/order');}
+      if(section==='Settings'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();await page.getByText('Update delivery details',{exact:true}).waitFor();}
       if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-${section.toLowerCase()}.png`),fullPage:true});
      }
      results.push({engine,width,theme,sections:4,overflow:false});
@@ -85,6 +103,23 @@ try{
     assert.deepEqual(errors,[]);await context.close();
    }
    const context=await browser.newContext({viewport:{width:390,height:844}});await context.addCookies([sessionCookie]);const page=await context.newPage();
+   deliveryDetails={phone:'9000000000',address_line:'Synthetic test address',postal_code:'400001'};
+   await page.goto(`${base}/account?section=settings`);
+   await page.getByText('Update delivery details',{exact:true}).click();
+   await page.getByLabel('Mobile number').fill('9000000001');
+   await page.getByLabel('Delivery address',{exact:true}).fill('New synthetic delivery address');
+   await page.getByLabel('PIN code').fill('831001');
+   await page.getByRole('button',{name:'Save delivery details'}).click();
+   await page.getByText('Delivery details saved.',{exact:true}).waitFor();
+   assert.deepEqual(deliveryDetails,{phone:'+919000000001',address_line:'New synthetic delivery address',postal_code:'831001'});
+   assert.deepEqual(routeRefreshes.at(-1),{p_user_id:userId,p_force_reroute:true});
+   scenario='legacy';
+   await page.goto(`${base}/milk?edit=plan`);
+   await page.waitForURL(url=>url.pathname==='/calendar' && url.searchParams.get('plan')===planId);
+   await page.getByRole('link',{name:'Contact the farm to change your regular week'}).waitFor();
+   scenario='out';
+   await page.goto(`${base}/milk?edit=plan`);
+   await page.waitForURL(url=>url.pathname==='/account' && url.searchParams.get('section')==='deliveries');
    for(const state of ['preparing','delivered','partial','none','pending','paused']){
     scenario=state;fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});
     const expected={preparing:'preparing',delivered:'delivered',partial:'attention',none:'none',pending:'setup',paused:'paused'}[state];assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),expected);
@@ -101,7 +136,7 @@ try{
   }finally{await browser.close();}
  }
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
- const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')),'fixture permits no production mutations');
+ const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')),'fixture permits no order or payment writes');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
  console.log(JSON.stringify({layouts:results.length,sections:4,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}

@@ -10,7 +10,10 @@ export async function startPublicCatalogueFixture() {
       response.writeHead(405); response.end(JSON.stringify({ message: 'Only anonymous catalogue reads are supported by this fixture.' }));
     }
   });
-  await new Promise(resolve => server.listen(Number(process.env.HERO_CATALOGUE_PORT || 3199), '127.0.0.1', resolve));
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(Number(process.env.HERO_CATALOGUE_PORT || 0), '127.0.0.1', resolve);
+  });
   server.unref();
   return { server, env: { NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${server.address().port}`, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_hero_browser_fixture' } };
 }

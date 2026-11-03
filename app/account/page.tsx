@@ -17,6 +17,7 @@ import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 import {
   markNotificationsRead,
+  saveAccountDeliveryDetails,
   signOut,
 } from "./actions";
 import styles from "./account.module.css";
@@ -286,11 +287,26 @@ export default async function AccountPage({
             </dl>
           ) : null}
 
-          <Link prefetch={false} className={styles.editDetails} href="/order">
-            {hasDeliveryDetails
-              ? "Update delivery details"
-              : "Add delivery details"}
-          </Link>
+          <details className={styles.deliveryDetailsEditor}>
+            <summary className={styles.editDetails}>
+              {hasDeliveryDetails ? "Update delivery details" : "Add delivery details"}
+            </summary>
+            <form action={saveAccountDeliveryDetails}>
+              <label>Mobile number
+                <input name="phone" type="tel" autoComplete="tel" defaultValue={profile?.phone ?? ""} required />
+              </label>
+              <div>
+                <label htmlFor="account-delivery-address">Delivery address</label>
+                <textarea id="account-delivery-address" name="address" autoComplete="street-address" rows={3}
+                  minLength={8} maxLength={500} defaultValue={profile?.address_line ?? ""} required />
+              </div>
+              <label>PIN code
+                <input name="postalCode" inputMode="numeric" autoComplete="postal-code"
+                  pattern="[0-9]{6}" maxLength={6} defaultValue={profile?.postal_code ?? ""} />
+              </label>
+              <button className={styles.editDetails} type="submit">Save delivery details</button>
+            </form>
+          </details>
         </section>
 
         {profile?.address_line ? <DeliveryPin key={`${profile.address_line}:${profile.updated_at}`} address={profile.address_line} saved={pinResult.data} available={!pinResult.error} /> : null}
@@ -455,9 +471,9 @@ export default async function AccountPage({
               >
                 Open delivery calendar
               </Link>
-              <Link className={styles.editPlan} href="/milk?edit=plan">
-                Edit normal week
-              </Link>
+              {deliveryPlan.status === "pending_confirmation" ? (
+                <Link className={styles.editPlan} href="/milk?edit=plan">Edit draft schedule</Link>
+              ) : null}
             </div>
 
 

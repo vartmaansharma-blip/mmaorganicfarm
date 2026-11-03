@@ -947,3 +947,37 @@
   .motionControl { display:none; }
   .accountNav a { transition:none; }
 }
+
+.deliveryDetailsEditor form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  max-width: 460px;
+}
+
+.deliveryDetailsEditor label,
+.deliveryDetailsEditor form > div {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.deliveryDetailsEditor input,
+.deliveryDetailsEditor textarea {
+  width: 100%;
+  min-height: var(--ui-touch-target);
+  padding: 8px 10px;
+  color: var(--color-text-primary);
+  background: var(--color-input-background);
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.deliveryDetailsEditor summary {
+  cursor: pointer;
+}
+
+.deliveryDetailsEditor button {
+  justify-self: start;
+}
