@@ -21,17 +21,13 @@ export function DriverCustomerRequestForm({
     customer_words: string;
   }[];
 }) {
-  const [state, action, pending] = useActionState(recordCustomerRequest, null);
-  const [key] = useState(() => crypto.randomUUID());
-  const [date, setDate] = useState(tomorrow);
-  const [kind, setKind] = useState("skip_milk");
-  const [words, setWords] = useState("");
+  const [version, setVersion] = useState(0);
   return (
     <details className={styles.requestPanel}>
       <summary>Customer asked for a change?</summary>
       <p className={styles.hint}>
-        Record a future request in their words. A manager reviews it before the
-        delivery plan changes.
+        Record a future request in their words. You’ll see whether the change
+        was confirmed or sent to the farm for review.
       </p>
       {latest.map((r, i) => (
         <p className={styles.saved} key={i}>
@@ -40,6 +36,30 @@ export function DriverCustomerRequestForm({
           {r.customer_words}
         </p>
       ))}
+      <DriverRequestEditor
+        key={version}
+        deliveryId={deliveryId}
+        tomorrow={tomorrow}
+        recordAnother={() => setVersion((current) => current + 1)}
+      />
+    </details>
+  );
+}
+function DriverRequestEditor({
+  deliveryId,
+  tomorrow,
+  recordAnother,
+}: {
+  deliveryId: string;
+  tomorrow: string;
+  recordAnother: () => void;
+}) {
+  const [state, action, pending] = useActionState(recordCustomerRequest, null);
+  const [key] = useState(() => crypto.randomUUID());
+  const [date, setDate] = useState(tomorrow);
+  const [kind, setKind] = useState("skip_milk");
+  const [words, setWords] = useState("");
+  return (
       <FarmForm action={action} managed feedback={state} className={styles.actionForm}>
         <input type="hidden" name="deliveryId" value={deliveryId} />
         <input type="hidden" name="requestKey" value={key} />
@@ -93,8 +113,10 @@ export function DriverCustomerRequestForm({
             {state.message ?? state.error}
           </p>
         ) : null}
+        {state?.ok && (
+          <button type="button" onClick={recordAnother}>Record another request</button>
+        )}
       </FarmForm>
-    </details>
   );
 }
 export function CustomerRequestReviewForm({
