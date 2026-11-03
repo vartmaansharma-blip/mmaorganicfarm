@@ -55,6 +55,8 @@ const customer =
       ["Sample household 1"],
     )
   ).rows[0]?.user_id ?? fixture.customer;
+await fixture.db.query("update customer_profiles set phone='0000000000',address_line='Fictional entrance' where user_id=$1", [customer]);
+await fixture.db.query("update production_capacity set daily_limit=1000");
 const allRoutes = [
   "",
   "/runs",
@@ -76,9 +78,9 @@ const allRoutes = [
   "/settings",
   "/staff",
 ];
-const routes = process.env.PREMIUM_OVERVIEW_ONLY
-  ? ["", "/capacity"]
-  : allRoutes;
+const routes = process.env.PREMIUM_MANUAL_ORDER_ONLY
+  ? [`/customers/${customer}`]
+  : process.env.PREMIUM_OVERVIEW_ONLY ? ["", "/capacity"] : allRoutes;
 const results = [];
 let browser;
 try {
@@ -136,6 +138,20 @@ try {
             (await details.count())
           )
             await details.click();
+          if (route === `/customers/${customer}`) {
+            const order = main.locator("#new-order");
+            await order.getByText("Record paid order", { exact: true }).click();
+            await order.getByRole("spinbutton", { name: /Fresh paneer/ }).fill("2");
+            await order.getByLabel("Fresh paneer repeat").selectOption("weekly");
+            await order.getByRole("spinbutton", { name: /Farm ghee/ }).fill("1");
+            await order.getByLabel("Farm ghee repeat").selectOption("fortnightly");
+            await order.getByText("Review dated deliveries", { exact: true }).click();
+            assert.ok(await order.getByText(/2 × Fresh paneer/).count() >= 4);
+            assert.ok(await order.getByText(/1 × Farm ghee/).count() >= 2);
+            assert.equal(await order.getByLabel("Bottle").inputValue(), "none");
+            await order.getByRole("checkbox", { name: /confirm the farm received/ }).check();
+            assert.equal(await order.getByRole("button", { name: "Record paid order" }).isEnabled(), true, await order.innerText());
+          }
           const diagnostics = await page.evaluate(() => {
             const main = document.querySelector("main");
             const rgb = (s) => {

@@ -266,6 +266,55 @@ try {
       0,
     );
   });
+  const startDateForManualTest = start;
+  await test("manual monthly paneer and ghee payment activates dated items on the delivery sheet", async () => {
+    const { first_date: start, second_date: second } = (await db.query(
+      "select ($1::date+31)::text as first_date, ($1::date+32)::text as second_date",
+      [startDateForManualTest],
+    )).rows[0];
+    const user = randomUUID();
+    await db.query("insert into auth.users(id,email) values($1,$2)", [user, user + "@fixture.invalid"]);
+    await db.query(
+      "update customer_profiles set full_name='Manual fixture',phone='0000000000',address_line='Fixture address',delivery_area_id=$2,delivery_route_id=$3 where user_id=$1",
+      [user, area, route],
+    );
+    const end = (await db.query("select ($1::date + interval '1 month')::date::text as period_end", [start])).rows[0].period_end;
+    const rules = [
+      { id: "paneer", quantity: 2, repeat: "weekly", firstDate: start },
+      { id: "ghee", quantity: 1, repeat: "fortnightly", firstDate: second },
+    ];
+    const { id: planId } = (await db.query(
+      "insert into delivery_plans(user_id,status,start_date,bottle_choice,billing_model,period_end_exclusive,schedule_rules,purchased_deliveries,delivered_deliveries) values($1,'pending_confirmation',$2,'none','calendar_month',$3,$4,0,0) returning id",
+      [user, start, end, JSON.stringify(rules)],
+    )).rows[0];
+    await db.query(
+      "insert into scheduled_delivery_items(plan_id,user_id,product_key,delivery_date,quantity,unit) values($1,$2,'paneer',$3,2,'500 g'),($1,$2,'ghee',$4,1,'500 g'),($1,$2,'paneer',$3::date+7,2,'500 g'),($1,$2,'ghee',$4::date+14,1,'500 g')",
+      [planId, user, start, second],
+    );
+    const { id: order } = (await db.query(
+      "insert into orders(user_id,delivery_plan_id,purchase_mode,status,bottle_choice,subtotal_paise,total_paise,start_date,phone_snapshot,address_snapshot) values($1,$2,'plan','pending_payment','none',155000,155000,$3,'0000000000','Fixture address') returning id",
+      [user, planId, start],
+    )).rows[0];
+    await db.query(
+      "insert into order_items(order_id,user_id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,delivery_date,scheduled_days) values($1,$2,'paneer','Paneer',4,'500 g',20000,80000,'once',$3,'{}'),($1,$2,'ghee','Ghee',2,'500 g',37500,75000,'once',$4,'{}')",
+      [order, user, start, second],
+    );
+    await db.query("select reserve_order_capacity($1)", [order]);
+    await db.query("select capture_farm_order_payment($1,'cash',$2)", [order, `fixture-${order}`]);
+    assert.equal((await db.query("select status from delivery_plans where id=$1", [planId])).rows[0].status, "active");
+    assert.equal((await db.query("select amount_paise::int amount from payments where order_id=$1", [order])).rows[0].amount, 155000);
+    for (const day of [start, second]) {
+      await callAs(db, manager, "select generate_daily_deliveries($1)", [day]);
+    }
+    const deliveredItems = (await db.query(
+      "select d.delivery_date::text as date,i.product_key,i.quantity::int as quantity from daily_deliveries d join daily_delivery_items i on i.delivery_id=d.id where d.plan_id=$1 order by d.delivery_date,i.product_key",
+      [planId],
+    )).rows;
+    assert.deepEqual(deliveredItems, [
+      { date: start, product_key: "paneer", quantity: 2 },
+      { date: second, product_key: "ghee", quantity: 1 },
+    ]);
+  });
 } finally {
   await runtime.stop();
 }

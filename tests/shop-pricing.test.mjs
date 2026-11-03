@@ -586,3 +586,23 @@ test("a monthly edited-price invoice verifies against its own immutable catalogu
   assert.equal(quoteStoredMonthlyCheckout(invoice,'return',stored,dates,start,prices).total,q.total);
   assert.throws(()=>quoteStoredMonthlyCheckout(invoice,'return',stored,dates,start),/invoice changed/);
 });
+
+const { manualMonthlyRoutines } = load("lib/manual-monthly-order.ts");
+
+test("manual monthly payment quotes independent paneer and ghee dates without requiring milk", () => {
+  const start = "2026-11-07";
+  const emptyMilk = [0, 0, 0, 0, 0, 0, 0];
+  const extras = [
+    { id: "paneer", quantity: 2, repeat: "weekly", firstDate: start },
+    { id: "ghee", quantity: 1, repeat: "fortnightly", firstDate: "2026-11-09" },
+  ];
+  const rules = manualMonthlyRoutines(start, emptyMilk, extras);
+  const quote = quoteMonthlySchedule({ start, rules, bottleChoice: "none" });
+  assert.deepEqual(quote.quantities, { milk: 0, paneer: 10, ghee: 2 });
+  assert.deepEqual(quote.days.slice(0, 2), [
+    { date: start, items: [{ id: "paneer", quantity: 2 }] },
+    { date: "2026-11-09", items: [{ id: "ghee", quantity: 1 }] },
+  ]);
+  assert.equal(quote.bottleCharge, 0);
+  assert.equal(manualMonthlyRoutines(start, emptyMilk, [{ ...extras[0], firstDate: "2026-12-07" }]), null);
+});

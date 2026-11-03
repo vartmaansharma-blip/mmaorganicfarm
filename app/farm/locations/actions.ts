@@ -19,12 +19,13 @@ import {
   FARM_PRODUCTS,
   type FarmProductSelection,
 } from "@/lib/farm-products";
+import { quoteMonthlySchedule } from "@/lib/monthly-schedule";
+import { manualMonthlyRoutines } from "@/lib/manual-monthly-order";
+import { validShopDate } from "@/lib/shop-draft";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { MILK_PLAN_DAYS, type WeeklyMilkSchedule } from "@/lib/milk-plan";
 import {
   calculateOrderPricing,
-  calculatePlanPricing,
-  PLAN_DELIVERY_COUNT,
   type BottleChoice,
 } from "@/lib/order-pricing";
 import {
@@ -370,7 +371,7 @@ export async function recordCustomerOrder(formData: FormData) {
   const returnTo = customerReturnPath(formData, userId);
   const purchaseMode = textValue(formData, "purchaseMode") === "plan" ? "plan" : "once";
   const requestedBottle = textValue(formData, "bottleChoice");
-  const bottleChoice: BottleChoice = requestedBottle === "new"
+  const selectedBottle: BottleChoice = requestedBottle === "new"
     ? "new"
     : requestedBottle === "none"
       ? "none"
@@ -390,6 +391,25 @@ export async function recordCustomerOrder(formData: FormData) {
     Number(formData.get(`milkDay${index + 1}`) ?? 0),
   ) as WeeklyMilkSchedule;
 
+  const monthlyRules = purchaseMode === "plan" ? manualMonthlyRoutines(
+    startDate,
+    schedule,
+    (["paneer", "ghee"] as const).map((id) => ({
+      id,
+      quantity: Number(formData.get(`${id}Quantity`) ?? 0),
+      repeat: textValue(formData, `${id}Repeat`),
+      firstDate: textValue(formData, `${id}FirstDate`),
+    })),
+  ) : null;
+  const milkSelected = purchaseMode === "plan"
+    ? Boolean(monthlyRules?.some((rule) => rule.id === "milk"))
+    : onceMilk > 0;
+  const bottleChoice = purchaseMode === "once"
+    ? selectedBottle
+    : milkSelected && selectedBottle === "new"
+      ? "new"
+      : milkSelected ? "return" : "none";
+
   if (!userId) redirectWithMessage("/farm/locations", "error", "Choose a customer.");
   if (!paymentConfirmed || !paymentMethod) {
     redirectWithMessage(returnTo, "error", "Confirm the received payment and choose how it was paid.");
@@ -397,15 +417,11 @@ export async function recordCustomerOrder(formData: FormData) {
   if (paymentReference.length > 120) {
     redirectWithMessage(returnTo, "error", "The payment reference is too long.");
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || startDate < earliestStart) {
+  if (!validShopDate(startDate) || startDate < earliestStart) {
     redirectWithMessage(returnTo, "error", "Choose a valid delivery start date.");
   }
-  if (
-    purchaseMode === "plan" &&
-    (schedule.some((quantity) => !Number.isInteger(quantity) || quantity < 0 || quantity > 5) ||
-      schedule.every((quantity) => quantity === 0))
-  ) {
-    redirectWithMessage(returnTo, "error", "Add a valid seven-day milk schedule.");
+  if (purchaseMode === "plan" && !monthlyRules) {
+    redirectWithMessage(returnTo, "error", "Choose at least one product and valid delivery dates within the prepaid month.");
   }
   if (
     purchaseMode === "once" &&
@@ -436,9 +452,10 @@ export async function recordCustomerOrder(formData: FormData) {
   }
 
   const firstPlanStart = purchaseMode === "plan" ? await firstScheduledPlanStart(admin, userId) : null;
-  const pricing = purchaseMode === "plan"
-    ? calculatePlanPricing({ prices, bottleChoice, products, schedule, startDate, firstPlanStart: firstPlanStart ?? startDate })
-    : calculateOrderPricing({ prices, bottleChoice, milkLitres: onceMilk, products });
+  const monthlyQuote = monthlyRules
+    ? quoteMonthlySchedule({ prices, bottleChoice, rules: monthlyRules, start: startDate, firstPlanStart: firstPlanStart ?? startDate })
+    : null;
+  const pricing = monthlyQuote ?? calculateOrderPricing({ prices, bottleChoice, milkLitres: onceMilk, products });
 
   if (textValue(formData, "catalogueRevision") !== revision || Number(formData.get("expectedTotalPaise")) !== priceInPaise(pricing.total)) {
     revalidatePath("/", "layout");
@@ -446,7 +463,7 @@ export async function recordCustomerOrder(formData: FormData) {
   }
 
   let deliveryPlanId: string | null = null;
-  if (purchaseMode === "plan") {
+  if (monthlyRules && monthlyQuote) {
     const { data: existingPlan, error: existingPlanError } = await admin
       .from("delivery_plans")
       .select("id")
@@ -469,7 +486,10 @@ export async function recordCustomerOrder(formData: FormData) {
         bottle_choice: bottleChoice,
         delivered_deliveries: 0,
         is_test: false,
-        purchased_deliveries: PLAN_DELIVERY_COUNT,
+        billing_model: "calendar_month",
+        period_end_exclusive: monthlyQuote.endExclusive,
+        schedule_rules: monthlyRules,
+        purchased_deliveries: 0,
         start_date: startDate,
         status: "pending_confirmation",
         user_id: userId,
@@ -479,19 +499,17 @@ export async function recordCustomerOrder(formData: FormData) {
     if (planError || !plan) redirectWithMessage(returnTo, "error", planError?.message ?? "The delivery plan could not be created.");
     deliveryPlanId = plan.id;
 
-    const weeklyItems = schedule.flatMap((quantity, index) =>
-      quantity > 0
-        ? [{
-            day_of_week: index + 1,
-            plan_id: plan.id,
-            product_key: "milk",
-            quantity,
-            unit: "litre",
-            user_id: userId,
-          }]
-        : [],
+    const datedItems = monthlyQuote.days.flatMap(({ date, items }) =>
+      items.map(({ id, quantity }) => ({
+        delivery_date: date,
+        plan_id: plan.id,
+        product_key: id,
+        quantity,
+        unit: id === "milk" ? "litre" : "500 g",
+        user_id: userId,
+      })),
     );
-    const { error: scheduleError } = await admin.from("weekly_delivery_items").insert(weeklyItems);
+    const { error: scheduleError } = await admin.from("scheduled_delivery_items").insert(datedItems);
     if (scheduleError) {
       await admin.from("delivery_plans").delete().eq("id", plan.id);
       redirectWithMessage(returnTo, "error", scheduleError.message);
@@ -530,39 +548,48 @@ export async function recordCustomerOrder(formData: FormData) {
     revalidatePath("/", "layout");
     redirectWithMessage(returnTo, "error", "Product prices changed. Review the new total before recording payment.");
   }
-  const scheduledDays = purchaseMode === "plan"
-    ? schedule.flatMap((quantity, index) => quantity > 0 ? [index + 1] : [])
-    : [];
-  const orderItems = [
-    ...(pricing.milkLitres > 0
-      ? [{
+  const orderItems = monthlyQuote && monthlyRules
+    ? monthlyRules.map(({ id, firstDate }) => ({
+        delivery_date: firstDate,
+        frequency: "once" as const,
+        line_total_paise: priceInPaise(monthlyQuote.productTotals[id]),
+        order_id: order.id,
+        product_key: id,
+        product_name: id === "milk" ? "Fresh farm milk" : FARM_PRODUCTS.find((item) => item.id === id)!.name,
+        quantity: monthlyQuote.quantities[id],
+        scheduled_days: [],
+        unit: id === "milk" ? "litre" : "500 g",
+        unit_price_paise: priceInPaise(prices[id]),
+        user_id: userId,
+      }))
+    : [
+        ...(pricing.milkLitres > 0 ? [{
           delivery_date: startDate,
-          frequency: purchaseMode === "plan" ? "weekly" : "once",
+          frequency: "once" as const,
           line_total_paise: priceInPaise(pricing.milkTotal),
           order_id: order.id,
           product_key: "milk",
           product_name: "Fresh farm milk",
           quantity: pricing.milkLitres,
-          scheduled_days: scheduledDays,
-          unit: purchaseMode === "plan" ? "litres / 30 deliveries" : "litre",
+          scheduled_days: [],
+          unit: "litre",
           unit_price_paise: priceInPaise(prices.milk),
           user_id: userId,
-        }]
-      : []),
-    ...products.map((product) => ({
-      delivery_date: startDate,
-      frequency: "once",
-      line_total_paise: priceInPaise((pricing.productTotals[product.id] ?? 0)),
-      order_id: order.id,
-      product_key: product.id,
-      product_name: product.name,
-      quantity: product.quantity,
-      scheduled_days: [],
-      unit: product.unit,
-      unit_price_paise: priceInPaise(product.price),
-      user_id: userId,
-    })),
-  ];
+        }] : []),
+        ...products.map((product) => ({
+          delivery_date: startDate,
+          frequency: "once" as const,
+          line_total_paise: priceInPaise(pricing.productTotals[product.id] ?? 0),
+          order_id: order.id,
+          product_key: product.id,
+          product_name: product.name,
+          quantity: product.quantity,
+          scheduled_days: [],
+          unit: product.unit,
+          unit_price_paise: priceInPaise(product.price),
+          user_id: userId,
+        })),
+      ];
   const { error: itemsError } = await admin.from("order_items").insert(orderItems);
   if (itemsError) {
     await admin.from("orders").delete().eq("id", order.id);
@@ -599,6 +626,8 @@ export async function recordCustomerOrder(formData: FormData) {
   revalidatePath("/farm/locations");
   revalidatePath("/farm/routes");
   revalidatePath("/farm/payments");
+  revalidatePath("/farm/delivery-sheet");
+  revalidatePath("/calendar");
   revalidatePath(`/farm/customers/${userId}`);
   redirectWithMessage(
     returnTo,
