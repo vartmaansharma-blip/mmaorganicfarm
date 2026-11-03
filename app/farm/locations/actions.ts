@@ -481,16 +481,20 @@ export async function recordCustomerOrder(formData: FormData) {
     revalidatePath("/farm/locations");
     revalidatePath("/farm/routes");
     revalidatePath("/farm/payments");
+    revalidatePath("/farm/orders");
+    revalidatePath("/farm/capacity");
+    revalidatePath("/farm/subscriptions");
     revalidatePath("/farm/delivery-sheet");
+    revalidatePath("/account");
     revalidatePath("/calendar");
     revalidatePath(`/farm/customers/${userId}`);
-    redirectWithMessage(
-      returnTo,
-      "message",
-      assignedRouteId
-        ? "Paid order recorded, schedule activated, and route confirmed."
-        : "Paid order recorded and schedule activated. This customer still needs a route.",
-    );
+    const recorded = purchaseMode === "plan"
+      ? "Paid order recorded and schedule activated."
+      : "Paid one-time order recorded.";
+    const routing = assignedRouteId
+      ? "Route confirmed."
+      : "This customer still needs a route.";
+    redirectWithMessage(returnTo, "message", `${recorded} ${routing}`);
   }
 
   if (monthlyRules && monthlyItems && process.env.FARM_ATOMIC_MONTHLY_PAYMENT === "true") {
