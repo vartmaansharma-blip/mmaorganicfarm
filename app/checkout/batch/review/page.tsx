@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CheckoutCartLink } from "@/app/shop/shop-state";
 import { CartCheckoutBatchSync } from "@/app/shop/cart-checkout-batch-sync";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
 import { serializeRoutines, validateRoutines } from "@/lib/monthly-schedule";
@@ -49,6 +49,20 @@ export default async function BatchReview({ searchParams }: {
   const available = ["draft", "pending_payment"].includes(batch.status)
     && [once, plan].every((order) => order.status === (batch.status === "draft" ? "draft" : "pending_payment"))
     && monthly?.status === "pending_confirmation" && Boolean(rules);
+  if (batch.status === "draft" && !batch.provider_order_id && !available) {
+    return <main className={styles.page}>
+      <header className={styles.header}>
+        <CheckoutCartLink>← Back to cart</CheckoutCartLink>
+        <span>M&apos;ma Organic Farm</span>
+      </header>
+      <section className={styles.content}>
+        <p className={styles.eyebrow}>Checkout</p>
+        <h1>Review your cart again.</h1>
+        <p>Your scheduled order changed. Open your saved cart and review your selections to start a new checkout. No payment was started for this checkout.</p>
+        <CheckoutCartLink>Open saved cart →</CheckoutCartLink>
+      </section>
+    </main>;
+  }
   const ready = available && hasRazorpayConfig() && hasSupabaseAdminConfig() && !modeError;
   const unavailableReason = batch.status === "preparing"
     ? "Payment preparation is pending. Do not pay again."
@@ -68,7 +82,7 @@ export default async function BatchReview({ searchParams }: {
         })) },
     ]} />
     <header className={styles.header}>
-      <Link href="/shop">← Back to cart</Link>
+      <CheckoutCartLink>← Back to cart</CheckoutCartLink>
       <span>M&apos;ma Organic Farm</span>
     </header>
     <section className={styles.content}>

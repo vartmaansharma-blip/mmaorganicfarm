@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
+import { Client } from "pg";
 import { setTimeout as delay } from "node:timers/promises";
 import { callAs, createDatabase } from "./runtime.mjs";
 import { sessionFor, startFixtureServer } from "./supabase-fixture-server.mjs";
 
-async function browserFixture(config, users) {
+async function browserFixture(config, users, combinedCheckout = false) {
   const { chromium, webkit } = await import("playwright");
-  const bridge = await startFixtureServer(config, { port: 0 });
+  const bridge = await startFixtureServer(config, { port: 0, combinedCheckout });
   const base = "http://127.0.0.1:3167";
   const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", "3167"], {
     env: {
@@ -133,6 +134,11 @@ test("combined checkout prices bottles once, captures atomically and notifies fa
     await assert.rejects(capture(order, 19100), /mismatch/);
     assert.equal(await capture(order, 22100), "paid");
     assert.equal(await capture(order, 22100), "paid");
+    const paidRetry = await db.query(
+      "select prepare_combined_checkout($1,$2,$3,$4,'{}','[]') as batch",
+      [order.user, order.once, day, order.rules],
+    );
+    assert.equal(paidRetry.rows[0].batch, order.batch);
     const allocations = (await db.query("select amount_paise,provider_payment_id from payments where checkout_batch_id=$1 order by amount_paise", [order.batch])).rows;
     assert.deepEqual(allocations.map((row) => row.amount_paise), [7700, 14400]);
     assert.equal(allocations.filter((row) => row.provider_payment_id).length, 1);
@@ -165,6 +171,134 @@ test("combined checkout prices bottles once, captures atomically and notifies fa
     assert.equal(await capture(testOrder, 19100), "test_captured");
     assert.equal((await db.query("select status from delivery_plans where id=$1", [testOrder.plan])).rows[0].status, "pending_confirmation");
     assert.equal((await notifications(manager)).filter((item) => item.title === "Combined order confirmed").length, 1);
+  } finally {
+    await browser?.close();
+    await runtime.stop();
+  }
+});
+
+test("combined preparation is atomic, idempotent and safely recovers from a stale review", async () => {
+  const runtime = await createDatabase();
+  const { db } = runtime;
+  let browser;
+  try {
+    const user = randomUUID(), other = randomUUID();
+    await db.query("insert into auth.users(id) values($1),($2)", [user, other]);
+    const { day } = (await db.query("select (private.operational_today()+1)::text as day")).rows[0];
+    const rules = [{ id: "milk", quantity: 2, repeat: "once", firstDate: day }];
+    const order = {
+      address_snapshot: "Fixture delivery address", phone_snapshot: "+919000000000",
+      bottle_choice: "return", milk_litres: 2, subtotal_paise: 12400,
+      bottle_charge_paise: 0, handling_fee_paise: 0, platform_fee_paise: 0, total_paise: 12400,
+    };
+    const items = [{
+      product_key: "milk", product_name: "Fresh milk", quantity: 2, unit: "litre",
+      unit_price_paise: 6200, line_total_paise: 12400, frequency: "once",
+      scheduled_days: [], delivery_date: day,
+    }];
+    async function onceOrder() {
+      const { id } = (await db.query(
+        `insert into orders(user_id,purchase_mode,bottle_choice,milk_litres,subtotal_paise,total_paise,start_date,phone_snapshot,address_snapshot)
+         values($1,'once','return',1,6200,6700,$2,$3,$4) returning id`,
+        [user, day, order.phone_snapshot, order.address_snapshot],
+      )).rows[0];
+      await db.query(
+        `insert into order_items(order_id,user_id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,delivery_date)
+         values($1,$2,'milk','Fresh milk',1,'litre',6200,6200,'once',$3)`, [id, user, day],
+      );
+      return id;
+    }
+    const query = "select prepare_combined_checkout($1,$2,$3,$4,$5,$6) as batch";
+    const args = (once, { owner = user, details = order, lines = items } = {}) =>
+      [owner, once, day, JSON.stringify(rules), details, JSON.stringify(lines)];
+    async function prepare(once, options) {
+      const client = new Client(runtime.config);
+      await client.connect();
+      try {
+        await client.query("begin");
+        await client.query("set local role service_role");
+        await client.query("select set_config('request.jwt.claim.sub',$1,true)", [other]);
+        const { batch } = (await client.query(query, args(once, options))).rows[0];
+        assert.equal((await client.query("select auth.uid() as subject")).rows[0].subject, other);
+        await client.query("commit");
+        return batch;
+      } finally {
+        await client.end();
+      }
+    }
+    const once = await onceOrder();
+    await assert.rejects(callAs(db, user, query, args(once)), /permission denied/);
+    await assert.rejects(callAs(db, user,
+      "select private.save_pending_monthly_plan_for_user($1,$2,'return',$3)",
+      [other, day, JSON.stringify(rules)]), /permission denied/);
+    await assert.rejects(callAs(db, null,
+      "select save_pending_monthly_plan($1,'return',$2)",
+      [day, JSON.stringify(rules)]), /Authentication required/);
+    await assert.rejects(prepare(once, { owner: other }), /unavailable/);
+    const [batch, duplicate] = await Promise.all([prepare(once), prepare(once)]);
+    assert.equal(duplicate, batch);
+    assert.equal(await prepare(once), batch);
+    assert.equal((await db.query("select count(*)::int as n from orders where user_id=$1 and purchase_mode='plan'", [user])).rows[0].n, 1);
+
+    const state = async (id) => (await db.query(
+      `select b.status as batch_status, o.status as plan_status, o.id as plan_order, b.amount_paise, o.pricing_version
+       from checkout_batches b join orders o on o.id=b.plan_order_id where b.id=$1`, [id],
+    )).rows[0];
+    const initial = await state(batch);
+    assert.equal(initial.amount_paise, 19100);
+    assert.equal(initial.pricing_version, 2);
+    assert.equal(initial.plan_status, "draft");
+    await assert.rejects(prepare(once, { details: { ...order, address_snapshot: "Updated delivery address" } }), /updated selection/);
+
+    const fresh = await onceOrder();
+    await assert.rejects(prepare(fresh, { lines: [{ ...items[0], quantity: 0 }] }), /check constraint/);
+    assert.deepEqual(await state(batch), initial);
+    assert.equal((await db.query("select count(*)::int as n from checkout_batches where once_order_id=$1", [fresh])).rows[0].n, 0);
+
+    // Reproduce an old review whose scheduled child was replaced before this fix.
+    await callAs(db, user, "select save_pending_monthly_plan($1,'return',$2)", [day, JSON.stringify(rules)]);
+    assert.equal((await state(batch)).plan_status, "cancelled");
+    assert.equal(await prepare(once), batch);
+    assert.deepEqual(await state(batch), { ...initial, plan_status: "cancelled" });
+
+    if (process.env.COMBINED_CHECKOUT_BROWSER === "1") {
+      browser = await browserFixture(runtime.config, [user, other], true);
+      for (const { customer } of browser.pages) {
+        await customer.addInitScript((start) => {
+          const cart = (quantity) => ({
+            start, milk: { start, quantity, repeat: "once" }, selected: { milk: true },
+          });
+          sessionStorage.setItem("mma-shop-draft-v1", JSON.stringify({
+            mode: "once", carts: { once: cart(1), plan: cart(2) },
+          }));
+        }, day);
+        await customer.goto(`${browser.base}/checkout/batch/review?batch=${batch}`);
+        await customer.getByRole("heading", { name: "Review your cart again." }).waitFor();
+        assert.equal(await customer.getByRole("button", { name: /Pay ₹/ }).count(), 0);
+        await customer.getByRole("link", { name: "Open saved cart" }).click();
+        await customer.getByRole("dialog").getByRole("link", { name: "Continue to delivery details" }).click();
+        await customer.locator("input[name=phone]").fill("9000000000");
+        await customer.locator("textarea[name=address]").fill(order.address_snapshot);
+        await customer.getByRole("button", { name: "Continue to scheduled details" }).click();
+        await customer.waitForURL("**/order?*combineWith=*");
+        const formUrl = customer.url();
+        let reviewUrl;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt) await customer.goto(formUrl);
+          await customer.locator("input[name=phone]").fill("9000000000");
+          await customer.locator("textarea[name=address]").fill(order.address_snapshot);
+          await customer.getByRole("button", { name: "Review combined checkout" }).click();
+          await customer.waitForURL("**/checkout/batch/review?batch=*");
+          if (reviewUrl) assert.equal(customer.url(), reviewUrl);
+          reviewUrl = customer.url();
+          await customer.getByRole("heading", { name: "One payment, both deliveries." }).waitFor();
+        }
+      }
+    } else {
+      const replacement = await prepare(fresh);
+      assert.notEqual(replacement, batch);
+      assert.equal((await state(replacement)).plan_status, "draft");
+    }
   } finally {
     await browser?.close();
     await runtime.stop();

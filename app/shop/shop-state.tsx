@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useProductPricing } from "../components/product-pricing";
 import {
   createContext,
@@ -108,6 +109,10 @@ export function useShop() {
     cartOpen: cart.open,
     setCartOpen: cart.setOpen,
   };
+}
+export function CheckoutCartLink({ children }: { children: ReactNode }) {
+  const { setCartOpen } = useShop();
+  return <Link href="/shop" onNavigate={() => setCartOpen(true)}>{children}</Link>;
 }
 export function OrderMode() {
   const { state, update } = useShop();
