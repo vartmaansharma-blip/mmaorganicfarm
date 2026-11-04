@@ -23,7 +23,7 @@
 }
 
 /* Brand palette. HSL values are shared by the existing semantic aliases below. */
-:root, :root.dark, :root[data-theme="dark"] {
+:root.dark, :root[data-theme="dark"] {
   color-scheme: dark;
   --background: 145.71 14.89% 9.22%;
   --foreground: 41.54 56.52% 95.49%;
@@ -55,7 +55,7 @@
   --color-bottle-halo: radial-gradient(ellipse, hsl(var(--glow)), transparent 68%);
   --color-card-shadow: none;
 }
-:root.light, :root[data-theme="light"] {
+:root, :root.light, :root[data-theme="light"] {
   color-scheme: light;
   --background: 41.54 56.52% 95.49%;
   --foreground: 145.71 14.89% 9.22%;

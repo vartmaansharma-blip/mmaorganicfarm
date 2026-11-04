@@ -85,12 +85,12 @@ try {
         }
         await page.close();
       }
-      // Fresh storage ignores a light OS, and an existing saved light choice survives migration.
-      for (const legacy of [false,true]) {
-        const context=await browser.newContext({colorScheme:'light',reducedMotion:'reduce'});
-        if(legacy) await context.addInitScript(()=>localStorage.setItem('mama-theme','light'));
+      // Fresh visits use light on either OS; an existing dark choice survives migration.
+      for (const colorScheme of ['dark','light']) for (const legacy of [false,true]) {
+        const context=await browser.newContext({colorScheme,reducedMotion:'reduce'});
+        if(legacy) await context.addInitScript(()=>localStorage.setItem('mama-theme','dark'));
         const page=await context.newPage();await page.goto(base,{waitUntil:'networkidle'});
-        assert.equal(await page.locator('html').getAttribute('data-theme'),legacy?'light':'dark');
+        assert.equal(await page.locator('html').getAttribute('data-theme'),legacy?'dark':'light');
         await context.close();
       }
     } finally { await browser.close(); }

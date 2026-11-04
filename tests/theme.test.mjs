@@ -9,20 +9,24 @@ function makeRoot() { const classes = new Set(); return { dataset: {}, style: {}
 const layout = await readFile(new URL('../app/layout.tsx', import.meta.url), 'utf8');
 const bootstrap = layout.match(/__html: `([^`]+)`/)[1];
 
-test('first visits retain the chat-approved dark default, even on a light OS', () => {
-  const root = makeRoot();
-  vm.runInNewContext(bootstrap, { document: { documentElement: root }, localStorage: { getItem: () => null }, matchMedia: () => ({ matches: true }) });
-  assert.equal(root.dataset.theme, 'dark');
-  assert.equal(root.style.colorScheme, 'dark');
-  assert.ok(root.classList.contains('dark'));
-  assert.equal(getServerTheme(), 'dark');
+test('first visits use light before paint regardless of OS preference', () => {
+  for (const darkOS of [false, true]) {
+    const root = makeRoot();
+    vm.runInNewContext(bootstrap, { document: { documentElement: root }, localStorage: { getItem: () => null }, matchMedia: () => ({ matches: darkOS }) });
+    assert.equal(root.dataset.theme, 'light');
+    assert.equal(root.style.colorScheme, 'light');
+    assert.ok(root.classList.contains('light'));
+    assert.equal(root.classList.contains('dark'), false);
+  }
+  assert.equal(getServerTheme(), 'light');
+  assert.match(layout, /data-theme="light"/);
 });
 
-test('saved light choice applies before hydration and blocked storage keeps a usable default', () => {
+test('saved dark choice applies before hydration and blocked storage falls back to light', () => {
   for (const blocked of [false, true]) {
     const root = makeRoot();
-    vm.runInNewContext(bootstrap, { document: { documentElement: root }, localStorage: { getItem: () => { if (blocked) throw Error('blocked'); return 'light'; } } });
-    assert.equal(root.dataset.theme, blocked ? 'dark' : 'light');
+    vm.runInNewContext(bootstrap, { document: { documentElement: root }, localStorage: { getItem: () => { if (blocked) throw Error('blocked'); return 'dark'; } } });
+    assert.equal(root.dataset.theme, blocked ? 'light' : 'dark');
   }
 });
 
@@ -48,9 +52,12 @@ test('explicit selection persists, broadcasts once and synchronizes other tabs w
     events.dispatchEvent(storage);
     assert.equal(getTheme(), 'dark');
     assert.equal(changes, 2);
+    Object.assign(storage, {newValue:null});events.dispatchEvent(storage);
+    assert.equal(getTheme(),'light');
+    assert.equal(changes,3);
     stop();
     setTheme('light');
-    assert.equal(changes, 2);
+    assert.equal(changes, 3);
     Object.defineProperty(globalThis, 'localStorage', { value: { setItem() { throw Error('blocked'); } }, configurable: true });
     assert.doesNotThrow(() => setTheme('dark'));
     assert.equal(getTheme(), 'dark');
@@ -63,8 +70,8 @@ test('explicit selection persists, broadcasts once and synchronizes other tabs w
 });
 
 
-test('legacy saved choices migrate while the new key wins and invalid choices fall back to dark', () => {
-  for (const [current, legacy, expected] of [[null,'light','light'], ['dark','light','dark'], ['invalid','light','dark']]) {
+test('legacy saved choices migrate while the new key wins and invalid choices fall back to light', () => {
+  for (const [current, legacy, expected] of [[null,'dark','dark'], [null,'light','light'], ['light','dark','light'], ['dark','light','dark'], ['invalid','dark','light']]) {
     const root = makeRoot();
     const storage = new Map([['mama-theme', legacy]]);
     if (current !== null) storage.set('mma-theme', current);
