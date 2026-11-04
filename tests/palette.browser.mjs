@@ -46,6 +46,11 @@ try {
           });
           for (const [role, ratio] of Object.entries(contrast)) assert.ok(ratio>=4.5,`${name}/${theme}/${role}: ${ratio}`);
           if (name==='home') {
+            const copy = await page.locator('main').innerText();
+            assert.match(copy, /Build your monthly/);
+            assert.doesNotMatch(copy, /30-delivery|moves to the end of your plan/i);
+            const cta = page.locator('.closing-actions .button').first();
+            assert.equal(await cta.evaluate(e => getComputedStyle(e).borderRadius), '999px');
             const banner=page.locator('.ticker');
             assert.equal(await banner.evaluate(e=>getComputedStyle(e).backgroundColor), await page.evaluate(()=>{const e=document.createElement('i');e.style.background='var(--color-action-primary)';document.body.append(e);const v=getComputedStyle(e).backgroundColor;e.remove();return v;}));
             assert.equal(await banner.locator('div').evaluate(e=>getComputedStyle(e).animationName),'none');
@@ -66,6 +71,19 @@ try {
         assert.deepEqual(errors,[]);
         await context.close();
         console.log(`${engine} ${width} ${theme}: four pages, contrast, persistence and account guard passed`);
+      }
+      // Verify the actual public metadata returned by the production build.
+      {
+        const page = await browser.newPage();
+        for (const route of ['/', '/shop', '/shop/milk', '/shop/paneer', '/shop/ghee', '/pricing', '/shipping', '/contact', '/terms', '/privacy', '/cancellation-refunds']) {
+          await page.goto(base + route, { waitUntil: 'networkidle' });
+          const expected = 'https://mmaorganicfarm.vercel.app' + (route === '/' ? '' : route);
+          assert.equal(await page.locator('link[rel=canonical]').getAttribute('href'), expected, route);
+          assert.equal(await page.locator('meta[property=\"og:url\"]').getAttribute('content'), expected, route);
+          assert.ok(await page.locator('meta[property=\"og:title\"]').getAttribute('content'), route);
+          assert.ok(await page.locator('meta[property=\"og:description\"]').getAttribute('content'), route);
+        }
+        await page.close();
       }
       // Fresh visits use light on either OS; an existing dark choice survives migration.
       for (const colorScheme of ['dark','light']) for (const legacy of [false,true]) {

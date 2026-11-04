@@ -114,6 +114,7 @@ type DeliveryRow = {
 };
 
 type CapacityDay = {
+  product_key: "milk" | "paneer" | "ghee";
   available_quantity: number | string;
   delivery_date: string;
 };
@@ -242,11 +243,14 @@ export default async function CustomerPage({
       .eq("is_test", false)
       .order("delivery_date", { ascending: false })
       .limit(80),
-    admin.rpc("product_capacity_snapshot", {
-      p_days: 8,
-      p_product_key: "milk",
-      p_start_date: today,
-    }),
+    Promise.all((["milk", "paneer", "ghee"] as const).map(async (product_key) => {
+      const result = await admin.rpc("product_capacity_snapshot", {
+        p_days: 31,
+        p_product_key: product_key,
+        p_start_date: nextDeliveryDate,
+      });
+      return result.error ? [] : ((result.data ?? []) as Omit<CapacityDay, "product_key">[]).map((row) => ({ ...row, product_key }));
+    })),
   ]);
 
   const databaseError = [
@@ -311,9 +315,7 @@ export default async function CustomerPage({
       status,
     };
   });
-  const capacityDays = capacityResult.error
-    ? []
-    : ((capacityResult.data ?? []) as CapacityDay[]);
+  const capacityDays: CapacityDay[] = capacityResult.flat();
   const livePayments = payments;
   const paidOrders = orders;
   const activePlan =

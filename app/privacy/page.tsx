@@ -1,10 +1,8 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "How M'ma Organic Farm handles customer and delivery information.",
-};
+export const metadata: Metadata = publicMetadata("/privacy", "Privacy Policy", "How M'ma Organic Farm handles customer and delivery information.");
 
 export default function PrivacyPage() {
   return (

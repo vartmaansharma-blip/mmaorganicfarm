@@ -18,7 +18,7 @@
 .capsule a { display: grid; place-items: center; min-height: 44px; padding: 0 clamp(14px, 1.7vw, 28px); white-space: nowrap; font-size: 14px; font-weight: 500; border-radius: 999px; transition: background-color 200ms ease, color 200ms ease; }
 .capsule a:hover { background: var(--hero-hover); }
 .capsule a[aria-current] { background: var(--color-nav-active-background); color: var(--color-nav-active); box-shadow: inset 2px 0 var(--color-nav-indicator); }
-.shop { color: var(--hero-on-yellow); justify-self: end; display: flex; align-items: center; justify-content: center; gap: 22px; min-height: 48px; padding: 0 24px; background: var(--hero-yellow); border-radius: 999px; font-size: 14px; font-weight: 600; transition: background-color 200ms ease, transform 140ms ease; }
+.shop { color: var(--hero-on-yellow); justify-self: end; display: flex; align-items: center; justify-content: center; gap: 22px; min-height: 48px; padding: 0 24px; background: var(--hero-yellow); border-radius: var(--ui-radius-control); font-size: 14px; font-weight: 700; transition: background-color 200ms ease, transform 140ms ease; }
 .shop:hover { background: var(--hero-yellow-hover); }
 .shop span:last-child { transition: transform 180ms ease; }
 .shop:active, .menuButton:active { transform: scale(.98); }

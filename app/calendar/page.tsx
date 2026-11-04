@@ -236,7 +236,11 @@ export default async function CalendarPage({
               <p className={styles.sectionNumber}>01</p>
               <h2 id="upcoming-heading">7-day order sheet</h2>
             </div>
-            <Link href="/milk?edit=plan">Edit normal week</Link>
+            {plan.status === "pending_confirmation" ? (
+              <Link href="/milk?edit=plan">Edit draft schedule</Link>
+            ) : plan.status === "active" || plan.status === "paused" ? (
+              <a href="tel:+919818804419">Contact the farm to change your regular week</a>
+            ) : null}
           </div>
 
           <div className={styles.dayGrid}>

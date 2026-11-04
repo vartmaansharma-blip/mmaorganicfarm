@@ -1,11 +1,8 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 
-export const metadata: Metadata = {
-  title: "Delivery Policy",
-  description:
-    "Delivery area, scheduling, and fulfilment information for M'ma Organic Farm.",
-};
+export const metadata: Metadata = publicMetadata("/shipping", "Delivery Policy", "Delivery area, scheduling, and fulfilment information for M'ma Organic Farm.");
 
 export default function ShippingPage() {
   return (

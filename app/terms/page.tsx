@@ -1,10 +1,8 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 
-export const metadata: Metadata = {
-  title: "Terms and Conditions",
-  description: "Terms for using and ordering from M'ma Organic Farm.",
-};
+export const metadata: Metadata = publicMetadata("/terms", "Terms and Conditions", "Terms for using and ordering from M'ma Organic Farm.");
 
 export default function TermsPage() {
   return (
