@@ -611,10 +611,11 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(page, /cowshed\.jpeg/);
   assert.doesNotMatch(page, /farm-bottle\.png/);
   assert.match(page, /MilkPlanBuilder/);
-  assert.match(page, /params\.edit === "plan"/);
+  assert.match(page, /params\.edit !== "plan"/);
   assert.match(page, /weekly_delivery_items/);
   assert.match(page, /initialSchedule=\{savedSchedule\}/);
-  assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk"\)/);
+  assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk%3Fedit%3Dplan"\)/);
+  assert.match(page, /savedPlan.status !== "pending_confirmation".*redirect/);
   assert.match(builder, /One-time order/);
   assert.match(builder, /Scheduled plan/);
   assert.match(builder, /useState<PurchaseMode \| null>/);
