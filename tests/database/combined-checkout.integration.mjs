@@ -55,7 +55,7 @@ async function browserFixture(config, users, combinedCheckout = false) {
 }
 
 test("combined checkout prices bottles once, captures atomically and notifies farm staff", async () => {
-  const runtime = await createDatabase({ routingFoundation: true, driverRuns: true, farmNotifications: true, combinedCheckoutRetry: true });
+  const runtime = await createDatabase({ routingFoundation: true, driverRuns: true, farmNotifications: true });
   const { db } = runtime;
   let browser;
   try {
@@ -178,7 +178,7 @@ test("combined checkout prices bottles once, captures atomically and notifies fa
 });
 
 test("combined preparation is atomic, idempotent and safely recovers from a stale review", async () => {
-  const runtime = await createDatabase({ combinedCheckoutRetry: true });
+  const runtime = await createDatabase();
   const { db } = runtime;
   let browser;
   try {
@@ -228,6 +228,12 @@ test("combined preparation is atomic, idempotent and safely recovers from a stal
     }
     const once = await onceOrder();
     await assert.rejects(callAs(db, user, query, args(once)), /permission denied/);
+    await assert.rejects(callAs(db, user,
+      "select private.save_pending_monthly_plan_for_user($1,$2,'return',$3)",
+      [other, day, JSON.stringify(rules)]), /permission denied/);
+    await assert.rejects(callAs(db, null,
+      "select save_pending_monthly_plan($1,'return',$2)",
+      [day, JSON.stringify(rules)]), /Authentication required/);
     await assert.rejects(prepare(once, { owner: other }), /unavailable/);
     const [batch, duplicate] = await Promise.all([prepare(once), prepare(once)]);
     assert.equal(duplicate, batch);
@@ -235,11 +241,12 @@ test("combined preparation is atomic, idempotent and safely recovers from a stal
     assert.equal((await db.query("select count(*)::int as n from orders where user_id=$1 and purchase_mode='plan'", [user])).rows[0].n, 1);
 
     const state = async (id) => (await db.query(
-      `select b.status as batch_status, o.status as plan_status, o.id as plan_order, b.amount_paise
+      `select b.status as batch_status, o.status as plan_status, o.id as plan_order, b.amount_paise, o.pricing_version
        from checkout_batches b join orders o on o.id=b.plan_order_id where b.id=$1`, [id],
     )).rows[0];
     const initial = await state(batch);
     assert.equal(initial.amount_paise, 19100);
+    assert.equal(initial.pricing_version, 2);
     assert.equal(initial.plan_status, "draft");
     await assert.rejects(prepare(once, { details: { ...order, address_snapshot: "Updated delivery address" } }), /updated selection/);
 

@@ -1,5 +1,74 @@
 -- Run after selected-checkout-batches.local.sql. Existing checkout and payment
 -- entry points keep working while the storefront starts using this function.
+-- Keep the existing schedule validation and write logic in one private routine.
+create function private.save_pending_monthly_plan_for_user(v_user uuid, p_start_date date, p_bottle_choice text, p_rules jsonb)
+returns uuid language plpgsql security definer set search_path='' as $$
+declare
+ v_plan uuid;v_rule jsonb;v_day date;v_end date;v_quantity integer;v_milk boolean:=false;
+begin
+ if v_user is null then raise exception 'Authentication required' using errcode='42501';end if;
+ if p_start_date is null or p_start_date<((now() at time zone 'Asia/Kolkata')::date+1) then raise exception 'Choose a start date from tomorrow';end if;
+ v_end:=(p_start_date+interval '1 month')::date;
+ if p_rules is null or jsonb_typeof(p_rules)<>'array' or jsonb_array_length(p_rules) not between 1 and 3 then raise exception 'Choose valid product routines';end if;
+ if exists(select 1 from jsonb_array_elements(p_rules) x group by x->>'id' having count(*)>1) then raise exception 'Choose one routine per product';end if;
+ for v_rule in select value from jsonb_array_elements(p_rules) loop
+  if coalesce(v_rule->>'id','') not in ('milk','paneer','ghee') or coalesce(v_rule->>'repeat','') not in ('once','daily','weekly','fortnightly','monthly','days','custom')
+   or coalesce(v_rule->>'quantity','')!~'^[1-5]$' or coalesce(v_rule->>'firstDate','')!~'^\d{4}-\d{2}-\d{2}$' then raise exception 'Invalid product routine';end if;
+  if (v_rule->>'firstDate')::date<p_start_date or (v_rule->>'firstDate')::date>=v_end then raise exception 'Choose first deliveries within this prepaid month';end if;
+  if v_rule->>'repeat'='days' then
+   if jsonb_typeof(v_rule->'week') is distinct from 'array' then raise exception 'Choose a valid week';end if;
+   if jsonb_array_length(v_rule->'week')<>7 or exists(select 1 from jsonb_array_elements_text(v_rule->'week') q where q is null or q!~'^[0-5]$') then raise exception 'Choose valid daily quantities';end if;
+  end if;
+  if v_rule->>'repeat'='custom' then
+   if jsonb_typeof(v_rule->'dates') is distinct from 'array' then raise exception 'Choose valid custom dates';end if;
+   if jsonb_array_length(v_rule->'dates') not between 1 and 31 then raise exception 'Choose at least one custom date';end if;
+   if exists(select 1 from jsonb_array_elements_text(v_rule->'dates') d where d !~ '^\d{4}-\d{2}-\d{2}$') then raise exception 'Invalid custom date';end if;
+   if exists(select 1 from jsonb_array_elements_text(v_rule->'dates') d where d::date<p_start_date or d::date>=v_end)
+    or (select count(distinct d) from jsonb_array_elements_text(v_rule->'dates') d)<>jsonb_array_length(v_rule->'dates')
+    or (select min(d) from jsonb_array_elements_text(v_rule->'dates') d)<>v_rule->>'firstDate'
+   then raise exception 'Choose unique custom dates within this month';end if;
+  end if;
+  if not exists(select 1 from generate_series(0,(v_end-p_start_date)-1) d where private.monthly_routine_quantity(v_rule,p_start_date+d)>0) then raise exception 'Each product needs a delivery within this month';end if;
+  v_milk:=v_milk or v_rule->>'id'='milk';
+ end loop;
+ if p_bottle_choice is null or (v_milk and p_bottle_choice not in ('return','new')) or (not v_milk and p_bottle_choice<>'none') then raise exception 'Choose a valid bottle option';end if;
+ perform pg_advisory_xact_lock(hashtextextended(v_user::text,0));
+ if exists(select 1 from public.delivery_plans where user_id=v_user and status in ('active','paused')) then raise exception 'You already have a current paid plan. Open its delivery calendar or contact the farm before starting another.';end if;
+ select id into v_plan from public.delivery_plans where user_id=v_user and status='pending_confirmation' for update;
+ if v_plan is not null then
+  if exists(select 1 from public.orders where delivery_plan_id=v_plan and (status='pending_payment' or (status='draft' and razorpay_order_id is not null))) then raise exception 'A payment checkout is already in progress. Finish or resolve it before changing this plan.';end if;
+  update public.orders set status='cancelled',updated_at=now() where delivery_plan_id=v_plan and status in ('draft','pending_payment');
+  delete from public.weekly_delivery_items where plan_id=v_plan;
+  delete from public.scheduled_delivery_items where plan_id=v_plan;
+  update public.delivery_plans set start_date=p_start_date,bottle_choice=p_bottle_choice,billing_model='calendar_month',period_end_exclusive=v_end,schedule_rules=p_rules,purchased_deliveries=0,delivered_deliveries=0,updated_at=now() where id=v_plan and user_id=v_user;
+ else
+  insert into public.delivery_plans(user_id,status,start_date,bottle_choice,billing_model,period_end_exclusive,schedule_rules,purchased_deliveries,delivered_deliveries)
+  values(v_user,'pending_confirmation',p_start_date,p_bottle_choice,'calendar_month',v_end,p_rules,0,0) returning id into v_plan;
+ end if;
+ for v_day in select p_start_date+d from generate_series(0,(v_end-p_start_date)-1) d loop
+  for v_rule in select value from jsonb_array_elements(p_rules) loop
+   v_quantity:=private.monthly_routine_quantity(v_rule,v_day);
+   if v_quantity>0 then insert into public.scheduled_delivery_items(plan_id,user_id,product_key,delivery_date,quantity,unit)
+    values(v_plan,v_user,v_rule->>'id',v_day,v_quantity,case when v_rule->>'id'='milk' then 'litre' else '500 g' end);end if;
+  end loop;
+ end loop;
+ return v_plan;
+end;
+$$;
+revoke all on function private.save_pending_monthly_plan_for_user(uuid, date, text, jsonb)
+  from public, anon, authenticated;
+grant execute on function private.save_pending_monthly_plan_for_user(uuid, date, text, jsonb)
+  to service_role;
+
+-- Existing callers still use the authenticated customer's identity.
+-- CREATE OR REPLACE retains the original owner, signature and grants.
+create or replace function public.save_pending_monthly_plan(
+  p_start_date date, p_bottle_choice text, p_rules jsonb
+)
+returns uuid language sql security definer set search_path = '' as $$
+  select private.save_pending_monthly_plan_for_user(auth.uid(), p_start_date, p_bottle_choice, p_rules);
+$$;
+
 create function public.prepare_combined_checkout(
   p_user_id uuid,
   p_once_order_id uuid,
@@ -11,7 +80,6 @@ create function public.prepare_combined_checkout(
 returns uuid
 language plpgsql security invoker
 set search_path = ''
-set "request.jwt.claim.sub" = ''
 as $$
 declare
   v_batch public.checkout_batches%rowtype;
@@ -65,20 +133,19 @@ begin
     raise exception 'Choose scheduled items';
   end if;
 
-  -- The existing plan routine uses auth.uid(). Scope the verified customer
-  -- subject to this service-only function and restore it on function exit.
-  perform set_config('request.jwt.claim.sub', p_user_id::text, true);
-  v_plan_id := public.save_pending_monthly_plan(p_start_date, v_details.bottle_choice, p_rules);
+  v_plan_id := private.save_pending_monthly_plan_for_user(
+    p_user_id, p_start_date, v_details.bottle_choice, p_rules
+  );
 
   insert into public.orders (
     user_id, delivery_plan_id, purchase_mode, start_date, address_snapshot, phone_snapshot,
     bottle_choice, milk_litres, subtotal_paise, bottle_charge_paise, handling_fee_paise,
-    platform_fee_paise, total_paise
+    platform_fee_paise, total_paise, pricing_version
   ) values (
     p_user_id, v_plan_id, 'plan', p_start_date, v_details.address_snapshot, v_details.phone_snapshot,
     v_details.bottle_choice, v_details.milk_litres, v_details.subtotal_paise,
     v_details.bottle_charge_paise, v_details.handling_fee_paise,
-    v_details.platform_fee_paise, v_details.total_paise
+    v_details.platform_fee_paise, v_details.total_paise, 2
   ) returning id into v_order_id;
 
   insert into public.order_items (
