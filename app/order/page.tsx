@@ -83,9 +83,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
     monthlyRules ? !monthlyRules.some((r) => r.id === "milk") : milkLitres === 0
   )
     ? "none"
-    : params.bottle === "new"
-      ? "new"
-      : "return";
+    : "return";
   const firstPlanStart =
     params.purchase === "plan"
       ? await firstScheduledPlanStart(supabase, user.id)
@@ -211,6 +209,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                     <dd>₹{pricing.oneTimeAddOnsTotal}</dd>
                   </div>
                 ) : null}
+          {pricing.handlingCharge > 0 && <div><dt>Handling</dt><dd>₹{pricing.handlingCharge}</dd></div>}
+          {pricing.platformCharge > 0 && <div><dt>Platform fee</dt><dd>₹{pricing.platformCharge}</dd></div>}
                 <div>
                   <dt>Delivery</dt>
                   <dd>
@@ -285,46 +285,6 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
               Add a landmark only when it helps the delivery team find you.
             </span>
           </label>
-
-          {(
-            monthlyRules
-              ? monthlyRules.some((r) => r.id === "milk")
-              : milkLitres > 0
-          ) ? (
-            <fieldset className={styles.bottleChoice}>
-              <legend>Bottle for this delivery</legend>
-              <p>Choose your bottle option before reviewing payment.</p>
-              <div>
-                <label>
-                  <input
-                    defaultChecked={bottleChoice === "return"}
-                    name="bottle"
-                    type="radio"
-                    value="return"
-                  />
-                  <span>
-                    <strong>I will return a bottle</strong>
-                    <small>Milk remains ₹{prices.milk} per litre.</small>
-                  </span>
-                </label>
-                <label>
-                  <input
-                    defaultChecked={bottleChoice === "new"}
-                    name="bottle"
-                    type="radio"
-                    value="new"
-                  />
-                  <span>
-                    <strong>I need new bottles</strong>
-                    <small>₹{Math.round((prices.milk + prices.bottle)*100)/100} per litre including ₹{prices.bottle} per glass bottle.</small>
-                  </span>
-                </label>
-              </div>
-              <p>Your exact total is shown on the payment review page.</p>
-            </fieldset>
-          ) : (
-            <input name="bottle" type="hidden" value="none" />
-          )}
 
           <button className={styles.submitButton} type="submit">
             Save &amp; review order <span>→</span>

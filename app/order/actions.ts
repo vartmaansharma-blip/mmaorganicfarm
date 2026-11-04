@@ -99,14 +99,11 @@ export async function saveDeliveryDetails(formData: FormData) {
     purchase === "plan" && routine
       ? parseRoutines(String(formData.get("start") ?? ""), routine)
       : null;
-  const requestedBottle = String(formData.get("bottle") ?? "return");
   const bottle: BottleChoice = (
     monthlyRules ? !monthlyRules.some((r) => r.id === "milk") : milkLitres === 0
   )
     ? "none"
-    : requestedBottle === "new"
-      ? "new"
-      : "return";
+    : "return";
   const { prices } = await readProductCatalogue();
   const selectedProducts = parseFarmProductSelections(
     String(formData.get("extras") ?? ""), prices,
@@ -415,6 +412,8 @@ export async function saveDeliveryDetails(formData: FormData) {
     .insert({
       address_snapshot: address,
       bottle_charge_paise: priceInPaise(pricing.bottleCharge),
+      handling_fee_paise: priceInPaise(pricing.handlingCharge),
+      platform_fee_paise: priceInPaise(pricing.platformCharge),
       bottle_choice: bottle,
       currency: "INR",
       delivery_plan_id: deliveryPlanId,
@@ -424,7 +423,7 @@ export async function saveDeliveryDetails(formData: FormData) {
       start_date: orderDeliveryDate,
       status: "draft",
       subtotal_paise:
-        priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge),
+        priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge - pricing.handlingCharge - pricing.platformCharge),
       total_paise: priceInPaise(pricing.total),
       user_id: user.id,
     })

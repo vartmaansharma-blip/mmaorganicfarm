@@ -1,6 +1,6 @@
 import { DEFAULT_PRODUCT_PRICES, money, type ProductPrices } from "./product-prices";
 import { addCalendarDays } from "./delivery-calendar";
-import { firstMonthEnds, deliveryChargeForSubtotal } from "./delivery-pricing";
+import { firstMonthEnds, deliveryChargeForSubtotal, flatOrderFees } from "./delivery-pricing";
 import type { BottleChoice } from "./order-pricing";
 import { validShopDate, type ShopProductId } from "./shop-draft";
 export type RepeatPattern =
@@ -256,13 +256,16 @@ export function quoteMonthlySchedule({
       "plan",
       day.date,
       firstPlanStart,
+      prices,
     );
   }
   for (const id of ids) productTotals[id] = money(productTotals[id]);
   const milkLitres = quantities.milk,
     bottleCharge = bottleChoice === "new" ? money(milkLitres * prices.bottle) : 0,
     productsSubtotal = Object.values(productTotals).reduce((a, b) => a + b, 0);
+  const fees = flatOrderFees(productsSubtotal, prices, start, firstPlanStart);
   return {
+    ...fees,
     days,
     quantities,
     productTotals,
@@ -273,7 +276,7 @@ export function quoteMonthlySchedule({
     bottleCharge,
     deliveryCharge,
     productsSubtotal,
-    total: money(productsSubtotal + bottleCharge + deliveryCharge),
+    total: money(productsSubtotal + bottleCharge + deliveryCharge + fees.handlingCharge + fees.platformCharge),
     endExclusive: firstMonthEnds(start),
   };
 }

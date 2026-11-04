@@ -79,8 +79,10 @@ export function quoteStoredCheckout(
         })
       : calculateOrderPricing({ bottleChoice, prices, products, milkLitres: milk });
   if (mode === "adjustment") {
-    pricing.total -= pricing.deliveryCharge;
+    pricing.total = priceInPaise(pricing.total - pricing.deliveryCharge - pricing.handlingCharge - pricing.platformCharge) / 100;
     pricing.deliveryCharge = 0;
+    pricing.handlingCharge = 0;
+    pricing.platformCharge = 0;
   }
   if (mode === "plan" && pricing.milkLitres !== milk)
     throw Error("Plan milk quantity changed.");
