@@ -611,10 +611,11 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.match(page, /cowshed\.jpeg/);
   assert.doesNotMatch(page, /farm-bottle\.png/);
   assert.match(page, /MilkPlanBuilder/);
-  assert.match(page, /params\.edit === "plan"/);
+  assert.match(page, /params\.edit !== "plan"/);
   assert.match(page, /weekly_delivery_items/);
   assert.match(page, /initialSchedule=\{savedSchedule\}/);
-  assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk"\)/);
+  assert.match(page, /redirect\("\/sign-in\?next=%2Fmilk%3Fedit%3Dplan"\)/);
+  assert.match(page, /savedPlan.status !== "pending_confirmation".*redirect/);
   assert.match(builder, /One-time order/);
   assert.match(builder, /Scheduled plan/);
   assert.match(builder, /useState<PurchaseMode \| null>/);
@@ -968,7 +969,9 @@ test("lets managers add, import, and manage customers safely", async () => {
   assert.match(manualOrderForm, /Record paid order/);
   assert.match(manualOrderForm, /Live · Paid order/);
   assert.match(manualOrderForm, /Capacity impact/);
-  assert.match(manualOrderForm, /calculatePlanPricing/);
+  assert.match(manualOrderForm, /quoteMonthlySchedule/);
+  assert.match(manualOrderForm, /Review dated deliveries/);
+  assert.match(actions, /scheduled_delivery_items/);
   assert.match(manualOrderForm, /orderReady \? <FormSubmitButton/);
   assert.match(actions, /createCustomerProfile/);
   assert.match(actions, /createManagedCustomer/);
@@ -1019,7 +1022,7 @@ test("keeps operational edits consistent and recoverable", async () => {
   assert.match(routingFields, /currentRoute\?\.areaId === nextAreaId/);
   assert.match(routingFields, /Assign automatically in this area/);
   assert.match(routingFields, /disabled=\{!areaId\}/);
-  assert.match(routesStyles, /\.area\{overflow:visible\}/);
+  assert.match(routesStyles, /\.area\s*\{\s*overflow:\s*visible;?\s*\}/);
   assert.match(reliabilitySchema, /refresh_customer_route_impl\(v_customer\.user_id, false\)/);
   assert.match(reliabilitySchema, /resolve_cancellation_request_impl/);
   assert.match(reliabilitySchema, /for update/);

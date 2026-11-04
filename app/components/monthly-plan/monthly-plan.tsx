@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatCalendarDate, productName } from "@/lib/delivery-calendar";
+import { formatCalendarDate, formatDeliveryQuantity, productName } from "@/lib/delivery-calendar";
 import styles from "./monthly-plan.module.css";
 
 type DatedItem = {
@@ -64,7 +64,7 @@ export function MonthlyPlan({
                   .filter((item) => item.delivery_date === date)
                   .map(
                     (item) =>
-                      `${productName(item.product_key)} · ${Number(item.quantity)} ${item.unit}`,
+                      `${productName(item.product_key)} · ${formatDeliveryQuantity(item.quantity, item.unit)}`,
                   )
                   .join(" / ")}
               </p>

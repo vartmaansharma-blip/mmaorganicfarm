@@ -15,19 +15,20 @@ export default async function Success({ searchParams }: { searchParams: Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
   if (!orderId) redirect("/account");
-  const { data: order } = await supabase.from("orders").select("id,status,is_test,purchase_mode,total_paise")
+  const { data: order } = await supabase.from("orders").select("id,status,is_test,purchase_mode,total_paise,paid_total_paise")
     .eq("id", orderId).eq("user_id", user.id).maybeSingle();
   if (!order) redirect("/account");
   const { data: testPayments } = order.is_test ? await supabase.from("payments").select("status")
     .eq("order_id", order.id).eq("user_id", user.id).eq("is_test", true).eq("status", "captured").limit(1) : { data: null };
   const paid = order.is_test ? Boolean(testPayments?.length) : order.status === "paid";
   const confirmedLive = paid && !order.is_test;
+  const amount = formatCheckoutAmount(confirmedLive ? (order.paid_total_paise ?? order.total_paise) : order.total_paise);
   const paidDetail = order.purchase_mode === "plan" ? "Your selected delivery plan is active and saved in your profile."
     : order.purchase_mode === "adjustment" ? "The additional milk is saved in your calendar."
     : "Your farm order is saved in your profile.";
   const intro = order.is_test
     ? "This is a simulated payment. No delivery plan was activated and no farm fulfilment was created."
-    : paid ? `Your payment of ${formatCheckoutAmount(order.total_paise)} was received and your order is confirmed. ${paidDetail}`
+    : paid ? `Your payment of ${amount} was received and your order is confirmed. ${paidDetail}`
     : "Do not pay again. We will activate the order as soon as Razorpay confirms it.";
   return <main className={styles.page}>
     {confirmedLive ? <CartCheckoutSync orderId={order.id} mode={order.purchase_mode} paid /> : null}
@@ -41,7 +42,7 @@ export default async function Success({ searchParams }: { searchParams: Promise<
       <p className={styles.intro}>{intro}</p>
       <dl>
         <div><dt>Order</dt><dd>{order.id.slice(0, 8).toUpperCase()}</dd></div>
-        <div><dt>Amount</dt><dd>{formatCheckoutAmount(order.total_paise)}</dd></div>
+        <div><dt>Amount</dt><dd>{amount}</dd></div>
         <div><dt>Status</dt><dd>{order.is_test ? paid ? "Test payment recorded" : "Test processing" : paid ? "Paid" : "Processing"}</dd></div>
       </dl>
       <div className={styles.actions}><Link className={styles.primary} href="/account">View profile</Link><Link className={styles.secondary} href="/">Back to home</Link></div>

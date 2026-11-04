@@ -1,3 +1,4 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isShopProduct } from "@/lib/shop-draft";
@@ -12,11 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { product } = await params;
   if (!isShopProduct(product)) return {};
   const p = shopProduct(product);
-  return {
-    title: p.name,
-    description: p.description,
-    alternates: { canonical: `/shop/${product}` },
-  };
+  return publicMetadata(`/shop/${product}`, p.name, p.description);
 }
 export default async function ProductPage({ params }: Props) {
   const { product } = await params;

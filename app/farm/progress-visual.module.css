@@ -1,0 +1,76 @@
+.ring {
+  position: relative;
+  margin: 0 auto;
+}
+.ring svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.track,
+.fill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.value {
+  position: absolute;
+  inset: 36% 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+}
+.value strong {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 47px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.value small {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 17px;
+  color: var(--farm-hero-muted);
+  letter-spacing: 0;
+}
+.value span {
+  font-size: 11px;
+  color: var(--farm-hero-muted);
+}
+@media (max-width: 540px) {
+  .ring {
+    width: 220px;
+  }
+  .value strong {
+    font-size: 40px;
+  }
+}
+
+.ring .value strong small {
+  color: var(--farm-hero-muted);
+}
+.ring {
+  width: min(100%, var(--ring-size, 270px));
+}
+.ring .value strong {
+  font-size: var(--ring-number, 47px);
+}
+
+.ring {
+  color: var(--farm-ink);
+}
+.track {
+  stroke: var(--farm-line);
+}
+.fill {
+  stroke: var(--farm-green);
+}
+.ring .value strong {
+  font-weight: 500;
+}
+.ring .value strong small,
+.value span {
+  color: var(--farm-muted);
+}

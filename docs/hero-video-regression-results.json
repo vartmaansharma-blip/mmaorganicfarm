@@ -1,0 +1,1130 @@
+[
+  {
+    "engine": "chromium",
+    "width": 320,
+    "height": 568,
+    "fill": "forward/reverse",
+    "menu": "focus, Escape, backdrop, destinations",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 1.6583325195312284,
+      "base": 2.277756347656265,
+      "height": 198.796875
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 842.5999999642372,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 300,
+        "at": 1157.699999988079,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 950,
+        "at": 1807.699999988079,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1933,
+        "at": 2790.899999976158,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3111.599999964237,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6356.899999976158,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5648,
+        "at": 6723.599999964237,
+        "top": 80
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7557.399999976158,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5638,
+        "at": 8140.300000011921,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5272,
+        "at": 8506.899999976158,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2239,
+        "at": 11540.099999964237,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1905,
+        "at": 11873.5,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 939,
+        "at": 12839.899999976158,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 289,
+        "at": 13490.099999964237,
+        "top": 80
+      }
+    ]
+  },
+  {
+    "engine": "chromium",
+    "width": 390,
+    "height": 844,
+    "fill": "forward/reverse",
+    "menu": "focus, Escape, backdrop, destinations",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 2.956967163085963,
+      "base": 4.06141418457031,
+      "height": 354.46875
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 877.2000000476837,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 300,
+        "at": 1192.7000000476837,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 950,
+        "at": 1842.300000011921,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1933,
+        "at": 2826.300000011921,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3143,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6375,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5648,
+        "at": 6742.800000011921,
+        "top": 80
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7559.300000011921,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5638,
+        "at": 8142.600000023842,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5272,
+        "at": 8509.5,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2238,
+        "at": 11542.400000035763,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1905,
+        "at": 11875.400000035763,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 939,
+        "at": 12842,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 289,
+        "at": 13492.400000035763,
+        "top": 80
+      }
+    ]
+  },
+  {
+    "engine": "chromium",
+    "width": 768,
+    "height": 1024,
+    "fill": "forward/reverse",
+    "menu": "focus, Escape, backdrop, destinations",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 3.945866699218726,
+      "base": 5.419665527343739,
+      "height": 473.015625
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 874.4000000357628,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 317,
+        "at": 1206.6000000238419,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 950,
+        "at": 1839.199999988079,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1933,
+        "at": 2823.400000035763,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3139.900000035763,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6388.900000035763,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5648,
+        "at": 6755.5,
+        "top": 80
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7606.100000023842,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5638,
+        "at": 8189.100000023842,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5272,
+        "at": 8555.600000023842,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2238,
+        "at": 11592.800000011921,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1905,
+        "at": 11922.100000023842,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 939,
+        "at": 12887.699999988079,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 289,
+        "at": 13537.900000035763,
+        "top": 80
+      }
+    ]
+  },
+  {
+    "engine": "chromium",
+    "width": 1440,
+    "height": 960,
+    "fill": "forward/reverse",
+    "menu": "capsule",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 5.255424804687479,
+      "base": 7.218342285156268,
+      "height": 630
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 941.6000000238419,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 316,
+        "at": 1274,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 950,
+        "at": 1907,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1933,
+        "at": 2890.699999988079,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3208,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6443.100000023842,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5648,
+        "at": 6807.400000035763,
+        "top": 126
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7674.300000011921,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5638,
+        "at": 8256.800000011921,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5272,
+        "at": 8624.199999988079,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2238,
+        "at": 11656.800000011921,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1905,
+        "at": 11990.600000023842,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 938,
+        "at": 12956.800000011921,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 288,
+        "at": 13607.199999988079,
+        "top": 126
+      }
+    ]
+  },
+  {
+    "engine": "chromium",
+    "width": 390,
+    "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+  },
+  {
+    "engine": "chromium",
+    "width": 1440,
+    "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+  },
+  {
+    "engine": "chromium",
+    "connectedPublicPages": 9,
+    "themes": 2,
+    "typography": "shared",
+    "textContrastMinimum": 4.5,
+    "measured": [
+      {
+        "theme": "dark",
+        "pair": "text/page",
+        "ratio": 15.03
+      },
+      {
+        "theme": "dark",
+        "pair": "muted/page",
+        "ratio": 10.4
+      },
+      {
+        "theme": "dark",
+        "pair": "muted/surface",
+        "ratio": 8.04
+      },
+      {
+        "theme": "dark",
+        "pair": "on-action/action",
+        "ratio": 9.2
+      },
+      {
+        "theme": "dark",
+        "pair": "on-selected/selected",
+        "ratio": 8.49
+      },
+      {
+        "theme": "dark",
+        "pair": "success-text/success-bg",
+        "ratio": 9.19
+      },
+      {
+        "theme": "dark",
+        "pair": "error-text/error-bg",
+        "ratio": 8.74
+      },
+      {
+        "theme": "dark",
+        "pair": "warning-text/warning-bg",
+        "ratio": 8.45
+      },
+      {
+        "theme": "light",
+        "pair": "text/page",
+        "ratio": 10.78
+      },
+      {
+        "theme": "light",
+        "pair": "muted/page",
+        "ratio": 5.21
+      },
+      {
+        "theme": "light",
+        "pair": "muted/surface",
+        "ratio": 5.67
+      },
+      {
+        "theme": "light",
+        "pair": "on-action/action",
+        "ratio": 7.61
+      },
+      {
+        "theme": "light",
+        "pair": "on-selected/selected",
+        "ratio": 5.77
+      },
+      {
+        "theme": "light",
+        "pair": "success-text/success-bg",
+        "ratio": 8.82
+      },
+      {
+        "theme": "light",
+        "pair": "error-text/error-bg",
+        "ratio": 7.39
+      },
+      {
+        "theme": "light",
+        "pair": "warning-text/warning-bg",
+        "ratio": 6.39
+      }
+    ]
+  },
+  {
+    "engine": "chromium",
+    "reducedMotion": "static",
+    "runtimeErrors": 0
+  },
+  {
+    "engine": "webkit",
+    "width": 320,
+    "height": 568,
+    "fill": "forward/reverse",
+    "menu": "focus, Escape, backdrop, destinations",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 1.6661450195312284,
+      "base": 2.285568847656265,
+      "height": 198.796875
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 987,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 332,
+        "at": 1352,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 966,
+        "at": 1987,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1933,
+        "at": 2954,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3291,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6472,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5642,
+        "at": 6841,
+        "top": 80
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7738,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5622,
+        "at": 8340,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5255,
+        "at": 8704,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2219,
+        "at": 11755,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1920,
+        "at": 12039,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 920,
+        "at": 13039,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 286,
+        "at": 13672,
+        "top": 80
+      }
+    ]
+  },
+  {
+    "engine": "webkit",
+    "width": 390,
+    "height": 844,
+    "fill": "forward/reverse",
+    "menu": "focus, Escape, backdrop, destinations",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 2.938995056152372,
+      "base": 4.0434671020507835,
+      "height": 354.46875
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 991,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 326,
+        "at": 1357,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 962,
+        "at": 1993,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1926,
+        "at": 2958,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3294,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6460,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5648,
+        "at": 6824,
+        "top": 80
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7692,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5621,
+        "at": 8292,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5258,
+        "at": 8661,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2224,
+        "at": 11701,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1890,
+        "at": 12028,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 923,
+        "at": 12994,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 289,
+        "at": 13627,
+        "top": 80
+      }
+    ]
+  },
+  {
+    "engine": "webkit",
+    "width": 768,
+    "height": 1024,
+    "fill": "forward/reverse",
+    "menu": "focus, Escape, backdrop, destinations",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 3.944792277018209,
+      "base": 5.4186785888672375,
+      "height": 473.03125
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 991,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 300,
+        "at": 1325,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 966,
+        "at": 1991,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1934,
+        "at": 2958,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3292,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6458,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5648,
+        "at": 6824,
+        "top": 80
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7725,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5622,
+        "at": 8324,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5255,
+        "at": 8692,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2219,
+        "at": 11725,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1920,
+        "at": 12027,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 921,
+        "at": 13027,
+        "top": 80
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 288,
+        "at": 13661,
+        "top": 80
+      }
+    ]
+  },
+  {
+    "engine": "webkit",
+    "width": 1440,
+    "height": 960,
+    "fill": "forward/reverse",
+    "menu": "capsule",
+    "overflow": false,
+    "sideAlignmentPixels": {
+      "rim": 5.255424804687479,
+      "base": 7.218342285156268,
+      "height": 630
+    },
+    "forward": [
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "filled-front",
+        "time": 0,
+        "at": 1022,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "coffee-treatment",
+        "time": 301,
+        "at": 1355,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "elevated",
+        "time": 968,
+        "at": 2022,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-push",
+        "time": 1934,
+        "at": 2989,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "macro-hold",
+        "time": 2240,
+        "at": 3331,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "overhead-pull",
+        "time": 5282,
+        "at": 6489,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_FORWARD",
+        "stage": "settled-overhead",
+        "time": 5661,
+        "at": 6867,
+        "top": 126
+      }
+    ],
+    "reverse": [
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "settled-overhead",
+        "time": 6222,
+        "at": 7789,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "overhead-pull",
+        "time": 5623,
+        "at": 8390,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-hold",
+        "time": 5255,
+        "at": 8765,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "macro-push",
+        "time": 2231,
+        "at": 11802,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "elevated",
+        "time": 1898,
+        "at": 12123,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "coffee-treatment",
+        "time": 931,
+        "at": 13096,
+        "top": 126
+      },
+      {
+        "state": "PLAYING_REVERSE",
+        "stage": "filled-front",
+        "time": 297,
+        "at": 13725,
+        "top": 126
+      }
+    ]
+  },
+  {
+    "engine": "webkit",
+    "width": 390,
+    "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+  },
+  {
+    "engine": "webkit",
+    "width": 1440,
+    "lifecycle": "visibility pause/resume, macro skip, route cleanup, back/forward, direct anchor, motion preference change"
+  },
+  {
+    "engine": "webkit",
+    "connectedPublicPages": 9,
+    "themes": 2,
+    "typography": "shared",
+    "textContrastMinimum": 4.5,
+    "measured": [
+      {
+        "theme": "dark",
+        "pair": "text/page",
+        "ratio": 15.03
+      },
+      {
+        "theme": "dark",
+        "pair": "muted/page",
+        "ratio": 10.4
+      },
+      {
+        "theme": "dark",
+        "pair": "muted/surface",
+        "ratio": 8.04
+      },
+      {
+        "theme": "dark",
+        "pair": "on-action/action",
+        "ratio": 9.2
+      },
+      {
+        "theme": "dark",
+        "pair": "on-selected/selected",
+        "ratio": 8.49
+      },
+      {
+        "theme": "dark",
+        "pair": "success-text/success-bg",
+        "ratio": 9.19
+      },
+      {
+        "theme": "dark",
+        "pair": "error-text/error-bg",
+        "ratio": 8.74
+      },
+      {
+        "theme": "dark",
+        "pair": "warning-text/warning-bg",
+        "ratio": 8.45
+      },
+      {
+        "theme": "light",
+        "pair": "text/page",
+        "ratio": 10.78
+      },
+      {
+        "theme": "light",
+        "pair": "muted/page",
+        "ratio": 5.21
+      },
+      {
+        "theme": "light",
+        "pair": "muted/surface",
+        "ratio": 5.67
+      },
+      {
+        "theme": "light",
+        "pair": "on-action/action",
+        "ratio": 7.61
+      },
+      {
+        "theme": "light",
+        "pair": "on-selected/selected",
+        "ratio": 5.77
+      },
+      {
+        "theme": "light",
+        "pair": "success-text/success-bg",
+        "ratio": 8.82
+      },
+      {
+        "theme": "light",
+        "pair": "error-text/error-bg",
+        "ratio": 7.39
+      },
+      {
+        "theme": "light",
+        "pair": "warning-text/warning-bg",
+        "ratio": 6.39
+      }
+    ]
+  },
+  {
+    "engine": "webkit",
+    "reducedMotion": "static",
+    "runtimeErrors": 0
+  }
+]

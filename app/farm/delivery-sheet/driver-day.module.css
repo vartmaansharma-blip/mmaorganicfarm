@@ -18,14 +18,14 @@
   margin: 0;
 }
 .header h1 {
-  font-family: var(--font-fraunces), Georgia, serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: 34px;
   font-weight: 500;
   margin: 5px 0 8px;
 }
 .count {
   padding: 7px 10px;
-  background: #e9eedf;
+  background: var(--farm-surface);
   border-radius: 6px;
 }
 .dateFilter {
@@ -45,7 +45,7 @@
 .dateFilter button {
   min-height: 44px;
   border: 1px solid var(--farm-line);
-  border-radius: 7px;
+  border-radius: 12px;
   background: var(--farm-surface);
   color: var(--farm-ink);
   padding: 10px;
@@ -85,7 +85,7 @@
   color: var(--farm-muted);
 }
 .badge {
-  background: #e9eedf;
+  background: var(--farm-surface);
   color: var(--farm-green);
   padding: 4px 7px;
   border-radius: 5px;
@@ -113,17 +113,17 @@
   justify-content: center;
   padding: 10px 15px;
   border: 1px solid var(--farm-line);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--farm-green);
   font-size: 14px;
   text-decoration: none;
   min-height: 44px;
 }
 .instructions {
-  background: #f1f2e7;
+  background: var(--farm-surface);
   padding: 12px;
-  border-radius: 8px;
-  color: #56624c;
+  border-radius: 12px;
+  color: var(--farm-muted);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -155,7 +155,7 @@
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--farm-line);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 10px;
   color: var(--farm-green);
   font-size: 14px;
@@ -201,7 +201,7 @@
 .empty {
   padding: 24px;
   background: var(--farm-surface);
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
 }
 @media (min-width: 760px) {
@@ -221,12 +221,58 @@
   }
 }
 
-.runBack { color:#42603b; display:inline-flex; align-items:center; min-height:48px; margin-bottom:12px; font-size:12px; text-underline-offset:5px; }
+.runBack {
+  color: var(--farm-muted);
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  text-underline-offset: 5px;
+}
 
-.stop { animation:driver-stop-in 220ms ease-out both; }
-.contact a,.next { transition:background-color 160ms ease,border-color 160ms ease,transform 160ms ease; }
-.stop[data-outcome="delivered"] .badge { background:#e2edda; color:#34542e; }
-.stop:is([data-outcome="partial"],[data-outcome="attempt_failed"],[data-outcome="reschedule_requested"]) .badge { background:#f8ebc8; color:#74551c; }
-@keyframes driver-stop-in { from { opacity:.35; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
-@media(hover:hover) and (pointer:fine) { .contact a:hover,.next:hover { transform:translateY(-1px); } }
-@media(prefers-reduced-motion:reduce) { .page * { animation:none!important; transition:none!important; } }
+.stop {
+  animation: driver-stop-in 220ms ease-out both;
+}
+.contact a,
+.next {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+.stop[data-outcome="delivered"] .badge {
+  background: var(--farm-surface);
+  color: var(--farm-ink);
+}
+.stop:is(
+    [data-outcome="partial"],
+    [data-outcome="attempt_failed"],
+    [data-outcome="reschedule_requested"]
+  )
+  .badge {
+  background: var(--farm-warning);
+  color: var(--farm-warning-ink);
+}
+@keyframes driver-stop-in {
+  from {
+    opacity: 0.35;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .contact a:hover,
+  .next:hover {
+    transform: translateY(-1px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

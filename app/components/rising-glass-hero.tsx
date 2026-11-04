@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
-import { advanceFilm, clamp01, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroPresentation, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
+import { advanceFilm, clamp01, FILM_CUES, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroCamera, macroPresentation, MACRO_VIDEO_DURATION_MS, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
+import { createMacroVideo } from "@/lib/hero-macro-video";
 import { condensationFrame, GLASS_BEADS } from "@/lib/hero-condensation";
 import styles from "./rising-glass-hero.module.css";
 
@@ -12,24 +13,30 @@ export function RisingGlassHero() {
   const liquidMask = useRef<SVGPathElement>(null);
   const storyProgress = useRef<HTMLSpanElement>(null);
   const immersiveExit = useRef<HTMLAnchorElement>(null);
+  const macroClip = useRef<HTMLVideoElement>(null);
   const maskId = `milk-${useId().replace(/:/g, "")}`;
 
   useEffect(() => {
     const root = section.current;
-    if (!root) return;
+    const video = macroClip.current;
+    if (!root || !video) return;
     const panel = root.firstElementChild as HTMLElement;
+    const cameraPhoto = root.querySelector<HTMLImageElement>('[data-camera-photo]')!;
+    const glassFrame = root.querySelector<HTMLElement>('[data-glass-frame]')!;
+    let macroOrigin: DOMRect | undefined;
     const html = document.documentElement;
     const body = document.body;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let film: HeroFilm = { state: history.state?.mmaHeroCompleted ? "COMPLETED" : "FILLING", time: history.state?.mmaHeroCompleted ? FILM_DURATION_MS : 0 };
-    let frame = 0, lastTime = 0, waitingSince = 0, wetTime = 0, wetLast = 0;
+    let frame = 0, lastTime = 0, waitingSince = 0, wetTime = 0, wetLast = 0, fillPeak = 0;
     const beads = Array.from(root.querySelectorAll<SVGGElement>("[data-condensation-drop]")).map(group => ({
       bead: group.querySelector<SVGGElement>("[data-bead]")!,
       satellite: group.querySelector<SVGEllipseElement>("[data-satellite]")!,
       trail: group.querySelector<SVGPathElement>("[data-trail]")!,
     }));
-    let disposed = false, initialized = false, armed = true, visitedContent = false, anchorNavigation = false, staticFallback = false;
+    let disposed = false, initialized = false, anchorNavigation = false, staticFallback = false;
     let assets: "loading" | "ready" | "failed" = "loading";
+    let macroStarted = false;
     let hold: { y: number; restore: () => void } | undefined;
     const persist = () => history.replaceState({ ...history.state, mmaHeroCompleted: film.state !== "FILLING" }, "");
     const geometry = () => {
@@ -77,7 +84,9 @@ export function RisingGlassHero() {
     const schedule = () => {
       if (!disposed && !document.hidden && !frame) frame = requestAnimationFrame(paint);
     };
+    const macroVideo = createMacroVideo(video, schedule, MACRO_VIDEO_DURATION_MS);
     const cancel = () => {
+      macroVideo.stop();
       film = { state: "COMPLETED", time: FILM_DURATION_MS };
       waitingSince = 0;
       lastTime = 0;
@@ -95,20 +104,22 @@ export function RisingGlassHero() {
         // Restored/anchored content must never be dragged back into an introduction.
         if (location.hash && location.hash !== "#home") anchorNavigation = true;
         if (g.y > g.trigger + 24 || anchorNavigation) film = { state: "COMPLETED", time: FILM_DURATION_MS };
-        visitedContent = g.y > g.trigger + 24;
         initialized = true;
       }
       if (motion.matches) {
+        macroVideo.stop();
         film = { state: "COMPLETED", time: FILM_DURATION_MS };
         unlock();
       } else if (!anchorNavigation) {
         if (film.state === "FILLING") {
-          if (scroll < .94) armed = true;
-          if (scroll >= .999 && armed) {
+          if (scroll > .05 && !staticFallback) macroVideo.prepare();
+          if (scroll >= .999) {
             // All responsive images decode before the clock starts. Loading has
             // a bounded budget; a failed/slow connection keeps a loaded front.
             lock(g.trigger);
             if (assets === "ready") {
+              macroStarted = false;
+              macroVideo.stop();
               film = startFilm(film);
               waitingSince = 0;
               lastTime = now;
@@ -117,44 +128,60 @@ export function RisingGlassHero() {
               if (assets === "failed" || now - waitingSince >= 1500) { staticFallback = true; cancel(); }
             }
           }
-        } else if (film.state === "COMPLETED") {
-          if (g.y > g.trigger + 24) visitedContent = true;
-          if (visitedContent && g.y <= g.trigger && assets === "ready" && !staticFallback) {
-            lock(g.trigger);
-            film = startFilm(film, true);
-            lastTime = now;
-            visitedContent = false;
-          }
         }
       }
+
       if (playing(film)) {
-        const reverse = film.state === "PLAYING_REVERSE";
-        film = advanceFilm(film, lastTime ? now - lastTime : 0);
+        const elapsed = lastTime ? now - lastTime : 0;
+        let next = advanceFilm(film, elapsed);
+        if (film.time < FILM_CUES.overheadStart && next.time >= FILM_CUES.macroFull) {
+          if (!macroStarted) { macroVideo.begin(); macroStarted = true; }
+          const media = macroVideo.tick(elapsed);
+          if (media.phase !== "fallback") {
+            // The film owns entry/exit. Inside its macro hold, consume native
+            // media time at 1x instead of letting two independent clocks drift.
+            // A presented source-out frame is required before the overhead opens.
+            next = { ...next, time: media.phase === "ended" ? FILM_CUES.overheadStart : FILM_CUES.macroFull + Math.min(FILM_CUES.overheadStart - FILM_CUES.macroFull - .001, media.time) };
+          }
+        }
+        film = next;
         lastTime = now;
         if (!playing(film)) {
-          if (reverse) armed = false;
-          unlock(reverse ? (hold?.y ?? g.trigger) - 2 : undefined);
+          unlock();
           persist();
           lastTime = 0;
         }
       }
       g = geometry();
       const fillScroll = heroProgress(g.rect.top, g.rect.height, panel.offsetHeight, g.header);
-      const fill = film.state === "FILLING" && !hold ? milkFill(fillScroll) : 1;
+      const fill = film.state === "FILLING" && !hold ? milkFill(fillScroll, fillPeak) : 1;
+      fillPeak = fill;
       const values = filmFrame(film.time);
       // Failed imagery never reveals a blank camera layer.
-      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, elevation: 0, side: 0, top: 0, macro: 0, macroDrift: 0, overheadSettle: 1 });
+      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, cameraProgress: 0, cameraX: 0, cameraY: 0, cameraPush: 0, top: 0, macro: 0, macroOpacity: 0, macroDrift: 0, overheadSettle: 1 });
       const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
       const liquid = liquidGeometry(fill);
-      const curtain = macroPresentation(g.rect.bottom, window.innerHeight, values.macro, g.header);
+      if (!macroOrigin || (values.macro === 0 && values.top === 0)) macroOrigin = cameraPhoto.getBoundingClientRect();
+      const framing = macroCamera(values.cameraPush, values.top, values.overheadSettle, window.innerWidth, window.innerHeight, macroOrigin, glassFrame.getBoundingClientRect());
+      const curtain = macroPresentation(g.rect.bottom, window.innerHeight, values.macroOpacity, g.header);
+      const media = macroVideo.tick(0);
+      root.dataset.videoState = media.phase;
+      root.dataset.videoVisible = String(media.visible);
       root.style.setProperty("--scroll-progress", String(progress));
       root.style.setProperty("--fill-progress", String(fill));
       root.style.setProperty("--coffee-progress", String(values.coffee));
-      root.style.setProperty("--elevation-progress", String(values.elevation));
-      root.style.setProperty("--angle-opacity", String(Math.min(1, values.side + values.top + values.macro)));
-      root.style.setProperty("--side-opacity", String(values.side));
-      root.style.setProperty("--top-opacity", String(values.top));
+      root.style.setProperty("--camera-x", String(values.cameraX));
+      root.style.setProperty("--camera-y", String(values.cameraY));
+      root.style.setProperty("--angle-opacity", String(Math.min(1, values.top * 8)));
+      root.style.setProperty("--dolly-scale", String(framing.frontScale));
+      root.style.setProperty("--dolly-x", `${framing.frontX}px`);
+      root.style.setProperty("--dolly-y", `${framing.frontY}px`);
+      root.style.setProperty("--overhead-scale", String(framing.topScale));
+      root.style.setProperty("--overhead-x", `${framing.topX}px`);
+      root.style.setProperty("--overhead-y", `${framing.topY}px`);
+      root.style.setProperty("--top-opacity", String(Math.min(1, values.top * 8)));
       root.style.setProperty("--macro-opacity", String(curtain.opacity));
+      root.style.setProperty("--macro-progress", String(values.macro));
       root.style.setProperty("--macro-offset", `${curtain.offsetY}px`);
       root.style.setProperty("--macro-drift", String(values.macroDrift));
       root.style.setProperty("--overhead-settle", String(values.overheadSettle));
@@ -184,19 +211,22 @@ export function RisingGlassHero() {
       root.dataset.progressStage = progress >= .999 ? "complete" : progress >= .5 ? "middle" : "beginning";
       root.dataset.fill = fill.toFixed(3);
       root.dataset.progress = progress.toFixed(3);
-      root.dataset.shot = values.macro > .5 ? "macro" : values.top > .5 ? "top" : values.side > .5 ? "side" : "front";
-      root.dataset.immersive = String(curtain.immersive);
+      root.dataset.shot = values.macro > .5 ? "macro" : values.top > .5 ? "top" : values.cameraProgress > .5 ? "traverse" : "front";
+      root.dataset.immersive = String(curtain.immersive && values.macro > .999);
       root.dataset.macroVisible = String(curtain.opacity > .001);
-      html.dataset.heroImmersive = String(curtain.immersive);
-      html.style.setProperty("--hero-chrome-opacity", String(1 - curtain.opacity));
+      html.dataset.heroImmersive = String(curtain.immersive && values.macro > .999);
+      const textReturn = clamp01((values.top - .8) / .2);
+      const chromeOpacity = 1 - Math.min(1, values.cameraPush / .45) * (1 - textReturn * textReturn * (3 - 2 * textReturn));
+      html.style.setProperty("--hero-chrome-opacity", String(chromeOpacity));
       if (immersiveExit.current) immersiveExit.current.tabIndex = curtain.opacity > .001 ? 0 : -1;
-      const description = motion.matches ? "Introduction complete. Scroll to explore the farm." : hold && !playing(film) ? "Milk full. Preparing the introduction." : film.state === "FILLING" ? `Milk ${Math.round(fill * 100)}% full. Scroll to fill; a short film follows.` : film.state === "COMPLETED" ? "Introduction complete. Scroll to explore the farm." : film.state === "PLAYING_REVERSE" ? "Introduction playing backward. Scroll upward afterward to empty the glass." : "Introduction playing automatically. Scroll to explore afterward, or skip at any time.";
+      const description = motion.matches ? "Introduction complete. Scroll to explore the farm." : hold && !playing(film) ? "Milk full. Preparing the introduction." : film.state === "FILLING" ? `Milk ${Math.round(fill * 100)}% full. Scroll to fill; a short film follows.` : film.state === "COMPLETED" ? "Introduction complete. Scroll to explore the farm." : "Introduction playing automatically. Scroll to explore afterward, or skip at any time.";
       storyProgress.current?.setAttribute("aria-valuenow", String(Math.round(clamp01(progress) * 100)));
       storyProgress.current?.setAttribute("aria-valuetext", description);
       if (playing(film) || hold || wetVisible) schedule();
     };
     const scroll = () => { if (hold && window.scrollY !== 0) window.scrollTo({ top: 0, behavior: "instant" }); schedule(); };
     const resize = () => {
+      macroOrigin = undefined;
       if (hold) { hold.y = geometry().trigger; body.style.top = `${-hold.y}px`; }
       lastTime = 0;
       schedule();
@@ -206,7 +236,8 @@ export function RisingGlassHero() {
       frame = 0;
       lastTime = 0;
       wetLast = 0;
-      if (!document.hidden) { waitingSince = 0; schedule(); }
+      if (document.hidden) macroVideo.pause();
+      else { macroVideo.resume(); waitingSince = 0; schedule(); }
     };
     let lastTouchY: number | undefined;
     const touchStart = (event: TouchEvent) => { lastTouchY = event.touches.length === 1 ? event.touches[0].clientY : undefined; };
@@ -222,12 +253,10 @@ export function RisingGlassHero() {
       }
       if (!hold && !motion.matches && event.cancelable) {
         const g = geometry();
-        const forwardBoundary = film.state === "FILLING" && armed && delta > 0 && g.y <= g.trigger && g.y + delta >= g.trigger;
-        const reverseBoundary = film.state === "COMPLETED" && delta < 0 && g.y > g.trigger && g.y + delta <= g.trigger && (visitedContent || g.y > g.trigger + 24) && assets === "ready" && !staticFallback;
-        if (forwardBoundary || reverseBoundary) {
-          // Take the crossing gesture at the boundary before the compositor can
-          // paint an overshoot. Ordinary filling/content scrolling stays native.
-          if (reverseBoundary) visitedContent = true;
+        const forwardBoundary = film.state === "FILLING" && delta > 0 && g.y <= g.trigger && g.y + delta >= g.trigger;
+        if (forwardBoundary) {
+          // Hold only the forward crossing. Returning to the hero stays native
+          // and retains the completed composition without replay or rewind.
           lock(g.trigger);
           schedule();
         }
@@ -246,23 +275,23 @@ export function RisingGlassHero() {
         if (url.origin !== location.origin || url.pathname !== location.pathname || url.hash) {
           cancel();
           anchorNavigation = true;
-          if (url.hash === "#home") { film = { state: "FILLING", time: 0 }; armed = true; visitedContent = false; persist(); }
         }
       }
       // Release our hold before the existing menu acquires its own scroll lock.
       if (target.closest('button[aria-haspopup="dialog"]')) cancel();
     };
-    const hash = () => { cancel(); anchorNavigation = true; if (location.hash === "#home") { film = { state: "FILLING", time: 0 }; armed = true; visitedContent = false; persist(); } };
+    const hash = () => { cancel(); anchorNavigation = true; };
     const restore = () => {
+      macroVideo.stop();
       unlock();
-      film = { state: history.state?.mmaHeroCompleted ? "COMPLETED" : "FILLING", time: history.state?.mmaHeroCompleted ? FILM_DURATION_MS : 0 };
+      const completed = film.state !== "FILLING" || history.state?.mmaHeroCompleted;
+      film = { state: completed ? "COMPLETED" : "FILLING", time: completed ? FILM_DURATION_MS : 0 };
       anchorNavigation = true;
-      visitedContent = false;
       lastTime = 0;
       schedule();
     };
     const pagehide = () => { if (hold) cancel(); cancelAnimationFrame(frame); frame = 0; };
-    const pageshow = () => { lastTime = 0; schedule(); };
+    const pageshow = () => { macroVideo.resume(); lastTime = 0; schedule(); };
     // Decode the actual Next.js-selected responsive sources, not separate raw URLs.
     Promise.all(Array.from(root.querySelectorAll<HTMLImageElement>("img")).map(image => image.decode())).then(() => {
       if (!disposed) { assets = "ready"; schedule(); }
@@ -285,6 +314,7 @@ export function RisingGlassHero() {
     motion.addEventListener("change", resize);
     return () => {
       disposed = true;
+      macroVideo.dispose();
       cancelAnimationFrame(frame);
       unlock();
       clearChrome();
@@ -321,53 +351,56 @@ export function RisingGlassHero() {
         </div>
 
         <div className={styles.visual}>
-          <div className={styles.glass} role="img" aria-label="Scroll to fill a traditional grooved glass with milk. A short automatic film then reveals coffee, an elevated view, a full-screen macro and an overhead finish. Returning from the farm plays the film backward before upward scrolling empties the glass.">
-            <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} priority sizes="(max-width: 720px) 240px, 38vw" />
-            <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
-              <defs>
-                <clipPath id={maskId} clipPathUnits="objectBoundingBox">
-                  <path ref={liquidMask} d={liquidGeometry(0).path} />
-                </clipPath>
-              </defs>
-            </svg>
-            <div className={styles.milk} style={{ clipPath: `url(#${maskId})` }}>
-              <Image src="/hero/glass-milk.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            </div>
-            <span className={styles.surface} />
-            <Image className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.side} src="/hero/coffee-side-v2.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
-            <Image className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
-            <svg className={styles.condensation} viewBox="0 0 800 1200" aria-hidden="true" focusable="false" data-condensation>
-              <defs>
-                <clipPath id={`${maskId}-glass-surface`}><path d="M 125 200 Q 400 155 675 200 L 600 1015 Q 400 1050 200 1015 Z" /></clipPath>
-                <radialGradient id={`${maskId}-water`} cx="35%" cy="25%" r="75%">
-                  <stop offset="0" stopColor="#fff" stopOpacity=".05" />
-                  <stop offset=".6" stopColor="#fff" stopOpacity=".015" />
-                  <stop offset=".86" stopColor="#08130d" stopOpacity=".25" />
-                  <stop offset="1" stopColor="#fff" stopOpacity=".58" />
-                </radialGradient>
-                <linearGradient id={`${maskId}-trail`} x1="0" y1="0" x2="0" y2="1">
-                  <stop stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#fff" />
-                </linearGradient>
-              </defs>
-              <g clipPath={`url(#${maskId}-glass-surface)`}>
-                {GLASS_BEADS.map((drop, i) => (
-                  <g key={i} data-condensation-drop transform={`translate(${drop.x} ${drop.y})`}>
-                    <path data-trail stroke={`url(#${maskId}-trail)`} strokeWidth="1.2" strokeLinecap="round" opacity="0" />
-                    <ellipse data-satellite cx=".7" cy="55" rx={drop.radius * .7} ry={drop.radius * .8} fill={`url(#${maskId}-water)`} opacity="0" />
-                    <g data-bead opacity="0">
-                      <ellipse rx="1" ry="1" fill={`url(#${maskId}-water)`} stroke="#08130d" strokeOpacity=".16" strokeWidth=".12" />
-                      <path d="M -.58 -.25 Q -.55 -.65 -.12 -.73" fill="none" stroke="#fff" strokeOpacity=".86" strokeWidth=".24" strokeLinecap="round" />
+          <div className={styles.glass} data-glass-frame role="img" aria-label="Scroll to fill a traditional grooved glass with milk. A short automatic film then reveals coffee, a curved move at a fixed angle, a full-screen macro and an overhead finish. The introduction only moves forward. Returning from the farm keeps the finished glass visible.">
+            <div className={styles.camera} data-glass-camera>
+              <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} priority sizes="(max-width: 720px) 240px, 38vw" />
+              <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
+                <defs>
+                  <clipPath id={maskId} clipPathUnits="objectBoundingBox">
+                    <path ref={liquidMask} d={liquidGeometry(0).path} />
+                  </clipPath>
+                </defs>
+              </svg>
+              <div className={styles.milk} style={{ clipPath: `url(#${maskId})` }}>
+                <Image src="/hero/glass-milk.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+              </div>
+              <span className={styles.surface} />
+              <Image data-camera-photo className={styles.coffee} src="/hero/coffee-front.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 240px, 38vw" />
+              <svg className={styles.condensation} viewBox="0 0 800 1200" aria-hidden="true" focusable="false" data-condensation>
+                <defs>
+                  <clipPath id={`${maskId}-glass-surface`}><path d="M 125 200 Q 400 155 675 200 L 600 1015 Q 400 1050 200 1015 Z" /></clipPath>
+                  <radialGradient id={`${maskId}-water`} cx="35%" cy="25%" r="75%">
+                    <stop offset="0" stopColor="#fff" stopOpacity=".05" />
+                    <stop offset=".6" stopColor="#fff" stopOpacity=".015" />
+                    <stop offset=".86" stopColor="#08130d" stopOpacity=".25" />
+                    <stop offset="1" stopColor="#fff" stopOpacity=".58" />
+                  </radialGradient>
+                  <linearGradient id={`${maskId}-trail`} x1="0" y1="0" x2="0" y2="1">
+                    <stop stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#fff" />
+                  </linearGradient>
+                </defs>
+                <g clipPath={`url(#${maskId}-glass-surface)`}>
+                  {GLASS_BEADS.map((drop, i) => (
+                    <g key={i} data-condensation-drop transform={`translate(${drop.x} ${drop.y})`}>
+                      <path data-trail stroke={`url(#${maskId}-trail)`} strokeWidth="1.2" strokeLinecap="round" opacity="0" />
+                      <ellipse data-satellite cx=".7" cy="55" rx={drop.radius * .7} ry={drop.radius * .8} fill={`url(#${maskId}-water)`} opacity="0" />
+                      <g data-bead opacity="0">
+                        <ellipse rx="1" ry="1" fill={`url(#${maskId}-water)`} stroke="#08130d" strokeOpacity=".16" strokeWidth=".12" />
+                        <path d="M -.58 -.25 Q -.55 -.65 -.12 -.73" fill="none" stroke="#fff" strokeOpacity=".86" strokeWidth=".24" strokeLinecap="round" />
+                      </g>
                     </g>
-                  </g>
-                ))}
-              </g>
-            </svg>
+                  ))}
+                </g>
+              </svg>
+            </div>
+            <Image data-overhead-photo className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
           </div>
         </div>
 
         <div className={styles.macro} aria-hidden="true">
           <Image src="/hero/coffee-macro.webp" alt="" fill loading="eager" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" />
+          <video ref={macroClip} className={styles.macroVideo} poster="/hero/coffee-macro.webp" width={1284} height={724} preload="none" muted playsInline controls={false} loop={false} disablePictureInPicture disableRemotePlayback aria-hidden="true" tabIndex={-1} />
+          <span className={styles.videoCredit}>Video generated with Kling AI</span>
         </div>
         <a ref={immersiveExit} className={styles.immersiveExit} href="#site-content" tabIndex={-1}>Skip introduction <span aria-hidden="true">↘</span></a>
 

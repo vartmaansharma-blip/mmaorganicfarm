@@ -86,7 +86,10 @@ function selection(raw, alias = "t") {
     })
     .join(",");
 }
-export async function startFixtureServer(config, { port = 55479 } = {}) {
+export async function startFixtureServer(config, { port = 55479, manualOrders = false, afterManualPlanLookup } = {}) {
+  const manualOrderTables = new Set(["delivery_plans", "scheduled_delivery_items", "orders", "order_items"]);
+  const manualOrderCommands = new Set(["refresh_customer_route", "reserve_order_capacity", "release_order_capacity", "capture_farm_order_payment", "record_monthly_farm_payment"]);
+  const inFlight = new Set();
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://127.0.0.1:${port}`);
     const token = (req.headers.authorization ?? "").replace(/^Bearer /i, "");
@@ -104,8 +107,11 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
     if (!url.pathname.startsWith("/rest/v1/"))
       return send(404, { message: "Fixture endpoint not supported" });
     const client = new Client(config);
-    await client.connect();
+    let finish;
+    const finished = new Promise(resolve => { finish = resolve; });
+    inFlight.add(finished);
     try {
+      await client.connect();
       await client.query("begin");
       if (!service) {
         await client.query(`set local role ${user ? "authenticated" : "anon"}`);
@@ -118,9 +124,10 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
       if (url.pathname.startsWith("/rest/v1/rpc/")) {
         const fn = url.pathname.split("/").at(-1);
         if (
-          !/^(get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
+          !/^(get_gps_workspace|gps_run_command|store_gps_route_proposal|get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|record_and_apply_driver_milk_skip|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
             fn,
-          )
+          ) &&
+          !(manualOrders && manualOrderCommands.has(fn) && (service || fn === "refresh_customer_route"))
         )
           throw Error("Fixture RPC not permitted");
         let raw = "";
@@ -142,7 +149,7 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
                 await client.query(
                   `select public.${name(fn)}(${args}) value`,
                   entries.map(([key, v]) =>
-                    (key === "p_payload" || key === "p_quantities" || key === "p_prices") && v !== null
+                    (key === "p_payload" || key === "p_quantities" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
                       ? JSON.stringify(v)
                       : v,
                   ),
@@ -154,7 +161,7 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
           where = [];
         let order = "";
         for (const [key, v] of url.searchParams) {
-          if (["select", "limit", "offset", "order", "on_conflict"].includes(key)) continue;
+          if (["select", "limit", "offset", "order", "on_conflict", "columns"].includes(key)) continue;
           const op = v.slice(0, v.indexOf(".")),
             value = v.slice(v.indexOf(".") + 1);
           if (["eq", "neq", "gte", "lte"].includes(op)) {
@@ -183,7 +190,29 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
           Number(url.searchParams.get("limit") || 1000),
         );
         const offset = Number(url.searchParams.get("offset") || 0);
-        if (req.method === "POST" || req.method === "DELETE") {
+        if (manualOrders && service && manualOrderTables.has(table) &&
+          (req.method === "POST" || req.method === "DELETE")) {
+          const returning = selection(url.searchParams.get("select") || "*");
+          if (req.method === "DELETE") {
+            if (!where.length) throw Error("Fixture delete requires a key");
+            result = (await client.query(
+              `delete from public.${name(table)} t where ${where.join(" and ")} returning ${returning}`, values,
+            )).rows;
+          } else {
+            let raw = "";
+            for await (const chunk of req) raw += chunk;
+            const rows = [JSON.parse(raw)].flat();
+            result = [];
+            for (const row of rows) {
+              const keys = Object.keys(row);
+              result.push(...(await client.query(
+                `insert into public.${name(table)} as t (${keys.map(name).join(",")})
+                 values (${keys.map((_, i) => `$${i + 1}`).join(",")}) returning ${returning}`,
+                keys.map((key) => key === "schedule_rules" ? JSON.stringify(row[key]) : row[key]),
+              )).rows);
+            }
+          }
+        } else if (req.method === "POST" || req.method === "DELETE") {
           if (!service || !["production_capacity", "production_capacity_overrides"].includes(table)) throw Error("Fixture table write not permitted");
           if (req.method === "DELETE") {
             if (!where.length) throw Error("Fixture delete requires a key");
@@ -199,6 +228,11 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
         const sql = `select ${selection(url.searchParams.get("select") || "*")} from public.${name(table)} t ${where.length ? "where " + where.join(" and ") : ""}${order} limit ${limit} offset ${offset}`;
         result = (await client.query(sql, values)).rows;
         }
+        if (
+          manualOrders && service && req.method === "GET" && table === "delivery_plans" &&
+          url.searchParams.get("select") === "id" &&
+          url.searchParams.get("status") === "in.(pending_confirmation,active,paused)"
+        ) await afterManualPlanLookup?.(client);
         if (req.headers.accept?.includes("application/vnd.pgrst.object+json"))
           result = result.length === 1 ? result[0] : null;
       }
@@ -214,6 +248,8 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
       });
     } finally {
       await client.end();
+      inFlight.delete(finished);
+      finish();
     }
   });
   await new Promise((resolve, reject) => {
@@ -225,6 +261,7 @@ export async function startFixtureServer(config, { port = 55479 } = {}) {
     async stop() {
       server.closeAllConnections();
       await new Promise((resolve) => server.close(resolve));
+      await Promise.all(inFlight);
     },
   };
 }

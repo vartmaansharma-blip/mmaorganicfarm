@@ -370,7 +370,7 @@ try {
       await m.locator('article[data-state="awaiting_ack"]').waitFor();
       await d.reload();
       await d
-        .getByRole("heading", { name: "A quick check before you go" })
+        .getByRole("heading", { name: "Check the assigned load" })
         .waitFor();
       assert.equal(
         await d
@@ -400,7 +400,7 @@ try {
         .waitFor();
       await d.waitForFunction(
         () =>
-          document.activeElement?.textContent === "Good things, on their way",
+          document.activeElement?.textContent === "Run in progress",
       );
       await m.reload();
       await m.locator('article[data-state="in_progress"]').waitFor();
@@ -465,7 +465,7 @@ try {
       assert.equal(Number(saved.distance), 12.3);
       assert.equal(saved.closeout.returns.milk, 1);
       await d.reload();
-      await d.getByRole("heading", { name: "A day well delivered" }).waitFor();
+      await d.getByRole("heading", { name: "Run closed" }).waitFor();
       await d.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
       await d.screenshot({
         path: `${output}/${engineName}-${width}-driver-closed.png`,

@@ -276,12 +276,12 @@ try {
   await bootstrap(context);
   await page.goto(`${base}/shop`, { waitUntil: "networkidle" });
   const photo = page.locator("[class*=heroPhoto]");
-  const first = await photo.getAttribute("href");
+  const first = await page.locator("[data-shop-hero]").getAttribute("data-slide");
   await page.getByRole("switch", { name: "Scheduled orders" }).uncheck();
   await page.getByRole("button", { name: /Open cart,/ }).click();
-  await page.waitForTimeout(3250);
+  await page.waitForFunction(first => document.querySelector('[data-shop-hero]').dataset.slide !== first, first, {timeout:9000});
   assert.notEqual(
-    await photo.getAttribute("href"),
+    await page.locator("[data-shop-hero]").getAttribute("data-slide"),
     first,
     "mode and cart do not stop autoplay",
   );
@@ -290,10 +290,10 @@ try {
   await photo.click();
   await page.waitForURL(`**${destination}`);
   await page.goBack();
-  await page.waitForTimeout(3250);
+  await page.waitForFunction(() => document.querySelector('[data-shop-hero]').dataset.slide !== 'basket', undefined, {timeout:9000});
   assert.notEqual(
-    await photo.getAttribute("href"),
-    "/shop/milk",
+    await page.locator("[data-shop-hero]").getAttribute("data-slide"),
+    "basket",
     "return to shop resumes autoplay",
   );
   await page.goto(`${base}/shop/milk`, { waitUntil: "networkidle" });
@@ -373,7 +373,7 @@ try {
   await bootstrap(reduced);
   await rp.goto(`${base}/shop`, { waitUntil: "networkidle" });
   const before = await rp.locator("[class*=heroPhoto]").getAttribute("href");
-  await rp.waitForTimeout(3250);
+  await rp.waitForTimeout(6800);
   assert.equal(
     await rp.locator("[class*=heroPhoto]").getAttribute("href"),
     before,

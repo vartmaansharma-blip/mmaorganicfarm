@@ -1,6 +1,7 @@
 "use client";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import type { FarmStaffRole } from "@/lib/farm-dashboard";
 import styles from "./farm-shell.module.css";
 const groups = [
@@ -9,6 +10,7 @@ const groups = [
     items: [
       ["Overview", "/farm"],
       ["Routes", "/farm/routes"],
+      ["GPS routes", "/farm/gps"],
       ["Delivery runs", "/farm/runs"],
       ["Deliveries", "/farm/delivery-sheet"],
       ["Inbox", "/farm/exceptions"],
@@ -48,6 +50,8 @@ const groups = [
 const iconPaths: Record<string, string> = {
   "/farm": "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   "/farm/runs": "M3 5h11v12H3z M14 9h4l3 4v4h-7 M6 17v2 M18 17v2 M6 9h5",
+  "/farm/gps":
+    "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 7a5 5 0 1 0 0 10a5 5 0 0 0 0-10",
   "/farm/routes":
     "M6 5a2 2 0 1 0 0 .1M6 7v7a4 4 0 0 0 4 4h6 M18 16a2 2 0 1 0 0 4a2 2 0 0 0 0-4 M9 5h7a3 3 0 0 1 0 6h-4",
   "/farm/delivery-sheet":
@@ -70,6 +74,7 @@ const dated = new Set([
   "/farm",
   "/farm/routes",
   "/farm/runs",
+  "/farm/gps",
   "/farm/delivery-sheet",
   "/farm/exceptions",
   "/farm/reconciliation",
@@ -89,6 +94,7 @@ function NavigationActivity() {
 export function FarmNavigation({ role }: { role: FarmStaffRole }) {
   const pathname = usePathname();
   const query = useSearchParams();
+  const [search, setSearch] = useState("");
   const date = /^\d{4}-\d{2}-\d{2}$/.test(query.get("date") ?? "")
     ? query.get("date")
     : null;
@@ -103,10 +109,21 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
             items: [
               ["My run", "/farm/runs"],
               ["My route", "/farm/delivery-sheet"],
+              ["GPS route", "/farm/gps"],
             ],
           },
         ]
       : groups;
+  const filteredGroups = visibleGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        ([label, path]) =>
+          (role === "admin" || path !== "/farm/payments") &&
+          label.toLowerCase().includes(search.trim().toLowerCase()),
+      ),
+    }))
+    .filter((group) => group.items.length);
   const currentPath =
     pathname === "/farm/cancellations"
       ? "/farm/exceptions"
@@ -115,7 +132,7 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
         : pathname.startsWith("/farm/customers/")
           ? "/farm/locations"
           : pathname;
-  const links = visibleGroups.map((group) => (
+  const links = filteredGroups.map((group) => (
     <section key={group.label} className={styles.navGroup}>
       <h2>{group.label}</h2>
       {group.items
@@ -124,6 +141,7 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
           <Link
             prefetch={false}
             key={path}
+            onClick={() => setSearch("")}
             href={
               date && dated.has(path)
                 ? `${path}?${new URLSearchParams({ date, ...(area && ["/farm", "/farm/routes", "/farm/delivery-sheet", "/farm/exceptions"].includes(path) ? { area } : {}) })}`
@@ -162,7 +180,31 @@ export function FarmNavigation({ role }: { role: FarmStaffRole }) {
       className={styles.nav}
       aria-label="Farm operations"
     >
-      {links}
+      <div className={styles.workspaceSearch}>
+        <input
+          type="search"
+          aria-label="Find a workspace"
+          placeholder="Find a workspace…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        {search ? (
+          <button
+            type="button"
+            aria-label="Clear workspace search"
+            onClick={() => setSearch("")}
+          >
+            ×
+          </button>
+        ) : null}
+      </div>
+      {links.length ? (
+        links
+      ) : (
+        <p className={styles.navEmpty} role="status">
+          No matching workspaces. Try another name.
+        </p>
+      )}
     </nav>
   );
 }

@@ -25,6 +25,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { prepareDailyDispatch } from "./delivery-sheet/actions";
 import { FormSubmitButton } from "./form-submit-button";
 import { RefreshStatus } from "./refresh-status";
+import { SemiRing } from "./progress-visual";
 import styles from "./farm.module.css";
 export const metadata: Metadata = {
   title: "Farm overview",
@@ -203,7 +204,7 @@ export default async function FarmDashboardPage({
       : !released
         ? "Draft ready for review"
         : summary.pending
-          ? "In progress"
+          ? "Dispatch released"
           : "Closeout";
   const scope = new URLSearchParams({
     date,
@@ -230,7 +231,6 @@ export default async function FarmDashboardPage({
               : "All zones"}
           </span>
         </div>
-
       </header>
       {p.message ? (
         <p className={styles.notice} role="status">
@@ -265,86 +265,101 @@ export default async function FarmDashboardPage({
         aria-label="Daily goal and current status"
       >
         <div className={styles.missionCopy}>
-          <p>Your next step</p>
-          <h2>{!dispatchResult.data ? "Prepare a good day." : closed ? "A day accounted for." : summary.expected === 0 ? "Plan the next service day." : !released ? unassigned ? `Give ${unassigned} ${unassigned === 1 ? "visit" : "visits"} a clear route.` : "Give the day its final review." : summary.pending ? "Keep the morning moving." : decisions ? "Account for every shortfall." : "Bring the day to a close."}</h2>
-          <span>{!dispatchResult.data ? "Prepare the paid delivery draft, check supply and assign the team. You’ll review the work before release." : closed ? "The closed review is preserved. Open the report to see what was delivered and what remains owed." : summary.expected === 0 ? "There are no active visits in this day and zone. Review upcoming supply or choose another service date." : !released ? `${summary.expected} visits are prepared. ${unassigned ? `${unassigned} still need a route or driver before release.` : "Review the route, load and assignments before releasing dispatch."}` : summary.pending ? `${summary.pending} visits still need a recorded outcome. The team can continue from the next stop.` : decisions ? `${decisions} recorded ${decisions === 1 ? "exception needs" : "exceptions need"} a manager’s decision. Keep every outstanding quantity visible.` : "All visits have a recorded outcome. Review quantities and unresolved service before closing."}</span>
-        <div className={styles.headerActions}>
-          {!dispatchResult.data ? (
-            <FarmForm action={prepareDailyDispatch}>
-              <input type="hidden" name="deliveryDate" value={date} />
-              <FormSubmitButton pendingLabel="Preparing…">
-                Prepare draft
-              </FormSubmitButton>
-            </FarmForm>
-          ) : (
-            <Link prefetch={false}
-              className={styles.primary}
-              href={
-                closed
-                  ? `/farm/reconciliation?date=${date}`
-                  : summary.expected === 0
-                    ? "/farm/capacity"
-                  : !released
-                    ? `/farm/delivery-sheet?${scope}`
-                    : decisions
-                      ? `/farm/exceptions?${scope}`
-                      : `/farm/reconciliation?date=${date}`
-              }
-            >
-              {closed
-                ? "View closed report"
+          <p>Current service day</p>
+          <h2>
+            {!dispatchResult.data
+              ? "Dispatch not prepared"
+              : closed
+                ? "Service day closed"
                 : summary.expected === 0
-                  ? "Review upcoming capacity"
-                : !released
-                  ? "Review dispatch"
-                  : decisions
-                    ? "Review exceptions"
-                    : "Review closeout"}
-            </Link>
-          )}
-        </div>
+                  ? "No active deliveries"
+                  : !released
+                    ? unassigned
+                      ? `${unassigned} ${unassigned === 1 ? "visit needs" : "visits need"} assignment`
+                      : "Dispatch ready for review"
+                    : summary.pending
+                      ? "Dispatch released"
+                      : decisions
+                        ? "Exceptions awaiting review"
+                        : "Ready for closeout"}
+          </h2>
+          <span>
+            {!dispatchResult.data
+              ? "Prepare paid deliveries, check capacity and assign drivers before release."
+              : closed
+                ? "Review recorded deliveries and outstanding quantities in the closed report."
+                : summary.expected === 0
+                  ? "No active visits in this day and zone. Choose another date or review capacity."
+                  : !released
+                    ? `${summary.expected} visits are prepared. ${unassigned ? `${unassigned} still need a route or driver before release.` : "Review the route, load and assignments before releasing dispatch."}`
+                    : summary.pending
+                      ? `${summary.pending} visits are awaiting a recorded outcome.`
+                      : decisions
+                        ? `${decisions} recorded ${decisions === 1 ? "exception needs" : "exceptions need"} a manager’s decision. Keep every outstanding quantity visible.`
+                        : "All visits have a recorded outcome. Review quantities and unresolved service before closing."}
+          </span>
+          <div className={styles.headerActions}>
+            {!dispatchResult.data ? (
+              <FarmForm action={prepareDailyDispatch}>
+                <input type="hidden" name="deliveryDate" value={date} />
+                <FormSubmitButton pendingLabel="Preparing…">
+                  Prepare draft
+                </FormSubmitButton>
+              </FarmForm>
+            ) : (
+              <Link
+                prefetch={false}
+                className={styles.primary}
+                href={
+                  closed
+                    ? `/farm/reconciliation?date=${date}`
+                    : summary.expected === 0
+                      ? "/farm/capacity"
+                      : !released || summary.pending > 0
+                        ? `/farm/delivery-sheet?${scope}`
+                        : decisions
+                          ? `/farm/exceptions?${scope}`
+                          : `/farm/reconciliation?date=${date}`
+                }
+              >
+                {closed
+                  ? "View closed report"
+                  : summary.expected === 0
+                    ? "Review upcoming capacity"
+                    : !released || summary.pending > 0
+                      ? released
+                        ? "Open deliveries"
+                        : "Review dispatch"
+                      : decisions
+                        ? "Review exceptions"
+                        : "Review closeout"}
+              </Link>
+            )}
+          </div>
         </div>
         <div className={styles.currentStatus}>
+          <SemiRing
+            value={summary.expected - summary.pending}
+            total={summary.expected}
+            label="visits with an outcome"
+          />
           <span className={styles.statusPill}>
             <i aria-hidden="true" />
             {stage}
           </span>
-          <h3>
-            {!dispatchResult.data
-              ? "Start with a prepared draft"
-              : closed
-                ? "This day’s review is preserved"
-                : summary.expected === 0
-                  ? "No active visits in this view"
-                : !released
-                  ? "Review assignments before dispatch"
-                  : summary.pending
-                    ? `${summary.pending} visits still need an outcome`
-                    : decisions
-                      ? `${decisions} ${decisions === 1 ? "exception needs" : "exceptions need"} a decision`
-                      : "Ready for the closeout review"}
-          </h3>
+          <h3>Recorded outcomes</h3>
           <p>
             {summary.delivered} fully delivered · {summary.partial} partial ·{" "}
             {decisions} need review
           </p>
-          <progress
-            aria-label="Visits with an outcome"
-            max={Math.max(1, summary.expected)}
-            value={summary.expected - summary.pending}
-          />
-          <small>
-            {summary.expected - summary.pending} of {summary.expected} visits
-            have a recorded outcome
-          </small>
         </div>
       </section>
-      <div className={styles.stage}>
-        <strong>{stage}</strong>
-        <ol className={styles.process} aria-label="Service-day process">{["Prepare", "Review & release", "Deliver", "Reconcile"].map((step,index) => { const current = closed ? 4 : !dispatchResult.data ? 0 : !released ? 1 : summary.pending ? 2 : 3; return <li key={step} data-state={index < current ? "complete" : index === current ? "current" : "upcoming"}><span>{index < current ? "✓" : index + 1}</span>{step}</li>; })}</ol>
-      </div>
       <section className={styles.metrics} aria-label="Delivery progress">
-        <Link prefetch={false} data-tone="mint" href={`/farm/delivery-sheet?${scope}&outcome=delivered`}>
+        <Link
+          prefetch={false}
+          data-tone="mint"
+          href={`/farm/delivery-sheet?${scope}&outcome=delivered`}
+        >
           <span>Fully delivered visits</span>
           <strong>
             {summary.delivered}
@@ -355,7 +370,11 @@ export default async function FarmDashboardPage({
             {summary.pending} pending
           </small>
         </Link>
-        <Link prefetch={false} data-tone="sky" href={`/farm/delivery-sheet?${scope}`}>
+        <Link
+          prefetch={false}
+          data-tone="sky"
+          href={`/farm/delivery-sheet?${scope}`}
+        >
           <span>Milk delivered</span>
           <strong>
             {formatCapacityQuantity(summary.milkDelivered)}
@@ -363,12 +382,20 @@ export default async function FarmDashboardPage({
           </strong>
           <small>Confirmed actual / planned</small>
         </Link>
-        <Link prefetch={false} href={`/farm/exceptions?${scope}`} data-attention={decisions > 0}>
+        <Link
+          prefetch={false}
+          href={`/farm/exceptions?${scope}`}
+          data-attention={decisions > 0}
+        >
           <span>Decisions due</span>
           <strong>{decisions}</strong>
           <small>Recorded service exceptions</small>
         </Link>
-        <Link prefetch={false} data-tone="mango" href={`/farm/routes?date=${date}`}>
+        <Link
+          prefetch={false}
+          data-tone="mango"
+          href={`/farm/routes?date=${date}`}
+        >
           <span>Routes with work</span>
           <strong>{routes.length}</strong>
           <small>
@@ -390,14 +417,22 @@ export default async function FarmDashboardPage({
       {failedPreparation ? (
         <p className={styles.warning}>
           Automatic preparation needs attention.{" "}
-          <Link prefetch={false} href="/farm/activity">Review the failed run and retry →</Link>
+          <Link prefetch={false} href="/farm/activity">
+            Review the failed run and retry →
+          </Link>
         </p>
       ) : null}
       <div className={styles.mainGrid}>
         <section className={styles.panel}>
           <div className={styles.sectionHeading}>
             <h2>Routes for this service day</h2>
-            <Link prefetch={false} data-tone="mango" href={`/farm/routes?date=${date}`}>All routes →</Link>
+            <Link
+              prefetch={false}
+              data-tone="mango"
+              href={`/farm/routes?date=${date}`}
+            >
+              All routes →
+            </Link>
           </div>
           {routes.length ? (
             routes.map((route) => {
@@ -423,7 +458,8 @@ export default async function FarmDashboardPage({
                       {s.unsuccessful} exceptions · {s.pending} pending
                     </small>
                   </div>
-                  <Link prefetch={false}
+                  <Link
+                    prefetch={false}
                     href={`/farm/delivery-sheet?date=${date}&route=${route.id}`}
                   >
                     Open →
@@ -454,7 +490,6 @@ export default async function FarmDashboardPage({
                 Delivery exceptions <b>{decisions}</b>
               </strong>
               <small>Review shortfalls and preserve outstanding service.</small>
-              <span>Operations manager · service day {date}</span>
             </Link>
             <Link prefetch={false} href={`/farm/reconciliation?date=${date}`}>
               <strong>
@@ -492,7 +527,9 @@ export default async function FarmDashboardPage({
               against capacity
             </p>
           </div>
-          <Link prefetch={false} href="/farm/capacity">Review capacity →</Link>
+          <Link prefetch={false} href="/farm/capacity">
+            Review capacity →
+          </Link>
         </div>
         <div className={styles.capacityGrid}>
           {CAPACITY_PRODUCTS.map((product, i) => {
@@ -532,11 +569,18 @@ export default async function FarmDashboardPage({
                       )}{" "}
                       held
                     </small>
+                    <progress
+                      aria-label={`${product.name} committed capacity`}
+                      max={Math.max(1, Number(snapshot.capacity_limit))}
+                      value={committed}
+                    />
                   </>
                 ) : (
                   <p>
                     Capacity unavailable.{" "}
-                    <Link prefetch={false} href="/farm/capacity">Check limits</Link>
+                    <Link prefetch={false} href="/farm/capacity">
+                      Check limits
+                    </Link>
                   </p>
                 )}
               </article>

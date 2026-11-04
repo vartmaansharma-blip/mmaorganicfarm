@@ -20,9 +20,13 @@ export async function POST(request: Request) {
   try {
   const payment = await getRazorpayPayment(body.paymentId);
   if (payment.order_id !== order.razorpay_order_id || payment.amount !== order.total_paise || payment.currency !== "INR") return NextResponse.json({ error: "Payment amount or order reference did not match." }, { status: 400 });
-  const record = { amount: payment.amount, orderId: order.id, paymentId: payment.id, providerOrderId: order.razorpay_order_id };
-  if (payment.status === "captured") { await recordCapturedPayment(record); return NextResponse.json({ status: "paid" }); }
-  if (payment.status === "authorized") { await recordAuthorizedPayment(record); return NextResponse.json({ status: "processing" }); }
+  const record = { amount: payment.amount, currency: payment.currency, orderId: order.id, paymentId: payment.id, providerOrderId: order.razorpay_order_id };
+  if (payment.status === "captured" || payment.status === "authorized") {
+    const result = payment.status === "captured" ? await recordCapturedPayment(record) : await recordAuthorizedPayment(record);
+    if (result.status === "review_required")
+      return NextResponse.json({ error: "Your payment was captured and needs farm review. Do not pay again." }, { status: 409 });
+    return NextResponse.json({ status: result.status });
+  }
   return NextResponse.json({ error: "Payment has not been captured. Do not pay again yet." }, { status: 409 });
   } catch {
     return NextResponse.json({ error: "Payment confirmation is pending. Do not pay again. Check your profile or contact the farm." }, { status: 502 });

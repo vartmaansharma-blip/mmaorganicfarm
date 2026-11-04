@@ -90,6 +90,13 @@ export function formatCalendarDate(value: string) {
   return fullDateFormatter.format(dateFromYmd(value));
 }
 
+export function formatDeliveryQuantity(quantity: number | string, unit: string) {
+  const amount = Number(quantity);
+  if (/^\d+(?:\.\d+)?\s/.test(unit)) return `${amount} × ${unit}`;
+  if (unit === "litre") return `${amount} ${amount === 1 ? "litre" : "litres"}`;
+  return `${amount} ${unit}`;
+}
+
 export function productName(productKey: string) {
   if (productKey === "milk") return "Fresh milk";
   return (

@@ -124,14 +124,15 @@ export async function saveDeliveryDetails(formData: FormData) {
     purchase === "plan"
       ? await firstScheduledPlanStart(supabase, user.id)
       : null;
-  const pricing = monthlyRules
+  const monthlyQuote = monthlyRules
     ? quoteMonthlySchedule({ prices,
         start,
         rules: monthlyRules,
         bottleChoice: bottle,
         firstPlanStart: firstPlanStart ?? start,
       })
-    : purchase === "plan" && weeklySchedule
+    : null;
+  const pricing = monthlyQuote ?? (purchase === "plan" && weeklySchedule
       ? calculatePlanPricing({ prices,
           bottleChoice: bottle,
           products: selectedProducts,
@@ -143,7 +144,7 @@ export async function saveDeliveryDetails(formData: FormData) {
           bottleChoice: bottle,
           milkLitres: effectiveMilkLitres,
           products: selectedProducts,
-        });
+        }));
   const orderDeliveryDate =
     purchase === "plan"
       ? start
@@ -446,17 +447,16 @@ export async function saveDeliveryDetails(formData: FormData) {
 
   const billedMilkLitres =
     purchase === "plan" ? pricing.milkLitres : effectiveMilkLitres;
-  const orderItems = monthlyRules
+  const orderItems = monthlyRules && monthlyQuote
     ? monthlyRules.map((rule) => {
-        const q = quoteMonthlySchedule({ prices, start, rules: monthlyRules });
         return {
-          delivery_date: start,
+          delivery_date: monthlyQuote.days.find((day) => day.items.some((item) => item.id === rule.id))!.date,
           frequency: "once",
-          line_total_paise: priceInPaise(q.productTotals[rule.id]),
+          line_total_paise: priceInPaise(monthlyQuote.productTotals[rule.id]),
           order_id: order.id,
           product_key: rule.id,
           product_name: shopProduct(rule.id).name,
-          quantity: q.quantities[rule.id],
+          quantity: monthlyQuote.quantities[rule.id],
           scheduled_days: [],
           unit: rule.id === "milk" ? "litre" : "500 g",
           unit_price_paise: priceInPaise(routinePrice(rule.id, prices)),
