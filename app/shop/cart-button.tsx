@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
@@ -6,10 +7,12 @@ import { OutlineIcon } from "@/app/components/outline-icon";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import {
   cartCount,
+  combinedCartOrderHref,
   cartOrderHref,
   cartQuote,
   cartReady,
   cartRoutines,
+  selectedShopCart,
   shiftShopPlan,
 } from "@/lib/shop-cart";
 import { SharedCalendar } from "./shared-calendar";
@@ -24,10 +27,17 @@ export function CartButton() {
     dialog = useRef<HTMLDialogElement>(null);
   const mode = state.mode,
     cart = state.carts[mode],
+    selected = selectedShopCart(cart),
     count = cartCount(cart),
+    selectedQuote = cartQuote(selected, mode, firstPlanStart, prices),
     quote = cartQuote(cart, mode, firstPlanStart, prices),
     routines = cartRoutines(cart),
     minimum = nextDeliveryDateInIndia();
+  const onceSelected = selectedShopCart(state.carts.once);
+  const planSelected = selectedShopCart(state.carts.plan);
+  const bothSelected = cartCount(onceSelected) > 0 && cartCount(planSelected) > 0;
+  const bothReady = bothSelected && cartReady(onceSelected, "once", minimum)
+    && cartReady(planSelected, "plan", minimum);
   useEffect(() => {
     if (cartOpen && !dialog.current?.open) dialog.current?.showModal();
     if (!cartOpen && dialog.current?.open) dialog.current?.close();
@@ -77,7 +87,7 @@ export function CartButton() {
     else if (id !== "milk" && cart[id])
       changeCart({ ...cart, [id]: { ...cart[id], quantity } });
   }
-  const productSubtotal = quote.total - quote.deliveryCharge;
+  const productSubtotal = selectedQuote.total - selectedQuote.deliveryCharge - selectedQuote.handlingCharge - selectedQuote.platformCharge;
   return (
     <>
       <button
@@ -169,6 +179,17 @@ export function CartButton() {
                   new Set(cart.milk.schedule.filter((q) => q > 0)).size > 1;
                 return (
                   <li key={id}>
+                    <label className={styles.selectItem}>
+                      <input
+                        type="checkbox"
+                        checked={cart.selected[id]}
+                        onChange={(event) => changeCart({
+                          ...cart,
+                          selected: { ...cart.selected, [id]: event.target.checked },
+                        })}
+                      />
+                      <span className={styles.visuallyHidden}>Select {p.name} for checkout</span>
+                    </label>
                     <Image src={p.image} alt="" width={68} height={82} />
                     <div className={styles.itemBody}>
                       <Link
@@ -287,31 +308,48 @@ export function CartButton() {
             <div className={styles.bottom}>
               <div>
                 <span>
-                  {mode === "plan" ? "Plan products" : "Products subtotal"}
+                  {mode === "plan" ? "Selected plan products" : "Selected products subtotal"}
                 </span>
                 <strong>{money(productSubtotal)}</strong>
               </div>
+              {selectedQuote.deliveryCharge > 0 && <div><span>Delivery</span><strong>{money(selectedQuote.deliveryCharge)}</strong></div>}
+              {selectedQuote.handlingCharge > 0 && <div><span>Handling</span><strong>{money(selectedQuote.handlingCharge)}</strong></div>}
+              {selectedQuote.platformCharge > 0 && <div><span>Platform fee</span><strong>{money(selectedQuote.platformCharge)}</strong></div>}
+              <div><span>Estimated total</span><strong>{money(selectedQuote.total)}</strong></div>
               <p>
                 {mode === "plan"
-                  ? "First month: no delivery, platform, surge or miscellaneous fees. After that, ₹2 per delivery, free above ₹199 in products per delivery."
-                  : "Delivery ₹5, free above ₹199 in products."}{" "}
-                Your eligibility and full total are confirmed before payment.
+                  ? `First scheduled month has a fee waiver. After that, delivery is ₹${prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery.`
+                  : `Delivery is ₹${prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.`}{" "}
+                Delivery is free above ₹199 in products per delivery. Your total is confirmed before payment.
               </p>
-              {cartReady(cart, mode, minimum) ? (
+              {cartReady(selected, mode, minimum) ? (
                 <Link
                   className={styles.checkout}
-                  href={cartOrderHref(cart, mode)}
+                  href={cartOrderHref(selected, mode)}
                   onClick={() => setCartOpen(false)}
                 >
                   Continue to delivery details <span aria-hidden="true">→</span>
                 </Link>
               ) : (
                 <button className={styles.checkout} type="button" disabled>
-                  Complete your schedule
+                  {cartCount(selected) ? "Complete your schedule" : "Select items to checkout"}
                 </button>
               )}
+              {bothSelected ? (
+                <div className={styles.combinedChoice}>
+                  <p>Want one payment for your one-time and prepaid scheduled items?</p>
+                  {bothReady ? (
+                    <Link href={combinedCartOrderHref(onceSelected, planSelected)}
+                      onClick={() => setCartOpen(false)}>
+                      Checkout both selected carts together →
+                    </Link>
+                  ) : (
+                    <span>Complete both delivery dates and schedules to pay together.</span>
+                  )}
+                </div>
+              ) : null}
               <p className={styles.saved}>
-                Your cart is saved in this browser tab. Nothing is charged yet.
+                Unselected items stay in your cart. Nothing is charged yet.
               </p>
             </div>
           </>

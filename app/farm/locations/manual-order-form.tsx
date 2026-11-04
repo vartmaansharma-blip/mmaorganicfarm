@@ -347,6 +347,8 @@ function OrderEditor({
           <div><dt>Add-ons total</dt><dd>{formatCheckoutAmount((pricing.oneTimeAddOnsTotal + pricing.recurringAddOnsTotal) * 100)}</dd></div>
           <div><dt>Bottle charge</dt><dd>{formatCheckoutAmount(pricing.bottleCharge * 100)}</dd></div>
           <div><dt>Delivery</dt><dd>{formatCheckoutAmount(pricing.deliveryCharge * 100)}</dd></div>
+          {pricing.handlingCharge > 0 && <div><dt>Handling</dt><dd>₹{pricing.handlingCharge}</dd></div>}
+          {pricing.platformCharge > 0 && <div><dt>Platform fee</dt><dd>₹{pricing.platformCharge}</dd></div>}
           <div className={styles.previewTotal}><dt>Payment received</dt><dd>{formatCheckoutAmount(pricing.total * 100)}</dd></div>
         </dl>
 

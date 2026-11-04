@@ -83,7 +83,7 @@ function client(order, events, respond = () => ({})) {
   return { from(table) {
     const q = { table, op: 'select', payload: null, filters: [] };
     const chain = {};
-    for (const op of ['select','update','upsert','insert','eq','is','limit']) chain[op] = (...args) => {
+    for (const op of ['select','update','upsert','insert','eq','is','or','limit']) chain[op] = (...args) => {
       if (['update','upsert','insert'].includes(op)) { q.op = op; q.payload = args[0]; }
       if (['eq','is'].includes(op)) q.filters.push([op, ...args]);
       return chain;
@@ -142,16 +142,16 @@ test('test keys cannot record a live customer payment', async () => {
   await assert.rejects(() => recordCapturedPayment({ amount: 6200, currency: 'INR' }), /does not match/);
   assert.equal(events.some(e => e.op !== 'select'), false);
 });
-async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, expectedAmount = null } = {}) {
+async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, expectedAmount = null, purchaseMode = 'plan' } = {}) {
   const events = []; let providerAmount; let providerCalls = 0, released = 0, reserved = 0;
-  const order = { id: 'synthetic', user_id: 'user', status: 'draft', purchase_mode: 'plan', delivery_plan_id: 'plan', start_date: '2026-10-26', total_paise: coupon ? 5890 : 6200, subtotal_paise: 6200, discount_code: coupon ? 'MMA-ABCDEF1234567890' : null, discount_paise: coupon ? 310 : 0, is_test: isTest, razorpay_order_id: providerId };
+  const order = { id: 'synthetic', user_id: 'user', status: 'draft', bottle_choice: 'return', purchase_mode: purchaseMode, delivery_plan_id: purchaseMode === 'plan' ? 'plan' : null, start_date: '2026-10-26', total_paise: coupon ? 5890 : 6200, subtotal_paise: 6200, discount_code: coupon ? 'MMA-ABCDEF1234567890' : null, discount_paise: coupon ? 310 : 0, is_test: isTest, razorpay_order_id: providerId };
   const userClient = client(order, events, q => {
     if (q.table === 'orders') return { data: order };
     if (q.table === 'order_items') return { data: [{ product_key: 'milk', quantity: 1, unit_price_paise: 6200, line_total_paise: 6200 }] };
     return { data: { billing_model: 'calendar_month', start_date: order.start_date, schedule_rules: [{ id: 'milk' }], scheduled_delivery_items: [] } };
   });
   userClient.auth = { getUser: async () => ({ data: { user: { id: 'user', user_metadata: {} } } }) };
-  const admin = client(order, events, q => ({ data: { id: order.id, razorpay_order_id: reboundProviderId ?? providerId }, error: updateError && q.payload?.razorpay_order_id ? { message: 'unavailable' } : null }));
+  const admin = client(order, events, q => q.table === 'checkout_batches' ? { data: null, error: null } : ({ data: claimError && purchaseMode === 'once' && q.payload?.status === 'pending_payment' ? null : { id: order.id, razorpay_order_id: reboundProviderId ?? providerId }, error: updateError && q.payload?.razorpay_order_id ? { message: 'unavailable' } : null }));
   admin.rpc = async () => ({ error: claimError ? { message: 'already claimed' } : null });
   const { RazorpayRequestError } = load('lib/razorpay.ts');
   const { POST } = load('app/api/payments/razorpay/order/route.ts', {
@@ -176,6 +176,42 @@ test('monthly provider rejection resets only its own unbound claim and releases 
   const reset = r.events.find(e => e.op === 'update' && e.payload.status === 'draft');
   assert.ok(reset.filters.some(f => f[1] === 'status' && f[2] === 'pending_payment'));
   assert.ok(reset.filters.some(f => f[0] === 'is' && f[1] === 'razorpay_order_id' && f[2] === null));
+});
+test('one-time checkout freezes the reviewed bottle mode and amount before contacting Razorpay', async () => {
+  const stale = await prepare({ purchaseMode: 'once', claimError: true });
+  assert.equal(stale.result.status, 409);
+  assert.equal(stale.providerCalls, 0);
+  assert.equal(stale.reserved, 0);
+  const successful = await prepare({ purchaseMode: 'once' });
+  assert.equal(successful.result.status, 200);
+  const claim = successful.events.find(event => event.op === 'update' && !event.payload.razorpay_order_id);
+  assert.ok(claim.filters.some(([, column, value]) => column === 'bottle_choice' && value === 'return'));
+  assert.ok(claim.filters.some(([, column, value]) => column === 'total_paise' && value === 6200));
+});
+
+test('combined checkout creates one gateway order for the latest reviewed total', async () => {
+  const batch = { id: 'batch', user_id: 'user', once_order_id: 'once', plan_order_id: 'plan',
+    amount_paise: 22100, is_test: false, status: 'draft', provider_order_id: null };
+  const events = [], reserved = [], gatewayAmounts = [], commands = [];
+  const admin = client(batch, events, () => ({ data: batch, error: null }));
+  admin.rpc = async (name, args) => { commands.push({ name, args }); return { error: null }; };
+  const { POST } = load('app/api/payments/razorpay/batch/order/route.ts', {
+    'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } },
+    '@/lib/supabase/server': { createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'user', user_metadata: {} } } }) } }) },
+    '@/lib/supabase/admin': { createAdminClient: () => admin, hasSupabaseAdminConfig: () => true },
+    '@/lib/checkout-batch': { quoteCheckoutBatch: async () => ({ amount: 22100, once: {}, planRules: [{ id: 'milk' }] }) },
+    '@/lib/production-capacity': { reserveOrderCapacity: async (id) => { reserved.push(id); } },
+    '@/lib/razorpay': { hasRazorpayConfig: () => true, publicRazorpayKey: () => 'fixture',
+      createRazorpayOrder: async ({ amount }) => { gatewayAmounts.push(amount); return { id: 'order_fixture', amount, currency: 'INR' }; } },
+  }, { RAZORPAY_KEY_ID: 'rzp_live_synthetic', RAZORPAY_LIVE_CHECKOUT_ENABLED: 'true', VERCEL_ENV: 'production' });
+  const pay = (expectedAmountPaise) => POST({ json: async () => ({ batchId: batch.id, termsAccepted: true, expectedAmountPaise }) });
+  assert.equal((await pay(19100)).status, 409);
+  assert.deepEqual(gatewayAmounts, []);
+  assert.equal((await pay(22100)).status, 200);
+  assert.deepEqual(gatewayAmounts, [22100]);
+  assert.deepEqual(reserved, ['once', 'plan']);
+  assert.deepEqual(commands.map(({ name }) => name), ['claim_checkout_batch', 'bind_checkout_batch']);
+  assert.equal(commands[0].args.p_expected_amount_paise, 22100);
 });
 test('uncertain provider outcomes and competing claims stay frozen with capacity retained', async () => {
   for (const input of [{ failure: 'network' }, { failure: 500 }, { failure: 408 }, { failure: 429 }, { claimError: true }, { updateError: true }]) {

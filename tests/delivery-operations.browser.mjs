@@ -558,6 +558,9 @@ try {
     await mp.setViewportSize({ width: 320, height: 900 });
     await noOverflow(mp);
     const ownerContext = await contextFor(browser, owner, 1440);
+    await ownerContext.addInitScript(() => {
+      if (!localStorage.getItem("mma-theme")) localStorage.setItem("mma-theme", "light");
+    });
     const ownerPage = await ownerContext.newPage();
     activePage=ownerPage;
     ownerPage.on("pageerror",error=>errors.push(error.message));
@@ -572,20 +575,42 @@ try {
     await ownerPage.goto(`${base}/farm/settings`,{waitUntil:"networkidle"});
     const priceField=ownerPage.getByLabel("Fresh milk price in rupees",{exact:true});
     await priceField.fill("63.37");
-    await ownerPage.getByLabel("Reason for change",{exact:true}).fill("Synthetic owner price verification");
-    await ownerPage.getByRole("button",{name:"Save product prices",exact:true}).click();
-    await ownerPage.getByRole("status").filter({hasText:"Product prices saved"}).waitFor();
+    await ownerPage.getByLabel("One-time delivery").fill("7.50");
+    await ownerPage.getByLabel("Scheduled delivery").fill("3");
+    await ownerPage.getByLabel("Handling per order").fill("4");
+    await ownerPage.getByLabel("Platform per order").fill("2");
+    assert.equal(await ownerPage.getByLabel("Reason for change", { exact: true }).count(), 0);
+    await ownerPage.getByRole("button",{name:"Save prices and fees",exact:true}).click();
+    await ownerPage.getByRole("status").filter({hasText:"Updated for new orders"}).waitFor();
+    const priceNotice = ownerPage.locator('[data-farm-notice="saved"]');
+    await priceNotice.getByText(/One-time delivery ₹7.50/).waitFor();
+    assert.equal(await priceNotice.evaluate((notice) => getComputedStyle(notice).backgroundColor), "rgb(255, 255, 255)");
+    await priceNotice.screenshot({ path: path.join(output, `${name}-price-save-mobile.png`) });
     assert.equal((await db.query("select prices->>'milk' amount from farm_catalog_prices")).rows[0].amount,"6337");
+    await ownerPage.goto(`${base}/pricing`, { waitUntil: "networkidle" });
+    await ownerPage.getByText(/One-time delivery is ₹7.5/).waitFor();
+    await ownerPage.getByText(/Handling is ₹4 per order and the platform fee is ₹2/).waitFor();
+    await ownerPage.goto(`${base}/farm/settings`, { waitUntil: "networkidle" });
     assert.equal(new URL(ownerPage.url()).pathname,"/farm/settings");
     await ownerPage.screenshot({path:path.join(output,`${name}-editable-prices-mobile.png`),fullPage:true});
     await noOverflow(ownerPage);
     await ownerPage.goto(`${base}/shop/milk`,{waitUntil:"networkidle"});
     assert.match(await ownerPage.locator("main").innerText(),/63.37/);
     await ownerPage.goto(`${base}/farm/settings`,{waitUntil:"networkidle"});
+    await ownerPage.setViewportSize({ width: 1440, height: 900 });
+    await ownerPage.getByRole("button", { name: "Switch to dark mode" }).click();
     await ownerPage.getByLabel("Fresh milk price in rupees",{exact:true}).fill("62");
-    await ownerPage.getByLabel("Reason for change",{exact:true}).fill("Restore synthetic fixture catalogue");
-    await ownerPage.getByRole("button",{name:"Save product prices",exact:true}).click();
-    await ownerPage.getByRole("status").filter({hasText:"Product prices saved"}).waitFor();
+    await ownerPage.getByLabel("One-time delivery").fill("5");
+    await ownerPage.getByLabel("Scheduled delivery").fill("2");
+    await ownerPage.getByLabel("Handling per order").fill("0");
+    await ownerPage.getByLabel("Platform per order").fill("0");
+    await ownerPage.getByRole("button",{name:"Save prices and fees",exact:true}).click();
+    await ownerPage.getByRole("status").filter({hasText:"Updated for new orders"}).waitFor();
+    await priceNotice.getByText(/One-time delivery ₹5/).waitFor();
+    assert.equal(await priceNotice.evaluate((notice) => getComputedStyle(notice).backgroundColor), "rgb(27, 37, 32)");
+    await priceNotice.screenshot({ path: path.join(output, `${name}-price-save-dark.png`) });
+    await ownerPage.getByRole("button", { name: "Switch to light mode" }).click();
+    await ownerPage.setViewportSize({ width: 320, height: 900 });
     await ownerPage.goto(`${base}/farm/payments`,{waitUntil:"networkidle"});
     const receipt=ownerPage.locator("details").filter({has:ownerPage.locator("summary").getByText("Edit receipt details",{exact:true})}).first();
     await receipt.locator("summary").click();
@@ -612,7 +637,7 @@ try {
     await ownerContext.close();
     const customerContext = await contextFor(browser, failure.user);
     const cp = await customerContext.newPage();
-    await cp.goto(`${base}/account?section=deliveries`, { waitUntil: "networkidle" });
+    await cp.goto(`${base}/account?section=schedule`, { waitUntil: "networkidle" });
     await cp
       .getByRole("region", { name: "Confirmed delivery outcomes" })
       .getByText(/Attempt failed/)
@@ -639,6 +664,7 @@ try {
       ).rows[0].delivered_deliveries,
       1,
     );
+    await cp.goto(`${base}/account?section=plans`, { waitUntil: "networkidle" });
     await cp.locator("summary").filter({hasText:"Cancel plan"}).click();
     await cp.getByRole("button",{name:"Cancel plan now",exact:true}).click();
     await cp.getByText("Your plan is cancelled. No farm approval is needed.",{exact:true}).waitFor();
@@ -654,6 +680,10 @@ try {
     await cp.goto(`${base}/checkout/review?order=${monthOrder}`,{waitUntil:"networkidle"});
     assert.equal(await cp.getByRole("region",{name:"Your welcome-back offer",exact:true}).count(),0,"returning customer checkout has no coupon section");
     await cp.getByRole("button",{name:"Pay ₹72",exact:true}).waitFor();
+    const monthlyBill = cp.getByRole("region", { name: "Bill details" });
+    await monthlyBill.getByText("1 L total · ₹62 / L", { exact: true }).waitFor();
+    await monthlyBill.getByText("No delivery charge on this order", { exact: true }).waitFor();
+    assert.equal(await monthlyBill.getByText("Platform fee", { exact: true }).count(), 0);
     await noOverflow(cp);
     await cp.screenshot({path:path.join(output,`${name}-welcome-back-checkout-mobile.png`),fullPage:true});
     await cp.setViewportSize({width:1440,height:900});
@@ -661,7 +691,7 @@ try {
     await cp.goto(`${base}/welcome-back`,{waitUntil:"networkidle"});
     assert.equal(await cp.getByLabel("Your personal, one-use code").count(),0);
     await cp.screenshot({path:path.join(output,`${name}-welcome-back-desktop.png`),fullPage:true});
-    await cp.goto(`${base}/account?section=deliveries`,{waitUntil:"networkidle"});
+    await cp.goto(`${base}/account?section=plans`,{waitUntil:"networkidle"});
     await cp.locator("summary").filter({hasText:"Cancel plan"}).click();
     await cp.getByRole("button",{name:"Cancel plan now",exact:true}).click();
     await cp.getByText("Your plan is cancelled. No farm approval is needed.",{exact:true}).waitFor();
@@ -681,6 +711,45 @@ try {
     assert.equal(await newPage.getByRole("region",{name:"Your welcome-back offer",exact:true}).count(),0,"coupon section hidden for a first-time customer");
     await noOverflow(newPage);
     await newPage.screenshot({path:path.join(output,`${name}-new-customer-no-coupon.png`),fullPage:true});
+    const oneTimeOrder = randomUUID();
+    await db.query(
+      `insert into orders(id,user_id,purchase_mode,status,bottle_choice,subtotal_paise,bottle_charge_paise,handling_fee_paise,platform_fee_paise,total_paise,milk_litres,start_date,phone_snapshot,address_snapshot)
+       values($1,$2,'once','draft','return',6200,0,400,200,7550,1,$3,'0000000000','Synthetic address')`,
+      [oneTimeOrder, newUser, tomorrow],
+    );
+    await db.query(
+      `insert into order_items(order_id,user_id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,delivery_date)
+       values($1,$2,'milk','Fresh farm milk',1,'litre',6200,6200,'once',$3)`,
+      [oneTimeOrder, newUser, tomorrow],
+    );
+    await newContext.addInitScript(() => {
+      if (!localStorage.getItem("mma-theme")) localStorage.setItem("mma-theme", "light");
+    });
+    await newPage.setViewportSize({ width: 320, height: 900 });
+    await newPage.goto(`${base}/checkout/review?order=${oneTimeOrder}`, { waitUntil: "networkidle" });
+    const bill = newPage.getByRole("region", { name: "Bill details" });
+    await bill.getByText("1 L · ₹62 / L", { exact: true }).waitFor();
+    const bottleSwitch = bill.getByRole("switch", { name: "Keep bottle" });
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
+    await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
+    await bottleSwitch.click();
+    await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
+    assert.deepEqual(await bill.locator("dd").allTextContents(), ["₹62", "₹10", "₹7.50", "₹4", "₹2", "₹85.50"]);
+    await bill.getByText("Preparing and packing your order", { exact: true }).waitFor();
+    await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
+    await noOverflow(newPage);
+    await bill.screenshot({ path: path.join(output, `${name}-checkout-bill-mobile.png`) });
+    await newPage.setViewportSize({ width: 1440, height: 900 });
+    await newPage.evaluate(() => localStorage.setItem("mma-theme", "dark"));
+    await newPage.reload({ waitUntil: "networkidle" });
+    assert.equal(await newPage.locator("html").getAttribute("data-theme"), "dark");
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
+    await bill.screenshot({ path: path.join(output, `${name}-checkout-bill-dark.png`) });
+    await bottleSwitch.press("Space");
+    await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
+    await newPage.reload({ waitUntil: "networkidle" });
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
     await newContext.close();
     assert.deepEqual(errors, []);
     results.push({

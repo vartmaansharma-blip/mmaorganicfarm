@@ -68,6 +68,13 @@ export async function POST(request: Request) {
       { error: "This order is not available for payment." },
       { status: 409 },
     );
+  const { data: combined, error: combinedLookupError } = await createAdminClient().from("checkout_batches")
+    .select("id").or(`once_order_id.eq.${order.id},plan_order_id.eq.${order.id}`)
+    .limit(1).maybeSingle();
+  if (combinedLookupError)
+    return NextResponse.json({ error: "Payment preparation is temporarily unavailable." }, { status: 503 });
+  if (combined)
+    return NextResponse.json({ error: "This order is part of a combined checkout. Review both selected carts together." }, { status: 409 });
   if (order.discount_paise > 0 || order.discount_code)
     return NextResponse.json({ error: "Review a new order at the regular product price." }, { status: 409 });
   const modeError = paymentModeError(order.is_test);
@@ -171,10 +178,22 @@ export async function POST(request: Request) {
       { error: "The order total changed. Review it again." },
       { status: 409 },
     );
-  let monthlyClaimed = false;
+  let claimed = false;
   let providerAttempted = false;
   let providerOrderId = order.razorpay_order_id;
   try {
+    if (!monthlyRules && !providerOrderId) {
+      // Lock the amount and bottle mode before contacting Razorpay.
+      const { data: frozen, error } = await createAdminClient()
+        .from("orders")
+        .update({ status: "pending_payment", updated_at: new Date().toISOString() })
+        .eq("id", order.id).eq("user_id", user.id).eq("status", "draft")
+        .eq("total_paise", amount).eq("bottle_choice", order.bottle_choice)
+        .is("razorpay_order_id", null).select("id").maybeSingle();
+      if (error || !frozen)
+        throw new Error("The bill changed or payment is already being prepared. Review your order before trying again.");
+      claimed = true;
+    }
     if (!order.is_test) await reserveOrderCapacity(order.id);
     if (monthlyRules) {
       const { error } = await createAdminClient().rpc(
@@ -185,13 +204,13 @@ export async function POST(request: Request) {
         throw new Error(
           "This selection changed or payment is already being prepared. Review your order before trying again.",
         );
-      monthlyClaimed = true;
+      claimed = true;
       // A concurrent request may have bound a provider order after our initial read.
-      const { data: claimed, error: claimedError } = await createAdminClient()
+      const { data: boundOrder, error: claimedError } = await createAdminClient()
         .from("orders").select("razorpay_order_id")
         .eq("id", order.id).eq("user_id", user.id).single();
-      if (claimedError || !claimed) throw new Error("Payment preparation is pending. Please check your profile before trying again.");
-      providerOrderId = claimed.razorpay_order_id;
+      if (claimedError || !boundOrder) throw new Error("Payment preparation is pending. Please check your profile before trying again.");
+      providerOrderId = boundOrder.razorpay_order_id;
     }
     if (!providerOrderId) {
       providerAttempted = true;
@@ -203,7 +222,7 @@ export async function POST(request: Request) {
       ).id;
     }
     const acceptedAt = new Date().toISOString();
-    const { error } = await createAdminClient()
+    const { data: bound, error } = await createAdminClient()
       .from("orders")
       .update({
         razorpay_order_id: providerOrderId,
@@ -212,8 +231,13 @@ export async function POST(request: Request) {
         updated_at: acceptedAt,
       })
       .eq("id", order.id)
-      .eq("user_id", user.id);
-    if (error) throw new Error("Payment could not be prepared.");
+      .eq("user_id", user.id)
+      .eq("status", "pending_payment")
+      .eq("total_paise", amount)
+      .eq("bottle_choice", order.bottle_choice)
+      .select("id")
+      .maybeSingle();
+    if (error || !bound) throw new Error("Payment could not be prepared.");
     return NextResponse.json({
       amount,
       isTest: order.is_test,
@@ -230,15 +254,13 @@ export async function POST(request: Request) {
     const rejected = error instanceof RazorpayRequestError && error.definitelyRejected;
     // Only undo this request's claim after a definitive provider rejection.
     // Never reset another request's claim, an existing provider checkout or an uncertain request.
-    if (monthlyClaimed && providerAttempted && rejected && !order.razorpay_order_id) {
+    if (claimed && !providerOrderId && (rejected || (!monthlyRules && !providerAttempted))) {
       // Release while the claim is still frozen so a later retry cannot lose its hold.
       if (!order.is_test) await releaseOrderCapacity(order.id);
       await createAdminClient()
         .from("orders").update({ status: "draft", updated_at: new Date().toISOString() })
         .eq("id", order.id).eq("user_id", user.id).eq("status", "pending_payment")
         .is("razorpay_order_id", null).select("id").maybeSingle();
-    } else if (!monthlyRules && !order.razorpay_order_id && rejected && !order.is_test) {
-      await releaseOrderCapacity(order.id);
     }
     return NextResponse.json(
       {

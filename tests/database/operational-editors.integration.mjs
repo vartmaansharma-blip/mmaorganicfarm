@@ -170,3 +170,45 @@ test('paneer and ghee can move within their prepaid month without changing their
   assert.equal((await db.query('select sum(quantity) n from scheduled_delivery_items where plan_id=$1 and product_key=$2',[f.plan,product])).rows[0].n,'2.00');
  }
 });
+
+test('owners update public fees without changing the fees of an older order',async()=>{
+ const prior=(await catalog()).prices;
+ const oldOrder=await order();
+ const fees={delivery_once:750,delivery_scheduled:300,handling:400,platform:0};
+ await assert.rejects(change({...prior,...fees},manager),/Owner access/);
+ await assert.rejects(change({...prior,...fees,handling:-1}),/non-negative fees/);
+ await change({...prior,...fees});
+ const nextOrder=await order();
+ assert.deepEqual(await agreed(oldOrder),prior);
+ assert.deepEqual(await agreed(nextOrder),{...prior,...fees});
+ assert.deepEqual((await catalog()).prices,{...prior,...fees});
+ await change({...prices,milk:6300});
+ assert.equal((await catalog()).prices.handling,400);
+ await change({...prices,delivery_once:500,delivery_scheduled:200,handling:0,platform:0});
+});
+
+test('checkout bottle mode uses the agreed price and freezes with payment', async () => {
+ const id = randomUUID();
+ const day = (await db.query("select (private.operational_today()+1)::text as day")).rows[0].day;
+ const rules = JSON.stringify([{ id: 'milk', quantity: 1, repeat: 'once', firstDate: day }]);
+ const plan = (await callAs(db, customer, "select save_pending_monthly_plan($1,'return',$2) id", [day, rules])).rows[0].id;
+ await db.query(
+   "insert into orders(id,user_id,delivery_plan_id,purchase_mode,bottle_choice,milk_litres,subtotal_paise,total_paise,start_date,phone_snapshot,address_snapshot) values($1,$2,$3,'plan','return',1,6200,6200,$4,'0000000000','Fixture address')",
+   [id, customer, plan, day],
+ );
+ const update = (user, mode, total) => callAs(db, user, 'select set_checkout_bottle_mode($1,$2,$3)', [id, mode, total]);
+ const read = async () => (await db.query(
+   'select o.bottle_choice, o.bottle_charge_paise, o.total_paise, p.bottle_choice as plan_mode from orders o join delivery_plans p on p.id=o.delivery_plan_id where o.id=$1',
+   [id],
+ )).rows[0];
+ await change({...prices,bottle:1400});
+ await assert.rejects(update(other,'new',6200), /Order unavailable/);
+ await update(customer,'new',6200);
+ assert.deepEqual(await read(), { bottle_choice: 'new', bottle_charge_paise: 1000, total_paise: 7200, plan_mode: 'new' });
+ await assert.rejects(update(customer,'return',6200), /bill changed/);
+ await update(customer,'return',7200);
+ assert.deepEqual(await read(), { bottle_choice: 'return', bottle_charge_paise: 0, total_paise: 6200, plan_mode: 'return' });
+ await db.query("update orders set status='pending_payment' where id=$1", [id]);
+ await assert.rejects(update(customer,'new',6200), /cannot change bottle mode/);
+ await change(prices);
+});

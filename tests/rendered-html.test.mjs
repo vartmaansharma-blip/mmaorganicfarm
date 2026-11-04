@@ -653,10 +653,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.doesNotMatch(builder, /Choose one bottle option/);
   assert.match(builder, /returnable or new glass bottles/);
   assert.match(builder, /30-delivery total/);
-  assert.match(order, /Bottle for this delivery/);
-  assert.match(order, /I will return a bottle/);
-  assert.match(order, /I need new bottles/);
-  assert.match(order, /prices\.milk \+ prices\.bottle/);
+  assert.doesNotMatch(order, /Bottle for this delivery|I will return a bottle|I need new bottles/);
   assert.match(builder, /Choose what comes home/);
   assert.match(builder, /selection \? "Remove" : "Add \+"/);
   assert.match(builder, /First delivery/);
@@ -1060,7 +1057,8 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.match(orderPage, /Weekly milk schedule/);
   assert.match(orderPage, /30-delivery plan total/);
   assert.match(orderPage, /calculateOrderPricing/);
-  assert.match(orderPage, /Save &amp; review order/);
+  assert.match(orderPage, /Save & review order/);
+  assert.match(orderPage, /Review combined checkout/);
   assert.match(orderStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(orderPage, /Delivery city/);
   assert.doesNotMatch(orderPage, /delivery time|payment method/i);

@@ -630,3 +630,66 @@ test("farm-recorded products support independent weekdays and exact dates", () =
   assert.equal(manualMonthlyRoutines(start, milk, [{ ...ghee, dates: ["2026-12-07"] }]), null);
   assert.equal(manualMonthlyRoutines(start, milk, [{ ...paneer, weekdays: [1, 1] }]), null);
 });
+
+test("catalogue fees flow through quotes and adjustments preserve the milk-only charge", () => {
+  const { productPricesFromPaise } = load("lib/product-prices.ts");
+  const prices = productPricesFromPaise({
+    milk: 6200, paneer: 20000, ghee: 37500, bottle: 1000,
+    delivery_once: 750, delivery_scheduled: 300, handling: 400, platform: 200,
+  });
+  const once = calculateOrderPricing({ bottleChoice: "return", milkLitres: 1, products: [], prices });
+  assert.deepEqual([once.deliveryCharge, once.handlingCharge, once.platformCharge, once.total], [7.5, 4, 2, 75.5]);
+  const line = { product_key: "milk", quantity: 1, unit_price_paise: 6200, line_total_paise: 6200, frequency: "once", scheduled_days: [] };
+  assert.equal(quoteStoredCheckout([line], "return", "once", undefined, prices).total, 75.5);
+  assert.equal(quoteStoredCheckout([line], "return", "adjustment", undefined, prices).total, 62);
+
+  const start = "2026-11-07";
+  const monthly = { start, rules: [{ id: "milk", quantity: 1, repeat: "once", firstDate: start }], prices };
+  assert.equal(quoteMonthlySchedule(monthly).total, 62);
+  assert.equal(quoteMonthlySchedule({ ...monthly, firstPlanStart: "2026-09-07" }).total, 71);
+});
+
+const { removePurchasedItems, selectedShopCart } = load("lib/shop-cart.ts");
+
+test("checkout selection leaves unselected products in the cart", () => {
+  const state = createShopState("2026-11-01");
+  let cart = addCartProduct(state.carts.once, "milk", state.drafts.once.milk, "once");
+  cart = addCartProduct(cart, "paneer", state.drafts.once.paneer, "once");
+  cart.selected.paneer = false;
+
+  const selected = selectedShopCart(cart);
+  assert.equal(cartCount(cart), 2);
+  assert.equal(cartCount(selected), 1);
+  assert.ok(selected.milk);
+  assert.equal(selected.paneer, null);
+  assert.ok(cart.paneer);
+  const { cart: afterPayment, changed } = removePurchasedItems(cart, {
+    milk: JSON.stringify(cart.milk),
+  });
+  assert.equal(changed, true);
+  assert.equal(afterPayment.milk, null);
+  assert.ok(afterPayment.paneer);
+  assert.equal(afterPayment.selected.paneer, false);
+  assert.ok(cart.milk);
+});
+
+test("an edited selected item remains in the cart after payment", () => {
+  const state = createShopState("2026-11-01");
+  const cart = addCartProduct(state.carts.once, "ghee", state.drafts.once.ghee, "once");
+  const before = JSON.stringify(cart.ghee);
+  cart.ghee.quantity = 2;
+  const result = removePurchasedItems(cart, { ghee: before });
+  assert.equal(result.changed, false);
+  assert.equal(result.cart.ghee?.quantity, 2);
+});
+
+test("restoring an older cart selects its existing products", () => {
+  const state = createShopState("2026-11-01");
+  state.carts.once = addCartProduct(state.carts.once, "ghee", state.drafts.once.ghee, "once");
+  const old = JSON.parse(JSON.stringify(state));
+  delete old.carts.once.selected;
+
+  const restored = restoreShopState(old, "2026-11-01");
+  assert.equal(restored.carts.once.selected.ghee, true);
+  assert.equal(restored.carts.once.selected.milk, false);
+});
