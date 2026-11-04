@@ -27,17 +27,24 @@ export function CartButton() {
     dialog = useRef<HTMLDialogElement>(null);
   const mode = state.mode,
     cart = state.carts[mode],
-    selected = selectedShopCart(cart),
     count = cartCount(cart),
-    selectedQuote = cartQuote(selected, mode, firstPlanStart, prices),
     quote = cartQuote(cart, mode, firstPlanStart, prices),
     routines = cartRoutines(cart),
     minimum = nextDeliveryDateInIndia();
-  const onceSelected = selectedShopCart(state.carts.once);
-  const planSelected = selectedShopCart(state.carts.plan);
-  const bothSelected = cartCount(onceSelected) > 0 && cartCount(planSelected) > 0;
-  const bothReady = bothSelected && cartReady(onceSelected, "once", minimum)
-    && cartReady(planSelected, "plan", minimum);
+  const selectedCarts = {
+    once: selectedShopCart(state.carts.once),
+    plan: selectedShopCart(state.carts.plan),
+  };
+  const selectedModes = (["once", "plan"] as const).filter((key) => cartCount(selectedCarts[key]) > 0);
+  const bothSelected = selectedModes.length === 2;
+  const checkoutMode = selectedModes[0] ?? mode;
+  const selectedQuote = cartQuote(selectedCarts[checkoutMode], checkoutMode, firstPlanStart, prices);
+  const scheduledQuote = bothSelected ? cartQuote(selectedCarts.plan, "plan", firstPlanStart, prices) : null;
+  const checkoutReady = selectedModes.length > 0 && selectedModes.every((key) => cartReady(selectedCarts[key], key, minimum));
+  const checkoutHref = bothSelected
+    ? combinedCartOrderHref(selectedCarts.once, selectedCarts.plan)
+    : cartOrderHref(selectedCarts[checkoutMode], checkoutMode);
+  const hasItems = cartCount(state.carts.once) + cartCount(state.carts.plan) > 0;
   useEffect(() => {
     if (cartOpen && !dialog.current?.open) dialog.current?.showModal();
     if (!cartOpen && dialog.current?.open) dialog.current?.close();
@@ -88,6 +95,16 @@ export function CartButton() {
       changeCart({ ...cart, [id]: { ...cart[id], quantity } });
   }
   const productSubtotal = selectedQuote.total - selectedQuote.deliveryCharge - selectedQuote.handlingCharge - selectedQuote.platformCharge;
+  const deliveryPolicy = checkoutMode === "plan"
+    ? `First scheduled month has a fee waiver. After that, delivery is ₹${prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery.`
+    : `Delivery is ₹${prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.`;
+  const checkoutNote = !selectedModes.length
+    ? "Select a product to continue."
+    : !checkoutReady
+      ? "Check the delivery dates and schedule for your selected items."
+      : bothSelected
+        ? "One payment for your one-time and scheduled items."
+        : `${deliveryPolicy} Delivery is free above ₹199 in products per delivery. Your total is confirmed before payment.`;
   return (
     <>
       <button
@@ -171,80 +188,76 @@ export function CartButton() {
                 const item = cart[id];
                 if (!item) return null;
                 const p = shopProduct(id, prices);
+                const repeat = routines.find((r) => r.id === id)?.repeat;
                 const variable =
                   id === "milk" &&
                   mode === "plan" &&
                   cart.milk &&
-                  routines.find((r) => r.id === "milk")?.repeat === "days" &&
+                  repeat === "days" &&
                   new Set(cart.milk.schedule.filter((q) => q > 0)).size > 1;
                 return (
                   <li key={id}>
                     <label className={styles.selectItem}>
                       <input
                         type="checkbox"
+                        aria-label={`Select ${p.name} for checkout`}
                         checked={cart.selected[id]}
                         onChange={(event) => changeCart({
                           ...cart,
                           selected: { ...cart.selected, [id]: event.target.checked },
                         })}
                       />
-                      <span className={styles.visuallyHidden}>Select {p.name} for checkout</span>
-                    </label>
-                    <Image src={p.image} alt="" width={68} height={82} />
-                    <div className={styles.itemBody}>
-                      <Link
-                        href={`/shop/${id}`}
-                        onClick={() => setCartOpen(false)}
-                      >
-                        <OutlineIcon name={id} size={18} />
-                        {p.name}
-                      </Link>
-                      <p>
-                        {mode === "plan"
-                          ? `${id === "milk" ? "Litres" : "500 g"} · ${routines.find((r) => r.id === id)?.repeat === "custom" ? "Your selected dates" : routines.find((r) => r.id === id)?.repeat === "days" ? "Selected weekdays" : (routines.find((r) => r.id === id)?.repeat ?? "Scheduled")}`
-                          : id === "milk"
-                            ? "Litres"
-                            : "500 g · One delivery"}
-                      </p>
-                      <p className={styles.linePrice}>
+                      <Image src={p.image} alt="" width={54} height={54} />
+                      <span className={styles.itemBody}>
+                        <strong>{p.name}</strong>
+                        <small>
+                          {mode === "plan"
+                            ? `${id === "milk" ? "Litres" : "500 g"} · ${repeat === "custom" ? "Your selected dates" : repeat === "days" ? "Selected weekdays" : (repeat ?? "Scheduled")}`
+                            : id === "milk"
+                              ? "Litres"
+                              : "500 g · One delivery"}
+                        </small>
+                      </span>
+                      <span className={styles.linePrice}>
                         {money(
                           id === "milk"
                             ? quote.milkTotal
                             : (quote.productTotals[id] ?? 0),
                         )}
-                      </p>
-                      <div className={styles.itemActions}>
-                        {variable ? (
-                          <span className={styles.variable}>
-                            Litres vary by day
-                          </span>
-                        ) : (
-                          <div className={styles.stepper}>
-                            <button
-                              type="button"
-                              disabled={item.quantity <= 1}
-                              aria-label={`Decrease cart ${id} quantity`}
-                              onClick={() => quantity(id, item.quantity - 1)}
-                            >
-                              −
-                            </button>
-                            <output>{item.quantity}</output>
-                            <button
-                              type="button"
-                              disabled={item.quantity >= 5}
-                              aria-label={`Increase cart ${id} quantity`}
-                              onClick={() => quantity(id, item.quantity + 1)}
-                            >
-                              +
-                            </button>
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          className={styles.remove}
-                          aria-label={`Remove ${p.name}`}
-                          onClick={() => changeCart({ ...cart, [id]: null })}
-                        >
+                      </span>
+                    </label>
+                    <div className={styles.itemActions}>
+                      {variable ? (
+                        <span className={styles.variable}>
+                          Litres vary by day
+                        </span>
+                      ) : (
+                        <div className={styles.stepper}>
+                          <button
+                            type="button"
+                            disabled={item.quantity <= 1}
+                            aria-label={`Decrease cart ${id} quantity`}
+                            onClick={() => quantity(id, item.quantity - 1)}
+                          >
+                            −
+                          </button>
+                          <output>{item.quantity}</output>
+                          <button
+                            type="button"
+                            disabled={item.quantity >= 5}
+                            aria-label={`Increase cart ${id} quantity`}
+                            onClick={() => quantity(id, item.quantity + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                      <div className={styles.itemLinks}>
+                        <Link className={styles.edit} href={`/shop/${id}`} aria-label={`Edit ${p.name}`} onClick={() => setCartOpen(false)}>
+                          Edit
+                        </Link>
+                        <button type="button" className={styles.remove} aria-label={`Remove ${p.name}`}
+                          onClick={() => changeCart({ ...cart, [id]: null })}>
                           Remove
                         </button>
                       </div>
@@ -305,54 +318,42 @@ export function CartButton() {
                   })}
               </section>
             ) : null}
-            <div className={styles.bottom}>
-              <div>
-                <span>
-                  {mode === "plan" ? "Selected plan products" : "Selected products subtotal"}
-                </span>
-                <strong>{money(productSubtotal)}</strong>
-              </div>
-              {selectedQuote.deliveryCharge > 0 && <div><span>Delivery</span><strong>{money(selectedQuote.deliveryCharge)}</strong></div>}
-              {selectedQuote.handlingCharge > 0 && <div><span>Handling</span><strong>{money(selectedQuote.handlingCharge)}</strong></div>}
-              {selectedQuote.platformCharge > 0 && <div><span>Platform fee</span><strong>{money(selectedQuote.platformCharge)}</strong></div>}
-              <div><span>Estimated total</span><strong>{money(selectedQuote.total)}</strong></div>
-              <p>
-                {mode === "plan"
-                  ? `First scheduled month has a fee waiver. After that, delivery is ₹${prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery.`
-                  : `Delivery is ₹${prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.`}{" "}
-                Delivery is free above ₹199 in products per delivery. Your total is confirmed before payment.
-              </p>
-              {cartReady(selected, mode, minimum) ? (
-                <Link
-                  className={styles.checkout}
-                  href={cartOrderHref(selected, mode)}
-                  onClick={() => setCartOpen(false)}
-                >
-                  Continue to delivery details <span aria-hidden="true">→</span>
-                </Link>
-              ) : (
-                <button className={styles.checkout} type="button" disabled>
-                  {cartCount(selected) ? "Complete your schedule" : "Select items to checkout"}
-                </button>
-              )}
-              {bothSelected ? (
-                <div className={styles.combinedChoice}>
-                  <p>Want one payment for your one-time and prepaid scheduled items?</p>
-                  {bothReady ? (
-                    <Link href={combinedCartOrderHref(onceSelected, planSelected)}
-                      onClick={() => setCartOpen(false)}>
-                      Checkout both selected carts together →
-                    </Link>
-                  ) : (
-                    <span>Complete both delivery dates and schedules to pay together.</span>
-                  )}
-                </div>
-              ) : null}
-              <p className={styles.saved}>
-                Unselected items stay in your cart. Nothing is charged yet.
-              </p>
-            </div>
           </>
+        )}
+        {hasItems && (
+          <section className={styles.bottom} aria-label="Selected order estimate">
+            {checkoutReady && scheduledQuote ? (
+              <>
+                <div><span>One-time order</span><strong>{money(selectedQuote.total)}</strong></div>
+                <div><span>Scheduled order</span><strong>{money(scheduledQuote.total)}</strong></div>
+              </>
+            ) : checkoutReady ? (
+              <>
+                <div><span>{checkoutMode === "plan" ? "Selected plan products" : "Selected products subtotal"}</span><strong>{money(productSubtotal)}</strong></div>
+                {selectedQuote.deliveryCharge > 0 && <div><span>Delivery</span><strong>{money(selectedQuote.deliveryCharge)}</strong></div>}
+                {selectedQuote.handlingCharge > 0 && <div><span>Handling</span><strong>{money(selectedQuote.handlingCharge)}</strong></div>}
+                {selectedQuote.platformCharge > 0 && <div><span>Platform fee</span><strong>{money(selectedQuote.platformCharge)}</strong></div>}
+              </>
+            ) : null}
+            {checkoutReady && <div className={styles.total} aria-live="polite"><span>Estimated total</span><strong>{money(selectedQuote.total + (scheduledQuote?.total ?? 0))}</strong></div>}
+            <p>{checkoutNote}</p>
+            {checkoutReady ? (
+              <Link
+                className={styles.checkout}
+                href={checkoutHref}
+                onClick={() => setCartOpen(false)}
+              >
+                Continue to delivery details <span aria-hidden="true">→</span>
+              </Link>
+            ) : (
+              <button className={styles.checkout} type="button" disabled>
+                Continue to delivery details
+              </button>
+            )}
+            <p className={styles.saved}>
+              Tap a product to deselect it. Unselected items stay in your cart.
+            </p>
+          </section>
         )}
       </dialog>
     </>

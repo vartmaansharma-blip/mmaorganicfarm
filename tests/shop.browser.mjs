@@ -167,7 +167,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           .click();
         assert.equal(
           await dialog
-            .getByRole("link", { name: "Farm milk", exact: true })
+            .getByRole("link", { name: "Edit Farm milk", exact: true })
             .isVisible(),
           true,
         );
@@ -221,12 +221,45 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           await checkout.getAttribute("href"),
           /paneer%3Aonce%3A1%3Bghee%3Aonce%3A1/,
         );
+        const combined = new URL(await checkout.getAttribute("href"), base);
+        assert.match(new URLSearchParams(combined.searchParams.get("nextPlan")).get("routine"), /^milk:/);
+        assert.equal(await checkout.count(), 1);
+        const summary = dialog.getByRole("region", { name: "Selected order estimate" });
+        await summary.getByText("One payment for your one-time and scheduled items.").waitFor();
+        const total = summary.getByText("Estimated total").locator("..").locator("strong");
+        const fullTotal = await total.textContent();
+        if (width === 390 && theme === "light") {
+          await summary.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: path.join(output, `${engine}-combined-cart.png`) });
+        }
+        const ghee = dialog.getByRole("checkbox", { name: "Select Farm ghee for checkout" });
+        assert.equal(await ghee.isChecked(), true);
+        await dialog.getByText("Farm ghee", { exact: true }).click();
+        assert.equal(await ghee.isChecked(), false);
+        assert.doesNotMatch(await checkout.getAttribute("href"), /ghee/);
+        assert.match(await checkout.getAttribute("href"), /nextPlan=/);
+        assert.notEqual(await total.textContent(), fullTotal);
+        await dialog.getByText("Farm ghee", { exact: true }).click();
+        assert.equal(await ghee.isChecked(), true);
+        assert.equal(await total.textContent(), fullTotal);
         await dialog
           .getByRole("button", { name: "Increase cart paneer quantity" })
           .click();
         await dialog.getByRole("button", { name: "Remove Farm ghee" }).click();
         assert.match(await checkout.getAttribute("href"), /paneer%3Aonce%3A2/);
         assert.doesNotMatch(await checkout.getAttribute("href"), /ghee/);
+        await dialog.getByText("Fresh paneer", { exact: true }).click();
+        const scheduledOnly = new URL(await checkout.getAttribute("href"), base);
+        assert.equal(scheduledOnly.searchParams.get("purchase"), "plan");
+        assert.equal(scheduledOnly.searchParams.has("nextPlan"), false);
+        await dialog.getByRole("button", { name: "Scheduled (1)", exact: true }).click();
+        const milkRow = dialog.getByRole("checkbox", { name: "Select Farm milk for checkout" }).locator("..");
+        await milkRow.getByText("Farm milk", { exact: true }).click();
+        assert.equal(await dialog.getByRole("button", { name: "Continue to delivery details" }).isDisabled(), true);
+        await milkRow.getByText("Farm milk", { exact: true }).click();
+        await dialog.getByRole("button", { name: "One-time (1)", exact: true }).click();
+        await dialog.getByText("Fresh paneer", { exact: true }).click();
+        assert.match(await checkout.getAttribute("href"), /nextPlan=/);
         await dialog.getByRole("button", { name: "Close cart" }).click();
         await page.goto(base, { waitUntil: "networkidle" });
         await page
@@ -234,7 +267,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           .click();
         assert.equal(
           await dialog
-            .getByRole("link", { name: "Fresh paneer", exact: true })
+            .getByRole("link", { name: "Edit Fresh paneer", exact: true })
             .isVisible(),
           true,
           "cart survives route change and full reload",
@@ -244,6 +277,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
         const next = new URL(page.url()).searchParams.get("next");
         assert.ok(next.startsWith("/order?"));
         assert.match(next, /paneer%3Aonce%3A2/);
+        assert.match(next, /nextPlan=/);
         await page.waitForLoadState("networkidle");
         await page.waitForTimeout(1500);
         await page.evaluate(() =>
