@@ -39,7 +39,7 @@ export const baselineFiles = [
 // Older outcome suites construct historical released-day fixtures incrementally.
 // The routing suite and routing browser journey opt into the new manifest guards
 // and exercise valid preparation/release plus outcome regression on that schema.
-export async function createDatabase({ routingFoundation = false, driverRuns = false } = {}) {
+export async function createDatabase({ routingFoundation = false, driverRuns = false, farmNotifications = false } = {}) {
   const require = createRequire(import.meta.url);
   const binaryRoot = path.resolve(
     path.dirname(
@@ -130,8 +130,10 @@ export async function createDatabase({ routingFoundation = false, driverRuns = f
     await db.query(await readFile(new URL("../../supabase/migrations/20261026111243_retire_welcome_back_discount.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../supabase/migrations/20261026112857_farm_operational_editors.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../docs/verification/dashboard-order-fees.local.sql", import.meta.url), "utf8"));
+    await db.query(await readFile(new URL("../../docs/verification/selected-checkout-batches.local.sql", import.meta.url), "utf8"));
     if (routingFoundation) await db.query(await readFile(new URL("../../supabase/migrations/20261026172231_routing_foundation.sql", import.meta.url), "utf8"));
     if (driverRuns) await db.query(await readFile(new URL("../../supabase/migrations/20261026172251_driver_run_foundation.sql", import.meta.url), "utf8"));
+    if (farmNotifications) await db.query(await readFile(new URL("../../docs/verification/farm-notifications.local.sql", import.meta.url), "utf8"));
   } catch (error) {
     await db.end();
     await server.stop();

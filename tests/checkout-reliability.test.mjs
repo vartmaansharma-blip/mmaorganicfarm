@@ -188,6 +188,31 @@ test('one-time checkout freezes the reviewed bottle mode and amount before conta
   assert.ok(claim.filters.some(([, column, value]) => column === 'bottle_choice' && value === 'return'));
   assert.ok(claim.filters.some(([, column, value]) => column === 'total_paise' && value === 6200));
 });
+
+test('combined checkout creates one gateway order for the latest reviewed total', async () => {
+  const batch = { id: 'batch', user_id: 'user', once_order_id: 'once', plan_order_id: 'plan',
+    amount_paise: 22100, is_test: false, status: 'draft', provider_order_id: null };
+  const events = [], reserved = [], gatewayAmounts = [], commands = [];
+  const admin = client(batch, events, () => ({ data: batch, error: null }));
+  admin.rpc = async (name, args) => { commands.push({ name, args }); return { error: null }; };
+  const { POST } = load('app/api/payments/razorpay/batch/order/route.ts', {
+    'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } },
+    '@/lib/supabase/server': { createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'user', user_metadata: {} } } }) } }) },
+    '@/lib/supabase/admin': { createAdminClient: () => admin, hasSupabaseAdminConfig: () => true },
+    '@/lib/checkout-batch': { quoteCheckoutBatch: async () => ({ amount: 22100, once: {}, planRules: [{ id: 'milk' }] }) },
+    '@/lib/production-capacity': { reserveOrderCapacity: async (id) => { reserved.push(id); } },
+    '@/lib/razorpay': { hasRazorpayConfig: () => true, publicRazorpayKey: () => 'fixture',
+      createRazorpayOrder: async ({ amount }) => { gatewayAmounts.push(amount); return { id: 'order_fixture', amount, currency: 'INR' }; } },
+  }, { RAZORPAY_KEY_ID: 'rzp_live_synthetic', RAZORPAY_LIVE_CHECKOUT_ENABLED: 'true', VERCEL_ENV: 'production' });
+  const pay = (expectedAmountPaise) => POST({ json: async () => ({ batchId: batch.id, termsAccepted: true, expectedAmountPaise }) });
+  assert.equal((await pay(19100)).status, 409);
+  assert.deepEqual(gatewayAmounts, []);
+  assert.equal((await pay(22100)).status, 200);
+  assert.deepEqual(gatewayAmounts, [22100]);
+  assert.deepEqual(reserved, ['once', 'plan']);
+  assert.deepEqual(commands.map(({ name }) => name), ['claim_checkout_batch', 'bind_checkout_batch']);
+  assert.equal(commands[0].args.p_expected_amount_paise, 22100);
+});
 test('uncertain provider outcomes and competing claims stay frozen with capacity retained', async () => {
   for (const input of [{ failure: 'network' }, { failure: 500 }, { failure: 408 }, { failure: 429 }, { claimError: true }, { updateError: true }]) {
     const r = await prepare(input);

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { PullToRefresh } from "./pull-to-refresh";
+import { FarmNotificationCentre } from "./notifications/notification-centre";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import styles from "./farm-shell.module.css";
 let fallbackPreference = false;
@@ -210,6 +211,7 @@ export function FarmWorkspaceShell({
         </div>
         <div className={styles.topbarContext}>
           {staff}
+          {!driver && <FarmNotificationCentre />}
           <div className={styles.themeControl}>
             <ThemeToggle />
           </div>

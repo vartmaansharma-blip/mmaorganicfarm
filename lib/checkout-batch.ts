@@ -48,10 +48,11 @@ export async function quoteCheckoutBatch(client: SupabaseClient, batch: Batch) {
     || once.discount_code || plan.discount_code)
     throw new Error("Selected orders cannot be combined safely.");
   const { data: monthly, error: planError } = await client.from("delivery_plans")
-    .select("id,user_id,status,start_date,billing_model,period_end_exclusive,schedule_rules,scheduled_delivery_items(product_key,delivery_date,quantity)")
+    .select("id,user_id,status,start_date,bottle_choice,billing_model,period_end_exclusive,schedule_rules,scheduled_delivery_items(product_key,delivery_date,quantity)")
     .eq("id", plan.delivery_plan_id).eq("user_id", batch.user_id).single();
   if (planError || !monthly || monthly.billing_model !== "calendar_month"
-    || monthly.status !== "pending_confirmation" || monthly.start_date !== plan.start_date)
+    || monthly.status !== "pending_confirmation" || monthly.start_date !== plan.start_date
+    || monthly.bottle_choice !== plan.bottle_choice)
     throw new Error("The prepaid delivery plan changed.");
   const [oncePrices, planPrices, firstStart] = await Promise.all([
     readOrderProductPrices(client, once.id),

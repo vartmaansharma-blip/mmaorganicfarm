@@ -24,6 +24,7 @@ export default async function BatchSuccess({ searchParams }: {
   if (!batch) redirect("/account");
   const paid = batch.status === "paid";
   const testCaptured = batch.status === "test_captured";
+  const reviewRequired = batch.status === "review_required";
   return <main className={styles.page}>
     {paid ? <CartCheckoutBatchSync batchId={batch.id} paid orders={[
       { id: batch.once_order_id, mode: "once" },
@@ -33,17 +34,19 @@ export default async function BatchSuccess({ searchParams }: {
     <section className={styles.content}>
       <span className={`${styles.mark} ${paid ? batchStyles.paidMark : ""}`} aria-hidden="true">{paid || testCaptured ? "✓" : "…"}</span>
       <p>Step 4 of 4</p>
-      <h1>{testCaptured ? "Test payment status." : paid ? "Payment complete." : "Payment is being confirmed."}</h1>
+      <h1>{testCaptured ? "Test payment status." : paid ? "Payment complete." : reviewRequired ? "Payment needs review." : "Payment is being confirmed."}</h1>
       <p className={styles.intro}>{testCaptured
         ? "This was a simulated payment. No farm deliveries were activated."
         : paid
           ? `We received your payment of ${formatCheckoutAmount(batch.amount_paise)}. Your one-time order and prepaid delivery plan are confirmed.`
-          : "Do not pay again. We will confirm both orders when Razorpay reports the payment as captured."}</p>
+          : reviewRequired
+            ? "We received your payment after an order or plan changed. Contact the farm before paying again."
+            : "Do not pay again. We will confirm both orders when Razorpay reports the payment as captured."}</p>
       <dl>
         <div><dt>One-time order</dt><dd>{batch.once_order_id.slice(0, 8).toUpperCase()}</dd></div>
         <div><dt>Scheduled order</dt><dd>{batch.plan_order_id.slice(0, 8).toUpperCase()}</dd></div>
         <div><dt>Amount</dt><dd>{formatCheckoutAmount(batch.amount_paise)}</dd></div>
-        <div><dt>Status</dt><dd>{testCaptured ? "Test payment recorded" : paid ? "Paid" : "Processing"}</dd></div>
+        <div><dt>Status</dt><dd>{testCaptured ? "Test payment recorded" : paid ? "Paid" : reviewRequired ? "Needs review" : "Processing"}</dd></div>
       </dl>
       <div className={styles.actions}>
         <Link className={styles.primary} href="/account">View profile</Link>

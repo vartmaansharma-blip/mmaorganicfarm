@@ -28,6 +28,7 @@ export function CheckoutPayment({
         {bottleMode && (
           <form action={setMode} className={styles.bottleMode}>
             <input type="hidden" name="order" value={payment.orderId} />
+            {payment.batchId && <input type="hidden" name="batch" value={payment.batchId} />}
             <input type="hidden" name="total" value={payment.amountPaise} />
             <button
               type="submit"

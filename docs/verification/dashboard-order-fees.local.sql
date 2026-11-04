@@ -31,7 +31,7 @@ begin
   return v_revision;
 end;$$;
 
-create function private.set_checkout_bottle_mode(p_order_id uuid, p_mode text, p_expected_total integer)
+create function private.change_checkout_bottle_mode(p_order_id uuid, p_mode text, p_expected_total integer, p_batch_id uuid)
 returns void language plpgsql security definer set search_path='' as $$
 declare
   v_user uuid := auth.uid();
@@ -62,6 +62,13 @@ begin
   if v_order.total_paise is distinct from p_expected_total then
     raise exception 'The bill changed. Review it and try again.';
   end if;
+  if exists (
+    select 1 from public.checkout_batches b
+    where (b.once_order_id = p_order_id or b.plan_order_id = p_order_id)
+      and b.id is distinct from p_batch_id
+  ) then
+    raise exception 'Change bottle mode in the combined checkout.';
+  end if;
   if v_order.bottle_choice=p_mode then return; end if;
 
   v_charge := case when p_mode='new' then round(
@@ -74,6 +81,12 @@ begin
     update public.delivery_plans set bottle_choice=p_mode, updated_at=now() where id=v_plan.id;
   end if;
 end;$$;
+revoke all on function private.change_checkout_bottle_mode(uuid,text,integer,uuid) from public,anon,authenticated,service_role;
+
+create function private.set_checkout_bottle_mode(p_order_id uuid, p_mode text, p_expected_total integer)
+returns void language sql security definer set search_path='' as $$
+  select private.change_checkout_bottle_mode(p_order_id, p_mode, p_expected_total, null);
+$$;
 revoke all on function private.set_checkout_bottle_mode(uuid,text,integer) from public,anon,authenticated,service_role;
 grant execute on function private.set_checkout_bottle_mode(uuid,text,integer) to authenticated;
 

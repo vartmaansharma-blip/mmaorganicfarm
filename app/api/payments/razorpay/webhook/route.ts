@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { recordCapturedPayment } from "@/lib/checkout-server";
 import { getRazorpayPayment, hasRazorpayWebhookConfig, verifyWebhookSignature } from "@/lib/razorpay";
 import { createAdminClient, hasSupabaseAdminConfig } from "@/lib/supabase/admin";
+import { razorpayMode } from "@/lib/payment-mode";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
@@ -40,8 +41,10 @@ export async function POST(request: Request) {
       } else {
         // Leave unknown payments unacknowledged so the provider can retry.
         const { data: batch, error: batchError } = await admin.from("checkout_batches")
-          .select("id,amount_paise").eq("provider_order_id", payment.order_id).maybeSingle();
+          .select("id,amount_paise,is_test").eq("provider_order_id", payment.order_id).maybeSingle();
         if (batchError || !batch) throw new Error("Payment order unavailable");
+        if (razorpayMode() !== (batch.is_test ? "test" : "live"))
+          return NextResponse.json({ error: "Payment verification mode does not match the order." }, { status: 409 });
         const confirmed = await getRazorpayPayment(payment.id);
         if (confirmed.id !== payment.id || confirmed.order_id !== payment.order_id ||
           confirmed.amount !== batch.amount_paise || confirmed.amount !== payment.amount ||

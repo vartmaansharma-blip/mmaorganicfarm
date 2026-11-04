@@ -124,7 +124,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
       if (url.pathname.startsWith("/rest/v1/rpc/")) {
         const fn = url.pathname.split("/").at(-1);
         if (
-          !/^(get_gps_workspace|gps_run_command|store_gps_route_proposal|get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|set_checkout_bottle_mode|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|record_and_apply_driver_milk_skip|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
+          !/^(get_gps_workspace|gps_run_command|store_gps_route_proposal|get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|set_checkout_bottle_mode|set_checkout_batch_bottle_mode|get_farm_notifications|dismiss_farm_notifications|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|record_and_apply_driver_milk_skip|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
             fn,
           ) &&
           !(manualOrders && manualOrderCommands.has(fn) && (service || fn === "refresh_customer_route"))
@@ -257,7 +257,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
     server.listen(port, "127.0.0.1", resolve);
   });
   return {
-    url: `http://127.0.0.1:${port}`,
+    url: `http://127.0.0.1:${server.address().port}`,
     async stop() {
       server.closeAllConnections();
       await new Promise((resolve) => server.close(resolve));

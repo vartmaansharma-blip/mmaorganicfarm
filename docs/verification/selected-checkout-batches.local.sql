@@ -9,7 +9,7 @@ create table public.checkout_batches (
   currency text not null default 'INR' check (currency = 'INR'),
   is_test boolean not null default false,
   status text not null default 'draft'
-    check (status in ('draft', 'preparing', 'pending_payment', 'paid', 'test_captured', 'payment_failed')),
+    check (status in ('draft', 'preparing', 'pending_payment', 'paid', 'test_captured', 'review_required', 'payment_failed')),
   provider_order_id text unique,
   provider_payment_id text unique,
   terms_accepted_at timestamptz,
@@ -61,16 +61,19 @@ create trigger guard_checkout_batch_insert before insert on public.checkout_batc
 create function private.guard_batched_order_provider()
 returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
-  if new.razorpay_order_id is distinct from old.razorpay_order_id
-    and exists (select 1 from public.checkout_batches
-      where once_order_id = new.id or plan_order_id = new.id) then
+  if exists (
+    select 1 from public.checkout_batches b
+    where (b.once_order_id = new.id or b.plan_order_id = new.id)
+      and (new.razorpay_order_id is distinct from old.razorpay_order_id
+        or (old.status = 'draft' and new.status = 'pending_payment' and b.status <> 'preparing'))
+  ) then
     raise exception 'This order belongs to a combined checkout';
   end if;
   return new;
 end;
 $$;
 revoke all on function private.guard_batched_order_provider() from public, anon, authenticated;
-create trigger guard_batched_order_provider before update of razorpay_order_id on public.orders
+create trigger guard_batched_order_provider before update of razorpay_order_id, status on public.orders
   for each row execute function private.guard_batched_order_provider();
 
 -- A captured gateway payment is allocated to each child order. Only the
@@ -100,6 +103,9 @@ begin
     or v_batch.amount_paise <> p_expected_amount_paise then
     raise exception 'Combined checkout is already being prepared or changed';
   end if;
+  perform 1 from public.delivery_plans where id = (
+    select delivery_plan_id from public.orders where id = v_batch.plan_order_id
+  ) for update;
   select * into v_once from public.orders where id = v_batch.once_order_id for update;
   select * into v_plan from public.orders where id = v_batch.plan_order_id for update;
   if v_once.id is null or v_plan.id is null
@@ -114,12 +120,12 @@ begin
     or v_once.total_paise + v_plan.total_paise <> v_batch.amount_paise then
     raise exception 'Combined checkout orders changed';
   end if;
+  update public.checkout_batches set status = 'preparing', updated_at = now()
+    where id = v_batch.id;
   perform public.claim_monthly_checkout_total(
     v_plan.id, p_expected_plan_rules, v_plan.total_paise);
   update public.orders set status = 'pending_payment', updated_at = now()
     where id = v_once.id;
-  update public.checkout_batches set status = 'preparing', updated_at = now()
-    where id = v_batch.id;
 end;
 $$;
 revoke all on function public.claim_checkout_batch(uuid, integer, jsonb)
@@ -187,12 +193,15 @@ create function public.capture_checkout_batch(
   p_provider_payment_id text,
   p_amount_paise integer
 )
-returns void language plpgsql security invoker set search_path = '' as $$
+returns text language plpgsql security invoker set search_path = '' as $$
 declare
   v_batch public.checkout_batches%rowtype;
   v_once public.orders%rowtype;
   v_plan public.orders%rowtype;
   v_paid_at timestamptz := now();
+  v_review boolean;
+  v_plan_status text;
+  v_status text;
 begin
   if current_user not in ('service_role', 'postgres') then
     raise exception 'Service role required' using errcode = '42501';
@@ -204,20 +213,24 @@ begin
     or p_provider_payment_id is null or p_provider_payment_id = '' then
     raise exception 'Combined payment mismatch';
   end if;
-  if v_batch.status in ('paid', 'test_captured') then
-    if v_batch.provider_payment_id = p_provider_payment_id then return; end if;
+  if v_batch.status in ('paid', 'test_captured', 'review_required') then
+    if v_batch.provider_payment_id = p_provider_payment_id then return v_batch.status; end if;
     raise exception 'Combined checkout already captured by another payment';
   end if;
   if v_batch.status <> 'pending_payment' then
     raise exception 'Combined checkout is not awaiting payment';
   end if;
+  select status into v_plan_status from public.delivery_plans where id = (
+    select delivery_plan_id from public.orders where id = v_batch.plan_order_id
+  ) for update;
   select * into v_once from public.orders where id = v_batch.once_order_id for update;
   select * into v_plan from public.orders where id = v_batch.plan_order_id for update;
   if v_once.id is null or v_plan.id is null
     or v_once.user_id is distinct from v_batch.user_id
     or v_plan.user_id is distinct from v_batch.user_id
     or v_once.purchase_mode <> 'once' or v_plan.purchase_mode <> 'plan'
-    or v_once.status <> 'pending_payment' or v_plan.status <> 'pending_payment'
+    or v_once.status not in ('pending_payment','cancelled')
+    or v_plan.status not in ('pending_payment','cancelled')
     or v_once.is_test is distinct from v_batch.is_test
     or v_plan.is_test is distinct from v_batch.is_test
     or v_once.razorpay_order_id is not null or v_plan.razorpay_order_id is not null
@@ -237,7 +250,14 @@ begin
       null, 'captured', v_plan.total_paise, 'INR', true,
       v_batch.is_test, v_batch.id, v_paid_at);
 
-  if not v_batch.is_test then
+  v_review := not v_batch.is_test and (v_once.status = 'cancelled'
+    or v_plan.status = 'cancelled' or v_plan_status is distinct from 'pending_confirmation');
+  if v_review then
+    update public.orders set status = 'cancelled', updated_at = v_paid_at
+      where id in (v_once.id, v_plan.id) and status = 'pending_payment';
+    perform public.release_order_capacity(v_once.id);
+    perform public.release_order_capacity(v_plan.id);
+  elsif not v_batch.is_test then
     update public.orders set status = 'paid', paid_total_paise = total_paise,
       updated_at = v_paid_at where id in (v_once.id, v_plan.id);
     update public.delivery_plans set status = 'active', updated_at = v_paid_at
@@ -253,13 +273,64 @@ begin
       (v_batch.user_id, v_plan.id, 'payment_confirmed', 'Payment confirmed',
         'Your prepaid delivery plan is paid and active.');
   end if;
+  v_status := case when v_batch.is_test then 'test_captured'
+    when v_review then 'review_required' else 'paid' end;
   update public.checkout_batches set
-    status = case when v_batch.is_test then 'test_captured' else 'paid' end,
+    status = v_status,
     provider_payment_id = p_provider_payment_id, paid_at = v_paid_at,
     updated_at = v_paid_at where id = v_batch.id;
+  return v_status;
 end;
 $$;
 revoke all on function public.capture_checkout_batch(uuid, text, text, integer)
   from public, anon, authenticated;
 grant execute on function public.capture_checkout_batch(uuid, text, text, integer)
   to service_role;
+
+-- All milk in a combined checkout shares the customer's bottle choice.
+create function private.set_checkout_batch_bottle_mode(
+  p_batch_id uuid, p_mode text, p_expected_total integer
+)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_batch public.checkout_batches%rowtype;
+  v_order public.orders%rowtype;
+begin
+  select * into v_batch from public.checkout_batches
+    where id = p_batch_id and user_id = auth.uid() for update;
+  if not found or p_mode is null or p_mode not in ('return', 'new')
+    or v_batch.status <> 'draft' or v_batch.provider_order_id is not null
+    or v_batch.amount_paise is distinct from p_expected_total then
+    raise exception 'Combined checkout is unavailable or the bill changed.';
+  end if;
+
+  perform 1 from public.delivery_plans where id = (
+    select delivery_plan_id from public.orders where id = v_batch.plan_order_id
+  ) for update;
+  for v_order in
+    select * from public.orders where id in (v_batch.once_order_id, v_batch.plan_order_id)
+    order by (id = v_batch.plan_order_id) for update
+  loop
+    if v_order.status <> 'draft' or v_order.user_id is distinct from auth.uid() then
+      raise exception 'A selected order is unavailable.';
+    end if;
+    if v_order.milk_litres > 0 then
+      perform private.change_checkout_bottle_mode(v_order.id, p_mode, v_order.total_paise, v_batch.id);
+    end if;
+  end loop;
+
+  update public.checkout_batches set amount_paise = (
+    select sum(total_paise) from public.orders
+      where id in (v_batch.once_order_id, v_batch.plan_order_id)
+  ), updated_at = now() where id = v_batch.id;
+end;
+$$;
+revoke all on function private.set_checkout_batch_bottle_mode(uuid,text,integer) from public,anon,authenticated,service_role;
+grant execute on function private.set_checkout_batch_bottle_mode(uuid,text,integer) to authenticated;
+
+create function public.set_checkout_batch_bottle_mode(p_batch_id uuid, p_mode text, p_expected_total integer)
+returns void language sql security invoker set search_path = '' as $$
+  select private.set_checkout_batch_bottle_mode(p_batch_id, p_mode, p_expected_total);
+$$;
+revoke all on function public.set_checkout_batch_bottle_mode(uuid,text,integer) from public,anon,authenticated,service_role;
+grant execute on function public.set_checkout_batch_bottle_mode(uuid,text,integer) to authenticated;

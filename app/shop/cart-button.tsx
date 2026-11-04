@@ -30,6 +30,7 @@ export function CartButton() {
     selected = selectedShopCart(cart),
     count = cartCount(cart),
     selectedQuote = cartQuote(selected, mode, firstPlanStart, prices),
+    quote = cartQuote(cart, mode, firstPlanStart, prices),
     routines = cartRoutines(cart),
     minimum = nextDeliveryDateInIndia();
   const onceSelected = selectedShopCart(state.carts.once);
@@ -327,7 +328,7 @@ export function CartButton() {
                   href={cartOrderHref(selected, mode)}
                   onClick={() => setCartOpen(false)}
                 >
-                  Checkout selected items <span aria-hidden="true">→</span>
+                  Continue to delivery details <span aria-hidden="true">→</span>
                 </Link>
               ) : (
                 <button className={styles.checkout} type="button" disabled>

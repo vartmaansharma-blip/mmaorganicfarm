@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { quoteCheckoutBatch } from "@/lib/checkout-batch";
-import { paymentModeError, razorpayMode } from "@/lib/payment-mode";
+import { liveCheckoutError, paymentModeError } from "@/lib/payment-mode";
 import { reserveOrderCapacity } from "@/lib/production-capacity";
 import { createRazorpayOrder, getRazorpayOrder, hasRazorpayConfig, publicRazorpayKey, RazorpayRequestError } from "@/lib/razorpay";
 import { createAdminClient, hasSupabaseAdminConfig } from "@/lib/supabase/admin";
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This combined checkout is not available for payment." }, { status: 409 });
   const modeError = paymentModeError(batch.is_test);
   if (modeError) return NextResponse.json({ error: modeError }, { status: 409 });
-  if (razorpayMode() === "live" && process.env.RAZORPAY_LIVE_CHECKOUT_ENABLED !== "true")
-    return NextResponse.json({ error: "Live payments are not enabled yet." }, { status: 503 });
+  const activationError = liveCheckoutError();
+  if (activationError) return NextResponse.json({ error: activationError }, { status: 503 });
   if (body.expectedAmountPaise !== batch.amount_paise)
     return NextResponse.json({ error: "Your total changed. Review it before paying." }, { status: 409 });
 
