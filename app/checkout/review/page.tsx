@@ -178,12 +178,7 @@ export default async function ReviewPage({
             </div>
           </dl>
         </section>
-        <section className={styles.section}>
-          <div className={styles.paymentHeading}>
-            <p>Payment</p>
-            <h2 id="bill-heading">Bill details</h2>
-            <span>See what you’re buying and what each charge covers.</span>
-          </div>
+        <section className={styles.section} aria-labelledby="bill-heading">
           <CheckoutPayment
             amount={formatCheckoutAmount(order.total_paise)}
             amountPaise={order.total_paise}
@@ -194,7 +189,7 @@ export default async function ReviewPage({
             bottleMode={bottleMode}
             bottleLocked={order.status !== "draft"}
           >
-          <div className={styles.bill} role="region" aria-labelledby="bill-heading">
+          <div className={styles.bill}>
             <h3>Your items</h3>
             {items?.length ? (
               <ul className={styles.items}>

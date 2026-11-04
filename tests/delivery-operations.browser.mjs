@@ -721,31 +721,34 @@ try {
        values($1,$2,'milk','Fresh farm milk',1,'litre',6200,6200,'once',$3)`,
       [oneTimeOrder, newUser, tomorrow],
     );
-    await newContext.addInitScript(() => localStorage.setItem("mma-theme", "light"));
+    await newContext.addInitScript(() => {
+      if (!localStorage.getItem("mma-theme")) localStorage.setItem("mma-theme", "light");
+    });
     await newPage.setViewportSize({ width: 320, height: 900 });
     await newPage.goto(`${base}/checkout/review?order=${oneTimeOrder}`, { waitUntil: "networkidle" });
     const bill = newPage.getByRole("region", { name: "Bill details" });
     await bill.getByText("1 L · ₹62 / L", { exact: true }).waitFor();
-    const returnMode = newPage.getByRole("button", { name: "Return bottle", exact: true });
-    const newMode = newPage.getByRole("button", { name: "Do not return bottle", exact: true });
-    assert.equal(await returnMode.getAttribute("aria-pressed"), "true");
+    const bottleSwitch = bill.getByRole("switch", { name: "Keep bottle" });
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
     await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
-    await newMode.click();
+    await bottleSwitch.click();
     await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
-    assert.equal(await newMode.getAttribute("aria-pressed"), "true");
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
     assert.deepEqual(await bill.locator("dd").allTextContents(), ["₹62", "₹10", "₹7.50", "₹4", "₹2", "₹85.50"]);
     await bill.getByText("Preparing and packing your order", { exact: true }).waitFor();
     await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
     await noOverflow(newPage);
-    const paymentSection = newPage.getByRole("heading", { name: "Bill details" }).locator("../..");
-    await paymentSection.screenshot({ path: path.join(output, `${name}-checkout-bill-mobile.png`) });
+    await bill.screenshot({ path: path.join(output, `${name}-checkout-bill-mobile.png`) });
     await newPage.setViewportSize({ width: 1440, height: 900 });
-    await newPage.evaluate(() => document.documentElement.dataset.theme = "dark");
-    await paymentSection.screenshot({ path: path.join(output, `${name}-checkout-bill-dark.png`) });
-    await returnMode.click();
+    await newPage.evaluate(() => localStorage.setItem("mma-theme", "dark"));
+    await newPage.reload({ waitUntil: "networkidle" });
+    assert.equal(await newPage.locator("html").getAttribute("data-theme"), "dark");
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
+    await bill.screenshot({ path: path.join(output, `${name}-checkout-bill-dark.png`) });
+    await bottleSwitch.press("Space");
     await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
     await newPage.reload({ waitUntil: "networkidle" });
-    assert.equal(await returnMode.getAttribute("aria-pressed"), "true");
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
     await newContext.close();
     assert.deepEqual(errors, []);
     results.push({
