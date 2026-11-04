@@ -20,8 +20,8 @@ function loadRazorpay() {
     document.body.appendChild(script);
   });
 }
-export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, unavailableReason, isTest = false }: {
-  amount: string; amountPaise: number; orderId: string; ready: boolean; unavailableReason?: string; isTest?: boolean;
+export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, unavailableReason, isTest = false, updatingBill = false }: {
+  amount: string; amountPaise: number; orderId: string; ready: boolean; unavailableReason?: string; isTest?: boolean; updatingBill?: boolean;
 }) {
   const router = useRouter();
   const [accepted, setAccepted] = useState(false);
@@ -29,7 +29,7 @@ export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, un
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState("");
   async function pay() {
-    if (!accepted || busy || !ready) return;
+    if (!accepted || busy || !ready || updatingBill) return;
     setBusy(true);
     setMessage("");
     try {
@@ -77,11 +77,11 @@ export function RazorpayCheckoutButton({ amount, amountPaise, orderId, ready, un
   }
   return <div className={styles.checkout}>
     {isTest && <p role="status">Test payment only. No delivery will be activated.</p>}
-    <label><input type="checkbox" checked={accepted} disabled={!ready || busy}
+    <label><input type="checkbox" checked={accepted} disabled={!ready || busy || updatingBill}
       onChange={(event) => setAccepted(event.target.checked)} />
       <span>I agree to the <Link href="/terms">Terms</Link> and <Link href="/cancellation-refunds">cancellation policy</Link>.</span>
     </label>
-    <button className={styles.payButton} aria-busy={busy} type="button" disabled={!accepted || busy || !ready} onClick={pay}>
+    <button className={styles.payButton} aria-busy={busy || updatingBill} type="button" disabled={!accepted || busy || !ready || updatingBill} onClick={pay}>
       {confirming ? "Checking payment status…" : busy ? "Opening secure payment…" : isTest ? `Test payment ${amount}` : `Pay ${amount}`}
     </button>
     {!ready && <p className={styles.setup}>{unavailableReason ?? "Online payment is not enabled yet."}</p>}

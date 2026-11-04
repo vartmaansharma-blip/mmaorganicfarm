@@ -652,10 +652,7 @@ test("provides a separate mobile-first farm product and plan page", async () => 
   assert.doesNotMatch(builder, /Choose one bottle option/);
   assert.match(builder, /returnable or new glass bottles/);
   assert.match(builder, /30-delivery total/);
-  assert.match(order, /Bottle for this delivery/);
-  assert.match(order, /I will return a bottle/);
-  assert.match(order, /I need new bottles/);
-  assert.match(order, /prices\.milk \+ prices\.bottle/);
+  assert.doesNotMatch(order, /Bottle for this delivery|I will return a bottle|I need new bottles/);
   assert.match(builder, /Choose what comes home/);
   assert.match(builder, /selection \? "Remove" : "Add \+"/);
   assert.match(builder, /First delivery/);

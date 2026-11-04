@@ -119,16 +119,16 @@ test('test keys cannot record a live customer payment', async () => {
   await assert.rejects(() => recordCapturedPayment({ amount: 6200, currency: 'INR' }), /does not match/);
   assert.equal(events.some(e => e.op !== 'select'), false);
 });
-async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, expectedAmount = null } = {}) {
+async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, expectedAmount = null, purchaseMode = 'plan' } = {}) {
   const events = []; let providerAmount; let providerCalls = 0, released = 0, reserved = 0;
-  const order = { id: 'synthetic', user_id: 'user', status: 'draft', purchase_mode: 'plan', delivery_plan_id: 'plan', start_date: '2026-10-26', total_paise: coupon ? 5890 : 6200, subtotal_paise: 6200, discount_code: coupon ? 'MMA-ABCDEF1234567890' : null, discount_paise: coupon ? 310 : 0, is_test: isTest, razorpay_order_id: providerId };
+  const order = { id: 'synthetic', user_id: 'user', status: 'draft', bottle_choice: 'return', purchase_mode: purchaseMode, delivery_plan_id: purchaseMode === 'plan' ? 'plan' : null, start_date: '2026-10-26', total_paise: coupon ? 5890 : 6200, subtotal_paise: 6200, discount_code: coupon ? 'MMA-ABCDEF1234567890' : null, discount_paise: coupon ? 310 : 0, is_test: isTest, razorpay_order_id: providerId };
   const userClient = client(order, events, q => {
     if (q.table === 'orders') return { data: order };
     if (q.table === 'order_items') return { data: [{ product_key: 'milk', quantity: 1, unit_price_paise: 6200, line_total_paise: 6200 }] };
     return { data: { billing_model: 'calendar_month', start_date: order.start_date, schedule_rules: [{ id: 'milk' }], scheduled_delivery_items: [] } };
   });
   userClient.auth = { getUser: async () => ({ data: { user: { id: 'user', user_metadata: {} } } }) };
-  const admin = client(order, events, q => ({ data: { id: order.id, razorpay_order_id: reboundProviderId ?? providerId }, error: updateError && q.payload?.razorpay_order_id ? { message: 'unavailable' } : null }));
+  const admin = client(order, events, q => ({ data: claimError && purchaseMode === 'once' && q.payload?.status === 'pending_payment' ? null : { id: order.id, razorpay_order_id: reboundProviderId ?? providerId }, error: updateError && q.payload?.razorpay_order_id ? { message: 'unavailable' } : null }));
   admin.rpc = async () => ({ error: claimError ? { message: 'already claimed' } : null });
   const { RazorpayRequestError } = load('lib/razorpay.ts');
   const { POST } = load('app/api/payments/razorpay/order/route.ts', {
@@ -153,6 +153,17 @@ test('monthly provider rejection resets only its own unbound claim and releases 
   const reset = r.events.find(e => e.op === 'update' && e.payload.status === 'draft');
   assert.ok(reset.filters.some(f => f[1] === 'status' && f[2] === 'pending_payment'));
   assert.ok(reset.filters.some(f => f[0] === 'is' && f[1] === 'razorpay_order_id' && f[2] === null));
+});
+test('one-time checkout freezes the reviewed bottle mode and amount before contacting Razorpay', async () => {
+  const stale = await prepare({ purchaseMode: 'once', claimError: true });
+  assert.equal(stale.result.status, 409);
+  assert.equal(stale.providerCalls, 0);
+  assert.equal(stale.reserved, 0);
+  const successful = await prepare({ purchaseMode: 'once' });
+  assert.equal(successful.result.status, 200);
+  const claim = successful.events.find(event => event.op === 'update' && !event.payload.razorpay_order_id);
+  assert.ok(claim.filters.some(([, column, value]) => column === 'bottle_choice' && value === 'return'));
+  assert.ok(claim.filters.some(([, column, value]) => column === 'total_paise' && value === 6200));
 });
 test('uncertain provider outcomes and competing claims stay frozen with capacity retained', async () => {
   for (const input of [{ failure: 'network' }, { failure: 500 }, { failure: 408 }, { failure: 429 }, { claimError: true }, { updateError: true }]) {

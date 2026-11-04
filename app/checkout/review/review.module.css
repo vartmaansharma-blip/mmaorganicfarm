@@ -76,15 +76,55 @@
   color: var(--ui-muted);
   font-size: 11px;
 }
+.bottleMode { margin-top: 18px; }
+.bottleMode fieldset { margin: 0; padding: 0; border: 0; min-inline-size: 0; }
+.bottleMode legend { margin-bottom: 6px; padding: 0; font-size: 13px; font-weight: 650; }
+.bottleMode fieldset > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 390px;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-field);
+  background: var(--ui-surface);
+}
+.bottleMode button {
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ui-text);
+  font: 600 13px/1.25 var(--font-sans);
+  cursor: pointer;
+}
+.bottleMode button[aria-pressed="true"] {
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+}
+.bottleMode button:disabled { cursor: default; }
+.bill {
+  margin-top: 18px;
+  padding: clamp(14px, 4vw, 26px);
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  background: var(--ui-surface);
+}
+.bill h3 {
+  margin: 0;
+  font: 650 15px/1.4 var(--font-sans);
+}
 .items {
-  margin-top: 22px;
-  border-top: 1px solid var(--ui-border);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .item {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
-  padding: 18px 0;
+  gap: 12px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--ui-border);
 }
 .item > div {
@@ -101,6 +141,8 @@
 }
 .item b {
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .totals,
 .delivery {
@@ -114,6 +156,18 @@
   justify-content: space-between;
   gap: 20px;
 }
+.totals div { gap: 12px; }
+.totals dt { font-size: 14px; }
+.totals dt small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.totals dd { white-space: nowrap; }
+.subtotal { font-weight: 650; }
 .totals dt,
 .totals dd,
 .delivery dt,
@@ -126,6 +180,7 @@
   font-size: 17px;
   font-weight: 750;
 }
+.total dt { font-size: inherit; }
 .delivery dt {
   color: var(--ui-muted);
 }

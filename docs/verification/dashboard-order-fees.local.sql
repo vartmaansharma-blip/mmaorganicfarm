@@ -30,3 +30,56 @@ begin
     values(auth.uid(),'catalogue','farm','update_prices',btrim(p_reason),v_catalog.prices,p_prices);
   return v_revision;
 end;$$;
+
+create function private.set_checkout_bottle_mode(p_order_id uuid, p_mode text, p_expected_total integer)
+returns void language plpgsql security definer set search_path='' as $$
+declare
+  v_user uuid := auth.uid();
+  v_order public.orders%rowtype;
+  v_plan public.delivery_plans%rowtype;
+  v_charge integer;
+begin
+  if v_user is null or p_mode is null or p_mode not in ('return','new') then
+    raise exception 'Choose a valid bottle mode.' using errcode='42501';
+  end if;
+
+  select * into v_order from public.orders where id=p_order_id and user_id=v_user;
+  if not found then raise exception 'Order unavailable.' using errcode='42501'; end if;
+  if v_order.delivery_plan_id is not null then
+    -- Match monthly checkout and plan edits by locking the plan before the order.
+    select * into v_plan from public.delivery_plans
+      where id=v_order.delivery_plan_id and user_id=v_user for update;
+  end if;
+  select * into v_order from public.orders where id=p_order_id and user_id=v_user for update;
+  if not found or v_order.status<>'draft' or v_order.razorpay_order_id is not null
+     or v_order.terms_accepted_at is not null or v_order.purchase_mode not in ('once','plan')
+     or v_order.milk_litres <= 0 or v_order.bottle_choice not in ('new','return')
+     or v_order.discount_paise <> 0 or v_order.discount_code is not null
+     or (v_order.purchase_mode='plan' and (v_plan.id is null or v_plan.status<>'pending_confirmation'
+         or v_plan.start_date is distinct from v_order.start_date)) then
+    raise exception 'This order cannot change bottle mode.';
+  end if;
+  if v_order.total_paise is distinct from p_expected_total then
+    raise exception 'The bill changed. Review it and try again.';
+  end if;
+  if v_order.bottle_choice=p_mode then return; end if;
+
+  v_charge := case when p_mode='new' then round(
+    v_order.milk_litres * (private.order_product_prices(p_order_id)->>'bottle')::integer
+  )::integer else 0 end;
+  update public.orders set bottle_choice=p_mode, bottle_charge_paise=v_charge,
+    total_paise=v_order.total_paise-v_order.bottle_charge_paise+v_charge, updated_at=now()
+    where id=v_order.id;
+  if v_plan.id is not null then
+    update public.delivery_plans set bottle_choice=p_mode, updated_at=now() where id=v_plan.id;
+  end if;
+end;$$;
+revoke all on function private.set_checkout_bottle_mode(uuid,text,integer) from public,anon,authenticated,service_role;
+grant execute on function private.set_checkout_bottle_mode(uuid,text,integer) to authenticated;
+
+create function public.set_checkout_bottle_mode(p_order_id uuid, p_mode text, p_expected_total integer)
+returns void language sql security invoker set search_path='' as $$
+  select private.set_checkout_bottle_mode(p_order_id, p_mode, p_expected_total);
+$$;
+revoke all on function public.set_checkout_bottle_mode(uuid,text,integer) from public,anon,authenticated,service_role;
+grant execute on function public.set_checkout_bottle_mode(uuid,text,integer) to authenticated;
