@@ -83,7 +83,7 @@ function client(order, events, respond = () => ({})) {
   return { from(table) {
     const q = { table, op: 'select', payload: null, filters: [] };
     const chain = {};
-    for (const op of ['select','update','upsert','insert','eq','is']) chain[op] = (...args) => {
+    for (const op of ['select','update','upsert','insert','eq','is','limit']) chain[op] = (...args) => {
       if (['update','upsert','insert'].includes(op)) { q.op = op; q.payload = args[0]; }
       if (['eq','is'].includes(op)) q.filters.push([op, ...args]);
       return chain;
@@ -94,6 +94,29 @@ function client(order, events, respond = () => ({})) {
     return chain;
   } };
 }
+test('payment confirmation distinguishes verified, pending and test payments', async () => {
+  const { renderToStaticMarkup } = nativeRequire('react-dom/server');
+  for (const scenario of [
+    { status: 'paid', is_test: false, heading: 'Payment complete.', amount: '₹60' },
+    { status: 'pending_payment', is_test: false, heading: 'Payment is being confirmed.', amount: '₹62' },
+    { status: 'paid', is_test: true, heading: 'Test payment status.', amount: '₹62' },
+  ]) {
+    const order = { id: 'synthetic-order', purchase_mode: 'once', total_paise: 6200, paid_total_paise: 6000, ...scenario };
+    const supabase = client(order, [], query => ({ data: query.table === 'orders' ? order : [{ status: 'captured' }] }));
+    supabase.auth = { getUser: async () => ({ data: { user: { id: 'user' } } }) };
+    const { default: Success } = load('app/checkout/success/page.tsx', {
+      '@/lib/supabase/server': { createClient: async () => supabase },
+      '@/app/shop/cart-checkout-sync': { CartCheckoutSync: () => null },
+      '@/app/components/page-navigation-controls': { PageNavigationControls: () => null },
+      'next/image': { default: () => null },
+      'next/link': { default: ({ children }) => children },
+    });
+    const html = renderToStaticMarkup(await Success({ searchParams: Promise.resolve({ order: order.id }) }));
+    assert.ok(html.includes(`<h1>${scenario.heading}</h1>`));
+    assert.ok(html.includes(`<dd>${scenario.amount}</dd>`));
+    assert.equal(html.includes('was received'), scenario.status === 'paid' && !scenario.is_test);
+  }
+});
 test('captured test payments are tagged and never activate plans, fulfilment, capacity or notifications', async () => {
   const events = []; let recorded;
   const order = { id: 'synthetic', user_id: 'user', delivery_plan_id: 'plan', purchase_mode: 'plan', total_paise: 6200, is_test: true };
