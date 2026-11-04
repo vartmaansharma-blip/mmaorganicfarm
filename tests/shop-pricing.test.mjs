@@ -586,3 +586,47 @@ test("a monthly edited-price invoice verifies against its own immutable catalogu
   assert.equal(quoteStoredMonthlyCheckout(invoice,'return',stored,dates,start,prices).total,q.total);
   assert.throws(()=>quoteStoredMonthlyCheckout(invoice,'return',stored,dates,start),/invoice changed/);
 });
+
+const { manualMonthlyRoutines } = load("lib/manual-monthly-order.ts");
+
+test("manual monthly payment quotes independent paneer and ghee dates without requiring milk", () => {
+  const start = "2026-11-07";
+  const emptyMilk = [0, 0, 0, 0, 0, 0, 0];
+  const extras = [
+    { id: "paneer", quantity: 2, repeat: "weekly", firstDate: start },
+    { id: "ghee", quantity: 1, repeat: "fortnightly", firstDate: "2026-11-09" },
+  ];
+  const rules = manualMonthlyRoutines(start, emptyMilk, extras);
+  const quote = quoteMonthlySchedule({ start, rules, bottleChoice: "none" });
+  assert.deepEqual(quote.quantities, { milk: 0, paneer: 10, ghee: 2 });
+  assert.deepEqual(quote.days.slice(0, 2), [
+    { date: start, items: [{ id: "paneer", quantity: 2 }] },
+    { date: "2026-11-09", items: [{ id: "ghee", quantity: 1 }] },
+  ]);
+  assert.equal(quote.bottleCharge, 0);
+  assert.equal(manualMonthlyRoutines(start, emptyMilk, [{ ...extras[0], firstDate: "2026-12-07" }]), null);
+});
+
+test("delivery quantities distinguish a count of packs from the pack size", () => {
+  const { formatDeliveryQuantity } = load("lib/delivery-calendar.ts");
+  assert.equal(formatDeliveryQuantity("2", "500 g"), "2 × 500 g");
+  assert.equal(formatDeliveryQuantity(1, "500 g"), "1 × 500 g");
+  assert.equal(formatDeliveryQuantity(2, "1 kg"), "2 × 1 kg");
+  assert.equal(formatDeliveryQuantity(1, "litre"), "1 litre");
+  assert.equal(formatDeliveryQuantity(5, "litre"), "5 litres");
+});
+
+test("farm-recorded products support independent weekdays and exact dates", () => {
+  const start = "2026-11-07";
+  const milk = [0, 0, 0, 0, 0, 0, 0];
+  const paneer = { id: "paneer", quantity: 2, repeat: "days", firstDate: start, weekdays: [1, 5] };
+  const ghee = { id: "ghee", quantity: 1, repeat: "custom", firstDate: "", dates: ["2026-11-23", "2026-11-11"] };
+  const rules = manualMonthlyRoutines(start, milk, [paneer, ghee]);
+  const quote = quoteMonthlySchedule({ start, rules, bottleChoice: "none" });
+  assert.deepEqual(quote.days.filter((day) => day.items.some((item) => item.id === "ghee")).map((day) => day.date), ["2026-11-11", "2026-11-23"]);
+  assert.ok(quote.days.filter((day) => day.items.some((item) => item.id === "paneer")).every(({ date }) =>
+    [1, 5].includes(new Date(date).getUTCDay()),
+  ));
+  assert.equal(manualMonthlyRoutines(start, milk, [{ ...ghee, dates: ["2026-12-07"] }]), null);
+  assert.equal(manualMonthlyRoutines(start, milk, [{ ...paneer, weekdays: [1, 1] }]), null);
+});

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
-import { formatCalendarDate } from "@/lib/delivery-calendar";
+import { formatCalendarDate, nextDeliveryDateInIndia, todayInIndia } from "@/lib/delivery-calendar";
 import { CustomerRequestReviewForm } from "../customer-request-forms";
 import styles from "../operations-list.module.css";
 export async function SpokenRequests({ history }: { history: boolean }) {
   const { supabase } = await requireFarmManager("/farm/cancellations");
-  const { data, error } = await supabase
+  const today = todayInIndia();
+  const tomorrow = nextDeliveryDateInIndia();
+  const requests = supabase
     .from("delivery_customer_requests")
     .select(
       "id,user_id,kind,requested_date,source_date,customer_words,status,decision_note,recorded_by,created_at",
@@ -13,8 +15,10 @@ export async function SpokenRequests({ history }: { history: boolean }) {
     .in(
       "status",
       history ? ["approved", "declined"] : ["requested", "follow_up"],
-    )
-    .order("created_at", { ascending: !history })
+    );
+  const { data, error } = await (history
+    ? requests.order("created_at", { ascending: false })
+    : requests.order("requested_date").order("created_at"))
     .limit(100);
   if (error) throw error;
   const ids = [
@@ -39,7 +43,7 @@ export async function SpokenRequests({ history }: { history: boolean }) {
       <p>
         {history
           ? "Latest 100 completed decisions."
-          : "Oldest 100 open requests first. A saved request does not change the plan until approved."}
+          : "Up to 100 open requests, ordered by the requested delivery date."}
       </p>
       {(data ?? []).map((r) => (
         <article key={r.id}>
@@ -55,7 +59,12 @@ export async function SpokenRequests({ history }: { history: boolean }) {
                 · {formatCalendarDate(r.requested_date)}
               </span>
             </div>
-            <b>{r.status.replaceAll("_", " ")}</b>
+            <b>
+              {!history && r.requested_date < today
+                ? "Date passed · "
+                : !history && r.requested_date <= tomorrow ? "Due soon · " : ""}
+              {r.status.replaceAll("_", " ")}
+            </b>
           </div>
           <p>“{r.customer_words}”</p>
           <small>

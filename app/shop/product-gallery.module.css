@@ -1,5 +1,5 @@
 .gallery { position: sticky; top: 140px; min-width: 0; display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: start; gap: 14px; }
-.frame { position: relative; grid-column: 2; grid-row: 1; width: 100%; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 12px; background: #b9a98f; touch-action: pan-y; }
+.frame { position: relative; grid-column: 2; grid-row: 1; width: 100%; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 12px; background: var(--color-surface-hover); touch-action: pan-y; }
 .photograph { position: absolute; inset: 0; opacity: 0; transform: translateX(2%) scale(1.025); transition: opacity 850ms ease, transform 1200ms cubic-bezier(.22, 1, .36, 1); pointer-events: none; }
 .photograph[data-current="true"] { opacity: 1; transform: translateX(0) scale(1); z-index: 1; }
 .photograph img { object-fit: contain; }

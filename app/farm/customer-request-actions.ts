@@ -24,7 +24,7 @@ export async function recordCustomerRequest(
   _state: OperationState | null,
   form: FormData,
 ): Promise<OperationState> {
-  const { supabase } = await requireFarmStaff("/farm/delivery-sheet");
+  const { role, supabase } = await requireFarmStaff("/farm/delivery-sheet");
   const date = validOperationalDate(value(form, "requestedDate"));
   if (
     !date ||
@@ -36,19 +36,24 @@ export async function recordCustomerRequest(
       error: "Refresh this stop and choose the requested service date.",
     };
   try {
-    const { error } = await supabase.rpc("record_driver_customer_request", {
+    const kind = value(form, "kind");
+    const args = {
       p_delivery_id: value(form, "deliveryId"),
       p_requested_date: date,
-      p_kind: value(form, "kind"),
       p_words: value(form, "words"),
       p_key: value(form, "requestKey"),
-    });
+    };
+    const { data, error } = role === "driver" && kind === "skip_milk" &&
+      process.env.FARM_DRIVER_MILK_SKIP_AUTHORITY === "true"
+      ? await supabase.rpc("record_and_apply_driver_milk_skip", args)
+      : await supabase.rpc("record_driver_customer_request", { ...args, p_kind: kind });
     if (error) return { ok: false, error: error.message };
     refresh();
     return {
       ok: true,
-      message:
-        "Request saved — awaiting manager approval. Today’s delivery is unchanged.",
+      message: data?.status === "approved"
+        ? "Milk skip confirmed for the requested date. Today’s delivery is unchanged."
+        : "Request saved and sent to the farm for review. Today’s delivery is unchanged.",
     };
   } catch {
     return {

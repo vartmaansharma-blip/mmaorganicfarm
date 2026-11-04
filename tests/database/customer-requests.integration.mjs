@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { createDatabase, callAs } from "./runtime.mjs";
 const runtime = await createDatabase();
@@ -307,6 +308,45 @@ try {
       ).rows[0].n,
       0,
     );
+  });
+  await test("assigned driver applies an eligible milk skip and queues a released date", async () => {
+    await db.query(await readFile(new URL("../../docs/verification/driver-milk-skip-authority.local.sql", import.meta.url), "utf8"));
+    await db.query("select set_config('test.customer_request_clock',$1,false)", [today]);
+    await db.query("update farm_staff set active=true where user_id=$1", [driver]);
+    const dates = (await db.query(
+      "select ($1::date+7)::text as editable,($1::date+14)::text as locked",
+      [tomorrow],
+    )).rows[0];
+    await callAs(db, manager, "select generate_daily_deliveries($1)", [dates.editable]);
+    const command = "select record_and_apply_driver_milk_skip($1,$2,$3,$4) result";
+    const key = randomUUID();
+    const args = [delivery, dates.editable, "Customer confirmed no milk on this date", key];
+    await assert.rejects(callAs(db, other, command, args), /assigned/);
+    await assert.rejects(callAs(db, manager, command, args), /Driver access/);
+    const applied = (await callAs(db, driver, command, args)).rows[0].result;
+    assert.equal(applied.status, "approved");
+    assert.equal((await callAs(db, driver, command, args)).rows[0].result.reused, true);
+    const draftItems = (await db.query(
+      "select i.product_key from daily_delivery_items i join daily_deliveries d on d.id=i.delivery_id where d.plan_id=$1 and d.delivery_date=$2",
+      [plan, dates.editable],
+    )).rows;
+    assert.deepEqual(draftItems, [{ product_key: "paneer" }]);
+    assert.equal((await db.query(
+      "select count(*)::int n from delivery_operation_events where actor_id=$1 and action='customer_request_reviewed' and delivery_date=$2",
+      [driver, dates.editable],
+    )).rows[0].n, 1);
+
+    await db.query(
+      "insert into delivery_dispatches(delivery_date,status,prepared_by,released_by,released_at) values($1,'released',$2,$2,now())",
+      [dates.locked, manager],
+    );
+    const queued = (await callAs(db, driver, command, [delivery, dates.locked, args[2], randomUUID()])).rows[0].result;
+    assert.equal(queued.status, "requested");
+    assert.equal((await db.query(
+      "select count(*)::int n from delivery_exceptions where plan_id=$1 and delivery_date=$2",
+      [plan, dates.locked],
+    )).rows[0].n, 0);
+    assert.equal((await db.query("select delivered_deliveries from delivery_plans where id=$1", [plan])).rows[0].delivered_deliveries, 0);
   });
 } finally {
   await runtime.stop();

@@ -1,3 +1,4 @@
+import { orderedPendingStops, type GpsWorkspace } from "@/lib/gps-routing";
 import {
   deliveryNavigationUrl,
   hasConfirmedDestination,
@@ -52,9 +53,39 @@ export async function DriverDay({
   outcomes: Map<string, string>;
   recorded: Set<string>;
 }) {
-  const stops = routes.flatMap((route) =>
-    route.stops.map((stop) => ({ ...stop, routeName: route.name })),
+  const { supabase } = await requireFarmStaff("/farm/delivery-sheet");
+  const { data: gps, error: gpsError } = await supabase.rpc(
+    "get_gps_workspace",
+    { p_date: date },
   );
+  if (
+    gpsError &&
+    (!["PGRST202", "42883"].includes(gpsError.code) ||
+      !/get_gps_workspace/.test(gpsError.message))
+  )
+    throw gpsError;
+  const gpsRuns = (gps as GpsWorkspace | null)?.runs ?? [];
+  const stops = routes.flatMap((group) => {
+    const gpsRun = gpsRuns.find(
+      (run) =>
+        run.route_name === group.name && (!route || run.route_id === route),
+    );
+    const ranking = new Map(
+      gpsRun
+        ? orderedPendingStops(gpsRun).map((stop, index) => [
+            stop.visit_key,
+            index,
+          ])
+        : [],
+    );
+    return group.stops
+      .map((stop) => ({ ...stop, routeName: group.name }))
+      .sort(
+        (a, b) =>
+          (ranking.get(a.visit_key) ?? Infinity) -
+          (ranking.get(b.visit_key) ?? Infinity),
+      );
+  });
   const isRecorded = (stop: Stop) =>
     recorded.has(stop.visit_key) || stop.status === "delivered";
   const pending = stops.filter(
@@ -63,7 +94,6 @@ export async function DriverDay({
   const current =
     stops.find((stop) => stop.id === selected) ?? pending[0] ?? stops[0];
   const next = pending.find((stop) => stop.id !== current?.id);
-  const { supabase } = await requireFarmStaff("/farm/delivery-sheet");
   const requests = current
     ? await supabase
         .from("delivery_customer_requests")
@@ -84,6 +114,15 @@ export async function DriverDay({
       >
         ← My delivery run
       </Link>
+      {gpsRuns.some((run) => run.accepted) ? (
+        <Link
+          prefetch={false}
+          className={styles.runBack}
+          href={`/farm/gps?date=${date}`}
+        >
+          ← GPS route and next stop
+        </Link>
+      ) : null}
       <header className={styles.header}>
         <div>
           <p>Delivery staff</p>

@@ -1,3 +1,4 @@
+import { databaseErrorMessage } from "@/lib/database-errors";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import { PlanBuilderStartTracking } from "@/app/components/landing-conversion-tracking";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
@@ -38,26 +39,27 @@ export default async function MilkPage({ searchParams }: MilkPageProps) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/sign-in?next=%2Fmilk");
+    redirect("/sign-in?next=%2Fmilk%3Fedit%3Dplan");
   }
+
+  const { data: savedPlan, error: planError } = await supabase
+    .from("delivery_plans")
+    .select(
+      "id, status, start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity), scheduled_delivery_items(delivery_date, product_key, quantity)",
+    )
+    .eq("user_id", user.id)
+    .in("status", ["pending_confirmation", "active", "paused"])
+    .eq("billing_model", "milk_credits")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (planError) throw new Error(databaseErrorMessage(planError, "We could not load your saved plan. Please try again."));
+  if (!savedPlan) redirect("/account?section=deliveries");
+  if (savedPlan.status !== "pending_confirmation") redirect(`/calendar?plan=${savedPlan.id}`);
 
   const { prices } = await readProductCatalogue();
   const firstPlanStart = await firstScheduledPlanStart(supabase, user.id);
-  const isEditing = params.edit === "plan";
-  const { data: savedPlan } = isEditing
-    ? await supabase
-        .from("delivery_plans")
-        .select(
-          "start_date, bottle_choice, weekly_delivery_items(day_of_week, product_key, quantity), scheduled_delivery_items(delivery_date, product_key, quantity)",
-        )
-        .eq("user_id", user.id)
-        .in("status", ["pending_confirmation", "active", "paused"])
-        .eq("billing_model", "milk_credits")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
-
   const savedMilkByDay = new Map(
     (savedPlan?.weekly_delivery_items ?? [])
       .filter((item) => item.product_key === "milk")

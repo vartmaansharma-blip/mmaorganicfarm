@@ -1,10 +1,8 @@
+import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: "Contact M'ma Organic Farm for fresh farm delivery in Jamshedpur.",
-};
+export const metadata: Metadata = publicMetadata("/contact", "Contact", "Contact M'ma Organic Farm for fresh farm delivery in Jamshedpur.");
 
 export default function ContactPage() {
   return (

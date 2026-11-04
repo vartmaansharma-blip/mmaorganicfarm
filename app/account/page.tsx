@@ -10,13 +10,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
-import { buildDeliveryCalendar, productName, todayInIndia } from "@/lib/delivery-calendar";
+import { buildDeliveryCalendar, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { createClient } from "@/lib/supabase/server";
 import {
   markNotificationsRead,
-  saveCustomerDeliveryDetails,
+  saveAccountDeliveryDetails,
   signOut,
 } from "./actions";
 import styles from "./account.module.css";
@@ -35,7 +35,7 @@ export default async function AccountPage({
   searchParams: Promise<{ error?: string; message?: string; section?: string; plan?: string; order_view?: string; order_page?: string }>;
 }) {
   const params = await searchParams;
-  const requestedSection = params.section === "plans" ? "plans" : params.section;
+  const requestedSection = params.section === "deliveries" ? "plans" : params.section;
   const section: AccountSection = accountSections.includes(requestedSection as AccountSection) ? requestedSection as AccountSection : "today";
   const orderView = params.order_view === "pending" || params.order_view === "other" ? params.order_view : "paid";
   const requestedPage = Number(params.order_page ?? "1");
@@ -113,6 +113,8 @@ export default async function AccountPage({
     (identity) => identity.provider === "google",
   );
   const hasAddress = Boolean(profile?.address_line?.trim());
+  const hasPhone = Boolean(profile?.phone?.trim());
+  const hasDeliveryDetails = hasPhone || hasAddress;
   const pinResult = section === "settings" && profile?.address_line
     ? await supabase.from("customer_delivery_pins").select("latitude,longitude,accuracy_metres").eq("user_id",user.id).maybeSingle()
     : { data: null, error: null };
@@ -275,15 +277,47 @@ export default async function AccountPage({
             </span>
           </div>
 
-          <form action={saveCustomerDeliveryDetails} className={styles.deliveryDetailsForm}>
-            <h3>Delivery details</h3>
-            <p className={styles.formHelp}>Use the address where you want your farm orders delivered.</p>
-            <label>Mobile number<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required minLength={10} defaultValue={profile?.phone ?? ""} placeholder="10-digit mobile number" /></label>
-            <label>Delivery address<textarea name="address" rows={3} autoComplete="street-address" required maxLength={300} defaultValue={profile?.address_line ?? ""} placeholder="House, street, area and landmark" /></label>
-            <label>PIN code <span>(optional)</span><input name="postal_code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="postal-code" defaultValue={profile?.postal_code ?? ""} placeholder="6-digit PIN" /></label>
-            <p className={styles.formHelp}>Updates to an already dispatched delivery require farm confirmation.</p>
-            <button type="submit">Save delivery details</button>
-          </form>
+          {hasDeliveryDetails ? (
+            <dl className={styles.details}>
+              {hasPhone ? (
+                <div>
+                  <dt>Phone</dt>
+                  <dd>{profile?.phone}</dd>
+                </div>
+              ) : null}
+              {hasAddress ? (
+                <div>
+                  <dt>Delivery address</dt>
+                  <dd>
+                    {[profile?.address_line, profile?.postal_code]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+
+          <details className={styles.deliveryDetailsEditor}>
+            <summary className={styles.editDetails}>
+              {hasDeliveryDetails ? "Update delivery details" : "Add delivery details"}
+            </summary>
+            <form action={saveAccountDeliveryDetails}>
+              <label>Mobile number
+                <input name="phone" type="tel" autoComplete="tel" defaultValue={profile?.phone ?? ""} required />
+              </label>
+              <div>
+                <label htmlFor="account-delivery-address">Delivery address</label>
+                <textarea id="account-delivery-address" name="address" autoComplete="street-address" rows={3}
+                  minLength={8} maxLength={500} defaultValue={profile?.address_line ?? ""} required />
+              </div>
+              <label>PIN code
+                <input name="postalCode" inputMode="numeric" autoComplete="postal-code"
+                  pattern="[0-9]{6}" maxLength={6} defaultValue={profile?.postal_code ?? ""} />
+              </label>
+              <button className={styles.editDetails} type="submit">Save delivery details</button>
+            </form>
+          </details>
         </section>
 
         {profile?.address_line ? <DeliveryPin key={`${profile.address_line}:${profile.updated_at}`} address={profile.address_line} saved={pinResult.data} available={!pinResult.error} /> : null}
@@ -395,9 +429,9 @@ export default async function AccountPage({
               >
                 Open delivery calendar
               </Link>
-              <Link className={styles.editPlan} href="/milk?edit=plan">
-                Edit normal week
-              </Link>
+              {deliveryPlan.status === "pending_confirmation" ? (
+                <Link className={styles.editPlan} href="/milk?edit=plan">Edit draft schedule</Link>
+              ) : null}
             </div>
 
 
@@ -424,7 +458,7 @@ export default async function AccountPage({
           {plansError ? <p className={styles.noticeError}>We couldn’t load your schedule. Please refresh to try again.</p> : null}
           {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=schedule&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly" : "Weekly"} plan {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
           {deliveryPlan?.status === "pending_confirmation" ? <div className={styles.emptyPanel}><h2>Plan awaiting confirmation.</h2><p>We’ll show your confirmed delivery dates here once payment and the plan are verified.</p><Link className={styles.startOrder} href="/account?section=orders&order_view=pending">Check payments</Link></div> : deliveryPlan ? <section className={styles.scheduleSurface} aria-label="Upcoming delivery schedule">
-          
+
             <div className={styles.scheduleActions}><Link href={`/calendar?plan=${deliveryPlan.id}#date-heading`}>Change a delivery date →</Link><Link href={`/calendar?plan=${deliveryPlan.id}#pause-heading`}>Pause multiple days →</Link></div>
             <section
               className={styles.upcomingSchedule}
@@ -433,7 +467,7 @@ export default async function AccountPage({
               <div className={styles.upcomingHeading}>
                 <div>
                   <h2 id="upcoming-deliveries-heading">Next 7 days</h2>
-                  <p>Tap a date to see its delivery details.</p>
+                  <p>One-day quantity changes and skips appear here. Tap a date for details.</p>
                 </div>
                 <Link href={`/calendar?plan=${deliveryPlan.id}`}>
                   Manage dates
@@ -478,7 +512,7 @@ export default async function AccountPage({
             </section>
 
 
-          
+
           <p className={styles.scheduleNote}>Changes begin tomorrow. For help with today’s delivery, contact the farm.</p>
           </section> : !plansError ? <div className={styles.emptyPanel}><h2>No delivery schedule yet.</h2><p>Confirmed delivery dates will appear here.</p><Link className={styles.startOrder} href="/milk">Explore milk plans</Link></div> : null}
           <CustomerDeliveryHistory userId={user.id} />
@@ -512,7 +546,7 @@ export default async function AccountPage({
                   </span>
                 </summary>
                 <div className={styles.orderDetail}>
-                  {(order.order_items ?? []).map(item => <p key={item.id}><span>{item.product_name}</span><b>{Number(item.quantity)} {item.unit}</b></p>)}
+                  {(order.order_items ?? []).map(item => <p key={item.id}><span>{item.product_name}</span><b>{formatDeliveryQuantity(item.quantity, item.unit)}</b></p>)}
                   <p><span>Order total</span><b>{formatCheckoutAmount(order.total_paise)}</b></p>
                   {order.status === "paid" ? <p><span>Amount paid</span><b>{formatCheckoutAmount(order.paid_total_paise ?? order.total_paise)}</b></p> : null}
                   <small>{order.purchase_mode === "plan" ? "Plan starts" : "Delivery"} {formatPlanStartDate(order.start_date)}. Delivery progress is shown in Today and Schedule.</small>

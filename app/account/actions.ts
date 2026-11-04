@@ -24,6 +24,41 @@ export async function markNotificationsRead() {
   revalidatePath("/account");
 }
 
+export async function saveAccountDeliveryDetails(formData: FormData) {
+  const settings = "/account?section=settings";
+  const fail = (message: string): never => redirect(`${settings}&error=${encodeURIComponent(message)}`);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/sign-in?next=%2Faccount%3Fsection%3Dsettings");
+
+  const digits = String(formData.get("phone") ?? "").replace(/\D/g, "");
+  const phone = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+  const address = String(formData.get("address") ?? "").trim();
+  const postalCode = String(formData.get("postalCode") ?? "").trim();
+  if (!/^\d{10}$/.test(phone) || address.length < 8 || address.length > 500 ||
+    (postalCode && !/^\d{6}$/.test(postalCode))) {
+    fail("Enter a 10-digit mobile number, a complete address, and a valid PIN code if available.");
+  }
+
+  const { data: current, error: readError } = await supabase.from("customer_profiles")
+    .select("address_line,postal_code").eq("user_id", user.id).maybeSingle();
+  if (readError || !current) return fail("We could not load your delivery details. Please try again.");
+  const { data: saved, error: saveError } = await supabase.from("customer_profiles")
+    .update({ phone: `+91${phone}`, address_line: address, postal_code: postalCode || null, updated_at: new Date().toISOString() })
+    .eq("user_id", user.id).select("user_id").maybeSingle();
+  if (saveError || !saved) return fail("We could not save your delivery details. Please try again.");
+
+  const addressChanged = current.address_line !== address || (current.postal_code ?? "") !== postalCode;
+  const { error: routeError } = await supabase.rpc("refresh_customer_route", {
+    p_user_id: user.id,
+    p_force_reroute: addressChanged,
+  });
+  revalidatePath("/account");
+  revalidatePath("/farm", "layout");
+  if (routeError) fail("Your details were saved, but the route could not be refreshed. Please contact the farm.");
+  redirect(`${settings}&message=Delivery+details+saved.`);
+}
+
 export async function cancelPlan(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -45,57 +80,4 @@ export async function cancelPlan(formData: FormData) {
   revalidatePath("/calendar");
   revalidatePath("/farm", "layout");
   redirect("/account?section=deliveries&message=Your+plan+is+cancelled.+No+farm+approval+is+needed.");
-}
-
-
-/** Update delivery contact details without creating an unpaid checkout or order. */
-export async function saveCustomerDeliveryDetails(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in?next=%2Faccount%3Fsection%3Dsettings");
-
-  const rawPhone = String(formData.get("phone") ?? "").replace(/\D/g, "");
-  const phone = rawPhone.length === 12 && rawPhone.startsWith("91") ? rawPhone.slice(2) : rawPhone;
-  const address = String(formData.get("address") ?? "").trim();
-  const postalCode = String(formData.get("postal_code") ?? "").trim();
-  const errorUrl = (message: string) => "/account?section=settings&error=" + encodeURIComponent(message);
-
-  if (!/^[6-9]\d{9}$/.test(phone)) redirect(errorUrl("Enter a valid 10-digit Indian mobile number."));
-  if (address.length < 10 || address.length > 300) redirect(errorUrl("Enter a full delivery address (10–300 characters)."));
-  if (postalCode && !/^\d{6}$/.test(postalCode)) redirect(errorUrl("Enter a six-digit PIN code, or leave it blank."));
-
-  const { data: previous, error: readError } = await supabase
-    .from("customer_profiles")
-    .select("address_line, full_name, email, avatar_url")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (readError) redirect(errorUrl("Your details could not be checked. Please try again."));
-
-  const addressChanged = (previous?.address_line ?? "").trim().toLowerCase() !== address.toLowerCase();
-  const { error } = await supabase.from("customer_profiles").upsert({
-    user_id: user.id,
-    full_name: previous?.full_name ?? user.user_metadata.full_name ?? user.user_metadata.name ?? "Customer",
-    email: previous?.email ?? user.email ?? null,
-    avatar_url: previous?.avatar_url ?? user.user_metadata.avatar_url ?? user.user_metadata.picture ?? null,
-    phone: "+91" + phone,
-    address_line: address,
-    postal_code: postalCode || null,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" });
-  if (error) redirect(errorUrl("We could not save your delivery details. Please try again."));
-
-  if (addressChanged) {
-    const { error: routeError } = await supabase.rpc("refresh_customer_route", {
-      p_force_reroute: true,
-      p_user_id: user.id,
-    });
-    if (routeError) {
-      revalidatePath("/account");
-      redirect(errorUrl("Your address was saved, but the delivery route needs farm review. Please contact the farm."));
-    }
-  }
-  revalidatePath("/account");
-  revalidatePath("/calendar");
-  revalidatePath("/farm", "layout");
-  redirect("/account?section=settings&message=" + encodeURIComponent("Delivery details saved. Changes to a dispatched delivery require farm confirmation."));
 }

@@ -790,7 +790,7 @@
 .accountNav { display:grid; gap:5px; margin-top:34px; }
 .accountNav a { min-height:48px; padding:12px; display:flex; align-items:center; gap:12px; border-radius:8px; font-size:14px; color:var(--ui-muted); transition:background 140ms ease; }
 .accountNav a:hover { background:var(--color-surface); }
-.accountNav a[aria-current] { color:var(--color-text-primary); background:var(--color-surface); font-weight:600; }
+.accountNav a[aria-current] { color:var(--color-nav-active); background:var(--color-nav-active-background); box-shadow:inset 2px 0 var(--color-nav-indicator); font-weight:600; }
 .sidebarHelp { margin:54px 12px 0; display:grid; gap:4px; font-size:12px; color:var(--ui-muted); }
 .sidebarHelp a { display:inline-flex; min-height:44px; align-items:center; color:var(--color-accent); }
 .content { width:100%; min-width:0; margin:0; padding:38px clamp(24px,4vw,54px) 0; }
@@ -914,7 +914,7 @@
   .accountNav { display:flex; justify-content:space-between; gap:0; margin-top:16px; border-bottom:1px solid var(--ui-border); }
   .accountNav a { padding:12px 5px; min-height:48px; border-radius:0; gap:6px; font-size:11px; border-bottom:2px solid transparent; }
   .accountNav svg { width:16px; height:16px; }
-  .accountNav a[aria-current] { background:none; border-bottom-color:var(--color-accent); }
+  .accountNav a[aria-current] { background:var(--color-nav-active-background); border-bottom-color:transparent; box-shadow:inset 0 -2px var(--color-nav-indicator); }
   .content { padding:26px 0 0; }
   .pageHeading { margin-bottom:22px; align-items:flex-start; }
   .content h1 { font-size:31px; }
@@ -1060,7 +1060,7 @@
   }
   .accountNav svg { width:20px; height:20px; flex:none; }
   .accountNav a[aria-current="page"] {
-    background:var(--color-surface); border:0; color:var(--color-accent);
+    background:var(--color-nav-active-background); border:0; color:var(--color-nav-active);
   }
   .content { padding-top:22px; }
   .pageHeading { margin-bottom:20px; }
@@ -1088,31 +1088,6 @@
 }
 @media(prefers-reduced-motion:reduce) {
   .todayActions a { transition:none; }
-}
-
-
-/* Settings: editing an address should never create a checkout draft. */
-.deliveryDetailsForm { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px; padding-top:20px; margin-top:18px; border-top:1px solid var(--ui-border); }
-.deliveryDetailsForm h3 { grid-column:1/-1; margin:0; font-size:16px; }
-.deliveryDetailsForm .formHelp { grid-column:1/-1; margin:0; font-size:12px; line-height:1.6; color:var(--ui-muted); }
-.deliveryDetailsForm label { display:grid; align-content:start; gap:7px; font-size:12px; font-weight:600; }
-.deliveryDetailsForm label:nth-of-type(2) { grid-column:1/-1; }
-.deliveryDetailsForm label span { font-weight:400; color:var(--ui-muted); }
-.deliveryDetailsForm input,.deliveryDetailsForm textarea {
-  width:100%; min-width:0; min-height:44px; padding:11px 12px;
-  border:1px solid var(--color-input-border); border-radius:9px;
-  background:var(--color-input-background); color:var(--ui-text);
-  font:400 13px/1.55 var(--font-sans);
-}
-.deliveryDetailsForm textarea { resize:vertical; }
-.deliveryDetailsForm button {
-  justify-self:start; min-height:44px; padding:10px 18px; border:0; border-radius:9px;
-  color:var(--color-action-primary-text); background:var(--color-action-primary);
-  font:600 12px var(--font-sans); cursor:pointer;
-}
-@media(max-width:700px) {
-  .deliveryDetailsForm { grid-template-columns:1fr; }
-  .deliveryDetailsForm label:nth-of-type(2) { grid-column:auto; }
 }
 
 
@@ -1152,4 +1127,38 @@
   .todayActions { margin-top:10px; }
   .scheduleSurface > .scheduleActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:8px 0 10px; }
   .scheduleSurface > .scheduleActions a { justify-content:center; min-height:56px; padding:9px 8px; line-height:1.45; text-align:center; }
+}
+
+.deliveryDetailsEditor form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  max-width: 460px;
+}
+
+.deliveryDetailsEditor label,
+.deliveryDetailsEditor form > div {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.deliveryDetailsEditor input,
+.deliveryDetailsEditor textarea {
+  width: 100%;
+  min-height: var(--ui-touch-target);
+  padding: 8px 10px;
+  color: var(--color-text-primary);
+  background: var(--color-input-background);
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.deliveryDetailsEditor summary {
+  cursor: pointer;
+}
+
+.deliveryDetailsEditor button {
+  justify-self: start;
 }

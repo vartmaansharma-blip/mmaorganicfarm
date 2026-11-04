@@ -37,20 +37,20 @@
 .actions { display: flex; flex-wrap: wrap; gap: 14px; }
 .primary, .secondary { display: inline-flex; min-height: 56px; align-items: center; justify-content: center; padding: 0 30px; border-radius: 999px; font-size: 15px; font-weight: 600; border: 1px solid transparent; transition: transform 140ms ease; }
 .primary { color: var(--hero-on-yellow); gap: 28px; background: var(--hero-yellow); }
-.primary:hover { background: var(--hero-yellow-hover); transition: background-color 160ms ease, transform 140ms ease; }
+.primary:hover { background: var(--hero-yellow-hover); transform: translateY(-2px); transition: background-color 200ms ease, transform 140ms ease; }
 .primary span { font-size: 24px; font-weight: 400; }
 .primary span { transition: transform 180ms ease-out; }
 .primary:active, .secondary:active { transform: scale(.98); }
 @media (hover: hover) and (pointer: fine) { .primary:hover span { transform: translateX(4px); } }
-.secondary { color: var(--hero-accent); border-color: var(--hero-accent); }
-.secondary:hover { background: var(--hero-hover); transition: background-color 160ms ease, transform 140ms ease; }
+.secondary { color: var(--hero-ink); border-color: var(--hero-line); background: transparent; }
+.secondary:hover { background: var(--hero-hover); transition: background-color 200ms ease, transform 140ms ease; }
 .visual { align-self: stretch; display: grid; place-items: center; position: relative; min-width: 0; }
 .glass { position: relative; width: min(100%, 420px); aspect-ratio: 2 / 3; }
 .camera { position: absolute; inset: 0; transform-origin: 0 0; transform: translate(calc(var(--camera-x) * -1% + var(--dolly-x)), calc(var(--camera-y) * -1% + var(--dolly-y))) scale(var(--dolly-scale)); }
 .glass img { width: 100%; height: 100%; object-fit: contain; }
 .empty { position: absolute; inset: 0; opacity: calc(1 - var(--angle-opacity)); }
 .milk { position: absolute; inset: 0; opacity: calc(1 - var(--angle-opacity)); }
-.surface { position: absolute; top: calc(var(--liquid-y) - var(--liquid-depth)); left: var(--liquid-left); right: var(--liquid-left); height: calc(var(--liquid-depth) * 2); border-radius: 50%; background: linear-gradient(#fffdf5, #eee4d0); border: 1px solid rgb(222 208 180 / .65); opacity: calc(.8 * (1 - var(--coffee-progress)) * (1 - var(--angle-opacity))); pointer-events: none; }
+.surface { position: absolute; top: calc(var(--liquid-y) - var(--liquid-depth)); left: var(--liquid-left); right: var(--liquid-left); height: calc(var(--liquid-depth) * 2); border-radius: 50%; background: linear-gradient(var(--color-milk-highlight), var(--color-milk-shade)); border: 1px solid var(--color-milk-edge); opacity: calc(.8 * (1 - var(--coffee-progress)) * (1 - var(--angle-opacity))); pointer-events: none; }
 .maskDefinitions { position: absolute; pointer-events: none; }
 .storyRail { opacity: var(--hero-chrome-opacity, 1); position: relative; justify-self: end; }
 .progressMeter { position: absolute; inset: 0 auto 0 0; width: 1px; z-index: 1; pointer-events: none; background: linear-gradient(to bottom, var(--hero-yellow) calc(var(--scroll-progress) * 100%), transparent 0); }
@@ -69,7 +69,7 @@
 .down { grid-column: 1; text-align: center; font-size: 22px; }
 .skip { position: absolute; right: var(--page-gutter); bottom: 35px; padding: 10px 0; font-size: 12px; color: var(--hero-muted); }
 .skip span { margin-left: 10px; }
-.panel a:focus-visible { outline: 2px solid var(--hero-ink); outline-offset: 5px; }
+.panel a:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
 @media (max-width: 1100px) {
   .panel { grid-template-columns: 1.15fr 1fr; gap: 4px; }
   .storyRail, .chapters { display: none; }
@@ -112,7 +112,7 @@
 .macroVideo { opacity: 0; transition: opacity 160ms ease; }
 .sequence[data-video-visible="true"] .macroVideo { opacity: 1; }
 /* Keep attribution visible even where normal portrait cover crops the source mark. */
-.videoCredit { position: absolute; right: 20px; top: 20px; max-width: 135px; padding: 6px 9px; border-radius: 4px; background: rgb(0 0 0 / .72); color: #fff; font-size: 11px; line-height: 1.4; opacity: 0; }
+.videoCredit { position: absolute; right: 20px; top: 20px; max-width: 135px; padding: 6px 9px; border-radius: 4px; background: var(--color-overlay); color: var(--color-on-overlay); font-size: 11px; line-height: 1.4; opacity: 0; }
 .sequence[data-video-visible="true"] .videoCredit { opacity: 1; }
 .sequence[data-macro-visible="true"] .macro { pointer-events: auto; }
 .sequence[data-immersive="true"] :is(.copy, .visual, .storyRail, .chapters, .scroll, .skip) { visibility: hidden; }
@@ -142,3 +142,7 @@
 /* Sparse condensation stays on the tapered glass surface, below the macro. */
 .condensation { position: absolute; inset: 0; width: 100%; height: 100%; opacity: var(--condensation-opacity, 0); pointer-events: none; }
 @media (prefers-reduced-motion: reduce), (scripting: none) { .condensation { display: none; } }
+
+/* A theme-aware pool of butter light behind the original glass and its camera. */
+.glass::before { content: ""; position: absolute; inset: 4% -28%; border-radius: 50%; background: var(--color-bottle-halo); pointer-events: none; filter: blur(16px); }
+@media (prefers-reduced-motion: reduce) { .primary:hover { transform: none; } }

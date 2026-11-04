@@ -12,6 +12,7 @@
     "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
+    "test:palette": "node tests/palette.browser.mjs",
     "test:browser": "node tests/hero.browser.mjs",
     "test:hero-video": "node tests/hero-video.browser.mjs",
     "test:shop-hero": "node tests/shop-hero.browser.mjs",
@@ -23,7 +24,9 @@
     "test:operations:browser": "node tests/delivery-operations.browser.mjs",
     "test:account": "node tests/account.browser.mjs",
     "test:routing": "node --test tests/database/routing-foundation.integration.mjs && node tests/routing.browser.mjs",
-    "test:driver-runs": "node --test tests/database/driver-runs.integration.mjs && node tests/driver-runs.browser.mjs"
+    "test:driver-runs": "node --test tests/database/driver-runs.integration.mjs && node tests/driver-runs.browser.mjs",
+    "test:farm-ui": "node tests/farm-premium.browser.mjs",
+    "test:gps": "node --test tests/database/gps-routing.integration.mjs && node tests/gps-routing.browser.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",

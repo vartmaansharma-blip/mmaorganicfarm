@@ -104,8 +104,8 @@
   z-index: 3;
   padding: 7px 9px;
   margin: 0;
-  color:#fff;
-  background:rgba(20, 20, 20, 0.72);
+  color:var(--color-on-overlay);
+  background:var(--color-overlay);
   font-size: var(--ui-type-caption);
   font-weight: 750;
   text-transform: uppercase;
@@ -229,7 +229,7 @@
   border-radius: var(--ui-radius-field);
   color:var(--ui-on-action);
   background:var(--ui-action);
-  box-shadow:0 14px 34px rgba(20, 20, 20, 0.24);
+  box-shadow:0 14px 34px var(--color-soft-shadow);
   transform: translateX(-50%);
 }
 

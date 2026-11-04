@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium, webkit } from "playwright";
 import { createDatabase, callAs } from "./database/runtime.mjs";
@@ -11,6 +11,10 @@ import {
 } from "./database/supabase-fixture-server.mjs";
 const runtime = await createDatabase();
 const { db } = runtime;
+const driverAuthority = process.env.OPERATIONS_DRIVER_AUTHORITY === "1";
+if (driverAuthority) {
+  await db.query(await readFile(new URL("../docs/verification/driver-milk-skip-authority.local.sql", import.meta.url), "utf8"));
+}
 const bridge = await startFixtureServer(runtime.config);
 const output = path.resolve(process.env.OPERATIONS_ARTIFACT_DIR || "docs/screenshots/delivery-operations");
 await mkdir(output, { recursive: true });
@@ -36,6 +40,7 @@ const server = spawn(
       SUPABASE_SECRET_KEY: "local-service-fixture",
       CRON_SECRET: "local-browser-fixture-secret-at-least-32-characters",
       FARM_AUTOMATION_ENABLED: "true",
+      FARM_DRIVER_MILK_SKIP_AUTHORITY: driverAuthority ? "true" : "false",
     },
     stdio: ["ignore", "pipe", "pipe"],
   },
@@ -186,7 +191,7 @@ try {
     ["chromium", chromium],
     ["webkit", webkit],
   ]) {
-    if (name === "webkit")
+    if (name === "webkit" && !driverAuthority)
       await callAs(
         db,
         manager,
@@ -287,8 +292,39 @@ try {
       .click();
     await doneStop
       .getByRole("status")
-      .filter({ hasText: "Request saved" })
+      .filter({ hasText: driverAuthority ? "Milk skip confirmed" : "Request saved" })
       .waitFor();
+    if (driverAuthority) {
+      await doneStop.getByRole("button", { name: "Record another request" }).click();
+      await doneStop.getByLabel("Change requested").selectOption("quantity_change");
+      await doneStop.getByLabel("Customer’s exact request").fill("Please call to confirm an extra litre.");
+      await doneStop.getByRole("button", { name: "Save customer request" }).click();
+      await doneStop.getByRole("status").filter({ hasText: "sent to the farm for review" }).waitFor();
+      const requests = (await db.query(
+        "select kind,status from delivery_customer_requests where user_id=$1 order by kind",
+        [success.user],
+      )).rows;
+      assert.deepEqual(requests, [
+        { kind: "quantity_change", status: "requested" },
+        { kind: "skip_milk", status: "approved" },
+      ]);
+      const farm = await contextFor(browser, manager, 1440);
+      try {
+        const queue = await farm.newPage();
+        await queue.goto(`${base}/farm/cancellations`);
+        const request = queue.locator("article")
+          .filter({ has: queue.getByText(success.label, { exact: true }) })
+          .filter({ hasText: "Please call to confirm an extra litre." });
+        await request.getByText("Due soon", { exact: false }).waitFor();
+      } finally {
+        await farm.close();
+      }
+      assert.deepEqual(errors, []);
+      results.push({ engine: name, driverAuthority: "passed", runtimeErrors: errors });
+      await context.close();
+      await browser.close();
+      continue;
+    }
     const driverGuard=await context.newPage();
     await driverGuard.goto(`${base}/farm/exceptions`, { waitUntil: "networkidle" });
     assert.match(driverGuard.url(), /farm\/runs/, "driver manager-route guard");
