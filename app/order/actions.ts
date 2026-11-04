@@ -314,6 +314,94 @@ export async function saveDeliveryDetails(formData: FormData) {
     );
   }
 
+  const orderValues = {
+    address_snapshot: address,
+    bottle_charge_paise: priceInPaise(pricing.bottleCharge),
+    handling_fee_paise: priceInPaise(pricing.handlingCharge),
+    platform_fee_paise: priceInPaise(pricing.platformCharge),
+    bottle_choice: bottle,
+    milk_litres: pricing.milkLitres,
+    phone_snapshot: `+91${phone}`,
+    start_date: orderDeliveryDate,
+    subtotal_paise:
+      priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge - pricing.handlingCharge - pricing.platformCharge),
+    total_paise: priceInPaise(pricing.total),
+  };
+
+  const billedMilkLitres =
+    purchase === "plan" ? pricing.milkLitres : effectiveMilkLitres;
+  const orderItems = monthlyRules && monthlyQuote
+    ? monthlyRules.map((rule) => {
+        return {
+          delivery_date: monthlyQuote.days.find((day) => day.items.some((item) => item.id === rule.id))!.date,
+          frequency: "once",
+          line_total_paise: priceInPaise(monthlyQuote.productTotals[rule.id]),
+          product_key: rule.id,
+          product_name: shopProduct(rule.id).name,
+          quantity: monthlyQuote.quantities[rule.id],
+          scheduled_days: [],
+          unit: rule.id === "milk" ? "litre" : "500 g",
+          unit_price_paise: priceInPaise(routinePrice(rule.id, prices)),
+        };
+      })
+    : [
+        ...(billedMilkLitres > 0
+          ? [
+              {
+                delivery_date: orderDeliveryDate,
+                frequency: purchase === "plan" ? "weekly" : "once",
+                line_total_paise: priceInPaise(pricing.milkTotal),
+                product_key: "milk",
+                product_name: "Fresh farm milk",
+                quantity: billedMilkLitres,
+                scheduled_days:
+                  purchase === "plan" && weeklySchedule
+                    ? weeklySchedule.flatMap((litres, index) =>
+                        litres > 0 ? [index + 1] : [],
+                      )
+                    : [],
+                unit: purchase === "plan" ? "litres / 30 deliveries" : "litre",
+                unit_price_paise: priceInPaise(prices.milk),
+              },
+            ]
+          : []),
+        ...selectedProducts.map((product) => ({
+          delivery_date:
+            product.frequency === "once" ? orderDeliveryDate : null,
+          frequency: product.frequency,
+          line_total_paise: priceInPaise((pricing.productTotals[product.id] ?? 0)),
+          product_key: product.id,
+          product_name: product.name,
+          quantity: product.quantity,
+          scheduled_days: product.days,
+          unit: product.unit,
+          unit_price_paise: priceInPaise(product.price),
+        })),
+      ];
+
+  if (purchase === "plan" && combineWith) {
+    if (!monthlyRules || !monthlyQuote || !hasSupabaseAdminConfig()) {
+      redirect(orderUrl("error", "Return to your cart and review both selections.", purchase, bottle, milk, extras, schedule, start, routine));
+    }
+    const { data: batchId, error: batchError } = await createAdminClient()
+      .rpc("prepare_combined_checkout", {
+        p_user_id: user.id,
+        p_once_order_id: combineWith,
+        p_start_date: start,
+        p_rules: monthlyRules,
+        p_order: orderValues,
+        p_items: orderItems,
+      });
+    if (batchError || !batchId) {
+      redirect(orderUrl(
+        "error",
+        databaseErrorMessage(batchError, "Your combined checkout could not be prepared. Review your saved cart or try again."),
+        purchase, bottle, milk, extras, schedule, start, routine,
+      ));
+    }
+    redirect(`/checkout/batch/review?batch=${batchId}`);
+  }
+
   let deliveryPlanId: string | null = null;
   if (monthlyRules) {
     const { data: planId, error: planError } = await supabase.rpc(
@@ -424,21 +512,11 @@ export async function saveDeliveryDetails(formData: FormData) {
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
-      address_snapshot: address,
-      bottle_charge_paise: priceInPaise(pricing.bottleCharge),
-      handling_fee_paise: priceInPaise(pricing.handlingCharge),
-      platform_fee_paise: priceInPaise(pricing.platformCharge),
-      bottle_choice: bottle,
+      ...orderValues,
       currency: "INR",
       delivery_plan_id: deliveryPlanId,
-      milk_litres: pricing.milkLitres,
-      phone_snapshot: `+91${phone}`,
       purchase_mode: purchase,
-      start_date: orderDeliveryDate,
       status: "draft",
-      subtotal_paise:
-        priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge - pricing.handlingCharge - pricing.platformCharge),
-      total_paise: priceInPaise(pricing.total),
       user_id: user.id,
     })
     .select("id")
@@ -458,65 +536,9 @@ export async function saveDeliveryDetails(formData: FormData) {
       ),
     );
 
-  const billedMilkLitres =
-    purchase === "plan" ? pricing.milkLitres : effectiveMilkLitres;
-  const orderItems = monthlyRules && monthlyQuote
-    ? monthlyRules.map((rule) => {
-        return {
-          delivery_date: monthlyQuote.days.find((day) => day.items.some((item) => item.id === rule.id))!.date,
-          frequency: "once",
-          line_total_paise: priceInPaise(monthlyQuote.productTotals[rule.id]),
-          order_id: order.id,
-          product_key: rule.id,
-          product_name: shopProduct(rule.id).name,
-          quantity: monthlyQuote.quantities[rule.id],
-          scheduled_days: [],
-          unit: rule.id === "milk" ? "litre" : "500 g",
-          unit_price_paise: priceInPaise(routinePrice(rule.id, prices)),
-          user_id: user.id,
-        };
-      })
-    : [
-        ...(billedMilkLitres > 0
-          ? [
-              {
-                delivery_date: orderDeliveryDate,
-                frequency: purchase === "plan" ? "weekly" : "once",
-                line_total_paise: priceInPaise(pricing.milkTotal),
-                order_id: order.id,
-                product_key: "milk",
-                product_name: "Fresh farm milk",
-                quantity: billedMilkLitres,
-                scheduled_days:
-                  purchase === "plan" && weeklySchedule
-                    ? weeklySchedule.flatMap((litres, index) =>
-                        litres > 0 ? [index + 1] : [],
-                      )
-                    : [],
-                unit: purchase === "plan" ? "litres / 30 deliveries" : "litre",
-                unit_price_paise: priceInPaise(prices.milk),
-                user_id: user.id,
-              },
-            ]
-          : []),
-        ...selectedProducts.map((product) => ({
-          delivery_date:
-            product.frequency === "once" ? orderDeliveryDate : null,
-          frequency: product.frequency,
-          line_total_paise: priceInPaise((pricing.productTotals[product.id] ?? 0)),
-          order_id: order.id,
-          product_key: product.id,
-          product_name: product.name,
-          quantity: product.quantity,
-          scheduled_days: product.days,
-          unit: product.unit,
-          unit_price_paise: priceInPaise(product.price),
-          user_id: user.id,
-        })),
-      ];
   const { error: itemsError } = await supabase
     .from("order_items")
-    .insert(orderItems);
+    .insert(orderItems.map((item) => ({ ...item, order_id: order.id, user_id: user.id })));
   if (itemsError)
     redirect(
       orderUrl(
@@ -538,30 +560,6 @@ export async function saveDeliveryDetails(formData: FormData) {
       redirect(`/checkout/review?order=${order.id}`);
     params.set("combineWith", order.id);
     redirect(`/order?${params}`);
-  }
-  if (purchase === "plan" && combineWith) {
-    if (!hasSupabaseAdminConfig())
-      redirect(orderUrl("error", "Combined checkout is not available yet. Your orders are saved.", purchase, bottle, milk, extras, schedule, start, routine));
-    const { data: onceOrder } = await supabase.from("orders")
-      .select("id,user_id,purchase_mode,status,total_paise,razorpay_order_id,is_test")
-      .eq("id", combineWith).eq("user_id", user.id).maybeSingle();
-    if (!onceOrder || onceOrder.purchase_mode !== "once" || onceOrder.status !== "draft"
-      || onceOrder.razorpay_order_id || onceOrder.is_test)
-      redirect(orderUrl("error", "Your one-time selection changed. Return to your cart and review both selections.", purchase, bottle, milk, extras, schedule, start, routine));
-    const { data: batch, error: batchError } = await createAdminClient()
-      .from("checkout_batches")
-      .insert({
-        user_id: user.id,
-        once_order_id: onceOrder.id,
-        plan_order_id: order.id,
-        amount_paise: onceOrder.total_paise + priceInPaise(pricing.total),
-        is_test: false,
-        status: "draft",
-      })
-      .select("id").single();
-    if (batchError || !batch)
-      redirect(orderUrl("error", "Your combined checkout could not be prepared. Your orders are saved; return to your cart and try again.", purchase, bottle, milk, extras, schedule, start, routine));
-    redirect(`/checkout/batch/review?batch=${batch.id}`);
   }
   redirect(`/checkout/review?order=${order.id}`);
 }

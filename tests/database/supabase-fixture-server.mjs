@@ -86,7 +86,7 @@ function selection(raw, alias = "t") {
     })
     .join(",");
 }
-export async function startFixtureServer(config, { port = 55479, manualOrders = false, afterManualPlanLookup } = {}) {
+export async function startFixtureServer(config, { port = 55479, manualOrders = false, combinedCheckout = false, afterManualPlanLookup } = {}) {
   const manualOrderTables = new Set(["delivery_plans", "scheduled_delivery_items", "orders", "order_items"]);
   const manualOrderCommands = new Set(["refresh_customer_route", "reserve_order_capacity", "release_order_capacity", "capture_farm_order_payment", "record_monthly_farm_payment"]);
   const inFlight = new Set();
@@ -127,9 +127,11 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
           !/^(get_gps_workspace|gps_run_command|store_gps_route_proposal|get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|set_checkout_bottle_mode|set_checkout_batch_bottle_mode|get_farm_notifications|dismiss_farm_notifications|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|record_and_apply_driver_milk_skip|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
             fn,
           ) &&
-          !(manualOrders && manualOrderCommands.has(fn) && (service || fn === "refresh_customer_route"))
+          !(manualOrders && manualOrderCommands.has(fn) && (service || fn === "refresh_customer_route")) &&
+          !(combinedCheckout && (service ? fn === "prepare_combined_checkout" : user && fn === "refresh_customer_route"))
         )
           throw Error("Fixture RPC not permitted");
+        if (combinedCheckout && fn === "prepare_combined_checkout") await client.query("set local role service_role");
         let raw = "";
         for await (const chunk of req) raw += chunk;
         const body = JSON.parse(raw || "{}");
@@ -149,7 +151,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
                 await client.query(
                   `select public.${name(fn)}(${args}) value`,
                   entries.map(([key, v]) =>
-                    (key === "p_payload" || key === "p_quantities" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
+                    (key === "p_order" || key === "p_payload" || key === "p_quantities" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
                       ? JSON.stringify(v)
                       : v,
                   ),
@@ -190,8 +192,9 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
           Number(url.searchParams.get("limit") || 1000),
         );
         const offset = Number(url.searchParams.get("offset") || 0);
-        if (manualOrders && service && manualOrderTables.has(table) &&
-          (req.method === "POST" || req.method === "DELETE")) {
+        if ((manualOrders && service && manualOrderTables.has(table) &&
+          (req.method === "POST" || req.method === "DELETE")) ||
+          (combinedCheckout && user && ["orders", "order_items"].includes(table) && req.method === "POST")) {
           const returning = selection(url.searchParams.get("select") || "*");
           if (req.method === "DELETE") {
             if (!where.length) throw Error("Fixture delete requires a key");
@@ -212,6 +215,20 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
               )).rows);
             }
           }
+        } else if (combinedCheckout && user && table === "customer_profiles" && req.method === "POST") {
+          let raw = "";
+          for await (const chunk of req) raw += chunk;
+          const row = JSON.parse(raw);
+          if (row.user_id !== user) throw Error("Fixture profile owner mismatch");
+          const keys = Object.keys(row);
+          result = (await client.query(
+            `insert into public.customer_profiles (${keys.map(name).join(",")})
+             values (${keys.map((_, i) => `$${i + 1}`).join(",")})
+             on conflict (user_id) do update
+             set ${keys.filter((key) => key !== "user_id").map((key) => `${name(key)}=excluded.${name(key)}`).join(",")}
+             returning *`,
+            keys.map((key) => row[key]),
+          )).rows;
         } else if (req.method === "POST" || req.method === "DELETE") {
           if (!service || !["production_capacity", "production_capacity_overrides"].includes(table)) throw Error("Fixture table write not permitted");
           if (req.method === "DELETE") {

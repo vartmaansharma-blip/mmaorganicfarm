@@ -39,7 +39,7 @@ export const baselineFiles = [
 // Older outcome suites construct historical released-day fixtures incrementally.
 // The routing suite and routing browser journey opt into the new manifest guards
 // and exercise valid preparation/release plus outcome regression on that schema.
-export async function createDatabase({ routingFoundation = false, driverRuns = false, farmNotifications = false } = {}) {
+export async function createDatabase({ routingFoundation = false, driverRuns = false, farmNotifications = false, combinedCheckoutRetry = false } = {}) {
   const require = createRequire(import.meta.url);
   const binaryRoot = path.resolve(
     path.dirname(
@@ -131,6 +131,11 @@ export async function createDatabase({ routingFoundation = false, driverRuns = f
     await db.query(await readFile(new URL("../../supabase/migrations/20261026112857_farm_operational_editors.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../docs/verification/dashboard-order-fees.local.sql", import.meta.url), "utf8"));
     await db.query(await readFile(new URL("../../docs/verification/selected-checkout-batches.local.sql", import.meta.url), "utf8"));
+    if (combinedCheckoutRetry) {
+      // Mirror production's service role privileges on the existing tables.
+      await db.query("grant select, insert, update on public.orders to service_role; grant select, insert on public.order_items to service_role; grant select, update on public.delivery_plans to service_role; grant execute on function public.save_pending_monthly_plan(date,text,jsonb) to service_role");
+      await db.query(await readFile(new URL("../../docs/verification/combined-checkout-retry.local.sql", import.meta.url), "utf8"));
+    }
     if (routingFoundation) await db.query(await readFile(new URL("../../supabase/migrations/20261026172231_routing_foundation.sql", import.meta.url), "utf8"));
     if (driverRuns) await db.query(await readFile(new URL("../../supabase/migrations/20261026172251_driver_run_foundation.sql", import.meta.url), "utf8"));
     if (farmNotifications) await db.query(await readFile(new URL("../../docs/verification/farm-notifications.local.sql", import.meta.url), "utf8"));
