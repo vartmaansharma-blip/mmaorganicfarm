@@ -11,10 +11,11 @@ import {
   formatOrderItemSchedule,
 } from "@/lib/checkout-display";
 import { hasSupabaseAdminConfig } from "@/lib/supabase/admin";
+import { formatCalendarDate } from "@/lib/delivery-calendar";
 import { paymentModeError } from "@/lib/payment-mode";
 import { hasRazorpayConfig } from "@/lib/razorpay";
 import { createClient } from "@/lib/supabase/server";
-import { RazorpayCheckoutButton } from "./razorpay-checkout-button";
+import { CheckoutPayment } from "./checkout-payment";
 import styles from "./review.module.css";
 export const metadata: Metadata = {
   title: "Review your order",
@@ -40,7 +41,7 @@ export default async function ReviewPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,handling_fee_paise,platform_fee_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
+      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_choice,bottle_charge_paise,handling_fee_paise,platform_fee_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
     )
     .eq("id", orderId)
     .eq("user_id", user.id)
@@ -51,7 +52,7 @@ export default async function ReviewPage({
   const { data: items } = await supabase
     .from("order_items")
     .select(
-      "id,product_key,product_name,quantity,unit,line_total_paise,frequency,scheduled_days,delivery_date",
+      "id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,scheduled_days,delivery_date",
     )
     .eq("order_id", order.id)
     .eq("user_id", user.id)
@@ -75,6 +76,19 @@ export default async function ReviewPage({
   );
   const adminReady = hasSupabaseAdminConfig();
   const modeError = paymentModeError(order.is_test);
+  const bottleMode = order.purchase_mode !== "adjustment" && Number(order.milk_litres) > 0 &&
+    (order.bottle_choice === "new" || order.bottle_choice === "return") ? order.bottle_choice : undefined;
+  const deliveryPaise = Math.max(
+    0,
+    order.total_paise - order.subtotal_paise - order.bottle_charge_paise -
+      order.handling_fee_paise - order.platform_fee_paise,
+  );
+  const charges = [
+    { label: "New glass bottles", detail: `Bottle purchase for ${Number(order.milk_litres)} L of milk`, amount: order.bottle_charge_paise },
+    { label: "Delivery", detail: deliveryPaise ? "Delivery to your address" : "No delivery charge on this order", amount: deliveryPaise },
+    { label: "Handling", detail: "Preparing and packing your order", amount: order.handling_fee_paise },
+    { label: "Platform fee", detail: "Using the online ordering service", amount: order.platform_fee_paise },
+  ].filter(({ label, amount }) => amount > 0 || (label === "Delivery" && order.purchase_mode !== "adjustment"));
   return (
     <main className={styles.page}>
       <CartCheckoutSync
@@ -132,61 +146,6 @@ export default async function ReviewPage({
               {order.status === "pending_payment" ? "Payment started" : "Draft"}
             </span>
           </div>
-          <div className={styles.items}>
-            {(items ?? []).map((item) => (
-              <div className={styles.item} key={item.id}>
-                <div>
-                  <strong>{item.product_name}</strong>
-                  <span>
-                    {item.quantity} × {item.unit}
-                  </span>
-                  <small>
-                    {monthly
-                      ? "Total across your selected dates below"
-                      : formatOrderItemSchedule(item)}
-                  </small>
-                </div>
-                <b>{formatCheckoutAmount(item.line_total_paise)}</b>
-              </div>
-            ))}
-          </div>
-          <dl className={styles.totals}>
-            <div>
-              <dt>Products</dt>
-              <dd>{formatCheckoutAmount(order.subtotal_paise)}</dd>
-            </div>
-            <div>
-              <dt>Delivery</dt>
-              <dd>
-                {formatCheckoutAmount(
-                  Math.max(
-                    0,
-                    order.total_paise -
-                      order.subtotal_paise -
-                      order.bottle_charge_paise - order.handling_fee_paise - order.platform_fee_paise,
-                  ),
-                )}
-              </dd>
-            </div>
-            {order.handling_fee_paise > 0 && <div><dt>Handling</dt><dd>{formatCheckoutAmount(order.handling_fee_paise)}</dd></div>}
-            {order.platform_fee_paise > 0 && <div><dt>Platform fee</dt><dd>{formatCheckoutAmount(order.platform_fee_paise)}</dd></div>}
-            {order.bottle_charge_paise > 0 && (
-              <div>
-                <dt>New glass bottles ({Number(order.milk_litres)})</dt>
-                <dd>{formatCheckoutAmount(order.bottle_charge_paise)}</dd>
-              </div>
-            )}
-            <div className={styles.total}>
-              <dt>
-                {monthly
-                  ? "Monthly plan total"
-                  : order.purchase_mode === "plan"
-                    ? "30-delivery plan total"
-                    : "Amount to pay"}
-              </dt>
-              <dd>{formatCheckoutAmount(order.total_paise)}</dd>
-            </div>
-          </dl>
         </section>
         {monthly ? (
           <MonthlyPlan
@@ -221,18 +180,68 @@ export default async function ReviewPage({
         </section>
         <section className={styles.section}>
           <div className={styles.paymentHeading}>
-            <p>Secure checkout</p>
-            <h2>Confirm and pay</h2>
-            <span>Razorpay opens only after you accept the order terms.</span>
+            <p>Payment</p>
+            <h2 id="bill-heading">Bill details</h2>
+            <span>See what you’re buying and what each charge covers.</span>
           </div>
-          <RazorpayCheckoutButton
+          <CheckoutPayment
             amount={formatCheckoutAmount(order.total_paise)}
             amountPaise={order.total_paise}
             orderId={order.id}
             ready={hasRazorpayConfig() && adminReady && !modeError}
             unavailableReason={modeError ?? undefined}
             isTest={order.is_test}
-          />
+            bottleMode={bottleMode}
+            bottleLocked={order.status !== "draft"}
+          >
+          <div className={styles.bill} role="region" aria-labelledby="bill-heading">
+            <h3>Your items</h3>
+            {items?.length ? (
+              <ul className={styles.items}>
+                {items.map((item) => {
+                  const milk = item.product_key === "milk";
+                  const unit = milk ? "L" : item.unit;
+                  const quantity = milk
+                    ? `${Number(item.quantity)} L`
+                    : `${Number(item.quantity)} × ${item.unit}`;
+                  const scope = monthly ? " total" : !milk && item.frequency === "weekly" ? " per delivery" : "";
+                  return (
+                    <li className={styles.item} key={item.id}>
+                      <div>
+                        <strong>{item.product_name}</strong>
+                        <span>{quantity}{scope} · {formatCheckoutAmount(item.unit_price_paise)} / {unit}</span>
+                        {!monthly && (
+                          <small>
+                            {order.purchase_mode === "once" && item.delivery_date
+                              ? formatCalendarDate(item.delivery_date)
+                              : formatOrderItemSchedule(item)}
+                          </small>
+                        )}
+                      </div>
+                      <b>{formatCheckoutAmount(item.line_total_paise)}</b>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            <dl className={styles.totals}>
+              <div className={styles.subtotal}>
+                <dt>Items subtotal</dt>
+                <dd>{formatCheckoutAmount(order.subtotal_paise)}</dd>
+              </div>
+              {charges.map(({ label, detail, amount }) => (
+                <div key={label}>
+                  <dt>{label}<small>{detail}</small></dt>
+                  <dd>{formatCheckoutAmount(amount)}</dd>
+                </div>
+              ))}
+              <div className={styles.total}>
+                <dt>Amount to pay</dt>
+                <dd aria-live="polite">{formatCheckoutAmount(order.total_paise)}</dd>
+              </div>
+            </dl>
+          </div>
+          </CheckoutPayment>
           <p className={styles.note}>
             Your order and delivery calendar stay with M&apos;ma Organic Farm.
             Razorpay securely processes the payment.

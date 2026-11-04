@@ -99,14 +99,11 @@ export async function saveDeliveryDetails(formData: FormData) {
     purchase === "plan" && routine
       ? parseRoutines(String(formData.get("start") ?? ""), routine)
       : null;
-  const requestedBottle = String(formData.get("bottle") ?? "return");
   const bottle: BottleChoice = (
     monthlyRules ? !monthlyRules.some((r) => r.id === "milk") : milkLitres === 0
   )
     ? "none"
-    : requestedBottle === "new"
-      ? "new"
-      : "return";
+    : "return";
   const { prices } = await readProductCatalogue();
   const selectedProducts = parseFarmProductSelections(
     String(formData.get("extras") ?? ""), prices,

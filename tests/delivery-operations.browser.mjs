@@ -558,6 +558,9 @@ try {
     await mp.setViewportSize({ width: 320, height: 900 });
     await noOverflow(mp);
     const ownerContext = await contextFor(browser, owner, 1440);
+    await ownerContext.addInitScript(() => {
+      if (!localStorage.getItem("mma-theme")) localStorage.setItem("mma-theme", "light");
+    });
     const ownerPage = await ownerContext.newPage();
     activePage=ownerPage;
     ownerPage.on("pageerror",error=>errors.push(error.message));
@@ -676,6 +679,10 @@ try {
     await cp.goto(`${base}/checkout/review?order=${monthOrder}`,{waitUntil:"networkidle"});
     assert.equal(await cp.getByRole("region",{name:"Your welcome-back offer",exact:true}).count(),0,"returning customer checkout has no coupon section");
     await cp.getByRole("button",{name:"Pay ₹72",exact:true}).waitFor();
+    const monthlyBill = cp.getByRole("region", { name: "Bill details" });
+    await monthlyBill.getByText("1 L total · ₹62 / L", { exact: true }).waitFor();
+    await monthlyBill.getByText("No delivery charge on this order", { exact: true }).waitFor();
+    assert.equal(await monthlyBill.getByText("Platform fee", { exact: true }).count(), 0);
     await noOverflow(cp);
     await cp.screenshot({path:path.join(output,`${name}-welcome-back-checkout-mobile.png`),fullPage:true});
     await cp.setViewportSize({width:1440,height:900});
@@ -703,6 +710,42 @@ try {
     assert.equal(await newPage.getByRole("region",{name:"Your welcome-back offer",exact:true}).count(),0,"coupon section hidden for a first-time customer");
     await noOverflow(newPage);
     await newPage.screenshot({path:path.join(output,`${name}-new-customer-no-coupon.png`),fullPage:true});
+    const oneTimeOrder = randomUUID();
+    await db.query(
+      `insert into orders(id,user_id,purchase_mode,status,bottle_choice,subtotal_paise,bottle_charge_paise,handling_fee_paise,platform_fee_paise,total_paise,milk_litres,start_date,phone_snapshot,address_snapshot)
+       values($1,$2,'once','draft','return',6200,0,400,200,7550,1,$3,'0000000000','Synthetic address')`,
+      [oneTimeOrder, newUser, tomorrow],
+    );
+    await db.query(
+      `insert into order_items(order_id,user_id,product_key,product_name,quantity,unit,unit_price_paise,line_total_paise,frequency,delivery_date)
+       values($1,$2,'milk','Fresh farm milk',1,'litre',6200,6200,'once',$3)`,
+      [oneTimeOrder, newUser, tomorrow],
+    );
+    await newContext.addInitScript(() => localStorage.setItem("mma-theme", "light"));
+    await newPage.setViewportSize({ width: 320, height: 900 });
+    await newPage.goto(`${base}/checkout/review?order=${oneTimeOrder}`, { waitUntil: "networkidle" });
+    const bill = newPage.getByRole("region", { name: "Bill details" });
+    await bill.getByText("1 L · ₹62 / L", { exact: true }).waitFor();
+    const returnMode = newPage.getByRole("button", { name: "Return bottle", exact: true });
+    const newMode = newPage.getByRole("button", { name: "Do not return bottle", exact: true });
+    assert.equal(await returnMode.getAttribute("aria-pressed"), "true");
+    await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
+    await newMode.click();
+    await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
+    assert.equal(await newMode.getAttribute("aria-pressed"), "true");
+    assert.deepEqual(await bill.locator("dd").allTextContents(), ["₹62", "₹10", "₹7.50", "₹4", "₹2", "₹85.50"]);
+    await bill.getByText("Preparing and packing your order", { exact: true }).waitFor();
+    await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
+    await noOverflow(newPage);
+    const paymentSection = newPage.getByRole("heading", { name: "Bill details" }).locator("../..");
+    await paymentSection.screenshot({ path: path.join(output, `${name}-checkout-bill-mobile.png`) });
+    await newPage.setViewportSize({ width: 1440, height: 900 });
+    await newPage.evaluate(() => document.documentElement.dataset.theme = "dark");
+    await paymentSection.screenshot({ path: path.join(output, `${name}-checkout-bill-dark.png`) });
+    await returnMode.click();
+    await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
+    await newPage.reload({ waitUntil: "networkidle" });
+    assert.equal(await returnMode.getAttribute("aria-pressed"), "true");
     await newContext.close();
     assert.deepEqual(errors, []);
     results.push({
