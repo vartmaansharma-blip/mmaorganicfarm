@@ -1,6 +1,5 @@
 import { DeliveryPin } from "./delivery-pin";
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
-import { PageNavigationControls } from "@/app/components/page-navigation-controls";
 import { AccountNavigation, accountSections, type AccountSection } from "./account-navigation";
 import { AccountDate, TodayDelivery } from "./today-delivery";
 import { ThemeToggle } from "@/app/components/theme-toggle";
@@ -33,10 +32,16 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: string; section?: string; plan?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; section?: string; plan?: string; order_view?: string; order_page?: string }>;
 }) {
   const params = await searchParams;
-  const section: AccountSection = accountSections.includes(params.section as AccountSection) ? params.section as AccountSection : "today";
+  const requestedSection = params.section === "deliveries" ? "plans" : params.section;
+  const section: AccountSection = accountSections.includes(requestedSection as AccountSection) ? requestedSection as AccountSection : "today";
+  const orderView = params.order_view === "pending" || params.order_view === "other" ? params.order_view : "paid";
+  const requestedPage = Number(params.order_page ?? "1");
+  const orderPage = Number.isSafeInteger(requestedPage) && requestedPage >= 1 ? Math.min(1000, requestedPage) : 1;
+  const orderStatuses = orderView === "paid" ? ["paid"] : orderView === "pending" ? ["pending_payment", "payment_failed"] : ["cancelled"];
+  const orderPageSize = 10;
   const supabase = await createClient();
   const {
     data: { user },
@@ -62,7 +67,7 @@ export default async function AccountPage({
   const [
     { data: notifications, error: notificationsError },
     { data: cancellationRequests, error: requestsError },
-    { data: orders, error: ordersError },
+    { data: orders, error: ordersError, count: orderCount },
   ] = await Promise.all([
     supabase
       .from("customer_notifications")
@@ -76,20 +81,23 @@ export default async function AccountPage({
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase
+    section === "orders" ? supabase
       .from("orders")
       .select(
         "id, status, purchase_mode, total_paise, paid_total_paise, start_date, created_at, order_items(id, product_name, quantity, unit)",
+        { count: "exact" },
       )
       .eq("user_id", user.id)
+      .in("status", orderStatuses)
       .order("created_at", { ascending: false })
-      .limit(20),
+      .range((orderPage - 1) * orderPageSize, orderPage * orderPageSize - 1)
+      : Promise.resolve({ data: [], error: null, count: 0 }),
   ]);
 
-  const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.[0];
+  const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.find(plan => plan.status === "active" || plan.status === "paused") ?? deliveryPlans?.[0];
   const todaySnapshot = await todayResult;
   const { data: monthlyCompleted } =
-    section === "deliveries" && selectedPlan?.billing_model === "calendar_month"
+    section === "plans" && selectedPlan?.billing_model === "calendar_month"
       ? await supabase
           .from("daily_deliveries")
           .select("delivery_date")
@@ -104,12 +112,12 @@ export default async function AccountPage({
   const googleConnected = user.identities?.some(
     (identity) => identity.provider === "google",
   );
-  const hasPhone = Boolean(profile?.phone?.trim());
   const hasAddress = Boolean(profile?.address_line?.trim());
+  const hasPhone = Boolean(profile?.phone?.trim());
+  const hasDeliveryDetails = hasPhone || hasAddress;
   const pinResult = section === "settings" && profile?.address_line
     ? await supabase.from("customer_delivery_pins").select("latitude,longitude,accuracy_metres").eq("user_id",user.id).maybeSingle()
     : { data: null, error: null };
-  const hasDeliveryDetails = hasPhone || hasAddress;
   const deliveryPlan = selectedPlan ?? null;
   const totalPlanBalance = (deliveryPlans ?? []).reduce(
     (total, plan) =>
@@ -204,7 +212,6 @@ export default async function AccountPage({
           <Link className={styles.back} href="/milk">
             Back to shop
           </Link>
-          <PageNavigationControls />
         </div>
       </header>
 
@@ -222,14 +229,18 @@ export default async function AccountPage({
         <div className={styles.pageHeading}>
           <div>
             <p className={styles.eyebrow}>{section === "today" ? `Welcome, ${name.split(/\s+/)[0]}` : "My M’ma"}</p>
-            <h1>{section === "today" ? "Today" : section === "deliveries" ? "Your deliveries" : section === "orders" ? "Orders" : "Settings"}</h1>
-            <p className={styles.intro}>{section === "today" ? "A little closer to the farm, every day." : section === "deliveries" ? "Your routine, upcoming dates and recorded delivery results." : section === "orders" ? "Your purchases and payment details, together." : "The details that make it yours."}</p>
+            <h1>{section === "today" ? "Your day, made fresh." : section === "schedule" ? "Delivery schedule" : section === "plans" ? "My plans" : section === "orders" ? "Your orders" : "Your account"}</h1>
+            <p className={styles.intro}>{section === "today" ? "Today's delivery, at a glance." : section === "schedule" ? "See what's coming. Change eligible future deliveries." : section === "plans" ? "Your subscriptions and everyday routine." : section === "orders" ? "Paid purchases first. Unfinished checkouts stay separate." : "Your details and delivery preferences."}</p>
           </div>
-          {section === "today" ? <AccountDate initialDate={todayInIndia()} /> : <Link className={styles.startOrder} href="/milk">Start an order</Link>}
+          {section === "today" ? <AccountDate initialDate={todayInIndia()} /> : null}
         </div>
         {section === "today" ? <>
+          <Link className={styles.todayAddress} href="/account?section=settings">
+            <span className={styles.addressIcon} aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <span className={styles.addressCopy}><strong>Delivering to your saved address</strong><small>{hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : "Add a delivery address to your account."}</small></span>
+            <span className={styles.addressManage}>Manage →</span>
+          </Link>
           <TodayDelivery initial={todaySnapshot} />
-          <Link className={styles.contactSummary} href="/account?section=settings"><span><strong>Delivering to you</strong><small>{hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : "Add your delivery address in Settings."}</small></span><span>Manage details →</span></Link>
         </> : null}
         {section === "settings" ? <>
         {profileError ? <p className={styles.noticeError}>Your personal details couldn’t be loaded. Please refresh this page.</p> : null}
@@ -313,7 +324,7 @@ export default async function AccountPage({
         <section className={styles.settingsGroup} aria-labelledby="appearance-heading"><div><h2 id="appearance-heading">Appearance</h2><p>Make yourself comfortable. Your theme stays with you across the shop.</p></div><ThemeToggle /></section>
         <section className={styles.settingsGroup} aria-labelledby="sign-in-heading"><div><h2 id="sign-in-heading">Sign-in & account</h2><p>{googleConnected ? "Connected through Google." : "Signed in with your email address."}</p></div><form action={signOut}><button className={styles.textAction} type="submit">Sign out</button></form></section>
         </> : null}
-        {section === "deliveries" ? <>
+        {section === "plans" ? <>
         {plansError ? <p className={styles.noticeError}>We couldn’t load your plans. Please refresh to try again.</p> : null}
         {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=deliveries&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly plan" : "Weekly plan"} {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
         {deliveryPlan?.billing_model === "calendar_month" ? (
@@ -374,59 +385,6 @@ export default async function AccountPage({
                 </dd>
               </div>
             </dl>
-
-            <section
-              className={styles.upcomingSchedule}
-              aria-labelledby="upcoming-deliveries-heading"
-            >
-              <div className={styles.upcomingHeading}>
-                <div>
-                  <h3 id="upcoming-deliveries-heading">Next 7 days</h3>
-                  <p>One-day quantity changes and skips appear here.</p>
-                </div>
-                <Link href={`/calendar?plan=${deliveryPlan.id}`}>
-                  Change a date
-                </Link>
-              </div>
-              <div className={styles.upcomingGrid}>
-                {upcomingDeliveries.map((day) => {
-                  const milk = day.items.find(
-                    (item) => item.productKey === "milk",
-                  );
-                  const addOns = day.items.filter(
-                    (item) => item.productKey !== "milk",
-                  );
-                  const milkSkipped = day.skippedProductKeys.includes("milk");
-
-                  return (
-                    <Link
-                      href={`/calendar?plan=${deliveryPlan.id}&date=${day.date}`}
-                      key={day.date}
-                    >
-                      <time dateTime={day.date}>{day.dayLabel}</time>
-                      <strong>
-                        {day.paused
-                          ? "Paused"
-                          : milkSkipped
-                            ? "Milk skipped"
-                            : milk
-                              ? `${milk.quantity} L milk`
-                              : "No milk"}
-                      </strong>
-                      <small>
-                        {addOns.length
-                          ? addOns
-                              .map((item) => productName(item.productKey))
-                              .join(" · ")
-                          : day.paused
-                            ? "No delivery"
-                            : "Open date"}
-                      </small>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
 
             <div
               className={styles.planWeek}
@@ -495,72 +453,113 @@ export default async function AccountPage({
         ) : null}
 
         {!deliveryPlan && !plansError ? <div className={styles.emptyPanel}><h2>Your next routine starts here.</h2><p>Confirmed plans and their calendars will appear here.</p><Link className={styles.startOrder} href="/milk">Choose your farm favourites</Link></div> : null}
-        <CustomerDeliveryHistory userId={user.id} />
         </> : null}
-        {section === "orders" ? <>
-        {ordersError ? <p className={styles.noticeError}>We couldn’t load your orders. Please refresh to try again.</p> : null}
-        {!orders?.length && !ordersError ? <div className={styles.emptyPanel}><h2>Good things start at the farm.</h2><p>Your orders and payment status will appear here after your first order.</p><Link className={styles.startOrder} href="/milk">Visit the shop</Link></div> : null}
-        {(orders?.length ?? 0) > 0 ? (
-          <section
-            className={styles.ordersSection}
-            aria-labelledby="orders-heading"
-          >
-            <div className={styles.sectionHeading}>
-              <h2 id="orders-heading">Order history</h2>
-              <p>Every order remains attached to this customer profile.</p>
-            </div>
-            <div className={styles.orderHistory}>
-              {orders?.map((order, index) => (
-                <details key={order.id} open={index === 0}>
-                  <summary>
-                    <span>
+        {section === "schedule" ? <>
+          {plansError ? <p className={styles.noticeError}>We couldn’t load your schedule. Please refresh to try again.</p> : null}
+          {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=schedule&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly" : "Weekly"} plan {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
+          {deliveryPlan?.status === "pending_confirmation" ? <div className={styles.emptyPanel}><h2>Plan awaiting confirmation.</h2><p>We’ll show your confirmed delivery dates here once payment and the plan are verified.</p><Link className={styles.startOrder} href="/account?section=orders&order_view=pending">Check payments</Link></div> : deliveryPlan ? <section className={styles.scheduleSurface} aria-label="Upcoming delivery schedule">
+
+            <div className={styles.scheduleActions}><Link href={`/calendar?plan=${deliveryPlan.id}#date-heading`}>Change a delivery date →</Link><Link href={`/calendar?plan=${deliveryPlan.id}#pause-heading`}>Pause multiple days →</Link></div>
+            <section
+              className={styles.upcomingSchedule}
+              aria-labelledby="upcoming-deliveries-heading"
+            >
+              <div className={styles.upcomingHeading}>
+                <div>
+                  <h2 id="upcoming-deliveries-heading">Next 7 days</h2>
+                  <p>One-day quantity changes and skips appear here. Tap a date for details.</p>
+                </div>
+                <Link href={`/calendar?plan=${deliveryPlan.id}`}>
+                  Manage dates
+                </Link>
+              </div>
+              <div className={styles.upcomingGrid}>
+                {upcomingDeliveries.map((day) => {
+                  const milk = day.items.find(
+                    (item) => item.productKey === "milk",
+                  );
+                  const addOns = day.items.filter(
+                    (item) => item.productKey !== "milk",
+                  );
+                  const milkSkipped = day.skippedProductKeys.includes("milk");
+
+                  return (
+                    <Link
+                      href={`/calendar?plan=${deliveryPlan.id}&date=${day.date}`}
+                      key={day.date}
+                    >
+                      <time dateTime={day.date}>{day.dayLabel}</time>
                       <strong>
-                        {order.purchase_mode === "plan"
-                          ? "Scheduled plan"
-                          : order.purchase_mode === "adjustment"
-                            ? "Milk quantity change"
-                            : "One-time order"}
+                        {day.paused
+                          ? "Paused"
+                          : milkSkipped
+                            ? "Milk skipped"
+                            : milk
+                              ? `${milk.quantity} L milk`
+                              : addOns.length ? "Add-ons only" : "No delivery"}
                       </strong>
                       <small>
-                        {new Date(order.created_at).toLocaleDateString(
-                          "en-IN",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        )}
+                        {addOns.length
+                          ? addOns
+                              .map((item) => productName(item.productKey))
+                              .join(" · ")
+                          : day.paused ? "No delivery" : milkSkipped ? "Skipped" : milk ? "Scheduled" : "Rest day"}
                       </small>
-                    </span>
-                    <span>
-                      <b>
-                        {formatCheckoutAmount(
-                          order.paid_total_paise ?? order.total_paise,
-                        )}
-                      </b>
-                      <small>{order.status.replaceAll("_", " ")}</small>
-                    </span>
-                  </summary>
-                  <div>
-                    {(order.order_items ?? []).map((item) => (
-                      <p key={item.id}>
-                        <span>{item.product_name}</span>
-                        <b>
-                          {formatDeliveryQuantity(item.quantity, item.unit)}
-                        </b>
-                      </p>
-                    ))}
-                    <small>
-                      Order MMA-{order.id.slice(0, 8).toUpperCase()} · Delivery{" "}
-                      {formatPlanStartDate(order.start_date)}
-                    </small>
-                  </div>
-                </details>
-              ))}
-            </div>
-          </section>
-        ) : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
 
+
+
+          <p className={styles.scheduleNote}>Changes begin tomorrow. For help with today’s delivery, contact the farm.</p>
+          </section> : !plansError ? <div className={styles.emptyPanel}><h2>No delivery schedule yet.</h2><p>Confirmed delivery dates will appear here.</p><Link className={styles.startOrder} href="/milk">Explore milk plans</Link></div> : null}
+          <CustomerDeliveryHistory userId={user.id} />
+        </> : null}
+        {section === "orders" ? <>
+          <nav className={styles.orderTabs} aria-label="Order status">
+            {([{ id: "paid", label: "Paid orders" }, { id: "pending", label: "To pay" }, { id: "other", label: "Cancelled" }] as const).map(tab =>
+              <Link key={tab.id} href={`/account?section=orders&order_view=${tab.id}`} aria-current={orderView === tab.id ? "page" : undefined}>{tab.label}</Link>)}
+          </nav>
+          {ordersError ? <p className={styles.noticeError} role="alert">We couldn’t load your orders. Please refresh to try again.</p> : null}
+          {!orders?.length && !ordersError ? <div className={styles.emptyPanel}>
+            <h2>{orderView === "paid" ? "No paid orders yet." : orderView === "pending" ? "Nothing to pay right now." : "No cancelled orders."}</h2>
+            <p>{orderView === "paid" ? "Your paid purchases and their details will appear here." : orderView === "pending" ? "Only payments needing attention appear here. Drafts stay out of your order history." : "Cancelled purchases are kept here for reference."}</p>
+            {orderView === "paid" ? <Link className={styles.startOrder} href="/milk">Shop fresh products</Link> : null}
+          </div> : null}
+          {(orders?.length ?? 0) > 0 ? <section className={styles.ordersSection} aria-labelledby="orders-heading">
+            <div className={styles.sectionHeading}>
+              <h2 id="orders-heading">{orderView === "paid" ? "Paid purchases" : orderView === "pending" ? "Payments needing attention" : "Cancelled purchases"}</h2>
+              <p>{orderCount ?? 0} {orderCount === 1 ? "order" : "orders"} · Most recent first</p>
+            </div>
+            <div className={styles.orderHistory}>
+              {orders?.map((order, index) => <details key={order.id} open={index === 0}>
+                <summary>
+                  <span>
+                    <strong>{order.purchase_mode === "plan" ? "Scheduled milk plan" : order.purchase_mode === "adjustment" ? "Milk quantity change" : "One-time purchase"}</strong>
+                    <small>{new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · MMA-{order.id.slice(0, 8).toUpperCase()}</small>
+                  </span>
+                  <span>
+                    <b>{formatCheckoutAmount(order.status === "paid" ? (order.paid_total_paise ?? order.total_paise) : order.total_paise)}</b>
+                    <small className={styles.orderStatus} data-status={order.status}>{order.status === "paid" ? "✓ Paid" : order.status === "pending_payment" ? "Payment started" : order.status === "payment_failed" ? "Payment failed" : "Cancelled"}</small>
+                  </span>
+                </summary>
+                <div className={styles.orderDetail}>
+                  {(order.order_items ?? []).map(item => <p key={item.id}><span>{item.product_name}</span><b>{formatDeliveryQuantity(item.quantity, item.unit)}</b></p>)}
+                  <p><span>Order total</span><b>{formatCheckoutAmount(order.total_paise)}</b></p>
+                  {order.status === "paid" ? <p><span>Amount paid</span><b>{formatCheckoutAmount(order.paid_total_paise ?? order.total_paise)}</b></p> : null}
+                  <small>{order.purchase_mode === "plan" ? "Plan starts" : "Delivery"} {formatPlanStartDate(order.start_date)}. Delivery progress is shown in Today and Schedule.</small>
+                  {["pending_payment", "payment_failed"].includes(order.status) ? <Link className={styles.paymentAction} href={`/checkout/review?order=${order.id}`}>Review and complete payment →</Link> : null}
+                </div>
+              </details>)}
+            </div>
+            <nav className={styles.orderPagination} aria-label="Order pages">
+              {orderPage > 1 ? <Link href={`/account?section=orders&order_view=${orderView}&order_page=${orderPage - 1}`}>← Previous</Link> : <span />}
+              <span>Page {orderPage}</span>
+              {(orderCount ?? 0) > orderPage * orderPageSize ? <Link href={`/account?section=orders&order_view=${orderView}&order_page=${orderPage + 1}`}>Next →</Link> : <span />}
+            </nav>
+          </section> : null}
         </> : null}
 
         {section === "today" ? <>
@@ -582,7 +581,7 @@ export default async function AccountPage({
               ) : null}
             </div>
             <div className={styles.activityList}>
-              {notifications?.map((item) => (
+              {notifications?.slice(0, 3).map((item) => (
                 <article
                   className={!item.read_at ? styles.unread : undefined}
                   key={item.id}
@@ -604,7 +603,7 @@ export default async function AccountPage({
         ) : null}
 
         </> : null}
-        {section === "deliveries" ? <>
+        {section === "plans" ? <>
         {requestsError ? <p className={styles.noticeError}>Cancellation requests couldn’t be loaded. Please refresh.</p> : null}
         {(cancellationRequests?.length ?? 0) > 0 ? (
           <section
@@ -628,14 +627,6 @@ export default async function AccountPage({
         ) : null}
 
         </> : null}
-        <div className={styles.accountFooter}>
-          <span>Signed in as {email}</span>
-          {section !== "settings" ? <form action={signOut}>
-            <button className={styles.signOut} type="submit">
-              Sign out
-            </button>
-          </form> : null}
-        </div>
       </section>
       </div>
     </main>

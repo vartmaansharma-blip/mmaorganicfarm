@@ -54,7 +54,18 @@ const stub=createServer(async(req,res)=>{
   data=rows();
   if(url.searchParams.get('status')==='eq.delivered')data=data.filter(r=>r.status==='delivered');
  }
- if(url.pathname.endsWith('/orders'))data=scenario==='none'?[]:[{id:'00000000-0000-4000-8000-000000000004',status:'paid',purchase_mode:'plan',total_paise:62000,paid_total_paise:62000,start_date:date,created_at:new Date().toISOString(),order_items:[{...product(),id:'item1'}]}];
+ if(url.pathname.endsWith('/orders')) {
+  const paid={id:'00000000-0000-4000-8000-000000000004',status:'paid',purchase_mode:'plan',total_paise:62000,paid_total_paise:62000,start_date:date,created_at:new Date().toISOString(),order_items:[{...product(),id:'item1'}]};
+  const draft={...paid,id:'00000000-0000-4000-8000-000000000005',status:'draft',paid_total_paise:null,order_items:[{...product(),id:'item2',product_name:'Draft-only item'}]};
+  const pending={...paid,id:'00000000-0000-4000-8000-000000000006',status:'pending_payment',paid_total_paise:null,order_items:[{...product(),id:'item3',product_name:'Pending checkout'}]};
+  data=scenario==='none'?[]:[paid,draft,pending];
+  const status=url.searchParams.get('status')||'';
+  if(status.startsWith('in.(')&&status.endsWith(')')) {
+    const allowed=status.slice(4,-1).split(',');
+    data=data.filter(order=>allowed.includes(order.status));
+  }
+  res.setHeader('content-range',data.length?'0-'+(data.length-1)+'/'+data.length:'*/0');
+}
  if(url.pathname.endsWith('/customer_notifications'))data=[{id:'update1',title:'Your plan is confirmed',message:'Your delivery dates are saved.',created_at:new Date().toISOString(),read_at:null}];
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
@@ -81,7 +92,12 @@ try{
     const context=await browser.newContext({viewport:{width,height:900}});await context.addCookies([sessionCookie]);const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
     for(const theme of ['dark','light']){
      scenario='out';fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
-     if(await page.locator('html').getAttribute('data-theme')!==theme)await page.getByRole('button',{name:/Switch to .* mode/}).click();
+     if(await page.locator('html').getAttribute('data-theme')!==theme){
+      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Account',exact:true}).click();
+      await page.getByRole('button',{name:/Switch to .* mode/}).click();
+      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).click();
+      await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
+     }
      await page.waitForFunction(()=>!document.getAnimations().some(a=>a instanceof CSSTransition && ['color','background-color','border-color'].includes(a.transitionProperty) && a.playState==='running'));
      const navigationColour=await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).evaluate(e=>{const probe=document.createElement('i');probe.style.color='var(--color-nav-active)';document.body.append(probe);const expected=getComputedStyle(probe).color;probe.remove();return {actual:getComputedStyle(e).color,expected};});
      assert.equal(navigationColour.actual,navigationColour.expected,'account navigation follows the shared brand palette');
@@ -90,15 +106,26 @@ try{
      await page.locator('[data-scene-state]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-scene-state]').dataset.motion==='running');
      await page.getByRole('button',{name:'Pause animation',exact:true}).click();assert.equal(await page.locator('[data-scene-state]').getAttribute('data-motion'),'paused');await page.getByRole('button',{name:'Resume animation',exact:true}).click();
      if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-today.png`),fullPage:true});
-     for(const section of ['Deliveries','Orders','Settings']){
-      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).click();await page.waitForURL(url=>url.searchParams.get('section')===section.toLowerCase());
-      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).and(page.locator('[aria-current=page]')).waitFor();
+     for(const section of ['Schedule','My Plans','Orders','Account']){
+      await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).click();await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:section,exact:true}).and(page.locator('[aria-current=page]')).waitFor();
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${section} ${width} overflow`);
       assert.equal(await page.locator('html').getAttribute('data-theme'),theme);
-      if(section==='Settings'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();await page.getByText('Update delivery details',{exact:true}).waitFor();}
+      if(section==='Account'){await page.getByRole('heading',{name:'Appearance',exact:true}).waitFor();await page.getByText('Update delivery details',{exact:true}).waitFor();}
+      if(section==='Orders') {
+       const tabs=page.getByRole('navigation',{name:'Order status'});
+       assert.equal(await tabs.getByRole('link',{name:'Paid orders'}).getAttribute('aria-current'),'page');
+       assert.equal(await page.getByRole('heading',{name:'Paid purchases'}).count(),1);
+       assert.equal(await page.getByText('Draft-only item').count(),0,'draft order must not appear in paid purchase history');
+       if(width===390&&theme==='light') {
+        await tabs.getByRole('link',{name:'To pay'}).click();
+        await page.getByRole('heading',{name:'Payments needing attention'}).waitFor();
+        assert.equal(await page.getByText('Draft-only item').count(),0,'draft must not pollute pending orders');
+        await page.getByRole('link',{name:'Review and complete payment →'}).waitFor();
+       }
+      }
       if(width===390||width===1440)await page.screenshot({path:path.join(output,`${engine}-${width}-${theme}-${section.toLowerCase()}.png`),fullPage:true});
      }
-     results.push({engine,width,theme,sections:4,overflow:false});
+     results.push({engine,width,theme,sections:5,overflow:false});
     }
     assert.deepEqual(errors,[]);await context.close();
    }
@@ -120,11 +147,12 @@ try{
    scenario='out';
    await page.goto(`${base}/milk?edit=plan`);
    await page.waitForURL(url=>url.pathname==='/account' && url.searchParams.get('section')==='deliveries');
+   await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'My Plans',exact:true}).and(page.locator('[aria-current=page]')).waitFor();
    for(const state of ['preparing','delivered','partial','none','pending','paused']){
     scenario=state;fail=false;await page.goto(`${base}/account`,{waitUntil:'networkidle'});
     const expected={preparing:'preparing',delivered:'delivered',partial:'attention',none:'none',pending:'setup',paused:'paused'}[state];assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),expected);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${state} overflow`);
-    if(state==='pending'){assert.equal(await page.getByRole('link',{name:'Orders & payment →',exact:true}).getAttribute('href'),'/account?section=orders');assert.ok((await page.locator('[data-scene-state]').boundingBox()).height<110,'unconfirmed delivery scene stays compact');}
+    if(state==='pending'){assert.equal(await page.getByRole('link',{name:'Orders & payment →',exact:true}).getAttribute('href'),'/account?section=orders&order_view=pending');assert.ok((await page.locator('[data-scene-state]').boundingBox()).height<110,'unconfirmed delivery scene stays compact');}
     if(state!=='out')assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).count(),0);
     await page.screenshot({path:path.join(output,`${engine}-390-${state}.png`),fullPage:true});
    }
@@ -138,5 +166,5 @@ try{
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
  const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')),'fixture permits no order or payment writes');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
- console.log(JSON.stringify({layouts:results.length,sections:4,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
+ console.log(JSON.stringify({layouts:results.length,sections:5,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}

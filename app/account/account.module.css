@@ -948,6 +948,187 @@
   .accountNav a { transition:none; }
 }
 
+
+/* Customer-first portal: scan status, choose an action, then read detail. */
+.todayAddress {
+  display:flex; align-items:center; gap:14px; min-height:74px;
+  margin:0 0 18px; padding:15px 18px; border:1px solid var(--ui-border);
+  background:var(--color-surface-raised); border-radius:14px;
+}
+.addressIcon {
+  display:grid; place-items:center; width:38px; height:38px; flex:none;
+  border-radius:12px; background:var(--color-surface); color:var(--color-accent);
+  font-size:24px; line-height:1;
+}
+.addressCopy { min-width:0; flex:1; display:grid; gap:4px; }
+.addressCopy strong { font-size:13px; font-weight:650; line-height:1.35; }
+.addressCopy small { font-size:12px; line-height:1.5; color:var(--ui-muted); overflow-wrap:anywhere; }
+.addressManage { white-space:nowrap; font-size:12px; font-weight:600; color:var(--color-accent); }
+.deliveryTop { padding-top:22px; }
+.deliveryTop h2 { font-weight:600; }
+.deliveryCopy { max-width:52ch; }
+.scene { height:126px; }
+.scene svg { height:126px; }
+.todayActions {
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;
+}
+.todayActions a {
+  min-height:74px; display:flex; align-items:center; gap:13px;
+  padding:15px 17px; border-radius:14px; border:1px solid var(--ui-border);
+}
+.todayActions a > span:first-child {
+  flex:none; width:32px; height:32px; border-radius:50%;
+  display:grid; place-items:center; font-size:18px;
+}
+.todayActions a > span:last-child { min-width:0; display:grid; gap:4px; }
+.todayActions strong { font-size:13px; font-weight:650; line-height:1.3; }
+.todayActions small { font-size:11px; line-height:1.45; }
+.todayActionPrimary { background:var(--color-action-primary); color:var(--color-action-primary-text); border-color:transparent!important; }
+.todayActionPrimary > span:first-child { background:rgba(255,255,255,.17); }
+.todayActionPrimary small { opacity:.88; }
+.todayActionSecondary { background:var(--color-surface-raised); color:var(--ui-text); }
+.todayActionSecondary > span:first-child { color:var(--color-accent); background:var(--color-surface); }
+.todayActionSecondary small { color:var(--ui-muted); }
+.nextDeliveryPanel { margin-top:27px; }
+.nextDeliveryHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.nextDeliveryHeading h2 { margin:0; font-size:17px; font-weight:650; }
+.nextDeliveryHeading a { color:var(--color-accent); font-weight:600; font-size:12px; min-height:44px; display:inline-flex; align-items:center; }
+.nextDeliveryPanel .summaryRow { margin-top:5px; padding:14px 17px; border:1px solid var(--ui-border); border-radius:12px; background:var(--color-surface-raised); }
+.nextDeliveryPanel .emptyCopy { border-top:1px solid var(--ui-border); padding-top:15px; }
+.scheduleSurface { border:1px solid var(--ui-border); padding:22px; border-radius:15px; background:var(--color-surface-raised); }
+.scheduleSurface > .upcomingHeading h2 { margin:0 0 6px; font-size:20px; }
+.scheduleSurface > .upcomingHeading p { font-size:12px; color:var(--ui-muted); }
+.scheduleSurface > .upcomingSchedule { margin-top:20px; }
+.scheduleSurface .upcomingGrid { margin-top:14px; }
+.scheduleSurface .upcomingGrid a { border-radius:10px; }
+.scheduleActions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+.scheduleActions a {
+  display:inline-flex; align-items:center; min-height:44px; padding:9px 13px;
+  border-radius:9px; border:1px solid var(--ui-border);
+  color:var(--color-accent); font-size:12px; font-weight:600;
+}
+.scheduleActions a:first-child { background:var(--color-surface); }
+.scheduleNote { margin:14px 0 0; font-size:12px; line-height:1.6; color:var(--ui-muted); }
+.orderTabs {
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px;
+  padding:5px; margin:0 0 24px; border-radius:12px;
+  background:var(--color-surface); border:1px solid var(--ui-border);
+}
+.orderTabs a {
+  display:grid; place-items:center; text-align:center; min-height:44px; padding:9px 8px;
+  border-radius:8px; font-size:12px; font-weight:600; color:var(--ui-muted);
+}
+.orderTabs a[aria-current="page"] {
+  background:var(--color-surface-raised); color:var(--ui-text);
+  box-shadow:0 1px 4px rgba(0,0,0,.08);
+}
+.orderHistory summary { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; }
+.orderHistory summary > span:first-child { min-width:0; }
+.orderHistory summary > span:last-child { text-align:right; flex:none; }
+.orderHistory summary strong { display:block; font-size:13px; }
+.orderHistory summary small { display:block; margin-top:6px; font-size:11px; color:var(--ui-muted); }
+.orderHistory summary b { font-size:16px; font-weight:650; font-variant-numeric:tabular-nums; }
+.orderDetail { padding:3px 18px 20px; border-top:1px solid var(--ui-border); }
+.orderDetail p { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:8px 0; font-size:12px; }
+.orderDetail p b { font-weight:600; flex:none; }
+.orderDetail > small { display:block; margin-top:10px; font-size:11px; line-height:1.6; color:var(--ui-muted); }
+.paymentAction {
+  display:inline-flex; align-items:center; min-height:44px; margin-top:12px;
+  padding:10px 14px; border-radius:9px; font-size:12px;
+  font-weight:650; background:var(--color-action-primary);
+  color:var(--color-action-primary-text);
+}
+.orderPagination { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:18px; font-size:12px; color:var(--ui-muted); }
+.orderPagination a { display:inline-flex; min-height:44px; align-items:center; color:var(--color-accent); font-weight:600; }
+@media(max-width:700px) {
+  .page { padding-bottom:calc(104px + env(safe-area-inset-bottom, 0px)); }
+  .sidebar { padding:0; }
+  .accountTitle, .sidebarHelp { display:none; }
+  .accountNav {
+    position:fixed; z-index:30; inset:auto 0 0; display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr)); gap:0;
+    margin:0; padding:7px 7px calc(7px + env(safe-area-inset-bottom, 0px));
+    border-top:1px solid var(--ui-border); border-bottom:0;
+    background:var(--color-surface-raised);
+    box-shadow:0 -4px 24px rgba(0,0,0,.05);
+  }
+  .accountNav a {
+    min-width:0; min-height:58px; padding:7px 2px; border-radius:10px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px; font-size:10px; line-height:1.1; text-align:center; border:0;
+    color:var(--ui-muted);
+  }
+  .accountNav svg { width:20px; height:20px; flex:none; }
+  .accountNav a[aria-current="page"] {
+    background:var(--color-nav-active-background); border:0; color:var(--color-nav-active);
+  }
+  .content { padding-top:22px; }
+  .pageHeading { margin-bottom:20px; }
+  .todayAddress { gap:10px; padding:12px 13px; }
+  .addressIcon { width:32px; height:32px; }
+  .addressCopy strong { font-size:12px; }
+  .addressCopy small { font-size:11px; }
+  .addressManage { font-size:11px; }
+  .todayActions { gap:9px; }
+  .todayActions a { min-height:83px; padding:12px; gap:9px; }
+  .todayActions a > span:first-child { width:27px; height:27px; font-size:15px; }
+  .todayActions strong { font-size:12px; }
+  .todayActions small { font-size:10px; }
+  .scheduleSurface { padding:14px; }
+  .scheduleSurface .upcomingGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .orderHistory summary { padding:15px 13px; }
+  .orderHistory summary strong { font-size:12px; }
+  .orderHistory summary b { font-size:14px; }
+}
+@media(max-width:360px) {
+  .todayActions { grid-template-columns:1fr; }
+  .todayActions a { min-height:63px; }
+  .orderTabs a { font-size:11px; }
+  .accountNav a { font-size:9px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .todayActions a { transition:none; }
+}
+
+
+/* Status must be legible without requiring customers to read the order details. */
+.orderHistory summary .orderStatus {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:4px 8px; border-radius:999px; font-size:11px; font-weight:650;
+  background:var(--color-surface); color:var(--ui-muted);
+}
+.orderHistory summary .orderStatus[data-status="paid"] {
+  background:var(--ui-success-bg); color:var(--ui-success-text);
+}
+.orderHistory summary .orderStatus[data-status="payment_failed"] {
+  background:var(--ui-error-bg); color:var(--ui-error-text);
+}
+.orderHistory summary .orderStatus[data-status="pending_payment"] {
+  background:var(--color-warning-surface); color:var(--color-warning);
+}
+
+
+/* Mobile-first priority: show the two delivery actions within the first screen. */
+@media(max-width:700px) {
+  .header { min-height:66px; }
+  .deliveryTop { padding-top:17px; }
+  .deliveryTop h2 { font-size:22px; }
+  .deliveryCopy { margin-top:7px; }
+  .sceneWrap { margin-top:3px; margin-bottom:3px; }
+  .scene { height:88px; }
+  .scene svg { height:88px; }
+  .motionControl {
+    position:absolute; right:0; bottom:0; min-height:44px; margin:0;
+    padding:8px 2px 0 8px; border-radius:8px;
+    background:var(--color-surface-raised);
+  }
+  .deliverySteps { padding-bottom:14px; }
+  .visit { padding:12px 0; }
+  .todayActions { margin-top:10px; }
+  .scheduleSurface > .scheduleActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:8px 0 10px; }
+  .scheduleSurface > .scheduleActions a { justify-content:center; min-height:56px; padding:9px 8px; line-height:1.45; text-align:center; }
+}
+
 .deliveryDetailsEditor form {
   display: grid;
   gap: 12px;
