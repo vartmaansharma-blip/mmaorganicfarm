@@ -11,7 +11,9 @@ create function public.record_monthly_farm_payment(
   p_total_paise integer,
   p_bottle_paise integer,
   p_payment_method text,
-  p_reference text
+  p_reference text,
+  p_handling_paise integer default 0,
+  p_platform_paise integer default 0
 ) returns uuid
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -24,6 +26,8 @@ begin
   if p_order_id is null or p_user_id is null or p_start_date is null
     or p_catalog_revision is null or p_total_paise is null or p_total_paise <= 0
     or p_bottle_paise is null or p_bottle_paise < 0
+    or p_handling_paise is null or p_handling_paise < 0
+    or p_platform_paise is null or p_platform_paise < 0
     or jsonb_typeof(p_rules) is distinct from 'array'
     or jsonb_typeof(p_items) is distinct from 'array'
   then raise exception 'Invalid monthly farm order'; end if;
@@ -37,7 +41,8 @@ begin
       and plan.billing_model='calendar_month' and plan.schedule_rules=p_rules
       and o.start_date=p_start_date and o.bottle_choice=p_bottle_choice
       and o.catalog_revision=p_catalog_revision and o.total_paise=p_total_paise
-      and o.bottle_charge_paise=p_bottle_paise and receipt.provider='manual'
+      and o.bottle_charge_paise=p_bottle_paise and o.handling_fee_paise=p_handling_paise
+      and o.platform_fee_paise=p_platform_paise and receipt.provider='manual'
       and receipt.status='captured' and receipt.payment_method=p_payment_method
       and receipt.provider_payment_id=p_reference
   ) then return p_order_id; end if;
@@ -58,7 +63,7 @@ begin
   v_end := (p_start_date + interval '1 month')::date;
   select sum(item.line_total_paise) into v_subtotal
   from jsonb_to_recordset(p_items) as item(line_total_paise integer);
-  if v_subtotal is null or v_subtotal <= 0 or v_subtotal + p_bottle_paise > p_total_paise
+  if v_subtotal is null or v_subtotal <= 0 or v_subtotal + p_bottle_paise + p_handling_paise + p_platform_paise > p_total_paise
     or jsonb_array_length(p_items) <> jsonb_array_length(p_rules)
     or (select count(distinct item->>'product_key') from jsonb_array_elements(p_items) items(item))
        <> jsonb_array_length(p_items)
@@ -91,11 +96,11 @@ begin
   then raise exception 'Invoice quantities do not match the dated schedule'; end if;
 
   insert into public.orders (
-    id,user_id,address_snapshot,bottle_charge_paise,bottle_choice,currency,
+    id,user_id,address_snapshot,bottle_charge_paise,handling_fee_paise,platform_fee_paise,bottle_choice,currency,
     delivery_plan_id,is_test,milk_litres,phone_snapshot,purchase_mode,start_date,
     status,subtotal_paise,total_paise
   ) values (
-    p_order_id,p_user_id,v_profile.address_line,p_bottle_paise,p_bottle_choice,'INR',
+    p_order_id,p_user_id,v_profile.address_line,p_bottle_paise,p_handling_paise,p_platform_paise,p_bottle_choice,'INR',
     v_plan_id,false,coalesce((select sum(quantity) from public.scheduled_delivery_items
       where plan_id=v_plan_id and product_key='milk'),0),v_profile.phone,'plan',p_start_date,
     'pending_payment',v_subtotal,p_total_paise
@@ -121,7 +126,7 @@ begin
   return p_order_id;
 end;
 $$;
-revoke all on function public.record_monthly_farm_payment(uuid,uuid,date,text,jsonb,jsonb,uuid,integer,integer,text,text)
+revoke all on function public.record_monthly_farm_payment(uuid,uuid,date,text,jsonb,jsonb,uuid,integer,integer,text,text,integer,integer)
 from public,anon,authenticated;
-grant execute on function public.record_monthly_farm_payment(uuid,uuid,date,text,jsonb,jsonb,uuid,integer,integer,text,text)
+grant execute on function public.record_monthly_farm_payment(uuid,uuid,date,text,jsonb,jsonb,uuid,integer,integer,text,text,integer,integer)
 to service_role;

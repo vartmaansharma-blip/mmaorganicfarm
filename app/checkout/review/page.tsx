@@ -40,7 +40,7 @@ export default async function ReviewPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
+      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_charge_paise,handling_fee_paise,platform_fee_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
     )
     .eq("id", orderId)
     .eq("user_id", user.id)
@@ -163,11 +163,13 @@ export default async function ReviewPage({
                     0,
                     order.total_paise -
                       order.subtotal_paise -
-                      order.bottle_charge_paise,
+                      order.bottle_charge_paise - order.handling_fee_paise - order.platform_fee_paise,
                   ),
                 )}
               </dd>
             </div>
+            {order.handling_fee_paise > 0 && <div><dt>Handling</dt><dd>{formatCheckoutAmount(order.handling_fee_paise)}</dd></div>}
+            {order.platform_fee_paise > 0 && <div><dt>Platform fee</dt><dd>{formatCheckoutAmount(order.platform_fee_paise)}</dd></div>}
             {order.bottle_charge_paise > 0 && (
               <div>
                 <dt>New glass bottles ({Number(order.milk_litres)})</dt>

@@ -170,3 +170,19 @@ test('paneer and ghee can move within their prepaid month without changing their
   assert.equal((await db.query('select sum(quantity) n from scheduled_delivery_items where plan_id=$1 and product_key=$2',[f.plan,product])).rows[0].n,'2.00');
  }
 });
+
+test('owners update public fees without changing the fees of an older order',async()=>{
+ const prior=(await catalog()).prices;
+ const oldOrder=await order();
+ const fees={delivery_once:750,delivery_scheduled:300,handling:400,platform:0};
+ await assert.rejects(change({...prior,...fees},manager),/Owner access/);
+ await assert.rejects(change({...prior,...fees,handling:-1}),/non-negative fees/);
+ await change({...prior,...fees});
+ const nextOrder=await order();
+ assert.deepEqual(await agreed(oldOrder),prior);
+ assert.deepEqual(await agreed(nextOrder),{...prior,...fees});
+ assert.deepEqual((await catalog()).prices,{...prior,...fees});
+ await change({...prices,milk:6300});
+ assert.equal((await catalog()).prices.handling,400);
+ await change({...prices,delivery_once:500,delivery_scheduled:200,handling:0,platform:0});
+});

@@ -1,5 +1,5 @@
 import { DEFAULT_PRODUCT_PRICES, money, type ProductPrices } from "./product-prices";
-import { deliveryChargeForSubtotal } from "./delivery-pricing";
+import { deliveryChargeForSubtotal, flatOrderFees } from "./delivery-pricing";
 import type { FarmProductSelection } from "@/lib/farm-products";
 import type { WeeklyMilkSchedule } from "@/lib/milk-plan";
 
@@ -46,8 +46,10 @@ export function calculateOrderPricing({
       : 0;
 
   const productSubtotal=milkTotal+recurringAddOnsTotal+oneTimeAddOnsTotal;
-  const deliveryCharge=deliveryChargeForSubtotal(productSubtotal,"once");
+  const deliveryCharge=deliveryChargeForSubtotal(productSubtotal, "once", undefined, undefined, prices);
+  const fees = flatOrderFees(productSubtotal, prices);
   return {
+    ...fees,
     deliveryCharge: money(deliveryCharge),
     bottleCharge: money(bottleCharge),
     milkLitres: safeMilkLitres,
@@ -62,7 +64,7 @@ export function calculateOrderPricing({
       ]),
     ),
     recurringAddOnsTotal: money(recurringAddOnsTotal),
-    total: money(milkTotal + recurringAddOnsTotal + oneTimeAddOnsTotal + bottleCharge + deliveryCharge),
+    total: money(milkTotal + recurringAddOnsTotal + oneTimeAddOnsTotal + bottleCharge + deliveryCharge + fees.handlingCharge + fees.platformCharge),
   };
 }
 
@@ -124,7 +126,7 @@ export function calculatePlanPricing({
           (productTotals[product.id] ?? 0) + prices[product.id] * product.quantity;
       });
 
-    if(dailySubtotal>0){deliveryCharge+=deliveryChargeForSubtotal(dailySubtotal,"plan",cursor.toISOString().slice(0,10),firstPlanStart);firstProductDelivery=false;}
+    if(dailySubtotal>0){deliveryCharge+=deliveryChargeForSubtotal(dailySubtotal,"plan",cursor.toISOString().slice(0,10),firstPlanStart,prices);firstProductDelivery=false;}
     cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
   }
 
@@ -139,7 +141,9 @@ export function calculatePlanPricing({
     .filter(([id]) => !(id in oneTimeTotals))
     .reduce((total, [, value]) => total + value, 0);
 
+  const fees = flatOrderFees(milkTotal + oneTimeAddOnsTotal + recurringAddOnsTotal, prices, startDate, firstPlanStart);
   return {
+    ...fees,
     deliveryCharge: money(deliveryCharge),
     bottleCharge: money(bottleCharge),
     milkLitres,
@@ -147,7 +151,7 @@ export function calculatePlanPricing({
     oneTimeAddOnsTotal: money(oneTimeAddOnsTotal),
     productTotals: Object.fromEntries(Object.entries(productTotals).map(([id, value]) => [id, money(value)])),
     recurringAddOnsTotal: money(recurringAddOnsTotal),
-    total: money(milkTotal + bottleCharge + oneTimeAddOnsTotal + recurringAddOnsTotal + deliveryCharge),
+    total: money(milkTotal + bottleCharge + oneTimeAddOnsTotal + recurringAddOnsTotal + deliveryCharge + fees.handlingCharge + fees.platformCharge),
   };
 }
 

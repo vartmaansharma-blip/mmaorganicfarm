@@ -1,3 +1,4 @@
+import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import { publicMetadata } from "@/lib/public-metadata";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import type { Metadata } from "next";
@@ -41,12 +42,13 @@ export default async function PricingPage() {
       <section>
         <h2>Delivery</h2>
         <p>
-          One-time orders: ₹5 delivery, free when products total above ₹199.
-          Scheduled orders: no delivery, platform, surge or miscellaneous fees
-          for one calendar month from your first scheduled plan. After that
-          month, delivery is ₹2 per delivery, free when that delivery’s products
-          total above ₹199. The threshold excludes bottle purchases. Handling,
-          platform and surge fees are not added.
+          One-time delivery is ₹{prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.
+          Scheduled delivery is ₹{prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery after your first month.
+          Delivery is free when products on that delivery total above ₹199. The threshold excludes bottle purchases.
+        </p>
+        <p>
+          Handling is ₹{prices.handling ?? 0} per order and the platform fee is ₹{prices.platform ?? 0} per order.
+          The first-month scheduled fee waiver includes delivery, handling and platform fees.
         </p>
       </section>
       <section>

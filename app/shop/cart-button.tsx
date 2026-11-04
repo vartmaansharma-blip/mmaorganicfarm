@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
@@ -77,7 +78,7 @@ export function CartButton() {
     else if (id !== "milk" && cart[id])
       changeCart({ ...cart, [id]: { ...cart[id], quantity } });
   }
-  const productSubtotal = quote.total - quote.deliveryCharge;
+  const productSubtotal = quote.total - quote.deliveryCharge - quote.handlingCharge - quote.platformCharge;
   return (
     <>
       <button
@@ -291,11 +292,15 @@ export function CartButton() {
                 </span>
                 <strong>{money(productSubtotal)}</strong>
               </div>
+              {quote.deliveryCharge > 0 && <div><span>Delivery</span><strong>{money(quote.deliveryCharge)}</strong></div>}
+              {quote.handlingCharge > 0 && <div><span>Handling</span><strong>{money(quote.handlingCharge)}</strong></div>}
+              {quote.platformCharge > 0 && <div><span>Platform fee</span><strong>{money(quote.platformCharge)}</strong></div>}
+              <div><span>Estimated total</span><strong>{money(quote.total)}</strong></div>
               <p>
                 {mode === "plan"
-                  ? "First month: no delivery, platform, surge or miscellaneous fees. After that, ₹2 per delivery, free above ₹199 in products per delivery."
-                  : "Delivery ₹5, free above ₹199 in products."}{" "}
-                Your eligibility and full total are confirmed before payment.
+                  ? `First scheduled month has a fee waiver. After that, delivery is ₹${prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery.`
+                  : `Delivery is ₹${prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.`}{" "}
+                Delivery is free above ₹199 in products per delivery. Your total is confirmed before payment.
               </p>
               {cartReady(cart, mode, minimum) ? (
                 <Link

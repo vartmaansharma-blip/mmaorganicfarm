@@ -211,6 +211,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                     <dd>₹{pricing.oneTimeAddOnsTotal}</dd>
                   </div>
                 ) : null}
+          {pricing.handlingCharge > 0 && <div><dt>Handling</dt><dd>₹{pricing.handlingCharge}</dd></div>}
+          {pricing.platformCharge > 0 && <div><dt>Platform fee</dt><dd>₹{pricing.platformCharge}</dd></div>}
                 <div>
                   <dt>Delivery</dt>
                   <dd>

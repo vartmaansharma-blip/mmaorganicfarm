@@ -581,28 +581,44 @@
   animation: farm-spin 900ms linear infinite;
 }
 .saveNotice {
-  align-items: center;
-  background: var(--farm-pine);
+  align-items: flex-start;
+  background: var(--farm-surface);
   border: 1px solid var(--farm-line-strong);
-  border-radius: 12px;
-  bottom: 24px;
+  border-radius: 18px;
   box-shadow: 0 12px 35px color-mix(in srgb, var(--farm-pine) 16%, transparent);
-  color: var(--farm-ivory);
+  color: var(--farm-ink);
   display: flex;
   font-size: 12px;
   gap: 12px;
   line-height: 1.65;
-  max-width: 380px;
+  max-width: min(420px, calc(100vw - 48px));
   padding: 15px 20px;
   pointer-events: none;
   position: fixed;
   right: 24px;
+  top: 24px;
   z-index: 60;
   animation: farm-notice-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 .saveNotice svg {
-  color: var(--farm-warning-ink);
+  color: var(--farm-green);
   flex: 0 0 22px;
+}
+.saveNoticeContent {
+  flex: 1;
+  min-width: 0;
+}
+.saveNoticeHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 2px;
+}
+.saveNoticeHeading strong { font-size: 13px; }
+.saveNoticeHeading small {
+  color: var(--farm-muted);
+  white-space: nowrap;
 }
 .noticeTick {
   stroke-dasharray: 1;
@@ -816,6 +832,7 @@
 @media (max-width: 540px) {
   .saveNotice {
     bottom: calc(16px + env(safe-area-inset-bottom));
+    top: auto;
     left: 16px;
     max-width: none;
     padding: 14px 17px;
