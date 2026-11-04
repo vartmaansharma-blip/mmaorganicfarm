@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import { ProductGallery } from "./product-gallery";
 import Link from "next/link";
 import { useState } from "react";
@@ -430,10 +431,10 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
                   </details>
                 ) : null}
                 <p className={styles.note}>
-                  Scheduled orders have no delivery, platform, surge or
-                  miscellaneous fees for one month from your first plan. After
-                  that, delivery is ₹2 per delivery, free when its products
-                  total above ₹199. One-time delivery is ₹5, free above ₹199.
+                  Your first scheduled month has a fee waiver. After that,
+                  delivery is ₹{prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery.
+                  One-time delivery is ₹{prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.
+                  Delivery is free above ₹199 in products per delivery.
                 </p>
                 <div className={styles.total}>
                   <span>Delivery</span>
@@ -443,6 +444,8 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
                       : "Free"}
                   </strong>
                 </div>
+                {pricing.handlingCharge > 0 && <div className={styles.total}><span>Handling</span><strong>{money(pricing.handlingCharge)}</strong></div>}
+                {pricing.platformCharge > 0 && <div className={styles.total}><span>Platform fee</span><strong>{money(pricing.platformCharge)}</strong></div>}
                 <div className={styles.total}>
                   <span>{plan ? "30-delivery plan" : "Order total"}</span>
                   <strong>{money(pricing.total)}</strong>

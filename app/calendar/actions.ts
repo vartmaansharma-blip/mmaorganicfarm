@@ -126,8 +126,10 @@ async function startMilkIncreasePayment({
     milkLitres: extraLitres,
     products: [],
   });
-  pricing.total = Math.round((pricing.total - pricing.deliveryCharge) * 100) / 100;
+  pricing.total = Math.round((pricing.total - pricing.deliveryCharge - pricing.handlingCharge - pricing.platformCharge) * 100) / 100;
   pricing.deliveryCharge = 0;
+  pricing.handlingCharge = 0;
+  pricing.platformCharge = 0;
   const { data: order, error: orderError } = await admin
     .from("orders")
     .insert({

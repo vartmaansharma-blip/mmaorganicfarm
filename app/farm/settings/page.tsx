@@ -1,3 +1,4 @@
+import { DEFAULT_ORDER_FEES, ORDER_FEE_KEYS, ORDER_FEE_LABELS } from "@/lib/product-prices";
 import Link from "next/link";
 import { requireFarmManager } from "@/lib/farm-dashboard";
 import { FARM_PRODUCTS } from "@/lib/farm-products";
@@ -18,6 +19,14 @@ export default async function SettingsPage({searchParams}: {searchParams: Promis
   const messages = await searchParams;
   const {data: changes} = await supabase.from("farm_change_log").select("id,reason,before_state,after_state,created_at").eq("record_type","catalogue").order("created_at",{ascending:false}).limit(12);
   const products = [{id:"milk",name:"Fresh milk",unit:"1 litre"}, ...FARM_PRODUCTS, {id:"bottle",name:"New glass bottle",unit:"per litre"}] as const;
+  const priceFields = [
+    ...products.map(({ id, name }) => ({ id, name, fallbackPaise: 0 })),
+    ...ORDER_FEE_KEYS.map((id) => ({
+      id,
+      name: ORDER_FEE_LABELS[id],
+      fallbackPaise: Math.round(DEFAULT_ORDER_FEES[id] * 100),
+    })),
+  ];
   return (
     <main className={styles.page}>
       <WorkspaceHeader
@@ -43,10 +52,48 @@ export default async function SettingsPage({searchParams}: {searchParams: Promis
           <input type="hidden" name="revision" value={catalogue.revision} />
           <fieldset><legend>Product prices · INR</legend><div className={styles.priceGrid}>
             {products.map(product => <label key={product.id}>{product.name} · {product.unit}<span className={styles.priceInput}><span aria-hidden="true">₹</span><input key={`${catalogue.revision}:${product.id}`} aria-label={`${product.name} price in rupees`} name={product.id} type="number" min="0.01" max="100000" step="0.01" required defaultValue={catalogue.prices[product.id]} /></span></label>)}
-          </div><label>Reason for change<textarea name="reason" minLength={3} maxLength={300} required rows={2} placeholder="For example: updated farm production cost" /></label>
-          <FormSubmitButton pendingLabel="Saving prices…">Save product prices</FormSubmitButton></fieldset>
+          </div></fieldset>
+          <fieldset><legend>Order fees · INR</legend>
+            <p className={styles.hint}>Delivery is charged per delivery. Handling and platform fees are charged once per order. Enter 0 to turn off a fee.</p>
+            <div className={styles.priceGrid}>
+              {ORDER_FEE_KEYS.map((key) => (
+                <label key={key}>{ORDER_FEE_LABELS[key]}
+                  <span className={styles.priceInput}><span aria-hidden="true">₹</span>
+                    <input key={`${catalogue.revision}:${key}`} name={key} type="number" min="0" max="100000" step="0.01"
+                      required defaultValue={catalogue.prices[key] ?? DEFAULT_ORDER_FEES[key]} />
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <FormSubmitButton pendingLabel="Saving prices…">Save prices and fees</FormSubmitButton>
         </FarmForm> : products.map(product => <div key={product.id} className={styles.reportRow}><strong>{product.name} · {product.unit}</strong><span>{formatCheckoutAmount(Math.round(catalogue.prices[product.id]*100))}</span></div>)}
-        {changes?.length ? <details className={styles.history}><summary>Price history · {changes.length}</summary>{changes.map(change => <article className={styles.reportRow} key={change.id}><strong>{change.reason}</strong><small>{new Date(change.created_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})}</small><span>{products.map(product => `${product.name}: ${formatCheckoutAmount(change.before_state[product.id])} → ${formatCheckoutAmount(change.after_state[product.id])}`).join(" · ")}</span></article>)}</details> : null}
+        {role !== "admin" && ORDER_FEE_KEYS.map((key) => (
+          <div key={key} className={styles.reportRow}>
+            <strong>{ORDER_FEE_LABELS[key]}</strong>
+            <span>{formatCheckoutAmount(Math.round((catalogue.prices[key] ?? DEFAULT_ORDER_FEES[key]) * 100))}</span>
+          </div>
+        ))}
+        {changes?.length ? (
+          <details className={styles.history}>
+            <summary>Price history · {changes.length}</summary>
+            {changes.map((change) => {
+              const updated = priceFields.flatMap(({ id, name, fallbackPaise }) => {
+                const before = change.before_state[id] ?? fallbackPaise;
+                const after = change.after_state[id] ?? fallbackPaise;
+                return before === after ? [] : [`${name}: ${formatCheckoutAmount(before)} → ${formatCheckoutAmount(after)}`];
+              });
+              return (
+                <article className={styles.reportRow} key={change.id}>
+                  <strong>{change.reason}</strong>
+                  <small>{new Date(change.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</small>
+                  <span>{updated.join(" · ")}</span>
+                </article>
+              );
+            })}
+          </details>
+        ) : null}
       </section>
       <section className={styles.panel}>
         <h2>Service policy</h2>

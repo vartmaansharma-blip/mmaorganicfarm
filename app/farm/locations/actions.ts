@@ -514,6 +514,8 @@ export async function recordCustomerOrder(formData: FormData) {
       p_catalog_revision: revision,
       p_total_paise: priceInPaise(pricing.total),
       p_bottle_paise: priceInPaise(pricing.bottleCharge),
+      p_handling_paise: priceInPaise(pricing.handlingCharge),
+      p_platform_paise: priceInPaise(pricing.platformCharge),
       p_payment_method: paymentMethod,
       p_reference: paymentReference || `MANUAL-${orderId.toUpperCase()}`,
     });
@@ -608,6 +610,8 @@ export async function recordCustomerOrder(formData: FormData) {
     .insert({
       address_snapshot: profile.address_line,
       bottle_charge_paise: priceInPaise(pricing.bottleCharge),
+      handling_fee_paise: priceInPaise(pricing.handlingCharge),
+      platform_fee_paise: priceInPaise(pricing.platformCharge),
       bottle_choice: bottleChoice,
       currency: "INR",
       delivery_plan_id: deliveryPlanId,
@@ -618,7 +622,7 @@ export async function recordCustomerOrder(formData: FormData) {
       purchase_mode: purchaseMode,
       start_date: startDate,
       status: "pending_payment",
-      subtotal_paise: priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge),
+      subtotal_paise: priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge - pricing.handlingCharge - pricing.platformCharge),
       total_paise: priceInPaise(pricing.total),
       user_id: userId,
     })

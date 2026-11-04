@@ -292,7 +292,10 @@ export function FarmWorkspaceShell({
               strokeLinejoin="round"
             />
           </svg>
-          <span>{notice.message}</span>
+          <div className={styles.saveNoticeContent}>
+            <div className={styles.saveNoticeHeading}><strong>Changes saved</strong><small>Just now</small></div>
+            <span>{notice.message}</span>
+          </div>
         </div>
       ) : null}
     </div>
