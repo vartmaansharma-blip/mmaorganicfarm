@@ -20,7 +20,8 @@ export function CustomerNotificationBell() {
       const next = await loadCustomerNotifications(mode);
       if (request !== generation.current) return;
       if (mode === "preview") setResult(next);
-      setUnread(next.status === "ok" ? next.unread : 0);
+      if (next.status === "ok") setUnread(next.unread);
+      if (next.status === "signed-out") setUnread(0);
     } catch {
       if (request === generation.current && mode === "preview") {
         setResult({ status: "error", message: "Notifications couldn’t be loaded. Try again." });

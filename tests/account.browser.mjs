@@ -27,6 +27,8 @@ const fixtures = () => Array.from({ length: 22 }, (_, index) => ({
  read_at: null,
 }));
 let notices = [];
+let notificationOutage = false;
+let notificationReadOutage = false;
 let deliveryDetails={phone:'9000000000',address_line:'Synthetic test address',postal_code:'400001'};
 const routeRefreshes=[];
 const requests=[];
@@ -52,6 +54,7 @@ const stub=createServer(async(req,res)=>{
   let raw='';for await(const chunk of req)raw+=chunk;
   const patch=JSON.parse(raw);
   assert.deepEqual(Object.keys(patch),['read_at']);
+  if(notificationReadOutage){res.writeHead(503);res.end(JSON.stringify({message:'Synthetic notification write outage',code:'TEST'}));return;}
   const id=url.searchParams.get('id');
   for(const item of notices) if(!item.read_at && (!id || id===`eq.${item.id}`))item.read_at=patch.read_at;
   res.end('[]');return;
@@ -94,6 +97,7 @@ const stub=createServer(async(req,res)=>{
   res.setHeader('content-range',data.length?'0-'+(data.length-1)+'/'+data.length:'*/0');
 }
  if(url.pathname.endsWith('/customer_notifications')){
+  if(notificationOutage){res.writeHead(503);res.end(JSON.stringify({message:'Synthetic notification outage',code:'TEST'}));return;}
   data=notices;
   if(url.searchParams.get('read_at')==='is.null')data=data.filter(item=>item.read_at===null);
   const kind=url.searchParams.get('kind');
@@ -123,7 +127,25 @@ try{
  for(const engine of (process.env.ACCOUNT_BROWSERS||'chromium,webkit').split(',')){
   const browser=await ({chromium,webkit})[engine].launch();
   try{
-   const anonymous=await browser.newContext();const anonymousPage=await anonymous.newPage();await anonymousPage.goto(`${base}/account`);assert.match(anonymousPage.url(),/\/sign-in/);const unauth=await anonymousPage.request.get(`${base}/api/account/delivery`);assert.equal(unauth.status(),401);assert.match(unauth.headers()['cache-control'],/no-store/);await anonymousPage.goto(`${base}/milk?edit=plan`);assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/milk?edit=plan');await anonymous.close();
+   const anonymous=await browser.newContext();
+   const anonymousPage=await anonymous.newPage();
+   await anonymousPage.goto(`${base}/account`);
+   assert.match(anonymousPage.url(),/\/sign-in/);
+   const unauth=await anonymousPage.request.get(`${base}/api/account/delivery`);
+   assert.equal(unauth.status(),401);
+   assert.match(unauth.headers()['cache-control'],/no-store/);
+   await anonymousPage.goto(`${base}/account/notifications`);
+   assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/account/notifications');
+   await anonymousPage.goto(`${base}/shop`);
+   await anonymousPage.getByRole('button',{name:'Notifications',exact:true}).click();
+   await anonymousPage.getByRole('dialog',{name:'Notifications'}).getByRole('link',{name:'Sign in to see your notifications'}).waitFor();
+   await anonymousPage.goto(`${base}/contact`);
+   assert.equal(await anonymousPage.locator('a[href="tel:+917546998822"]').count(),1);
+   const contactChat=await anonymousPage.locator('a[href^="https://wa.me/"]').getAttribute('href');
+   assert.equal(new URL(contactChat).pathname,'/917546998822');
+   await anonymousPage.goto(`${base}/milk?edit=plan`);
+   assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/milk?edit=plan');
+   await anonymous.close();
    for(const width of [320,390,768,1440]){
     const context=await browser.newContext({viewport:{width,height:900}});await context.addCookies([sessionCookie]);const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
     for(const theme of ['dark','light']){
@@ -220,10 +242,20 @@ try{
    await page.goto(`${base}/shop`);
    const bell=page.getByRole('button',{name:'Notifications, 22 unread'});
    await bell.focus();
+   notificationOutage=true;
    await page.keyboard.press('Enter');
    const preview=page.getByRole('dialog',{name:'Notifications',exact:true});
+   await preview.getByRole('alert').getByRole('button',{name:'Retry'}).waitFor();
+   assert.equal(await page.locator('button[aria-label="Notifications, 22 unread"]').count(),1);
+   notificationOutage=false;
+   await preview.getByRole('button',{name:'Retry'}).click();
    await preview.getByRole('heading',{name:'Payment confirmed',exact:true}).waitFor();
    assert.equal(await preview.getByRole('listitem').count(),5);
+   notificationReadOutage=true;
+   await preview.getByRole('button',{name:'Mark Payment confirmed as read'}).click();
+   await preview.getByRole('alert').getByText('The read status couldn’t be saved. Try again.').waitFor();
+   assert.equal(notices[0].read_at,null);
+   notificationReadOutage=false;
    await preview.getByRole('button',{name:'Mark Payment confirmed as read'}).click();
    await page.locator('button[aria-label="Notifications, 21 unread"]').waitFor({state:'attached'});
    await page.keyboard.press('Escape');

@@ -8,7 +8,7 @@ test("customers can read their own notifications and only change read status", a
   const runtime = await createDatabase();
   const { db } = runtime;
   try {
-    await db.query(await readFile(new URL("../../supabase/migrations/20261105121856_customer_notification_permissions.sql", import.meta.url), "utf8"));
+    await db.query(await readFile(new URL("../../supabase/migrations/20261105123236_customer_notification_permissions.sql", import.meta.url), "utf8"));
     const [customer, other, first, second] = Array.from({ length: 4 }, randomUUID);
     await db.query("insert into auth.users(id) values ($1), ($2)", [customer, other]);
     await db.query("insert into customer_notifications(id,user_id,kind,title,message) values ($1,$2,'delivery_ready','A','A'),($3,$4,'payment_confirmed','B','B')", [first, customer, second, other]);

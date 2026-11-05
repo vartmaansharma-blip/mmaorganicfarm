@@ -11,7 +11,7 @@ const fields = "id,kind,title,message,order_id,delivery_id,created_at,read_at";
 const pageSize = 20;
 
 function decodeCursor(value: string | null) {
-  if (!value || !/^[A-Za-z0-9_-]{1,120}$/.test(value)) return null;
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,120}$/.test(value)) return null;
   const [created, id, extra] = Buffer.from(value, "base64url").toString().split("|");
   if (extra || !id || !uuidPattern.test(id)) return null;
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(created) || !Number.isFinite(Date.parse(created))) return null;
@@ -20,7 +20,10 @@ function decodeCursor(value: string | null) {
 
 export async function loadCustomerNotifications(mode: "count" | "preview" | "inbox", filter: NotificationFilter = "all", before: string | null = null) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError && (authError.name === "AuthRetryableFetchError" || authError.status === 429 || (authError.status ?? 0) >= 500)) {
+    return { status: "error" as const, message: "Notifications couldn’t be loaded. Try again." };
+  }
   if (!user || user.is_anonymous) return { status: "signed-out" as const };
   if (!["count", "preview", "inbox"].includes(mode) || !notificationFilters.some(value => value.key === filter)) {
     return { status: "error" as const, message: "Choose a valid notification view." };
