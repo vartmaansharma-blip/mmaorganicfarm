@@ -128,10 +128,10 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
             fn,
           ) &&
           !(manualOrders && manualOrderCommands.has(fn) && (service || fn === "refresh_customer_route")) &&
-          !(combinedCheckout && (service ? ["prepare_combined_checkout", "prepare_unified_checkout"].includes(fn) : user && fn === "refresh_customer_route"))
+          !(combinedCheckout && (service ? ["prepare_combined_checkout", "prepare_unified_checkout", "prepare_delivery_details_checkout"].includes(fn) : user && fn === "refresh_customer_route"))
         )
           throw Error("Fixture RPC not permitted");
-        if (combinedCheckout && ["prepare_combined_checkout", "prepare_unified_checkout"].includes(fn)) await client.query("set local role service_role");
+        if (combinedCheckout && ["prepare_combined_checkout", "prepare_unified_checkout", "prepare_delivery_details_checkout"].includes(fn)) await client.query("set local role service_role");
         let raw = "";
         for await (const chunk of req) raw += chunk;
         const body = JSON.parse(raw || "{}");

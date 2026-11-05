@@ -693,3 +693,39 @@ test("restoring an older cart selects its existing products", () => {
   assert.equal(restored.carts.once.selected.ghee, true);
   assert.equal(restored.carts.once.selected.milk, false);
 });
+
+test("the configured delivery cutoff charges once below it and is free at or above it", () => {
+  const { productPricesFromPaise } = load("lib/product-prices.ts");
+  const prices = productPricesFromPaise({
+    milk: 6200, paneer: 20000, ghee: 37500, bottle: 1000,
+    delivery_once: 750, delivery_scheduled: 300, delivery_free_at: 22500,
+  });
+  assert.equal(deliveryChargeForSubtotal(224.99, "once", undefined, undefined, prices), 7.5);
+  assert.equal(deliveryChargeForSubtotal(225, "once", undefined, undefined, prices), 0);
+  assert.equal(deliveryChargeForSubtotal(224.99, "plan", "2026-11-10", "2026-09-01", prices), 3);
+  assert.equal(deliveryChargeForSubtotal(225, "plan", "2026-11-10", "2026-09-01", prices), 0);
+  assert.equal(deliveryChargeForSubtotal(100, "once", undefined, undefined, { ...prices, delivery_free_at: 0 }), 0);
+  assert.equal(deliveryChargeForSubtotal(199.01, "once"), 0);
+});
+
+test("only the date shared by the one-time and scheduled orders gets free delivery", () => {
+  const { combinedSelection } = load("lib/delivery-details.ts");
+  const prices = { milk: 62, paneer: 200, ghee: 375, bottle: 10, delivery_once: 7, delivery_scheduled: 3, delivery_free_at: 225, handling: 4, platform: 2 };
+  const plan = new URLSearchParams({
+    purchase: "plan", start: "2026-11-07", routine: "milk:1:custom:2026-11-07:1.3",
+  }).toString();
+  const quote = (day, bottle = "return") =>
+    combinedSelection({ purchase: "once", milk: "1", start: day, bottle }, plan, prices, "2026-11-07", "2026-09-01");
+  const shared = quote("2026-11-09");
+  assert.equal(shared.sharedDate, "2026-11-09");
+  assert.equal(shared.once.pricing.deliveryCharge, 0);
+  assert.deepEqual(shared.scheduled.pricing.deliveryByDate, { "2026-11-07": 3, "2026-11-09": 0 });
+  assert.equal(shared.scheduled.pricing.deliveryCharge, 3);
+  assert.equal(shared.once.pricing.handlingCharge, 4);
+  assert.equal(shared.scheduled.pricing.platformCharge, 2);
+  assert.equal(quote("2026-11-09", "new").totalPaise - shared.totalPaise, 3000);
+  const separate = quote("2026-11-08");
+  assert.equal(separate.sharedDate, null);
+  assert.equal(separate.once.pricing.deliveryCharge, 7);
+  assert.equal(separate.scheduled.pricing.deliveryCharge, 6);
+});

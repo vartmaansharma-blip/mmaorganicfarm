@@ -1,3 +1,4 @@
+import { deliveryThresholdCopy } from "@/lib/delivery-pricing";
 import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import { publicMetadata } from "@/lib/public-metadata";
 import { readProductCatalogue } from "@/lib/product-prices-server";
@@ -58,9 +59,9 @@ export default async function ShopPage() {
           <p>
             Product prices are shown beside each item. Milk is ₹{prices.milk} per litre
             with bottle return; new glass bottles add ₹{prices.bottle} per litre. One-time
-            delivery is ₹{prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once} and free above ₹199 in products. Scheduled orders
+            delivery is ₹{prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}. Scheduled orders
             have a one-month fee waiver from your first plan, then ₹{prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per
-            delivery, free above ₹199 for that delivery. Handling and platform fees are listed on the pricing page and before payment. Review your full order
+            delivery. {deliveryThresholdCopy(prices)} Handling and platform fees are listed on the pricing page and before payment. Review your full order
             before payment.
           </p>
           <Link href="/pricing">See pricing details →</Link>

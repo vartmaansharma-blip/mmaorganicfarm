@@ -174,9 +174,10 @@ test('paneer and ghee can move within their prepaid month without changing their
 test('owners update public fees without changing the fees of an older order',async()=>{
  const prior=(await catalog()).prices;
  const oldOrder=await order();
- const fees={delivery_once:750,delivery_scheduled:300,handling:400,platform:0};
+ const fees={delivery_once:750,delivery_scheduled:300,delivery_free_at:22500,handling:400,platform:0};
  await assert.rejects(change({...prior,...fees},manager),/Owner access/);
  await assert.rejects(change({...prior,...fees,handling:-1}),/non-negative fees/);
+ await assert.rejects(change({...prior,...fees,delivery_free_at:-1}),/non-negative fees/);
  await change({...prior,...fees});
  const nextOrder=await order();
  assert.deepEqual(await agreed(oldOrder),prior);
@@ -184,7 +185,8 @@ test('owners update public fees without changing the fees of an older order',asy
  assert.deepEqual((await catalog()).prices,{...prior,...fees});
  await change({...prices,milk:6300});
  assert.equal((await catalog()).prices.handling,400);
- await change({...prices,delivery_once:500,delivery_scheduled:200,handling:0,platform:0});
+ assert.equal((await catalog()).prices.delivery_free_at,22500);
+ await change({...prices,delivery_once:500,delivery_scheduled:200,delivery_free_at:19901,handling:0,platform:0});
 });
 
 test('checkout bottle mode uses the agreed price and freezes with payment', async () => {

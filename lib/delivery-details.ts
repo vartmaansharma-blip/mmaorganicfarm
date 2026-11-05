@@ -1,3 +1,4 @@
+import { waiveSharedDelivery } from "./delivery-pricing";
 import { parseFarmProductSelections } from "./farm-products";
 import { parseRoutines, quoteMonthlySchedule, type ProductRoutine } from "./monthly-schedule";
 import { calculateOrderPricing, type BottleChoice } from "./order-pricing";
@@ -7,8 +8,23 @@ import { shopProduct } from "./shop-products";
 
 export const CHECKOUT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type Choices = { purchase?: string; start?: string; milk?: string; extras?: string; routine?: string; schedule?: string };
-type OrderPricing = ReturnType<typeof calculateOrderPricing>;
+type Choices = { bottle?: string; purchase?: string; start?: string; milk?: string; extras?: string; routine?: string; schedule?: string };
+export type OrderPricing = ReturnType<typeof calculateOrderPricing>;
+export type BottleMode = Exclude<BottleChoice, "none">;
+
+export function bottleMode(value: unknown): BottleMode {
+  return value === "new" ? "new" : "return";
+}
+
+export function withBottleChoice<T extends OrderPricing>(pricing: T, mode: BottleMode, unitPricePaise: number): T {
+  const bottleChargePaise = mode === "new" ? Math.round(pricing.milkLitres * unitPricePaise) : 0;
+  return {
+    ...pricing,
+    bottleCharge: bottleChargePaise / 100,
+    total: (priceInPaise(pricing.total) - priceInPaise(pricing.bottleCharge) + bottleChargePaise) / 100,
+  };
+}
+
 type OrderLine = {
   product_key: ShopProductId;
   product_name: string;
@@ -27,6 +43,7 @@ export type DeliverySelection = {
   lines: OrderLine[];
 };
 export type ScheduledDeliverySelection = DeliverySelection & {
+  pricing: ReturnType<typeof quoteMonthlySchedule>;
   rules: ProductRoutine[];
   days: ReturnType<typeof quoteMonthlySchedule>["days"];
 };
@@ -52,7 +69,7 @@ export function oneTimeSelection(choices: Choices, prices: ProductPrices, minimu
   const products = parseFarmProductSelections(extras, prices);
   const milkLitres = Number(milk);
   if (!milkLitres && !products.length) return null;
-  const bottle = milkLitres ? "return" : "none";
+  const bottle = milkLitres ? bottleMode(choices.bottle) : "none";
   const pricing = calculateOrderPricing({ bottleChoice: bottle, milkLitres, products, prices });
   const lines = [
     ...(milkLitres ? [line("milk", milkLitres, pricing.milkTotal, start, prices)] : []),
@@ -66,7 +83,7 @@ export function scheduledSelection(choices: Choices, prices: ProductPrices, mini
   if (choices.purchase !== "plan" || !validShopDate(start) || start < minimum || choices.extras || choices.schedule) return null;
   const rules = parseRoutines(start, choices.routine ?? "");
   if (!rules) return null;
-  const bottle = rules.some((rule) => rule.id === "milk") ? "return" : "none";
+  const bottle = rules.some((rule) => rule.id === "milk") ? bottleMode(choices.bottle) : "none";
   const pricing = quoteMonthlySchedule({ start: start, rules, bottleChoice: bottle, firstPlanStart: firstPlanStart ?? start, prices });
   const lines = rules.map(({ id }) => line(id, pricing.quantities[id], pricing.productTotals[id],
     pricing.days.find((day) => day.items.some((item) => item.id === id))!.date, prices));
@@ -79,9 +96,15 @@ export function combinedSelection(choices: Choices, nextPlan: string, prices: Pr
   const keys = [...params.keys()];
   if (new Set(keys).size !== keys.length || keys.some((key) => !["purchase", "start", "routine", "milk"].includes(key))) return null;
   const once = oneTimeSelection(choices, prices, minimum);
-  const scheduled = scheduledSelection(Object.fromEntries(params), prices, minimum, firstPlanStart);
+  const scheduled = scheduledSelection({ ...Object.fromEntries(params), bottle: choices.bottle }, prices, minimum, firstPlanStart);
   if (!once || !scheduled) return null;
-  return { once, scheduled, totalPaise: priceInPaise(once.pricing.total) + priceInPaise(scheduled.pricing.total) };
+  const quote = waiveSharedDelivery(once.pricing, scheduled.pricing, once.start);
+  return {
+    once: { ...once, pricing: quote.once },
+    scheduled: { ...scheduled, pricing: quote.scheduled },
+    sharedDate: quote.sharedDate,
+    totalPaise: priceInPaise(quote.once.total) + priceInPaise(quote.scheduled.total),
+  };
 }
 
 export function deliveryOrderValues(pricing: OrderPricing, bottle: BottleChoice, start: string, address: string, phone: string) {

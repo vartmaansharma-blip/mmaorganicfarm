@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Accept the order terms before payment." }, { status: 400 });
   const admin = createAdminClient();
   const { data: batch } = await admin.from("checkout_batches")
-    .select("id,user_id,once_order_id,plan_order_id,amount_paise,is_test,status,provider_order_id")
+    .select("id,user_id,once_order_id,plan_order_id,amount_paise,is_test,status,provider_order_id,shared_delivery_date")
     .eq("id", body.batchId).eq("user_id", user.id).maybeSingle();
   if (!batch || !["draft", "pending_payment"].includes(batch.status))
     return NextResponse.json({ error: "This combined checkout is not available for payment." }, { status: 409 });

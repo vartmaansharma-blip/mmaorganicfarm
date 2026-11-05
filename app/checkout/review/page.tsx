@@ -190,7 +190,6 @@ export default async function ReviewPage({
             unavailableReason={modeError ?? undefined}
             isTest={order.is_test}
             bottleMode={bottleMode}
-            bottleLocked={order.status !== "draft"}
           >
           <div className={styles.bill}>
             <h3>Your items</h3>

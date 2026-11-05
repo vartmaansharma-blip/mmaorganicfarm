@@ -1,4 +1,5 @@
 "use client";
+import { deliveryThresholdCopy } from "@/lib/delivery-pricing";
 import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import { ProductGallery } from "./product-gallery";
 import Link from "next/link";
@@ -434,7 +435,7 @@ function OneTimeProductDetails({ id }: { id: ShopProductId }) {
                   Your first scheduled month has a fee waiver. After that,
                   delivery is ₹{prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery.
                   One-time delivery is ₹{prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.
-                  Delivery is free above ₹199 in products per delivery.
+                  {deliveryThresholdCopy(prices)}
                 </p>
                 <div className={styles.total}>
                   <span>Delivery</span>

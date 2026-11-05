@@ -244,6 +244,7 @@ export function quoteMonthlySchedule({
       ghee: 0,
     };
   let deliveryCharge = 0;
+  const deliveryByDate: Record<string, number> = {};
   for (const day of days) {
     let subtotal = 0;
     for (const item of day.items) {
@@ -251,13 +252,15 @@ export function quoteMonthlySchedule({
       productTotals[item.id] += item.quantity * routinePrice(item.id, prices);
       subtotal += item.quantity * routinePrice(item.id, prices);
     }
-    deliveryCharge += deliveryChargeForSubtotal(
+    const dailyDeliveryCharge = deliveryChargeForSubtotal(
       subtotal,
       "plan",
       day.date,
       firstPlanStart,
       prices,
     );
+    deliveryByDate[day.date] = dailyDeliveryCharge;
+    deliveryCharge += dailyDeliveryCharge;
   }
   for (const id of ids) productTotals[id] = money(productTotals[id]);
   const milkLitres = quantities.milk,
@@ -274,7 +277,8 @@ export function quoteMonthlySchedule({
     oneTimeAddOnsTotal: 0,
     recurringAddOnsTotal: money(productTotals.paneer + productTotals.ghee),
     bottleCharge,
-    deliveryCharge,
+    deliveryCharge: money(deliveryCharge),
+    deliveryByDate,
     productsSubtotal,
     total: money(productsSubtotal + bottleCharge + deliveryCharge + fees.handlingCharge + fees.platformCharge),
     endExclusive: firstMonthEnds(start),

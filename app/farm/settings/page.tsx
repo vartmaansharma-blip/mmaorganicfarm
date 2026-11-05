@@ -54,7 +54,7 @@ export default async function SettingsPage({searchParams}: {searchParams: Promis
             {products.map(product => <label key={product.id}>{product.name} · {product.unit}<span className={styles.priceInput}><span aria-hidden="true">₹</span><input key={`${catalogue.revision}:${product.id}`} aria-label={`${product.name} price in rupees`} name={product.id} type="number" min="0.01" max="100000" step="0.01" required defaultValue={catalogue.prices[product.id]} /></span></label>)}
           </div></fieldset>
           <fieldset><legend>Order fees · INR</legend>
-            <p className={styles.hint}>Delivery is charged per delivery. Handling and platform fees are charged once per order. Enter 0 to turn off a fee.</p>
+            <p className={styles.hint}>Set a separate rate for one-time orders and scheduled visits. Below the cutoff, the rate applies to the product subtotal for that delivery. Enter 0 for free delivery at any amount or to turn off one rate.</p>
             <div className={styles.priceGrid}>
               {ORDER_FEE_KEYS.map((key) => (
                 <label key={key}>{ORDER_FEE_LABELS[key]}
