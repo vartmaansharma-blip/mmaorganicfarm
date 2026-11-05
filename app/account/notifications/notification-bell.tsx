@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { loadCustomerNotifications } from "./actions";
+import { NotificationIcon } from "./notification-icon";
 import { NotificationList } from "./notification-list";
 import styles from "./notifications.module.css";
 
@@ -58,9 +59,7 @@ export function CustomerNotificationBell() {
         setOpen(true);
         void refresh("preview");
       }}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-        <path d="M18 8a6 6 0 0 0-12 0c0 6-3 6-3 8h18c0-2-3-2-3-8M10 20h4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <NotificationIcon name="bell" />
       {unread ? <span aria-hidden="true">{unread > 99 ? "99+" : unread}</span> : null}
     </button>
     <dialog ref={dialog} id={id} className={styles.preview} aria-labelledby={`${id}-heading`}
@@ -71,17 +70,28 @@ export function CustomerNotificationBell() {
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.current?.close();
       }}>
       <div className={styles.previewHeader}>
-        <h2 id={`${id}-heading`}>Notifications</h2>
-        <form method="dialog"><button type="submit" aria-label="Close notifications">Close</button></form>
+        <div>
+          <p className={styles.kicker}>My M’ma inbox</p>
+          <h2 id={`${id}-heading`}>Notifications</h2>
+        </div>
+        <form method="dialog"><button className={styles.close} type="submit" aria-label="Close notifications"><NotificationIcon name="close" /></button></form>
       </div>
-      {!result ? <p role="status">Loading notifications…</p> : result.status === "signed-out" ?
-        <p><Link href="/sign-in?next=%2Faccount%2Fnotifications">Sign in to see your notifications</Link></p> :
-        result.status === "error" ? <p role="alert">{result.message} <button type="button" onClick={() => void refresh("preview")}>Retry</button></p> :
-          <>
-            {result.items.length ? <NotificationList compact items={result.items} onRead={() => void refresh("preview")} onNavigate={() => dialog.current?.close()} /> :
-              <p>You’re all caught up.</p>}
-            <Link className={styles.viewAll} href="/account/notifications" onClick={() => dialog.current?.close()}>View all notifications →</Link>
-          </>}
+      <div className={styles.previewBody}>
+        {!result ? <p className={styles.previewStatus} role="status">Loading notifications…</p> :
+          result.status === "signed-out" ? <div className={styles.previewStatus}>
+            <p>Your delivery and payment updates are in My M’ma.</p>
+            <Link href="/sign-in?next=%2Faccount%2Fnotifications">Sign in to see your notifications</Link>
+          </div> : result.status === "error" ? <div className={styles.error} role="alert">
+            <p>{result.message}</p><button type="button" onClick={() => void refresh("preview")}>Retry</button>
+          </div> : result.items.length ? <NotificationList compact items={result.items} onRead={() => void refresh("preview")} onNavigate={() => dialog.current?.close()} /> :
+            <p className={styles.previewStatus}>You’re all caught up.</p>}
+      </div>
+      {result?.status === "ok" ? <div className={styles.previewFooter}>
+        <span>{result.unread ? `${result.unread} unread` : "All read"}</span>
+        <Link className={styles.viewAll} href="/account/notifications" onClick={() => dialog.current?.close()}>
+          View all notifications <NotificationIcon name="chevron" size={16} />
+        </Link>
+      </div> : null}
     </dialog>
   </>;
 }

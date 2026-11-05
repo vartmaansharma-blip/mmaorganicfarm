@@ -18,12 +18,18 @@ const plus=n=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()
 let scenario='out', fail=false;
 const fixtures = () => Array.from({ length: 22 }, (_, index) => ({
  id: `00000000-0000-4000-8000-${String(100 + index).padStart(12, '0')}`,
- title: index === 0 ? 'Payment confirmed' : `Delivery notice ${index}`,
- message: 'A saved update from the farm.',
+ title: ['Payment confirmed', 'Milk is on the way', 'Plan delivery scheduled', 'Delivery prepared', 'Delivery completed'][index] ?? `Delivery notice ${index}`,
+ message: [
+  'We received the payment for your prepaid delivery plan.',
+  'Your fresh milk is with the delivery team.',
+  'Your delivery date has been confirmed.',
+  'The farm has prepared your milk for delivery.',
+  'Your previous delivery was confirmed.',
+ ][index] ?? 'A saved update from the farm.',
  kind: index === 0 ? 'payment_confirmed' : 'delivery_ready',
  order_id: index === 0 ? '00000000-0000-4000-8000-000000000004' : null,
- delivery_id: index === 1 ? recordId : null,
- created_at: new Date(Date.UTC(2026, 10, 5, 5, 30 - index)).toISOString(),
+ delivery_id: index === 1 || index === 3 ? recordId : null,
+ created_at: new Date(Date.UTC(2026, 10, index < 4 ? 5 : 4, 5, 30 - index)).toISOString(),
  read_at: null,
 }));
 let notices = [];
@@ -251,6 +257,7 @@ try{
    await preview.getByRole('button',{name:'Retry'}).click();
    await preview.getByRole('heading',{name:'Payment confirmed',exact:true}).waitFor();
    assert.equal(await preview.getByRole('listitem').count(),5);
+   await page.screenshot({path:path.join(output,`${engine}-390-notification-preview.png`)});
    notificationReadOutage=true;
    await preview.getByRole('button',{name:'Mark Payment confirmed as read'}).click();
    await preview.getByRole('alert').getByText('The read status couldn’t be saved. Try again.').waitFor();
@@ -262,15 +269,31 @@ try{
    await preview.waitFor({state:'hidden'});
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Notifications, 21 unread');
    await page.goto(`${base}/account/notifications`);
-   assert.equal(await page.getByRole('heading',{name:'Notification Centre'}).count(),1);
-   assert.equal(await page.getByRole('heading',{name:'Payment confirmed',exact:true}).count(),1);
+   await page.getByRole('heading',{name:'Notification Centre',exact:true}).waitFor();
+   await page.getByRole('heading',{name:'Payment confirmed',exact:true}).waitFor();
+   assert.equal(await page.getByRole('heading',{name:/November 2026/}).count(),2,'inbox groups notices by delivery time zone date');
+   const earlier = page.locator('summary').filter({hasText:'1 earlier delivery update'});
+   const earlierNotice = page.getByRole('heading',{name:'Delivery prepared',exact:true});
+   assert.equal(await earlierNotice.isVisible(),false,'only the latest related notice is shown initially');
+   await earlier.press('Enter');
+   await earlierNotice.waitFor();
+   await page.locator('summary').filter({hasText:'Hide earlier updates'}).press('Enter');
+   await earlierNotice.waitFor({state:'hidden'});
+   await page.locator('summary').filter({hasText:'1 earlier delivery update'}).evaluate(summary=>summary.blur());
+   await page.setViewportSize({width:320,height:760});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'notification inbox fits a 320px viewport');
+   await page.setViewportSize({width:390,height:844});
+   await page.screenshot({path:path.join(output,`${engine}-390-notification-centre.png`)});
+   await page.setViewportSize({width:1440,height:960});
+   await page.screenshot({path:path.join(output,`${engine}-1440-notification-centre.png`)});
+   await page.setViewportSize({width:390,height:844});
    await page.getByRole('link',{name:'Older notifications →'}).click();
    await page.getByRole('heading',{name:'Delivery notice 21',exact:true}).waitFor();
    await page.getByRole('link',{name:'Payments',exact:true}).click();
    await page.getByRole('button',{name:'View order →'}).click();
    await page.getByRole('heading',{name:'Order details',exact:true}).waitFor();
    await page.goto(`${base}/account/notifications?filter=deliveries`);
-   await page.getByRole('button',{name:'View delivery →',exact:true}).click();
+   await page.getByRole('article',{name:'Milk is on the way',exact:true}).click({position:{x:80,y:36}});
    await page.locator('#selected-delivery').getByText('Fresh milk', {exact:false}).waitFor();
    await page.goto(`${base}/account/notifications`);
    await page.getByRole('button',{name:'Mark all as read'}).click();
