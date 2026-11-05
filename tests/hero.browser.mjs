@@ -153,6 +153,7 @@ async function verifyHybrid(page, name, width) {
   assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
   assert.equal(await page.evaluate(() => document.body.style.position), '');
   assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top');
+   assert.match(await page.locator('[data-overhead-photo]').getAttribute('src'), /milk-top\.avif/, 'closing overhead uses milk, not coffee');
   assert.equal(await page.locator('header').isVisible(), true);
   await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
   const end = await page.locator('#home').getAttribute('data-film-time');
@@ -270,7 +271,7 @@ async function verifyLifecycle(browser, name) {
     let releaseImage;
     const delayedImage = new Promise(resolve => { releaseImage = resolve; });
     await page.route('**/_next/image?*', async route => {
-      if (decodeURIComponent(route.request().url()).includes('coffee-top')) {
+      if (decodeURIComponent(route.request().url()).includes('milk-top')) {
         if (fail) await route.abort();
         else { await delayedImage; await route.continue(); }
       } else await route.continue();
