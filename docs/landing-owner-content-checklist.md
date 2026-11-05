@@ -17,7 +17,7 @@ No placeholders from this checklist appear on the public page. Existing publishe
 | FARM_VIDEO_CAPTIONS | Approved video, poster, transcript/captions and usage permission |
 | BUSINESS_ADDRESS | Complete public business address |
 | GOOGLE_BUSINESS_PROFILE_URL | Verified profile URL |
-| CONTACT_CONFIRMATION | Confirm the already-published +91 98188 04419 telephone/WhatsApp number |
+| CONTACT_CONFIRMATION | Primary telephone and WhatsApp: +91 75469 98822 |
 | ANALYTICS_DESTINATION | Chosen provider, configuration and consent requirements; current events have no network collector |
 | FULL_HINDI_TRANSLATION | Approved translation of product, policy and ordering content; the hero currently has a Hindi tagline |
 

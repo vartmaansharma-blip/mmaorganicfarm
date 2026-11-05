@@ -1,3 +1,4 @@
+import { FARM_PHONE_DISPLAY, FARM_PHONE_LINK } from "@/lib/farm-contact";
 import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
@@ -14,7 +15,7 @@ export default function CancellationRefundsPage() {
       <section>
         <h2>Before preparation</h2>
         <p>
-          Contact the farm at <a href="tel:+919818804419">+91 98188 04419</a>. A
+          Contact the farm at <a href={FARM_PHONE_LINK}>{FARM_PHONE_DISPLAY}</a>. A
           cancellation request is reviewed against the order status and whether
           preparation or dispatch has begun.
         </p>

@@ -1,3 +1,4 @@
+import { farmWhatsApp } from "@/lib/farm-contact";
 import Link from "next/link";
 import { formatCalendarDate, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
 import styles from "./monthly-plan.module.css";
@@ -80,7 +81,7 @@ export function MonthlyPlan({
           <Link href={`/calendar?plan=${id}`}>Open delivery calendar →</Link>
           <p>
             Need to change a paid delivery?{" "}
-            <a href="https://wa.me/919818804419">Contact the farm</a> before
+            <a href={farmWhatsApp()}>Contact the farm</a> before
             preparation. Paid quantities are preserved; no cash refunds.
           </p>
         </>

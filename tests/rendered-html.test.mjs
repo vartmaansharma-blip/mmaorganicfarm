@@ -288,7 +288,7 @@ test("keeps the landing page focused on milk conversion and trust", async () => 
   assert.match(page, /RisingGlassHero/);
   assert.doesNotMatch(page, /order-orbit|bottle-stage/);
   assert.match(page, /readProductCatalogue/);
-  assert.match(page, /919818804419/);
+  assert.match(page, /farmWhatsApp/);
   assert.match(page, /20 years operating/);
   assert.match(page, /500\+ families/);
   assert.match(page, /1,000 L\+/);
@@ -327,7 +327,7 @@ test("publishes complete business and policy information", async () => {
   assert.match(pricing, /FARM_PRODUCTS/);
   assert.match(shipping, /Jamshedpur/);
   assert.match(shipping, /next delivery day/);
-  assert.match(contact, /919818804419/);
+  assert.match(contact, /FARM_PHONE_LINK/);
   assert.match(terms, /Terms and conditions/);
   assert.match(privacy, /Supabase/);
   assert.match(privacy, /does not store complete card or bank credentials/);
@@ -1080,7 +1080,7 @@ test("collects delivery details only when a customer starts an order", async () 
   assert.doesNotMatch(orderActions, /delivery charge|delivery fee/i);
   assert.doesNotMatch(orderActions, /city: "Jamshedpur"/);
   assert.doesNotMatch(orderActions, /Delivery address: \$\{address\}, Jamshedpur/);
-  assert.doesNotMatch(orderActions, /wa\.me\/919818804419/);
+  assert.doesNotMatch(orderActions, /wa\.me|farmWhatsApp/);
   assert.match(milkPlan, /MILK_PLAN_DAYS/);
   assert.match(milkPlan, /serializeWeeklyMilkSchedule/);
   assert.match(milkPlan, /describeWeeklyMilkSchedule/);

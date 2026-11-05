@@ -1,3 +1,4 @@
+import { FARM_PHONE_DISPLAY, FARM_PHONE_LINK } from "@/lib/farm-contact";
 import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
@@ -34,7 +35,7 @@ export default function PrivacyPage() {
       </section>
       <section>
         <h2>Access and correction</h2>
-        <p>Customers can review saved details in Profile. For a correction or deletion request, call <a href="tel:+919818804419">+91 98188 04419</a>. Some records may be retained when required for security, payment, or legal obligations.</p>
+        <p>Customers can review saved details in Profile. For a correction or deletion request, call <a href={FARM_PHONE_LINK}>{FARM_PHONE_DISPLAY}</a>. Some records may be retained when required for security, payment, or legal obligations.</p>
       </section>
     </PublicInformationLayout>
   );

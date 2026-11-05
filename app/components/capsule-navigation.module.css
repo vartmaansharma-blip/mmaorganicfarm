@@ -4,7 +4,7 @@
   top: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto auto;
+  grid-template-columns: 1fr auto 1fr auto auto auto;
   align-items: center;
   gap: var(--space-5);
   min-height: var(--home-header-height);
@@ -56,7 +56,7 @@
 .drawer :is(a, button):focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
 @keyframes drawer-enter { from { transform: translateX(100%); } to { transform: translateX(0); } }
 @media (max-width: 900px) {
-  .header { grid-template-columns: 1fr auto auto auto; min-height: var(--home-header-height); padding-block: 10px; gap: 8px; }
+  .header { grid-template-columns: 1fr auto auto auto auto; min-height: var(--home-header-height); padding-block: 10px; gap: 8px; }
   .brand { width: 68px; }
   .shop { min-height: 44px; padding-inline: 16px; gap: 12px; font-size: 14px; }
   .desktopShop, .capsule { display: none; }
@@ -65,6 +65,10 @@
   .menuButton > span { display: grid; gap: 5px; width: 17px; }
   .menuButton i { display: block; height: 1.5px; background: currentColor; }
   .menuButton:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
+}
+@media (max-width: 370px) {
+  .header { grid-template-columns: minmax(0, 1fr) repeat(4, auto); padding-inline: 12px; gap: 5px; }
+  .brand { width: min(62px, 100%); }
 }
 @media (max-height: 650px) { .drawerLinks { margin-top: 16px; } .drawerLinks a { min-height: 58px; } .drawerFooter { padding-top: 20px; } }
 @media (prefers-reduced-motion: reduce) { .header a, .shop span:last-child, .drawerLinks a, .drawerFooter a { transition: none; } .header a:active, .menuButton:active, .shop:hover span:last-child { transform: none; } .drawer[open] { animation: none; } }

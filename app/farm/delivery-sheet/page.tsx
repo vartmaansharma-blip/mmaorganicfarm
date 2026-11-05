@@ -1,3 +1,4 @@
+import { customerDeliveryWhatsApp } from "@/lib/farm-contact";
 import { isMissingDestinationSchema } from "@/lib/routing-schema";
 import { deliveryNavigationUrl } from "@/lib/delivery-navigation";
 import { FarmForm } from "../farm-form";
@@ -855,7 +856,11 @@ export default async function DeliverySheetPage({
                   </div>
 
                   <ol className={styles.stopList}>
-                    {route.stops.map((stop, index) => (
+                    {route.stops.map((stop, index) => {
+                      const whatsapp = managerView && ["failed", "cancelled"].includes(stop.status)
+                        ? customerDeliveryWhatsApp(stop.phone_snapshot, `Hello, this is M’ma Organic Farm. We have an update about your delivery on ${deliveryDate}. Please reply so we can help.`)
+                        : null;
+                      return (
                       <li
                         className={styles.stopCard}
                         id={`stop-${stop.id}`}
@@ -894,6 +899,9 @@ export default async function DeliverySheetPage({
                           ) : (
                             <span>No phone saved</span>
                           )}
+                          {whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer">
+                            Open customer chat in WhatsApp ↗
+                          </a> : null}
                           {stop.address_snapshot ? (
                             <a
                               className={styles.mapLink}
@@ -960,7 +968,8 @@ export default async function DeliverySheetPage({
                           />
                         ) : null}
                       </li>
-                    ))}
+                      );
+                    })}
                   </ol>
                 </section>
               ))}

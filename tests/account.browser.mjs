@@ -16,6 +16,19 @@ const recordId='00000000-0000-4000-8000-000000000003';
 const date=indiaDate();
 const plus=n=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
 let scenario='out', fail=false;
+const fixtures = () => Array.from({ length: 22 }, (_, index) => ({
+ id: `00000000-0000-4000-8000-${String(100 + index).padStart(12, '0')}`,
+ title: index === 0 ? 'Payment confirmed' : `Delivery notice ${index}`,
+ message: 'A saved update from the farm.',
+ kind: index === 0 ? 'payment_confirmed' : 'delivery_ready',
+ order_id: index === 0 ? '00000000-0000-4000-8000-000000000004' : null,
+ delivery_id: index === 1 ? recordId : null,
+ created_at: new Date(Date.UTC(2026, 10, 5, 5, 30 - index)).toISOString(),
+ read_at: null,
+}));
+let notices = [];
+let notificationOutage = false;
+let notificationReadOutage = false;
 let deliveryDetails={phone:'9000000000',address_line:'Synthetic test address',postal_code:'400001'};
 const routeRefreshes=[];
 const requests=[];
@@ -35,12 +48,23 @@ const stub=createServer(async(req,res)=>{
   deliveryDetails={phone,address_line,postal_code};
   res.end(JSON.stringify({user_id:userId}));return;
  }
+ if(req.method==='PATCH' && url.pathname==='/rest/v1/customer_notifications'){
+  assert.equal(url.searchParams.get('user_id'),`eq.${userId}`);
+  assert.equal(url.searchParams.get('read_at'),'is.null');
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const patch=JSON.parse(raw);
+  assert.deepEqual(Object.keys(patch),['read_at']);
+  if(notificationReadOutage){res.writeHead(503);res.end(JSON.stringify({message:'Synthetic notification write outage',code:'TEST'}));return;}
+  const id=url.searchParams.get('id');
+  for(const item of notices) if(!item.read_at && (!id || id===`eq.${item.id}`))item.read_at=patch.read_at;
+  res.end('[]');return;
+ }
  if(req.method==='POST' && url.pathname==='/rest/v1/rpc/refresh_customer_route'){
   let raw='';for await(const chunk of req)raw+=chunk;
   routeRefreshes.push(JSON.parse(raw));
   res.end('null');return;
  }
- if(req.method!=='GET' && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
+ if(!['GET','HEAD'].includes(req.method) && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
  if(url.pathname.endsWith("/farm_catalog_prices"))data={revision:"00000000-0000-4000-8000-000000000099",prices:{milk:6200,paneer:20000,ghee:37500,bottle:1000}};
@@ -55,6 +79,7 @@ const stub=createServer(async(req,res)=>{
   data=rows();
   const exactDate=url.searchParams.get('delivery_date');
   if(exactDate?.startsWith('eq.'))data=data.filter(row=>row.delivery_date===exactDate.slice(3));
+  if(url.searchParams.has('id'))data=data.filter(row=>url.searchParams.get('id')===`eq.${row.id}`);
   if(url.searchParams.get('status')==='eq.delivered')data=data.filter(r=>r.status==='delivered');
  }
  if(url.pathname.endsWith('/orders')) {
@@ -67,9 +92,21 @@ const stub=createServer(async(req,res)=>{
     const allowed=status.slice(4,-1).split(',');
     data=data.filter(order=>allowed.includes(order.status));
   }
+  if(status.startsWith('eq.'))data=data.filter(order=>order.status===status.slice(3));
+  if(url.searchParams.has('id'))data=data.filter(order=>url.searchParams.get('id')===`eq.${order.id}`);
   res.setHeader('content-range',data.length?'0-'+(data.length-1)+'/'+data.length:'*/0');
 }
- if(url.pathname.endsWith('/customer_notifications'))data=[{id:'update1',title:'Your plan is confirmed',message:'Your delivery dates are saved.',created_at:new Date().toISOString(),read_at:null}];
+ if(url.pathname.endsWith('/customer_notifications')){
+  if(notificationOutage){res.writeHead(503);res.end(JSON.stringify({message:'Synthetic notification outage',code:'TEST'}));return;}
+  data=notices;
+  if(url.searchParams.get('read_at')==='is.null')data=data.filter(item=>item.read_at===null);
+  const kind=url.searchParams.get('kind');
+  if(kind?.startsWith('in.('))data=data.filter(item=>kind.slice(4,-1).split(',').includes(item.kind));
+  const cursor=url.searchParams.get('or')?.match(/created_at\.lt\.([^,]+)/)?.[1];
+  if(cursor)data=data.filter(item=>item.created_at<cursor);
+  res.setHeader('content-range',data.length?`0-${data.length-1}/${data.length}`:'*/0');
+  if(url.searchParams.has('limit'))data=data.slice(0,Number(url.searchParams.get('limit')));
+ }
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
 });
@@ -90,7 +127,25 @@ try{
  for(const engine of (process.env.ACCOUNT_BROWSERS||'chromium,webkit').split(',')){
   const browser=await ({chromium,webkit})[engine].launch();
   try{
-   const anonymous=await browser.newContext();const anonymousPage=await anonymous.newPage();await anonymousPage.goto(`${base}/account`);assert.match(anonymousPage.url(),/\/sign-in/);const unauth=await anonymousPage.request.get(`${base}/api/account/delivery`);assert.equal(unauth.status(),401);assert.match(unauth.headers()['cache-control'],/no-store/);await anonymousPage.goto(`${base}/milk?edit=plan`);assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/milk?edit=plan');await anonymous.close();
+   const anonymous=await browser.newContext();
+   const anonymousPage=await anonymous.newPage();
+   await anonymousPage.goto(`${base}/account`);
+   assert.match(anonymousPage.url(),/\/sign-in/);
+   const unauth=await anonymousPage.request.get(`${base}/api/account/delivery`);
+   assert.equal(unauth.status(),401);
+   assert.match(unauth.headers()['cache-control'],/no-store/);
+   await anonymousPage.goto(`${base}/account/notifications`);
+   assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/account/notifications');
+   await anonymousPage.goto(`${base}/shop`);
+   await anonymousPage.getByRole('button',{name:'Notifications',exact:true}).click();
+   await anonymousPage.getByRole('dialog',{name:'Notifications'}).getByRole('link',{name:'Sign in to see your notifications'}).waitFor();
+   await anonymousPage.goto(`${base}/contact`);
+   assert.equal(await anonymousPage.locator('a[href="tel:+917546998822"]').count(),1);
+   const contactChat=await anonymousPage.locator('a[href^="https://wa.me/"]').getAttribute('href');
+   assert.equal(new URL(contactChat).pathname,'/917546998822');
+   await anonymousPage.goto(`${base}/milk?edit=plan`);
+   assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/milk?edit=plan');
+   await anonymous.close();
    for(const width of [320,390,768,1440]){
     const context=await browser.newContext({viewport:{width,height:900}});await context.addCookies([sessionCookie]);const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
     for(const theme of ['dark','light']){
@@ -183,6 +238,44 @@ try{
    await page.getByText(/This date has been prepared or paused/).waitFor();
    await page.getByText(/The farm has prepared this delivery/).waitFor();
    assert.equal(await page.getByRole('button',{name:'Save quantity'}).count(),0);
+   scenario='out';notices=fixtures();
+   await page.goto(`${base}/shop`);
+   const bell=page.getByRole('button',{name:'Notifications, 22 unread'});
+   await bell.focus();
+   notificationOutage=true;
+   await page.keyboard.press('Enter');
+   const preview=page.getByRole('dialog',{name:'Notifications',exact:true});
+   await preview.getByRole('alert').getByRole('button',{name:'Retry'}).waitFor();
+   assert.equal(await page.locator('button[aria-label="Notifications, 22 unread"]').count(),1);
+   notificationOutage=false;
+   await preview.getByRole('button',{name:'Retry'}).click();
+   await preview.getByRole('heading',{name:'Payment confirmed',exact:true}).waitFor();
+   assert.equal(await preview.getByRole('listitem').count(),5);
+   notificationReadOutage=true;
+   await preview.getByRole('button',{name:'Mark Payment confirmed as read'}).click();
+   await preview.getByRole('alert').getByText('The read status couldn’t be saved. Try again.').waitFor();
+   assert.equal(notices[0].read_at,null);
+   notificationReadOutage=false;
+   await preview.getByRole('button',{name:'Mark Payment confirmed as read'}).click();
+   await page.locator('button[aria-label="Notifications, 21 unread"]').waitFor({state:'attached'});
+   await page.keyboard.press('Escape');
+   await preview.waitFor({state:'hidden'});
+   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Notifications, 21 unread');
+   await page.goto(`${base}/account/notifications`);
+   assert.equal(await page.getByRole('heading',{name:'Notification Centre'}).count(),1);
+   assert.equal(await page.getByRole('heading',{name:'Payment confirmed',exact:true}).count(),1);
+   await page.getByRole('link',{name:'Older notifications →'}).click();
+   await page.getByRole('heading',{name:'Delivery notice 21',exact:true}).waitFor();
+   await page.getByRole('link',{name:'Payments',exact:true}).click();
+   await page.getByRole('button',{name:'View order →'}).click();
+   await page.getByRole('heading',{name:'Order details',exact:true}).waitFor();
+   await page.goto(`${base}/account/notifications?filter=deliveries`);
+   await page.getByRole('button',{name:'View delivery →',exact:true}).click();
+   await page.locator('#selected-delivery').getByText('Fresh milk', {exact:false}).waitFor();
+   await page.goto(`${base}/account/notifications`);
+   await page.getByRole('button',{name:'Mark all as read'}).click();
+   await page.getByText('All read',{exact:true}).waitFor();
+   assert.equal(notices.filter(item=>!item.read_at).length,0);
    scenario='out';await page.goto(`${base}/account`,{waitUntil:'networkidle'});fail=true;await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByText('Showing the last successful update',{exact:false}).waitFor();assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'out');await page.screenshot({path:path.join(output,`${engine}-390-stale.png`),fullPage:true});
    fail=false;scenario='delivered';await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();assert.equal(await page.getByText('Showing the last successful update',{exact:false}).count(),0);
    fail=true;await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'error');assert.equal(await page.getByRole('heading',{name:'A quiet day at your doorstep',exact:true}).count(),0);fail=false;await page.getByRole('button',{name:'Try again →'}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();

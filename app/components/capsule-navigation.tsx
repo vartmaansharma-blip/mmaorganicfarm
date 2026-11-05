@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CustomerNotificationBell } from "@/app/account/notifications/notification-bell";
 import { CartButton } from "@/app/shop/cart-button";
 import { NavigationMenu } from "./navigation-menu";
 import { ThemeToggle } from "./theme-toggle";
@@ -72,6 +73,7 @@ export function CapsuleNavigation({
         ))}
       </nav>
       <CartButton />
+      <CustomerNotificationBell />
       <ThemeToggle />
       <NavigationMenu homePage={!shopPage} current={current} />
       <noscript>

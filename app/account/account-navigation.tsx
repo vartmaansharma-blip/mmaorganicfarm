@@ -11,7 +11,7 @@ const paths = {
   orders: <><path d="M6 3h12v19l-3-2-3 2-3-2-3 2V3Z" /><path d="M9 8h6m-6 4h6m-6 4h3" /></>,
   settings: <><circle cx="12" cy="8" r="4" /><path d="M4 22v-3a8 8 0 0 1 16 0v3" /></>,
 };
-export function AccountNavigation({ section }: { section: AccountSection }) {
+export function AccountNavigation({ section }: { section?: AccountSection }) {
   return <aside className={styles.sidebar}>
     <Link className={styles.accountTitle} href="/account">My M’ma<span>Your everyday, from the farm.</span></Link>
     <nav className={styles.accountNav} aria-label="Your account">
