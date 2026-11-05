@@ -44,9 +44,10 @@ async function getOwnedPlan(planId: string) {
 
   const { data: plan } = await supabase
     .from("delivery_plans")
-    .select("id, user_id, start_date, bottle_choice, billing_model")
+    .select("id, user_id, start_date, bottle_choice, billing_model, period_end_exclusive")
     .eq("id", planId)
     .eq("user_id", user.id)
+    .eq("is_test", false)
     .in("status", ["pending_confirmation", "active", "paused"])
     .maybeSingle();
 
@@ -61,6 +62,27 @@ async function getOwnedPlan(planId: string) {
       ),
     );
   return { plan, supabase, user };
+}
+
+async function checkEditableDate({ plan, supabase, user }: Awaited<ReturnType<typeof getOwnedPlan>>, date: string) {
+  if (date < plan.start_date || (plan.period_end_exclusive && date >= plan.period_end_exclusive)) {
+    redirect(calendarUrl(date, "error", "This date is outside your delivery plan.", plan.id));
+  }
+  const [deliveries, pauses] = await Promise.all([
+    supabase.from("daily_deliveries").select("id").eq("user_id", user.id)
+      .eq("plan_id", plan.id).eq("delivery_date", date).eq("is_test", false).limit(1),
+    supabase.from("delivery_pauses").select("id").eq("user_id", user.id)
+      .eq("plan_id", plan.id).lte("start_date", date).gte("end_date", date).limit(1),
+  ]);
+  if (deliveries.error || pauses.error) {
+    redirect(calendarUrl(date, "error", "We couldn’t check whether this delivery is editable. Please try again.", plan.id));
+  }
+  if (date < nextDeliveryDateInIndia()) {
+    redirect(calendarUrl(date, "error", "Online changes close when the delivery date starts in India.", plan.id));
+  }
+  if (deliveries.data?.length || pauses.data?.length) {
+    redirect(calendarUrl(date, "error", "This date has been prepared or paused. Contact the farm if it needs to change.", plan.id));
+  }
 }
 
 async function planMilkQuantity(planId: string, date: string) {
@@ -310,17 +332,9 @@ export async function saveDateChange(formData: FormData) {
     );
   }
 
-  const { plan, supabase, user } = await getOwnedPlan(planId);
-  if (date < plan.start_date) {
-    redirect(
-      calendarUrl(
-        date,
-        "error",
-        "This date is before your plan starts.",
-        planId,
-      ),
-    );
-  }
+  const context = await getOwnedPlan(planId);
+  const { plan, supabase, user } = context;
+  await checkEditableDate(context, date);
 
   if (action === "normal") {
     const { error } = await supabase
@@ -362,6 +376,7 @@ export async function saveDateChange(formData: FormData) {
         });
       }
       if (quantity < currentQuantity) {
+        await checkEditableDate(context, addCalendarDays(date, 1));
         await applyMilkReduction({
           currentQuantity,
           date,
@@ -423,17 +438,9 @@ export async function saveDeliveryDayChange(formData: FormData) {
     );
   }
 
-  const { plan, supabase, user } = await getOwnedPlan(planId);
-  if (date < plan.start_date) {
-    redirect(
-      calendarUrl(
-        date,
-        "error",
-        "This date is before your plan starts.",
-        planId,
-      ),
-    );
-  }
+  const context = await getOwnedPlan(planId);
+  const { plan, supabase, user } = context;
+  await checkEditableDate(context, date);
 
   if (action === "normal") {
     const { error } = await supabase

@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import type { DeliverySnapshot, DeliveryState } from "@/lib/customer-delivery";
-import { productName } from "@/lib/delivery-calendar";
+import type { DeliveryDay, DeliveryItem, DeliverySnapshot, DeliveryState } from "@/lib/customer-delivery";
+import { formatDeliveryQuantity, productName } from "@/lib/delivery-calendar";
+import { SHOP_PRODUCTS } from "@/lib/shop-products";
 import { DeliveryScene } from "./delivery-scene";
 import styles from "./account.module.css";
 
@@ -25,6 +27,59 @@ const descriptions: Record<DeliveryState, string> = {
   setup: "A saved order or plan is awaiting payment or farm confirmation. Check Orders for its payment status or contact the farm.",
 };
 const visitLabels: Record<DeliveryState, string> = { ...deliveryLabels, delivered: "Delivered", scheduled: "Scheduled", attention: "Outstanding items", out: "On the way", preparing: "Preparing", cancelled: "Cancelled", skipped: "Approved skip" };
+const dayLabels: Record<DeliveryState, string> = {
+  scheduled: "Scheduled", preparing: "Preparing", out: "On the way", delivered: "Delivered",
+  attention: "Needs attention", paused: "Paused", skipped: "Skipped", cancelled: "Cancelled",
+  none: "No delivery", setup: "Awaiting confirmation",
+};
+const weekday = new Intl.DateTimeFormat("en-IN", { weekday: "short", timeZone: "UTC" });
+
+function itemSummary(items: DeliveryItem[]) {
+  return items.map(item => `${productName(item.product_key)} · ${formatDeliveryQuantity(item.quantity, item.unit)}`).join(", ");
+}
+
+function deliveryEditorHref(planId: string, date: string, target: "skip-delivery" | "quantity-change") {
+  return `/calendar?${new URLSearchParams({ plan: planId, date })}#${target}`;
+}
+
+function DeliveryDayDialog({ day, today, stale, onClose }: {
+  day: DeliveryDay; today: string; stale: boolean; onClose: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const element = dialog.current;
+    if (element && !element.open) element.showModal();
+  }, []);
+  const canEdit = day.editablePlans.length > 0 && !stale;
+
+  return <dialog ref={dialog} className={styles.deliveryDialog} aria-labelledby="delivery-dialog-title" onClose={onClose}>
+    <div className={styles.deliveryDialogHeader}>
+      <div>
+        <p className={styles.eyebrow}>Delivery details</p>
+        <h2 id="delivery-dialog-title">{formatCalendarDate(day.date)}</h2>
+      </div>
+      <form method="dialog"><button type="submit" className={styles.refresh} aria-label="Close delivery details">Close</button></form>
+    </div>
+    <p className={styles.deliveryDialogStatus}>{dayLabels[day.state]}</p>
+    {day.items.length ? <ul className={styles.deliveryDialogItems}>
+      {day.items.map((item, index) => <li key={`${item.product_key}:${index}`}>
+        <span>{productName(item.product_key)}</span>
+        <strong>{formatDeliveryQuantity(item.quantity, item.unit)}</strong>
+      </li>)}
+    </ul> : null}
+    {canEdit ? <>
+      <p>Make changes before the delivery date starts in India and before the farm prepares it.</p>
+      {day.editablePlans.map((plan, index) => <div key={plan.id} className={styles.deliveryDialogActions}>
+        {day.editablePlans.length > 1 ? <h3>Weekly plan {index + 1} · {itemSummary(plan.items)}</h3> : null}
+        <Link href={deliveryEditorHref(plan.id, day.date, "skip-delivery")}>Review skipping this delivery →</Link>
+        {plan.items.some(item => item.product_key === "milk") ? <Link href={deliveryEditorHref(plan.id, day.date, "quantity-change")}>Review a milk quantity change →</Link> : null}
+      </div>)}
+    </> : day.state !== "none" ? <>
+      <p>{stale ? "Refresh delivery updates before making changes." : day.date === today ? "Online changes close when the delivery date starts in India." : "Online changes are unavailable for this delivery."}</p>
+      <Link className={styles.dialogHelp} href="/contact">Contact the farm →</Link>
+    </> : null}
+  </dialog>;
+}
 // Assemble parts explicitly: Safari and Node use different punctuation/spacing in en-IN.
 function formatCalendarDate(value: string) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat("en-IN", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long", year: "numeric" }).formatToParts(new Date(`${value}T00:00:00Z`)).map(p => [p.type, p.value]));
@@ -49,10 +104,11 @@ export function AccountDate({ initialDate }: { initialDate: string }) {
   return <time className={styles.todayDate} dateTime={date}>{formatCalendarDate(date)}</time>;
 }
 
-export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null }) {
+export function TodayDelivery({ initial, editablePlanId }: { initial: DeliverySnapshot | null; editablePlanId?: string }) {
   const [snapshot, setSnapshot] = useState(initial);
   const [error, setError] = useState(initial ? "" : "We couldn’t load your delivery updates. Please try again.");
   const [busy, setBusy] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
   const lastAttempt = useRef(0);
   const refresh = useCallback(async (manual = false) => {
@@ -83,7 +139,34 @@ export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null })
   }, [refresh]);
   const state = snapshot?.state ?? "none";
   const progress = ({ scheduled: 1, preparing: 2, out: 3, delivered: 4 } as Partial<Record<DeliveryState, number>>)[state] ?? 0;
+  const next = snapshot?.upcoming[0];
+  const featureNext = Boolean(next && ["none", "paused", "skipped", "delivered", "cancelled"].includes(state));
+  const current = snapshot ? {
+    date: snapshot.date,
+    state: snapshot.state,
+    items: snapshot.visits.flatMap(visit => visit.items),
+    editablePlans: [],
+  } : null;
+  const selectedDay = selectedDate === current?.date ? current :
+    snapshot?.week.find(day => day.date === selectedDate) ??
+    snapshot?.upcoming.find(day => day.date === selectedDate);
+  const nextItems = next?.items ?? [];
+  const image = SHOP_PRODUCTS.find(product => product.id === nextItems[0]?.product_key);
+  const nextPlan = next?.editablePlans.length === 1 && !error ? next.editablePlans[0] : null;
+  const nextMilk = nextPlan?.items.some(item => item.product_key === "milk");
   return <div className={styles.todaySurface}>
+    {featureNext && next ? <section className={styles.nextFeature} aria-labelledby="next-delivery-title">
+      <div className={styles.nextFeatureHeading}><p className={styles.eyebrow}>Your next delivery</p><span>{dayLabels[next.state]}</span></div>
+      <div className={styles.nextFeatureBody}>
+        {image ? <Image src={image.image} width={76} height={76} alt="" /> : null}
+        <div>
+          <h2 id="next-delivery-title"><time dateTime={next.date}>{formatCalendarDate(next.date)}</time></h2>
+          <ul>{next.items.map((item, index) => <li key={`${item.product_key}:${item.unit}:${index}`}><span>{productName(item.product_key)}</span><strong>{formatDeliveryQuantity(item.quantity, item.unit)}</strong></li>)}</ul>
+        </div>
+      </div>
+      {error && snapshot ? <p>Last checked {formatCalendarDate(snapshot.date)}.</p> : null}
+      <button type="button" onClick={() => setSelectedDate(next.date)}>Manage delivery →</button>
+    </section> : null}
     <section className={styles.deliveryCard} data-delivery-state={snapshot ? state : "error"} aria-labelledby="today-delivery-title">
       <div className={styles.deliveryTop}>
         <div><p className={styles.eyebrow}>Today’s delivery</p><h2 id="today-delivery-title">{snapshot ? deliveryLabels[state] : "Delivery updates unavailable"}</h2><p className={styles.deliveryCopy}>{snapshot ? descriptions[state] : "Your schedule is safe. We’ll show the latest delivery status when we can reconnect."}</p></div>
@@ -98,25 +181,46 @@ export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null })
           {visit.items.map((item, i) => <div className={styles.deliveryItem} key={`${item.product_key}:${i}`}><span>{productName(item.product_key)}</span><strong>{item.quantity} {item.unit}</strong>{item.fulfilled_quantity != null && ["attention", "delivered"].includes(state) ? <small>{Number(item.fulfilled_quantity)} delivered · {Math.max(0, item.quantity - Number(item.fulfilled_quantity))} {item.unit} outstanding</small> : null}</div>)}
           {visit.followUpApproved && visit.followUp ? <p className={styles.followUp}>Farm-approved follow-up: {formatCalendarDate(visit.followUp)}. It remains outstanding until delivered.</p> : visit.state === "attention" || visit.state === "skipped" ? <p className={styles.followUp}>Check delivery history for any recorded follow-up, or contact the farm for an update.</p> : null}
         </div>)}</div> : null}
-        <div className={styles.deliveryBottom}><span>{snapshot.completedAt ? `Confirmed at ${time(snapshot.completedAt)} IST` : snapshot.updatedAt ? `Farm update · ${time(snapshot.updatedAt)} IST` : `Schedule checked · ${time(snapshot.checkedAt)} IST`}</span><Link href={state === "setup" ? "/account?section=orders&order_view=pending" : state === "attention" || state === "cancelled" ? "/contact" : "/account?section=schedule"}>{state === "setup" ? "Orders & payment →" : state === "attention" || state === "cancelled" ? "Contact the farm ↗" : "Delivery details →"}</Link></div>
+        <div className={styles.deliveryBottom}>
+          <span>{snapshot.completedAt ? `Confirmed at ${time(snapshot.completedAt)} IST` : snapshot.updatedAt ? `Farm update · ${time(snapshot.updatedAt)} IST` : `Schedule checked · ${time(snapshot.checkedAt)} IST`}</span>
+          {state === "setup" ? <Link href="/account?section=orders&order_view=pending">Orders & payment →</Link> :
+            state === "attention" || state === "cancelled" ? <Link href="/contact">Contact the farm ↗</Link> :
+              <button type="button" className={styles.textAction} onClick={() => setSelectedDate(snapshot.date)}>Delivery details →</button>}
+        </div>
       </> : <div className={styles.deliveryBottom}><button className={styles.textAction} type="button" disabled={busy} onClick={() => void refresh(true)}>Try again →</button><a href="/contact">Contact the farm ↗</a></div>}
     </section>
     {snapshot ? <>
       <nav className={styles.todayActions} aria-label="Quick delivery actions">
-        <Link className={styles.todayActionPrimary} href={snapshot.confirmedPlans ? "/calendar" : snapshot.awaitingConfirmation ? "/account?section=orders&order_view=pending" : "/milk"}>
-          <span aria-hidden="true">↗</span><span><strong>{snapshot.confirmedPlans ? "Manage next delivery" : snapshot.awaitingConfirmation ? "Check your payment" : "Start a delivery plan"}</strong><small>{snapshot.confirmedPlans ? "Skip, adjust or pause future dates" : snapshot.awaitingConfirmation ? "Review any pending payment" : "Choose milk and farm favourites"}</small></span>
-        </Link>
-        <Link className={styles.todayActionSecondary} href="/contact">
+        {next && nextPlan ? <>
+          <Link className={styles.todayActionPrimary} href={deliveryEditorHref(nextPlan.id, next.date, "skip-delivery")}><span aria-hidden="true">−</span><span><strong>Skip a delivery</strong><small>Review the next date</small></span></Link>
+          {nextMilk ? <Link className={styles.todayActionSecondary} href={deliveryEditorHref(nextPlan.id, next.date, "quantity-change")}><span aria-hidden="true">↕</span><span><strong>Change quantity</strong><small>Adjust milk for the next date</small></span></Link> : null}
+        </> : next && !featureNext ? <button type="button" className={styles.todayActionPrimary} onClick={() => setSelectedDate(next.date)}>
+          <span aria-hidden="true">↗</span><span><strong>Next delivery</strong><small>{formatCalendarDate(next.date)}</small></span>
+        </button> : !next && !snapshot.confirmedPlans ? <Link className={styles.todayActionPrimary} href={snapshot.awaitingConfirmation ? "/account?section=orders&order_view=pending" : "/milk"}>
+          <span aria-hidden="true">↗</span><span><strong>{snapshot.awaitingConfirmation ? "Check your payment" : "Start a delivery plan"}</strong><small>{snapshot.awaitingConfirmation ? "Review any pending payment" : "Choose milk and farm favourites"}</small></span>
+        </Link> : null}
+        {editablePlanId && !error ? (
+          <Link className={styles.todayActionSecondary} href={`/calendar?plan=${editablePlanId}#pause-heading`}><span aria-hidden="true">Ⅱ</span><span><strong>Pause deliveries</strong><small>Choose dates away</small></span></Link>
+        ) : <Link className={styles.todayActionSecondary} href="/contact">
           <span aria-hidden="true">?</span><span><strong>Get delivery help</strong><small>Something missing or incorrect?</small></span>
-        </Link>
+        </Link>}
       </nav>
       <section className={styles.nextDeliveryPanel} aria-labelledby="coming-up-heading">
-        <div className={styles.nextDeliveryHeading}><h2 id="coming-up-heading">Coming up next</h2><Link href="/account?section=schedule">View schedule →</Link></div>
-        {snapshot.upcoming.length ? <Link className={styles.summaryRow} href="/account?section=schedule">
-          <span><strong>{formatCalendarDate(snapshot.upcoming[0].date)}</strong><small>{snapshot.upcoming[0].items.map(i => `${productName(i.product_key)} · ${i.quantity} ${i.unit}`).join(" · ")}</small></span>
-          <span aria-hidden="true">→</span>
-        </Link> : <p className={styles.emptyCopy}>No upcoming deliveries confirmed. Your schedule will appear here when available.</p>}
+        <div className={styles.nextDeliveryHeading}><h2 id="coming-up-heading">Coming up · 7 days</h2><Link href="/account?section=schedule">View schedule →</Link></div>
+        <ul className={styles.deliveryWeek}>
+          {snapshot.week.map(day => <li key={day.date}>
+            <button type="button" data-state={day.state} aria-label={`${formatCalendarDate(day.date)} · ${dayLabels[day.state]}`} onClick={() => setSelectedDate(day.date)}>
+              <time dateTime={day.date}><span>{weekday.format(new Date(`${day.date}T00:00:00Z`))}</span><strong>{Number(day.date.slice(-2))}</strong></time>
+              <span>{dayLabels[day.state]}</span>
+            </button>
+          </li>)}
+        </ul>
+        {!snapshot.upcoming.length ? <p className={styles.emptyCopy}>No upcoming deliveries found in the next 60 days.</p> : null}
       </section>
+      {snapshot.paymentPending ? <Link className={styles.summaryRow} href="/account?section=orders&order_view=pending">
+        <span><strong>Payment awaiting confirmation</strong><small>See payment status in Orders</small></span><span aria-hidden="true">→</span>
+      </Link> : null}
+      {selectedDay ? <DeliveryDayDialog key={selectedDay.date} day={selectedDay} today={snapshot.date} stale={Boolean(error)} onClose={() => setSelectedDate(null)} /> : null}
     </> : null}
   </div>;
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatCalendarDate, formatDeliveryQuantity, productName } from "@/lib/delivery-calendar";
+import { formatCalendarDate, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
 import styles from "./monthly-plan.module.css";
 
 type DatedItem = {
@@ -16,6 +16,7 @@ export function MonthlyPlan({
   items,
   deliveredDates = [],
   preview = false,
+  confirmationAvailable = true,
 }: {
   id: string;
   start: string;
@@ -24,9 +25,11 @@ export function MonthlyPlan({
   items: DatedItem[];
   deliveredDates?: string[];
   preview?: boolean;
+  confirmationAvailable?: boolean;
 }) {
   const dates = [...new Set(items.map((item) => item.delivery_date))].sort();
   const delivered = new Set(deliveredDates);
+  const today = todayInIndia();
   return (
     <section className={styles.plan} aria-label="Your monthly delivery plan">
       <div className={styles.heading}>
@@ -40,7 +43,7 @@ export function MonthlyPlan({
       <p>
         {preview
           ? "Draft dates — confirmed after payment."
-          : `${dates.filter((date) => delivered.has(date)).length} of ${dates.length} delivery dates completed.`}
+          : confirmationAvailable ? `${dates.filter((date) => delivered.has(date)).length} of ${dates.length} delivery dates confirmed as complete.` : "Delivery confirmations are temporarily unavailable."}
       </p>
       <details open={preview}>
         <summary>
@@ -52,11 +55,11 @@ export function MonthlyPlan({
               <div>
                 <time dateTime={date}>{formatCalendarDate(date)}</time>
                 <small>
-                  {delivered.has(date)
+                  {!confirmationAvailable && !preview ? "Confirmation unavailable" : delivered.has(date)
                     ? "Delivered"
                     : preview
                       ? "Planned"
-                      : "Scheduled"}
+                      : date < today ? "Delivery not confirmed" : "Scheduled"}
                 </small>
               </div>
               <p>
