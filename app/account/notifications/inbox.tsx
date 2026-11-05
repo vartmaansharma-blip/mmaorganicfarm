@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { CustomerNotification } from "@/lib/customer-notifications";
 import { readCustomerNotifications } from "./actions";
 import { NotificationList } from "./notification-list";
+import { NotificationIcon } from "./notification-icon";
 import styles from "./notifications.module.css";
 
 export function NotificationInbox({ items, unread }: { items: CustomerNotification[]; unread: number }) {
@@ -30,8 +31,10 @@ export function NotificationInbox({ items, unread }: { items: CustomerNotificati
   }
   return <>
     <div className={styles.inboxToolbar}>
-      <span>{unread ? `${unread} unread` : "All read"}</span>
-      {unread ? <button disabled={busy} type="button" onClick={() => void readAll()}>{busy ? "Saving…" : "Mark all as read"}</button> : null}
+      <p className={styles.readStatus} data-unread={unread > 0} role="status">{unread ? `${unread} unread` : "All read"}</p>
+      {unread ? <button className={styles.markAll} disabled={busy} type="button" onClick={() => void readAll()}>
+        <NotificationIcon name="check" size={17} />{busy ? "Saving…" : "Mark all as read"}
+      </button> : null}
     </div>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
     {items.length ? <NotificationList items={items} onRead={refresh} /> : null}
