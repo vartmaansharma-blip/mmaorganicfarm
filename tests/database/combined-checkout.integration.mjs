@@ -356,6 +356,7 @@ test("combined preparation is atomic, idempotent and safely recovers from a stal
         assert.deepEqual(await itemsFor(prepared.plan_order_id), [{ product_key: "ghee", quantity: 2 }, { product_key: "milk", quantity: 2 }]);
 
         if (index === browser.pages.length - 1) {
+          await db.query("update production_capacity set daily_limit=20 where product_key in ('paneer','ghee')");
           await db.query("select set_config('request.jwt.claim.role','service_role',false)");
           await db.query("select claim_checkout_batch($1,$2,$3)", [batchId, prepared.amount_paise, JSON.stringify(prepared.schedule_rules)]);
           await db.query("select reserve_order_capacity($1)", [prepared.once_order_id]);
@@ -364,6 +365,12 @@ test("combined preparation is atomic, idempotent and safely recovers from a stal
           const { status } = (await db.query("select capture_checkout_batch($1,$2,$3,$4) status",
             [batchId, `order_${batchId}`, `pay_${batchId}`, prepared.amount_paise])).rows[0];
           assert.equal(status, "paid");
+          assert.deepEqual((await db.query(
+            "select status from orders where id in ($1,$2)", [prepared.once_order_id, prepared.plan_order_id],
+          )).rows.map((row) => row.status), ["paid", "paid"]);
+          assert.deepEqual((await db.query(
+            "select amount_paise from payments where checkout_batch_id=$1 order by amount_paise", [batchId],
+          )).rows.map((row) => row.amount_paise), [46200, 87400]);
           assert.deepEqual((await db.query(
             "select product_key,delivery_date::text from scheduled_delivery_items where plan_id=$1 and product_key='ghee' order by delivery_date",
             [prepared.delivery_plan_id],
