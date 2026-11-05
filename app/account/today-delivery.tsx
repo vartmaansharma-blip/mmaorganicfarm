@@ -49,7 +49,7 @@ export function AccountDate({ initialDate }: { initialDate: string }) {
   return <time className={styles.todayDate} dateTime={date}>{formatCalendarDate(date)}</time>;
 }
 
-export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null }) {
+export function TodayDelivery({ initial, editablePlanId }: { initial: DeliverySnapshot | null; editablePlanId?: string }) {
   const [snapshot, setSnapshot] = useState(initial);
   const [error, setError] = useState(initial ? "" : "We couldn’t load your delivery updates. Please try again.");
   const [busy, setBusy] = useState(false);
@@ -83,7 +83,16 @@ export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null })
   }, [refresh]);
   const state = snapshot?.state ?? "none";
   const progress = ({ scheduled: 1, preparing: 2, out: 3, delivered: 4 } as Partial<Record<DeliveryState, number>>)[state] ?? 0;
+  const next = snapshot?.upcoming[0];
+  const featureNext = Boolean(next && ["none", "paused", "skipped", "delivered", "cancelled"].includes(state));
   return <div className={styles.todaySurface}>
+    {featureNext && next ? <section className={styles.nextFeature} aria-labelledby="next-delivery-title">
+      <div className={styles.nextFeatureHeading}><p className={styles.eyebrow}>Your next delivery</p><span>Upcoming</span></div>
+      <h2 id="next-delivery-title">{formatCalendarDate(next.date)}</h2>
+      <ul>{next.items.map((item, index) => <li key={`${item.product_key}:${item.unit}:${index}`}><span>{productName(item.product_key)}</span><strong>{item.quantity} {item.unit}</strong></li>)}</ul>
+      <p>{error ? `Showing the last successful update from ${formatCalendarDate(snapshot!.date)}.` : "Based on your current schedule."}</p>
+      <Link href="/account?section=schedule">Manage delivery →</Link>
+    </section> : null}
     <section className={styles.deliveryCard} data-delivery-state={snapshot ? state : "error"} aria-labelledby="today-delivery-title">
       <div className={styles.deliveryTop}>
         <div><p className={styles.eyebrow}>Today’s delivery</p><h2 id="today-delivery-title">{snapshot ? deliveryLabels[state] : "Delivery updates unavailable"}</h2><p className={styles.deliveryCopy}>{snapshot ? descriptions[state] : "Your schedule is safe. We’ll show the latest delivery status when we can reconnect."}</p></div>
@@ -103,20 +112,27 @@ export function TodayDelivery({ initial }: { initial: DeliverySnapshot | null })
     </section>
     {snapshot ? <>
       <nav className={styles.todayActions} aria-label="Quick delivery actions">
-        <Link className={styles.todayActionPrimary} href={snapshot.confirmedPlans ? "/calendar" : snapshot.awaitingConfirmation ? "/account?section=orders&order_view=pending" : "/milk"}>
-          <span aria-hidden="true">↗</span><span><strong>{snapshot.confirmedPlans ? "Manage next delivery" : snapshot.awaitingConfirmation ? "Check your payment" : "Start a delivery plan"}</strong><small>{snapshot.confirmedPlans ? "Skip, adjust or pause future dates" : snapshot.awaitingConfirmation ? "Review any pending payment" : "Choose milk and farm favourites"}</small></span>
+        {editablePlanId ? <>
+          <Link className={styles.todayActionPrimary} href={`/calendar?plan=${editablePlanId}#date-heading`}><span aria-hidden="true">−</span><span><strong>Skip a delivery</strong><small>Choose a future date</small></span></Link>
+          <Link className={styles.todayActionSecondary} href={`/calendar?plan=${editablePlanId}#date-heading`}><span aria-hidden="true">↕</span><span><strong>Change quantity</strong><small>Adjust milk for one date</small></span></Link>
+          <Link className={styles.todayActionSecondary} href="/shop"><span aria-hidden="true">+</span><span><strong>Shop extras</strong><small>Explore available farm products</small></span></Link>
+          <Link className={styles.todayActionSecondary} href={`/calendar?plan=${editablePlanId}#pause-heading`}><span aria-hidden="true">Ⅱ</span><span><strong>Pause deliveries</strong><small>Choose dates away</small></span></Link>
+        </> : <>
+        <Link className={styles.todayActionPrimary} href={snapshot.confirmedPlans ? "/account?section=schedule" : snapshot.awaitingConfirmation ? "/account?section=orders&order_view=pending" : "/milk"}>
+          <span aria-hidden="true">↗</span><span><strong>{snapshot.confirmedPlans ? "Manage a delivery" : snapshot.awaitingConfirmation ? "Check your payment" : "Start a delivery plan"}</strong><small>{snapshot.confirmedPlans ? "View your delivery schedule" : snapshot.awaitingConfirmation ? "Review any pending payment" : "Choose milk and farm favourites"}</small></span>
         </Link>
         <Link className={styles.todayActionSecondary} href="/contact">
           <span aria-hidden="true">?</span><span><strong>Get delivery help</strong><small>Something missing or incorrect?</small></span>
         </Link>
+        </>}
       </nav>
-      <section className={styles.nextDeliveryPanel} aria-labelledby="coming-up-heading">
+      {!(featureNext && snapshot.upcoming.length === 1) ? <section className={styles.nextDeliveryPanel} aria-labelledby="coming-up-heading">
         <div className={styles.nextDeliveryHeading}><h2 id="coming-up-heading">Coming up next</h2><Link href="/account?section=schedule">View schedule →</Link></div>
-        {snapshot.upcoming.length ? <Link className={styles.summaryRow} href="/account?section=schedule">
-          <span><strong>{formatCalendarDate(snapshot.upcoming[0].date)}</strong><small>{snapshot.upcoming[0].items.map(i => `${productName(i.product_key)} · ${i.quantity} ${i.unit}`).join(" · ")}</small></span>
+        {snapshot.upcoming.length ? snapshot.upcoming.slice(featureNext ? 1 : 0).map(delivery => <Link key={delivery.date} className={styles.summaryRow} href="/account?section=schedule">
+          <span><strong>{formatCalendarDate(delivery.date)}</strong><small>{delivery.items.map(i => `${productName(i.product_key)} · ${i.quantity} ${i.unit}`).join(" · ")}</small></span>
           <span aria-hidden="true">→</span>
-        </Link> : <p className={styles.emptyCopy}>No upcoming deliveries confirmed. Your schedule will appear here when available.</p>}
-      </section>
+        </Link>) : <p className={styles.emptyCopy}>No upcoming deliveries found in the next 60 days. Check your schedule or contact the farm for help.</p>}
+      </section> : null}
     </> : null}
   </div>;
 }

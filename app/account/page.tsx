@@ -13,6 +13,7 @@ import { formatCheckoutAmount } from "@/lib/checkout-display";
 import { buildDeliveryCalendar, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
+import { completedMonthlyDates } from "@/lib/monthly-delivery-completion";
 import { createClient } from "@/lib/supabase/server";
 import {
   markNotificationsRead,
@@ -96,17 +97,15 @@ export default async function AccountPage({
 
   const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.find(plan => plan.status === "active" || plan.status === "paused") ?? deliveryPlans?.[0];
   const todaySnapshot = await todayResult;
-  const { data: monthlyCompleted } =
+  const { data: monthlyRecords, error: monthlyRecordsError } =
     section === "plans" && selectedPlan?.billing_model === "calendar_month"
       ? await supabase
           .from("daily_deliveries")
-          .select("delivery_date")
+          .select("delivery_date,status,delivery_confirmed,daily_delivery_items(product_key,quantity,unit,fulfilled_quantity)")
           .eq("plan_id", selectedPlan.id)
           .eq("user_id", user.id)
-          .eq("status", "delivered")
-          .eq("delivery_confirmed", true)
           .eq("is_test", false)
-      : { data: null };
+      : { data: null, error: null };
   const name = profile?.full_name ?? user.user_metadata.full_name ?? "Customer";
   const email = profile?.email ?? user.email ?? "";
   const googleConnected = user.identities?.some(
@@ -180,11 +179,11 @@ export default async function AccountPage({
       : deliveryPlan?.status === "paused"
         ? "Paused"
         : "Awaiting confirmation";
-  const purchasedDeliveries = Number(deliveryPlan?.purchased_deliveries ?? 30);
+  const purchasedDeliveries = deliveryPlan?.purchased_deliveries == null ? null : Number(deliveryPlan.purchased_deliveries);
   const deliveredDeliveries = Number(deliveryPlan?.delivered_deliveries ?? 0);
   const remainingDeliveries = Math.max(
     0,
-    purchasedDeliveries - deliveredDeliveries,
+    (purchasedDeliveries ?? 0) - deliveredDeliveries,
   );
   const upcomingDeliveries = deliveryPlan
     ? buildDeliveryCalendar({
@@ -237,10 +236,17 @@ export default async function AccountPage({
         {section === "today" ? <>
           <Link className={styles.todayAddress} href="/account?section=settings">
             <span className={styles.addressIcon} aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
-            <span className={styles.addressCopy}><strong>Delivering to your saved address</strong><small>{hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : "Add a delivery address to your account."}</small></span>
+            <span className={styles.addressCopy}><strong>Delivery address</strong><small>{profileError ? "Your address couldn’t be loaded. Try refreshing." : hasAddress ? [profile?.address_line, profile?.postal_code].filter(Boolean).join(", ") : "Add a delivery address to your account."}</small></span>
             <span className={styles.addressManage}>Manage →</span>
           </Link>
-          <TodayDelivery initial={todaySnapshot} />
+          <TodayDelivery initial={todaySnapshot} editablePlanId={deliveryPlan && deliveryPlan.billing_model !== "calendar_month" && ["active", "paused"].includes(deliveryPlan.status) ? deliveryPlan.id : undefined} />
+          {!plansError && deliveryPlan ? <section className={styles.nextDeliveryPanel} aria-labelledby="today-plan-heading">
+            <div className={styles.nextDeliveryHeading}><h2 id="today-plan-heading">Your plan</h2><Link href="/account?section=plans">View plans →</Link></div>
+            <Link className={styles.summaryRow} href="/account?section=plans">
+              <span><strong>{deliveryPlan.billing_model === "calendar_month" ? "Monthly plan" : "Weekly plan"} · {planStatus}</strong><small>{deliveryPlan.billing_model === "calendar_month" || purchasedDeliveries == null ? "See your plan dates and deliveries" : `${remainingDeliveries} prepaid deliveries remaining`}</small></span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          </section> : null}
         </> : null}
         {section === "settings" ? <>
         {profileError ? <p className={styles.noticeError}>Your personal details couldn’t be loaded. Please refresh this page.</p> : null}
@@ -323,25 +329,28 @@ export default async function AccountPage({
         {profile?.address_line ? <DeliveryPin key={`${profile.address_line}:${profile.updated_at}`} address={profile.address_line} saved={pinResult.data} available={!pinResult.error} /> : null}
         <section className={styles.settingsGroup} aria-labelledby="appearance-heading"><div><h2 id="appearance-heading">Appearance</h2><p>Make yourself comfortable. Your theme stays with you across the shop.</p></div><ThemeToggle /></section>
         <section className={styles.settingsGroup} aria-labelledby="sign-in-heading"><div><h2 id="sign-in-heading">Sign-in & account</h2><p>{googleConnected ? "Connected through Google." : "Signed in with your email address."}</p></div><form action={signOut}><button className={styles.textAction} type="submit">Sign out</button></form></section>
+        <section className={styles.settingsGroup} aria-labelledby="support-heading"><div><h2 id="support-heading">Help with a delivery</h2><p>Contact the farm about missing, incorrect or damaged items, or for help with your account.</p></div><Link className={styles.textAction} href="/contact">Contact the farm →</Link></section>
         </> : null}
         {section === "plans" ? <>
         {plansError ? <p className={styles.noticeError}>We couldn’t load your plans. Please refresh to try again.</p> : null}
         {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=deliveries&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly plan" : "Weekly plan"} {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
         {deliveryPlan?.billing_model === "calendar_month" ? (
+          <>
+          {monthlyRecordsError ? <p className={styles.noticeError} role="alert">Delivery confirmations couldn’t be loaded. Please refresh.</p> : null}
           <MonthlyPlan
             id={deliveryPlan.id}
             start={deliveryPlan.start_date}
             end={deliveryPlan.period_end_exclusive}
             status={deliveryPlan.status}
-            deliveredDates={(monthlyCompleted ?? []).map(
-              (x) => x.delivery_date,
-            )}
+            deliveredDates={completedMonthlyDates(deliveryPlan.scheduled_delivery_items, monthlyRecords ?? [])}
+            confirmationAvailable={!monthlyRecordsError}
             items={deliveryPlan.scheduled_delivery_items.map((x) => ({
               ...x,
               quantity: Number(x.quantity),
             }))}
             preview={deliveryPlan.status === "pending_confirmation"}
           />
+          </>
         ) : deliveryPlan ? (
           <section
             className={styles.planSection}
@@ -372,7 +381,7 @@ export default async function AccountPage({
               </div>
               <div>
                 <dt>Remaining</dt>
-                <dd>{remainingDeliveries} deliveries</dd>
+                <dd>{purchasedDeliveries == null ? "Unavailable" : `${remainingDeliveries} deliveries`}</dd>
               </div>
               <div>
                 <dt>Glass bottle</dt>
@@ -538,7 +547,7 @@ export default async function AccountPage({
                 <summary>
                   <span>
                     <strong>{order.purchase_mode === "plan" ? "Scheduled milk plan" : order.purchase_mode === "adjustment" ? "Milk quantity change" : "One-time purchase"}</strong>
-                    <small>{new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · MMA-{order.id.slice(0, 8).toUpperCase()}</small>
+                    <small>{new Date(order.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" })} · MMA-{order.id.slice(0, 8).toUpperCase()}</small>
                   </span>
                   <span>
                     <b>{formatCheckoutAmount(order.status === "paid" ? (order.paid_total_paise ?? order.total_paise) : order.total_paise)}</b>
@@ -592,6 +601,7 @@ export default async function AccountPage({
                   </div>
                   <time dateTime={item.created_at}>
                     {new Date(item.created_at).toLocaleDateString("en-IN", {
+                      timeZone: "Asia/Kolkata",
                       day: "numeric",
                       month: "short",
                     })}

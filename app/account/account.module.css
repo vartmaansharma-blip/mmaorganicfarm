@@ -972,6 +972,15 @@
 .todayActions {
   display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;
 }
+.nextFeature { margin-bottom:14px; padding:22px; border:1px solid var(--ui-border); border-radius:16px; background:var(--color-surface-raised); }
+.nextFeatureHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.nextFeatureHeading p { margin:0; }
+.nextFeatureHeading span { color:var(--color-accent); font-size:12px; font-weight:600; }
+.nextFeature h2 { margin:12px 0; color:var(--color-accent); font-size:clamp(20px,2.4vw,27px); line-height:1.3; }
+.nextFeature ul { list-style:none; margin:0; padding:0; }
+.nextFeature li { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-top:1px solid var(--ui-border); font-size:13px; }
+.nextFeature p:not(.eyebrow) { color:var(--ui-muted); font-size:11px; margin:10px 0; }
+.nextFeature > a { display:flex; justify-content:center; align-items:center; min-height:44px; padding:10px; border-radius:10px; background:var(--color-action-primary); color:var(--color-action-primary-text); font-size:13px; font-weight:600; }
 .todayActions a {
   min-height:74px; display:flex; align-items:center; gap:13px;
   padding:15px 17px; border-radius:14px; border:1px solid var(--ui-border);

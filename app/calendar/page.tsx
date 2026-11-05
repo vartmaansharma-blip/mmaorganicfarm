@@ -13,6 +13,7 @@ import {
   productName,
 } from "@/lib/delivery-calendar";
 import { formatPlanStartDate, normalizePlanStartDate } from "@/lib/milk-plan";
+import { completedMonthlyDates } from "@/lib/monthly-delivery-completion";
 import { createClient } from "@/lib/supabase/server";
 import {
   removePause,
@@ -66,10 +67,10 @@ export default async function CalendarPage({
   if (plan.billing_model === "calendar_month") {
     const { data: completed, error: completedError } = await supabase
       .from("daily_deliveries")
-      .select("delivery_date")
+      .select("delivery_date,status,delivery_confirmed,daily_delivery_items(product_key,quantity,unit,fulfilled_quantity)")
       .eq("plan_id", plan.id)
       .eq("user_id", user.id)
-      .eq("status", "delivered");
+      .eq("is_test", false);
     if (completedError) throw new Error("We could not check completed deliveries. Please try again.");
     return (
       <main className={styles.page}>
@@ -98,7 +99,7 @@ export default async function CalendarPage({
               ...x,
               quantity: Number(x.quantity),
             }))}
-            deliveredDates={(completed ?? []).map((x) => x.delivery_date)}
+            deliveredDates={completedMonthlyDates(plan.scheduled_delivery_items, completed ?? [])}
             preview={plan.status === "pending_confirmation"}
           />
           <Link href="/shop">Back to the shop →</Link>
