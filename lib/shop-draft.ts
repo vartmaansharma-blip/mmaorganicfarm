@@ -276,6 +276,7 @@ export function orderReturnPath(params: Record<string, string | undefined>) {
     "routine",
     "nextPlan",
     "combineWith",
+    "checkout",
   ] as const) {
     const value = params[key];
     if (typeof value === "string" && value.length <= (key === "nextPlan" ? 1200 : 400)) query.set(key, value);
