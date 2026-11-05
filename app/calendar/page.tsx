@@ -56,13 +56,14 @@ export default async function CalendarPage({
       "id, status, start_date, billing_model, period_end_exclusive, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
+    .eq("is_test", false)
     .in("status", ["pending_confirmation", "active", "paused", "completed"])
     .order("created_at", { ascending: false });
 
   if (plansError) throw new Error(databaseErrorMessage(plansError, "We could not load your delivery calendar. Please try again."));
   if (!plans?.length) redirect("/milk");
-  const plan =
-    plans.find((candidate) => candidate.id === params.plan) ?? plans[0];
+  const plan = params.plan ? plans.find((candidate) => candidate.id === params.plan) : plans[0];
+  if (!plan) redirect("/account?section=schedule");
 
   if (plan.billing_model === "calendar_month") {
     const { data: completed, error: completedError } = await supabase
@@ -108,17 +109,38 @@ export default async function CalendarPage({
     );
   }
 
+  const earliestDate = nextDeliveryDateInIndia();
+  const firstDate = plan.start_date > earliestDate ? plan.start_date : earliestDate;
+  const requestedDate = normalizePlanStartDate(params.date ?? "");
+  const latestDate = addCalendarDays(firstDate, 59);
+  const viewDate = requestedDate > addCalendarDays(firstDate, 6) && requestedDate <= latestDate
+    ? requestedDate
+    : firstDate;
   const calendar = buildDeliveryCalendar({
     days: 7,
     exceptions: plan.delivery_exceptions ?? [],
     pauses: plan.delivery_pauses ?? [],
     scheduledItems: plan.scheduled_delivery_items ?? [],
-    startDate: plan.start_date,
+    startDate: viewDate,
     weeklyItems: plan.weekly_delivery_items ?? [],
   });
-  const requestedDate = normalizePlanStartDate(params.date ?? "");
   const selectedDay =
     calendar.find((day) => day.date === requestedDate) ?? calendar[0];
+  const dateInPlan = !plan.period_end_exclusive || selectedDay.date < plan.period_end_exclusive;
+  const requestedDateUnavailable = Boolean(params.date && requestedDate !== selectedDay.date);
+  const { data: preparedRows, error: preparedError } = !requestedDateUnavailable && dateInPlan
+    ? await supabase.from("daily_deliveries").select("id").eq("user_id", user.id)
+      .eq("plan_id", plan.id).eq("delivery_date", selectedDay.date).eq("is_test", false).limit(1)
+    : { data: null, error: null };
+  const dateChangeMessage = requestedDateUnavailable
+    ? "This date is outside the editable calendar. Choose an available date above."
+    : !dateInPlan || plan.status === "completed"
+      ? "This date is outside your active plan."
+      : preparedError
+        ? "We couldn’t check whether this delivery is still editable. Refresh to try again."
+        : preparedRows?.length
+          ? "The farm has prepared this delivery. Contact the farm if it needs to change."
+          : null;
   const selectedMilk = selectedDay.items.find(
     (item) => item.productKey === "milk",
   );
@@ -291,13 +313,17 @@ export default async function CalendarPage({
             </span>
           </div>
 
-          {selectedDay.paused ? (
+          {dateChangeMessage ? <p className={styles.pausedNote}>{dateChangeMessage}</p> : selectedDay.paused ? (
             <p className={styles.pausedNote}>
               This date is covered by a multi-day pause. Remove that pause below
               before editing this date.
             </p>
           ) : (
             <>
+              <p id="skip-delivery" className={styles.pausedNote}>
+                Changes close when the delivery date starts in India or the farm prepares it, whichever comes first.
+                Skipping applies to the scheduled items on this plan for this date.
+              </p>
               <form
                 className={styles.dayActions}
                 action={saveDeliveryDayChange}
@@ -312,7 +338,7 @@ export default async function CalendarPage({
                 </button>
               </form>
 
-              <div className={styles.itemEditor}>
+              <div className={styles.itemEditor} id="quantity-change">
                 <div>
                   <strong>Fresh milk</strong>
                   <span>
@@ -322,6 +348,7 @@ export default async function CalendarPage({
                         ? `${selectedMilk.quantity} L scheduled`
                         : "No milk in the normal routine"}
                   </span>
+                  <small>Extra milk goes to checkout for a price review before payment. Reductions carry forward to the next day within the 5 L limit, with no refund.</small>
                 </div>
                 <form action={saveDateChange}>
                   <input name="plan_id" type="hidden" value={plan.id} />

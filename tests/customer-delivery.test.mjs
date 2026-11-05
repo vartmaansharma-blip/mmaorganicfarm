@@ -71,3 +71,33 @@ test('the last legacy entitlement reserved for today is not also projected for t
  const p=plan({billing_model:'delivery_count',period_end_exclusive:null,purchased_deliveries:30,delivered_deliveries:29,scheduled_delivery_items:[],weekly_delivery_items:[1,2,3,4,5,6,7].map(day_of_week=>({...item(),day_of_week}))});
  const s=snapshot({plans:[p],records:[row({status:'out_for_delivery'})]});assert.equal(s.state,'out');assert.equal(s.upcoming.length,0);
 });
+
+test('the seven-day view preserves skip, pause, and rest days while finding a later editable delivery', () => {
+ const legacy = plan({
+  billing_model: 'delivery_count',
+  period_end_exclusive: null,
+  purchased_deliveries: 3,
+  scheduled_delivery_items: ['2026-10-27', '2026-10-28', '2026-11-04'].map(delivery_date => ({ ...item(), delivery_date })),
+  delivery_exceptions: [{ delivery_date: '2026-10-27', product_key: 'milk', action: 'skip', quantity: null, unit: null }],
+  delivery_pauses: [{ start_date: '2026-10-28', end_date: '2026-10-28' }],
+ });
+ const s = snapshot({ plans: [legacy] });
+ assert.deepEqual(s.week.map(day => day.state), ['skipped', 'paused', 'none', 'none', 'none', 'none', 'none']);
+ assert.equal(s.week[6].date, '2026-11-02');
+ assert.equal(s.upcoming[0].date, '2026-11-04');
+ assert.deepEqual(s.upcoming[0].editablePlans.map(edit => edit.id), [legacy.id]);
+});
+
+test('a prepared future visit consumes legacy balance and excludes self-service actions', () => {
+ const legacy = plan({
+  billing_model: 'delivery_count',
+  period_end_exclusive: null,
+  purchased_deliveries: 1,
+  scheduled_delivery_items: ['2026-10-27', '2026-10-28'].map(delivery_date => ({ ...item(), delivery_date })),
+ });
+ const s = snapshot({ plans: [legacy], records: [row({ delivery_date: '2026-10-27' })] });
+ assert.equal(s.week[0].state, 'scheduled');
+ assert.deepEqual(s.week[0].editablePlans, []);
+ assert.equal(s.week[1].state, 'none');
+ assert.equal(s.upcoming.length, 1);
+});

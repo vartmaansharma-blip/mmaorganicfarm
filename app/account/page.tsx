@@ -10,7 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
-import { buildDeliveryCalendar, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
+import { addCalendarDays, buildDeliveryCalendar, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { completedMonthlyDates } from "@/lib/monthly-delivery-completion";
@@ -63,6 +63,7 @@ export default async function AccountPage({
       "id, status, start_date, bottle_choice, billing_model, period_end_exclusive, purchased_deliveries, delivered_deliveries, weekly_delivery_items(day_of_week, product_key, quantity, unit), scheduled_delivery_items(delivery_date, product_key, quantity, unit), delivery_exceptions(delivery_date, product_key, action, quantity, unit), delivery_pauses(id, start_date, end_date)",
     )
     .eq("user_id", user.id)
+    .eq("is_test", false)
     .in("status", ["pending_confirmation", "active", "paused"])
     .order("created_at", { ascending: false });
   const [
@@ -185,6 +186,14 @@ export default async function AccountPage({
     0,
     (purchasedDeliveries ?? 0) - deliveredDeliveries,
   );
+  const confirmedPlan = deliveryPlan?.status === "active" || deliveryPlan?.status === "paused";
+  const planSummary = deliveryPlan?.billing_model === "calendar_month"
+    ? confirmedPlan && deliveryPlan.period_end_exclusive
+      ? `Prepaid through ${formatPlanStartDate(addCalendarDays(deliveryPlan.period_end_exclusive, -1))} · No automatic renewal`
+      : "View your plan dates"
+    : confirmedPlan && purchasedDeliveries != null
+      ? `${remainingDeliveries} prepaid deliveries remaining`
+      : "View your plan details";
   const upcomingDeliveries = deliveryPlan
     ? buildDeliveryCalendar({
         days: 7,
@@ -243,7 +252,7 @@ export default async function AccountPage({
           {!plansError && deliveryPlan ? <section className={styles.nextDeliveryPanel} aria-labelledby="today-plan-heading">
             <div className={styles.nextDeliveryHeading}><h2 id="today-plan-heading">Your plan</h2><Link href="/account?section=plans">View plans →</Link></div>
             <Link className={styles.summaryRow} href="/account?section=plans">
-              <span><strong>{deliveryPlan.billing_model === "calendar_month" ? "Monthly plan" : "Weekly plan"} · {planStatus}</strong><small>{deliveryPlan.billing_model === "calendar_month" || purchasedDeliveries == null ? "See your plan dates and deliveries" : `${remainingDeliveries} prepaid deliveries remaining`}</small></span>
+              <span><strong>{deliveryPlan.billing_model === "calendar_month" ? "Monthly plan" : "Weekly plan"} · {planStatus}</strong><small>{planSummary}</small></span>
               <span aria-hidden="true">→</span>
             </Link>
           </section> : null}

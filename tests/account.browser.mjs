@@ -20,8 +20,9 @@ let deliveryDetails={phone:'9000000000',address_line:'Synthetic test address',po
 const routeRefreshes=[];
 const requests=[];
 const product=(key='milk',quantity=2,fulfilled_quantity=null)=>({product_key:key,product_name:key==='milk'?'Fresh milk':'Fresh paneer',quantity,unit:key==='milk'?'L':'kg',fulfilled_quantity});
-const plan=()=>({id:planId,user_id:userId,status:scenario==='pending'?'pending_confirmation':scenario==='paused'?'paused':'active',start_date:date,billing_model:scenario==='legacy'?'milk_credits':'calendar_month',period_end_exclusive:plus(30),purchased_deliveries:30,delivered_deliveries:0,bottle_choice:'return',weekly_delivery_items:[],scheduled_delivery_items:[0,1,2,3].map(n=>({...product(),delivery_date:plus(n)})),delivery_exceptions:[],delivery_pauses:[]});
-const rows=()=>['none','pending','paused'].includes(scenario)?[]:[{id:recordId,user_id:userId,plan_id:planId,order_id:null,delivery_date:date,visit_key:'local-visit',status:({out:'out_for_delivery',preparing:'ready',delivered:'delivered',partial:'failed'})[scenario]??'planned',updated_at:new Date().toISOString(),delivery_confirmed:scenario==='delivered',delivered_confirmed_at:scenario==='delivered'?new Date().toISOString():null,replacement_of_delivery_id:null,fulfilment_root_id:null,daily_delivery_items:scenario==='partial'?[product('milk',2,2),product('paneer',.5,0)]:[product('milk',2,scenario==='delivered'?2:null)]}];
+const extendedWeek=()=>['legacy-window','legacy-prepared'].includes(scenario);
+const plan=()=>({id:planId,user_id:userId,status:scenario==='pending'?'pending_confirmation':scenario==='paused'?'paused':'active',start_date:date,billing_model:scenario==='legacy'||extendedWeek()?'milk_credits':'calendar_month',period_end_exclusive:plus(30),purchased_deliveries:30,delivered_deliveries:0,bottle_choice:'return',weekly_delivery_items:[],scheduled_delivery_items:(extendedWeek()?[1,2,9]:[0,1,2,3]).map(n=>({...product(),delivery_date:plus(n)})),delivery_exceptions:extendedWeek()?[{delivery_date:plus(1),product_key:'milk',action:'skip',quantity:null,unit:null}]:[],delivery_pauses:extendedWeek()?[{id:'pause1',start_date:plus(2),end_date:plus(2)}]:[]});
+const rows=()=>['none','pending','paused','legacy-window'].includes(scenario)?[]:[{id:recordId,user_id:userId,plan_id:planId,order_id:null,delivery_date:scenario==='legacy-prepared'?plus(9):date,visit_key:'local-visit',status:({out:'out_for_delivery',preparing:'ready',delivered:'delivered',partial:'failed'})[scenario]??'planned',updated_at:new Date().toISOString(),delivery_confirmed:scenario==='delivered',delivered_confirmed_at:scenario==='delivered'?new Date().toISOString():null,replacement_of_delivery_id:null,fulfilment_root_id:null,daily_delivery_items:scenario==='partial'?[product('milk',2,2),product('paneer',.5,0)]:[product('milk',2,scenario==='delivered'?2:null)]}];
 const user={id:userId,aud:'authenticated',role:'authenticated',email:'fixture@example.invalid',email_confirmed_at:new Date().toISOString(),created_at:new Date().toISOString(),app_metadata:{provider:'email',providers:['email']},user_metadata:{full_name:'Test Customer'},identities:[]};
 const stub=createServer(async(req,res)=>{
  const url=new URL(req.url,'http://127.0.0.1'); requests.push({path:url.pathname,query:Object.fromEntries(url.searchParams),method:req.method});
@@ -52,13 +53,15 @@ const stub=createServer(async(req,res)=>{
  if(url.pathname.endsWith('/daily_deliveries')){
   if(fail){res.writeHead(503);res.end(JSON.stringify({message:'Synthetic delivery outage',code:'TEST'}));return;}
   data=rows();
+  const exactDate=url.searchParams.get('delivery_date');
+  if(exactDate?.startsWith('eq.'))data=data.filter(row=>row.delivery_date===exactDate.slice(3));
   if(url.searchParams.get('status')==='eq.delivered')data=data.filter(r=>r.status==='delivered');
  }
  if(url.pathname.endsWith('/orders')) {
   const paid={id:'00000000-0000-4000-8000-000000000004',status:'paid',purchase_mode:'plan',total_paise:62000,paid_total_paise:62000,start_date:date,created_at:new Date().toISOString(),order_items:[{...product(),id:'item1'}]};
   const draft={...paid,id:'00000000-0000-4000-8000-000000000005',status:'draft',paid_total_paise:null,order_items:[{...product(),id:'item2',product_name:'Draft-only item'}]};
   const pending={...paid,id:'00000000-0000-4000-8000-000000000006',status:'pending_payment',paid_total_paise:null,order_items:[{...product(),id:'item3',product_name:'Pending checkout'}]};
-  data=scenario==='none'?[]:[paid,draft,pending];
+  data=scenario==='none'?[]:extendedWeek()?[paid]:[paid,draft,pending];
   const status=url.searchParams.get('status')||'';
   if(status.startsWith('in.(')&&status.endsWith(')')) {
     const allowed=status.slice(4,-1).split(',');
@@ -156,6 +159,30 @@ try{
     if(state!=='out')assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).count(),0);
     await page.screenshot({path:path.join(output,`${engine}-390-${state}.png`),fullPage:true});
    }
+   scenario='legacy-window';await page.goto(`${base}/account`,{waitUntil:'networkidle'});
+   const week=page.getByRole('region',{name:'Coming up · 7 days'});
+   assert.equal(await week.getByRole('button').count(),7);
+   await week.getByRole('button',{name:/Skipped/}).click();
+   const details=page.getByRole('dialog');
+   await details.getByText('Skipped',{exact:true}).waitFor();
+   await page.keyboard.press('Escape');
+   await details.waitFor({state:'hidden'});
+   await week.getByRole('button',{name:/Paused/}).waitFor();
+   await page.getByRole('button',{name:'Manage delivery →'}).click();
+   await details.getByText('Fresh milk',{exact:true}).waitFor();
+   const quantity=details.getByRole('link',{name:/Review a milk quantity change/});
+   const editorPath=`/calendar?plan=${planId}&date=${plus(9)}#quantity-change`;
+   assert.equal(await quantity.getAttribute('href'),editorPath);
+   await page.screenshot({path:path.join(output,`${engine}-390-delivery-details.png`)});
+   await quantity.click();
+   await page.waitForURL(url=>url.pathname==='/calendar'&&url.searchParams.get('date')===plus(9));
+   assert.equal(await page.locator('#quantity-change input[name=date]').inputValue(),plus(9));
+   await page.getByText(/goes to checkout for a price review/).waitFor();
+   scenario='legacy-prepared';
+   await page.getByRole('button',{name:'Skip this delivery day'}).click();
+   await page.getByText(/This date has been prepared or paused/).waitFor();
+   await page.getByText(/The farm has prepared this delivery/).waitFor();
+   assert.equal(await page.getByRole('button',{name:'Save quantity'}).count(),0);
    scenario='out';await page.goto(`${base}/account`,{waitUntil:'networkidle'});fail=true;await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByText('Showing the last successful update',{exact:false}).waitFor();assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'out');await page.screenshot({path:path.join(output,`${engine}-390-stale.png`),fullPage:true});
    fail=false;scenario='delivered';await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();assert.equal(await page.getByText('Showing the last successful update',{exact:false}).count(),0);
    fail=true;await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'error');assert.equal(await page.getByRole('heading',{name:'A quiet day at your doorstep',exact:true}).count(),0);fail=false;await page.getByRole('button',{name:'Try again →'}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();
