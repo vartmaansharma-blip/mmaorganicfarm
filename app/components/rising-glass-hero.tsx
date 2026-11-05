@@ -351,7 +351,7 @@ export function RisingGlassHero() {
         </div>
 
         <div className={styles.visual}>
-          <div className={styles.glass} data-glass-frame role="img" aria-label="Scroll to fill a traditional grooved glass with milk. A short automatic film then reveals coffee, a curved move at a fixed angle, a full-screen macro and an overhead finish. The introduction only moves forward. Returning from the farm keeps the finished glass visible.">
+          <div className={styles.glass} data-glass-frame role="img" aria-label="Scroll to fill a traditional grooved glass with milk. A short automatic film then reveals coffee, a curved move at a fixed angle, a full-screen macro and an overhead finish of milk. The introduction only moves forward. Returning from the farm keeps the finished glass visible.">
             <div className={styles.camera} data-glass-camera>
               <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} priority sizes="(max-width: 720px) 240px, 38vw" />
               <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
@@ -393,7 +393,7 @@ export function RisingGlassHero() {
                 </g>
               </svg>
             </div>
-            <Image data-overhead-photo className={styles.top} src="/hero/coffee-top.webp" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
+            <Image data-overhead-photo className={styles.top} src="/hero/milk-top.avif" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
           </div>
         </div>
 
