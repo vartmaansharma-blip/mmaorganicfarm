@@ -66,6 +66,10 @@
   .menuButton i { display: block; height: 1.5px; background: currentColor; }
   .menuButton:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
 }
+@media (max-width: 370px) {
+  .header { grid-template-columns: minmax(0, 1fr) repeat(4, auto); padding-inline: 12px; gap: 5px; }
+  .brand { width: min(62px, 100%); }
+}
 @media (max-height: 650px) { .drawerLinks { margin-top: 16px; } .drawerLinks a { min-height: 58px; } .drawerFooter { padding-top: 20px; } }
 @media (prefers-reduced-motion: reduce) { .header a, .shop span:last-child, .drawerLinks a, .drawerFooter a { transition: none; } .header a:active, .menuButton:active, .shop:hover span:last-child { transform: none; } .drawer[open] { animation: none; } }
 
