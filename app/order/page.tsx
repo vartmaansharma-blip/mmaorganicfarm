@@ -1,3 +1,8 @@
+import { randomUUID } from "node:crypto";
+import { CHECKOUT_ID, combinedSelection, oneTimeSelection, scheduledSelection } from "@/lib/delivery-details";
+import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
+import { CheckoutCartLink } from "@/app/shop/shop-state";
+import { DeliverySummary } from "./delivery-summary";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import { parseRoutines, quoteMonthlySchedule } from "@/lib/monthly-schedule";
 import { SharedCalendar } from "@/app/shop/shared-calendar";
@@ -42,11 +47,15 @@ type OrderPageProps = {
     routine?: string;
     nextPlan?: string;
     combineWith?: string;
+    checkout?: string;
   }>;
 };
 
 export default async function OrderPage({ searchParams }: OrderPageProps) {
   const params = await searchParams;
+  if (Object.values(params).some((value) => typeof value !== "string")
+    || (params.nextPlan !== undefined && (!params.nextPlan || params.nextPlan.length > 1200))
+    || (params.checkout && !params.nextPlan)) redirect("/shop");
   const supabase = await createClient();
   const {
     data: { user },
@@ -64,13 +73,10 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const firstName = (
-    profile?.full_name ??
-    user.user_metadata.full_name ??
-    user.user_metadata.name ??
-    "there"
-  ).split(/\s+/)[0];
-  const { prices } = await readProductCatalogue();
+  const name = profile?.full_name ?? user.user_metadata.full_name ?? user.user_metadata.name;
+  const fullName = typeof name === "string" && name.trim() ? name.trim() : "";
+  const firstName = fullName.split(/\s+/)[0] || "there";
+  const { prices, revision } = await readProductCatalogue();
   const selectedProducts = parseFarmProductSelections(params.extras ?? "", prices);
   const weeklySchedule = parseWeeklyMilkSchedule(params.schedule ?? "");
   const planSchedule = params.purchase === "plan" ? weeklySchedule : null;
@@ -87,9 +93,22 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
     ? "none"
     : "return";
   const firstPlanStart =
-    params.purchase === "plan"
+    params.purchase === "plan" || params.nextPlan
       ? await firstScheduledPlanStart(supabase, user.id)
       : null;
+  const minimum = nextDeliveryDateInIndia();
+  const basket = params.nextPlan && !params.combineWith
+    ? combinedSelection(params, params.nextPlan, prices, minimum, firstPlanStart)
+    : null;
+  if (basket && !CHECKOUT_ID.test(params.checkout ?? "")) {
+    const url = new URL(orderReturnPath({ ...params, checkout: randomUUID() }), "https://mma.invalid");
+    if (params.error) url.searchParams.set("error", params.error);
+    redirect(`${url.pathname}${url.search}`);
+  }
+  const once = basket?.once ?? (!params.nextPlan && params.start ? oneTimeSelection(params, prices, minimum) : null);
+  const scheduled = basket?.scheduled ?? (!params.nextPlan ? scheduledSelection(params, prices, minimum, firstPlanStart) : null);
+  const modern = Boolean(params.nextPlan || params.routine || (params.purchase === "once" && params.start));
+  const invalid = modern && !once && !scheduled;
   const pricing = monthlyRules
     ? quoteMonthlySchedule({ prices,
         start: params.start ?? "",
@@ -132,7 +151,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
         </div>
       </header>
 
-      <section className={styles.layout}>
+      <section className={`${styles.layout} ${basket ? styles.unifiedLayout : ""}`}>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>Step 2 of 4</p>
           <h1>Where should we bring your order, {firstName}?</h1>
@@ -142,11 +161,16 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           </p>
           <div className={styles.steps} aria-label="Order progress">
             <span className={styles.complete}>Account</span>
-            <span className={styles.active}>Delivery details</span>
+            <span className={styles.active} aria-current="step">Delivery details</span>
             <span>Review &amp; pay</span>
             <span>Confirmed</span>
           </div>
-          {hasOrder ? (
+          {invalid ? (
+            <div className={styles.orderSummary}>
+              <p role="alert">Some selected items or delivery dates need review before you can continue.</p>
+              <CheckoutCartLink>Review your saved cart →</CheckoutCartLink>
+            </div>
+          ) : once || scheduled ? <DeliverySummary once={once} scheduled={scheduled} /> : hasOrder ? (
             <div className={styles.orderSummary}>
               <strong>Your farm order</strong>
               {monthlyRules ? (
@@ -236,21 +260,28 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           ) : null}
         </div>
 
-        <form className={styles.form} action={saveDeliveryDetails}>
+        {!invalid && <form className={styles.form} action={saveDeliveryDetails}>
           <input name="extras" type="hidden" value={params.extras ?? ""} />
           <input name="milk" type="hidden" value={params.milk ?? "0"} />
           <input name="purchase" type="hidden" value={purchase} />
           <input name="schedule" type="hidden" value={params.schedule ?? ""} />
           <input name="routine" type="hidden" value={params.routine ?? ""} />
           <input name="start" type="hidden" value={params.start ?? ""} />
-          {params.nextPlan ? <input name="nextPlan" type="hidden" value={params.nextPlan} /> : null}
+          {basket && <>
+            <input name="nextPlan" type="hidden" value={params.nextPlan} />
+            <input name="checkout" type="hidden" value={params.checkout} />
+            <input name="catalogueRevision" type="hidden" value={revision} />
+            <input name="quotedTotal" type="hidden" value={basket.totalPaise} />
+          </>}
           {params.combineWith ? <input name="combineWith" type="hidden" value={params.combineWith} /> : null}
           {params.error ? (
             <p className={styles.error} role="alert">
-              {params.error}
+              {params.error} <CheckoutCartLink>Review cart →</CheckoutCartLink>
             </p>
           ) : null}
 
+          <h2 className={styles.formTitle}>Delivery address</h2>
+          {fullName && <p className={styles.recipient}><span>Delivering to</span> <strong>{fullName}</strong></p>}
           <label>
             <span className={styles.fieldLabel}>Phone number</span>
             <div className={styles.phoneField}>
@@ -282,6 +313,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
               defaultValue={profile?.address_line ?? ""}
               name="address"
               placeholder="House or flat, street, area and landmark"
+              minLength={8}
+              maxLength={500}
               required
               rows={4}
             />
@@ -291,13 +324,13 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           </label>
 
           <button className={styles.submitButton} type="submit">
-            {params.nextPlan ? "Continue to scheduled details" : params.combineWith ? "Review combined checkout" : "Save & review order"} <span>→</span>
+            Save delivery details &amp; review order <span aria-hidden="true">→</span>
           </button>
           <p className={styles.note}>
             These details are saved securely to your account. No order is placed
             and no payment is taken on this page.
           </p>
-        </form>
+        </form>}
       </section>
     </main>
   );

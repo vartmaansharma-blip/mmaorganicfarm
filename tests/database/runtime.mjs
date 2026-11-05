@@ -134,6 +134,7 @@ export async function createDatabase({ routingFoundation = false, driverRuns = f
     // Mirror hosted order metadata and the existing service-role table grants.
     await db.query("alter table public.orders add column pricing_version integer not null default 1; grant select, insert, update on public.orders to service_role; grant select, insert on public.order_items to service_role; grant select, update on public.delivery_plans to service_role");
     await db.query(await readFile(new URL("../../docs/verification/combined-checkout-retry.local.sql", import.meta.url), "utf8"));
+    await db.query(await readFile(new URL("../../docs/verification/unified-delivery-details.local.sql", import.meta.url), "utf8"));
     if (routingFoundation) await db.query(await readFile(new URL("../../supabase/migrations/20261026172231_routing_foundation.sql", import.meta.url), "utf8"));
     if (driverRuns) await db.query(await readFile(new URL("../../supabase/migrations/20261026172251_driver_run_foundation.sql", import.meta.url), "utf8"));
     if (farmNotifications) await db.query(await readFile(new URL("../../docs/verification/farm-notifications.local.sql", import.meta.url), "utf8"));

@@ -86,7 +86,7 @@ export default async function BatchReview({ searchParams }: {
       <span>M&apos;ma Organic Farm</span>
     </header>
     <section className={styles.content}>
-      <p className={styles.eyebrow}>Review &amp; pay</p>
+      <p className={styles.eyebrow}>Step 3 of 4 · Review &amp; pay</p>
       <h1>One payment, both deliveries.</h1>
       <p>Check the selected items below. One-time and prepaid scheduled items remain separate farm orders after payment.</p>
       <CheckoutPayment orderId={once.id} batchId={batch.id}

@@ -372,3 +372,60 @@
 .phoneField.phoneField { padding: 0; }
 
 .steps .active { color: var(--color-accent); border-color: var(--color-accent); }
+
+.completeOrder { display: grid; gap: 12px; margin: 0 0 24px; }
+.completeOrder > h2, .formTitle {
+  font-size: clamp(19px, 3vw, 24px);
+  font-weight: 600;
+  letter-spacing: -.025em;
+  margin: 0;
+}
+.selectionCard {
+  padding: clamp(14px, 3vw, 22px);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+  border-radius: 18px;
+}
+.selectionCard header h3 { font-size: 17px; margin: 0 0 4px; }
+.selectionCard header p, .bottleNote, .recipient { color: var(--ui-muted); font-size: 13px; line-height: 1.5; margin: 0; }
+.selectionItems { list-style: none; margin: 11px 0 0; padding: 0; }
+.selectionItems li {
+  border-top: 1px solid var(--ui-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 0;
+  font-size: 13px;
+}
+.selectionItems li div { display: grid; gap: 3px; min-width: 0; }
+.selectionItems li span { font-size: 12px; color: var(--ui-muted); line-height: 1.4; }
+.selectionItems li > b { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.calendarPreview { border-block-start: 1px solid var(--ui-border); margin-top: 2px; padding: 9px 0 0; }
+.calendarPreview > summary { cursor: pointer; width: fit-content; font-size: 13px; font-weight: 650; padding: 5px 0; }
+.calendarPreview[open] > summary { margin-bottom: 9px; }
+.selectionFees { border-top: 1px solid var(--ui-border); margin: 9px 0 0; padding-top: 8px; font-size: 13px; }
+.selectionFees > div { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
+.selectionFees dt { color: var(--ui-muted); }
+.selectionFees dd { margin: 0; font-variant-numeric: tabular-nums; }
+.selectionFees .selectionTotal { font-weight: 700; font-size: 14px; padding-top: 8px; }
+.selectionFees .selectionTotal dt { color: var(--ui-text); }
+.combinedTotal {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-surface);
+  padding: 14px 18px; border-inline-start: 3px solid #f5c84b;
+}
+.combinedTotal div { display: grid; gap: 3px; }
+.combinedTotal span { color: var(--ui-muted); font-size: 12px; }
+.combinedTotal b { font-size: clamp(21px, 4vw, 28px); font-variant-numeric: tabular-nums; }
+.recipient strong { color: var(--ui-text); }
+@media (min-width: 960px) {
+  .unifiedLayout {
+    width: min(100%, 1040px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 36px;
+  }
+  .unifiedLayout .form { margin-top: 37px; }
+}
