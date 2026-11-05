@@ -1,5 +1,5 @@
 "use server";
-import { CHECKOUT_ID, combinedSelection, deliveryOrderValues, oneTimeSelection, scheduledSelection } from "@/lib/delivery-details";
+import { CHECKOUT_ID, bottleMode, combinedSelection, deliveryOrderValues, oneTimeSelection, scheduledSelection } from "@/lib/delivery-details";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import { priceInPaise } from "@/lib/product-prices";
 
@@ -90,12 +90,16 @@ export async function saveDeliveryDetails(formData: FormData) {
     );
   }
 
+  const selectedBottle = bottleMode(formData.get("bottle"));
   const rawCombineWith = String(formData.get("combineWith") ?? "");
   const combineWith = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawCombineWith)
     ? rawCombineWith : "";
   const orderUrl = (...args: Parameters<typeof baseOrderUrl>) => {
     const url = new URL(baseOrderUrl(...args), "https://mma.invalid");
-    if (nextPlan) url.searchParams.set("nextPlan", nextPlan);
+    if (nextPlan) {
+      url.searchParams.set("nextPlan", nextPlan);
+      url.searchParams.set("bottle", selectedBottle);
+    }
     if (CHECKOUT_ID.test(checkout)) url.searchParams.set("checkout", checkout);
     if (combineWith) url.searchParams.set("combineWith", combineWith);
     return `${url.pathname}${url.search}`;
@@ -119,11 +123,6 @@ export async function saveDeliveryDetails(formData: FormData) {
     purchase === "plan" && routine
       ? parseRoutines(String(formData.get("start") ?? ""), routine)
       : null;
-  const bottle: BottleChoice = (
-    monthlyRules ? !monthlyRules.some((r) => r.id === "milk") : milkLitres === 0
-  )
-    ? "none"
-    : "return";
   const { prices, revision } = await readProductCatalogue();
   const selectedProducts = parseFarmProductSelections(
     String(formData.get("extras") ?? ""), prices,
@@ -137,11 +136,14 @@ export async function saveDeliveryDetails(formData: FormData) {
     purchase === "plan" && weeklySchedule
       ? weeklySchedule.reduce((total, litres) => total + litres, 0)
       : milkLitres;
+  const hasMilk = monthlyRules ? monthlyRules.some((rule) => rule.id === "milk") : effectiveMilkLitres > 0;
+  const bottle: BottleChoice = hasMilk ? selectedBottle : "none";
   const firstPlanStart =
     purchase === "plan" || nextPlan
       ? await firstScheduledPlanStart(supabase, user.id)
       : null;
   const choices = {
+    bottle: selectedBottle,
     purchase: rawPurchase,
     start: String(formData.get("start") ?? ""),
     milk: String(formData.get("milk") ?? "0"),
@@ -358,26 +360,37 @@ export async function saveDeliveryDetails(formData: FormData) {
     const once = basket.once;
     const plan = basket.scheduled;
     const contact = `+91${phone}`;
-    const { data: batchId, error: batchError } = await createAdminClient().rpc("prepare_unified_checkout", {
+    const { data: batch, error: batchError } = await createAdminClient().rpc("prepare_delivery_details_checkout", {
       p_user_id: user.id, p_checkout_id: checkout, p_catalogue_revision: revision,
       p_once: deliveryOrderValues(once.pricing, once.bottle, once.start, address, contact),
       p_once_items: once.lines,
       p_plan: deliveryOrderValues(plan.pricing, plan.bottle, plan.start, address, contact),
       p_plan_items: plan.lines,
       p_rules: plan.rules,
+      p_shared_delivery_date: basket.sharedDate,
     });
-    if (batchError || !batchId) {
+    if (batchError || !batch?.id) {
       const message = batchError?.message ?? "";
       const reason = /current paid plan/.test(message)
         ? "You already have a prepaid plan. Manage it from My M’ma before starting another."
         : /payment checkout is already in progress/.test(message)
           ? "You have a checkout in progress. Open My M’ma to review it before starting another."
-          : /updated basket|prices changed/.test(message)
+          : /updated basket|prices changed|shared delivery date changed/.test(message)
             ? "Your basket or prices changed. Open your cart and review both selections again."
             : "Your combined order could not be prepared. Please try again or review your saved cart.";
       redirect(orderUrl("error", databaseErrorMessage(batchError, reason), purchase, bottle, milk, extras, schedule, start, routine));
     }
-    redirect(`/checkout/batch/review?batch=${batchId}`);
+    if (batch.status === "draft" && batch.amount_paise !== basket.totalPaise) {
+      const { error: bottleError } = await supabase.rpc("set_checkout_batch_bottle_mode", {
+        p_batch_id: batch.id, p_mode: selectedBottle, p_expected_total: batch.amount_paise,
+      });
+      const { data: updated } = bottleError ? { data: null } : await supabase.from("checkout_batches")
+        .select("amount_paise").eq("id", batch.id).eq("user_id", user.id).maybeSingle();
+      if (updated?.amount_paise !== basket.totalPaise) {
+        redirect(orderUrl("error", "Your bill changed. Open the cart and review your selections again.", purchase, bottle, milk, extras, schedule, start, routine));
+      }
+    }
+    redirect(`/checkout/batch/review?batch=${batch.id}`);
   }
 
   const orderValues = deliveryOrderValues(pricing, bottle, orderDeliveryDate, address, `+91${phone}`);

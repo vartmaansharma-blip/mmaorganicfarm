@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CheckoutCartLink } from "@/app/shop/shop-state";
 import { CartCheckoutBatchSync } from "@/app/shop/cart-checkout-batch-sync";
+import { formatCalendarDate } from "@/lib/delivery-calendar";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
 import { serializeRoutines, validateRoutines } from "@/lib/monthly-schedule";
 import { paymentModeError, razorpayMode } from "@/lib/payment-mode";
@@ -23,7 +24,7 @@ export default async function BatchReview({ searchParams }: {
   if (!user) redirect(`/sign-in?next=${encodeURIComponent(batchId ? `/checkout/batch/review?batch=${batchId}` : "/shop")}`);
   if (!batchId) redirect("/shop");
   const { data: batch } = await supabase.from("checkout_batches")
-    .select("id,user_id,once_order_id,plan_order_id,amount_paise,is_test,status,provider_order_id")
+    .select("id,user_id,once_order_id,plan_order_id,amount_paise,is_test,status,provider_order_id,shared_delivery_date")
     .eq("id", batchId).eq("user_id", user.id).maybeSingle();
   if (!batch) redirect("/account");
   if (["paid", "test_captured", "review_required"].includes(batch.status)) redirect(`/checkout/batch/success?batch=${batch.id}`);
@@ -92,7 +93,7 @@ export default async function BatchReview({ searchParams }: {
       <CheckoutPayment orderId={once.id} batchId={batch.id}
         amount={formatCheckoutAmount(batch.amount_paise)} amountPaise={batch.amount_paise}
         ready={ready} unavailableReason={unavailableReason} isTest={batch.is_test}
-        bottleMode={bottleMode} bottleLocked={!available || batch.status !== "draft"}>
+        bottleMode={bottleMode}>
       <div className={styles.orderCards}>
         <section>
           <h2>One-time delivery</h2>
@@ -113,6 +114,7 @@ export default async function BatchReview({ searchParams }: {
           <strong>{formatCheckoutAmount(plan.total_paise)}</strong>
         </section>
       </div>
+      {batch.shared_delivery_date && <p>Delivery is free on {formatCalendarDate(batch.shared_delivery_date)} because both orders share that date.</p>}
       <div className={styles.total}><span>Total for one payment</span><strong aria-live="polite">{formatCheckoutAmount(batch.amount_paise)}</strong></div>
       <p>One-time delivery address: {once.address_snapshot}</p>
       {plan.address_snapshot !== once.address_snapshot

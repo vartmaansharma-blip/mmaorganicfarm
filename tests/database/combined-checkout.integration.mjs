@@ -107,15 +107,9 @@ test("combined checkout prices bottles once, captures atomically and notifies fa
       browser = await browserFixture(runtime.config, [order.user, manager]);
       for (const { customer } of browser.pages) {
         await customer.goto(`${browser.base}/checkout/batch/review?batch=${order.batch}`, { waitUntil: "networkidle" });
-        const bottleSwitch = customer.getByRole("switch", { name: "Keep bottle" });
-        await bottleSwitch.waitFor();
-        assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
         await customer.getByRole("button", { name: "Pay ₹191", exact: true }).waitFor();
-        await bottleSwitch.click();
-        await customer.getByRole("button", { name: "Pay ₹221", exact: true }).waitFor();
-        assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
-        await bottleSwitch.press("Space");
-        await customer.getByRole("button", { name: "Pay ₹191", exact: true }).waitFor();
+        await customer.getByText("Return bottles", { exact: true }).waitFor();
+        assert.equal(await customer.getByRole("switch", { name: "Keep bottle" }).count(), 0);
         assert.equal(await customer.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       }
     }
@@ -263,6 +257,12 @@ test("combined preparation is atomic, idempotent and safely recovers from a stal
 
     if (process.env.COMBINED_CHECKOUT_BROWSER === "1") {
       browser = await browserFixture(runtime.config, [user, other], true);
+      await db.query("insert into farm_staff(user_id,role) values($1,'admin')", [other]);
+      const catalogue = (await db.query("select prices,revision from farm_catalog_prices")).rows[0];
+      await callAs(db, other, "select update_farm_prices($1,'Test delivery threshold',$2)", [
+        { ...catalogue.prices, delivery_once: 500, delivery_scheduled: 200, delivery_free_at: 50000, handling: 0, platform: 0 },
+        catalogue.revision,
+      ]);
       const nextDay = (await db.query("select (private.operational_today()+2)::text as day")).rows[0].day;
       for (const [index, { customer }] of browser.pages.entries()) {
         await customer.setViewportSize(index === 0 ? { width: 1280, height: 900 } : { width: 390, height: 900 });
@@ -331,16 +331,27 @@ test("combined preparation is atomic, idempotent and safely recovers from a stal
         assert.equal(total, "₹1,336");
         assert.equal(await customer.locator("textarea[name=address]").count(), 1);
 
+        const bottleSwitch = customer.getByRole("switch", { name: "Keep bottle" });
+        assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
+        await customer.getByText(/Delivery is free on .* because both orders share that date/).waitFor();
         let reviewUrl;
         for (let attempt = 0; attempt < 2; attempt++) {
-          if (attempt) await customer.goto(formUrl);
+          if (attempt) await customer.goto(formUrl, { waitUntil: "networkidle" });
+          else {
+            await bottleSwitch.press("Space");
+            await customer.waitForFunction(() => document.querySelector("[data-checkout-total]")?.textContent === "₹1,366");
+            await customer.reload();
+            assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
+          }
           await customer.locator("input[name=phone]").fill("9000000000");
           await customer.locator("textarea[name=address]").fill(order.address_snapshot);
           await customer.getByRole("button", { name: "Save delivery details & review order" }).click();
           await customer.waitForURL("**/checkout/batch/review?batch=*");
           if (reviewUrl) assert.equal(customer.url(), reviewUrl);
           reviewUrl = customer.url();
-          await customer.getByRole("button", { name: `Pay ${total}`, exact: true }).waitFor();
+          await customer.getByRole("button", { name: `Pay ${attempt ? total : "₹1,366"}`, exact: true }).waitFor();
+          await customer.getByText(attempt ? "Return bottles" : "Keep bottles", { exact: true }).waitFor();
+          assert.equal(await customer.getByRole("switch", { name: "Keep bottle" }).count(), 0);
         }
 
         const batchId = new URL(reviewUrl).searchParams.get("batch");
@@ -350,6 +361,7 @@ test("combined preparation is atomic, idempotent and safely recovers from a stal
         )).rows[0];
         assert.equal(prepared.once_order_id, new URL(formUrl).searchParams.get("checkout"));
         assert.equal(prepared.amount_paise, 133600);
+        assert.equal(prepared.shared_delivery_date, day);
         assert.equal((await db.query("select count(*)::int n from checkout_batches where once_order_id=$1", [prepared.once_order_id])).rows[0].n, 1);
         const itemsFor = async (id) => (await db.query("select product_key,quantity::int from order_items where order_id=$1 order by product_key", [id])).rows;
         assert.deepEqual(await itemsFor(prepared.once_order_id), [{ product_key: "milk", quantity: 1 }, { product_key: "paneer", quantity: 2 }]);
@@ -413,10 +425,10 @@ test("unified preparation rolls back both orders and safely deduplicates overlap
       product_key: "milk", product_name: "Fresh milk", quantity: 2, unit: "litre",
       unit_price_paise: 6200, line_total_paise: 12400, frequency: "once", scheduled_days: [], delivery_date: day,
     };
-    const query = "select prepare_unified_checkout($1,$2,$3,$4,$5,$6,$7,$8) as batch";
-    const args = ({ customer = user, id = checkout, catalogue = revision, planLine = milk, onceLine = milk } = {}) => [
-      customer, id, catalogue, { ...order, total_paise: 12900 }, JSON.stringify([onceLine]),
-      order, JSON.stringify([planLine]), JSON.stringify(rules),
+    const query = "select prepare_delivery_details_checkout($1,$2,$3,$4,$5,$6,$7,$8,$9)->>'id' as batch";
+    const args = ({ customer = user, id = checkout, catalogue = revision, planLine = milk, onceLine = milk, sharedDate = day } = {}) => [
+      customer, id, catalogue, order, JSON.stringify([onceLine]),
+      order, JSON.stringify([planLine]), JSON.stringify(rules), sharedDate,
     ];
     async function prepare(options) {
       const client = new Client(runtime.config);
@@ -437,6 +449,8 @@ test("unified preparation rolls back both orders and safely deduplicates overlap
     await assert.rejects(prepare({ catalogue: randomUUID() }), /prices changed/);
     assert.deepEqual(await footprint(), { orders: 0, batches: 0, plans: 0 });
 
+    await assert.rejects(prepare({ sharedDate: null }), /shared delivery date changed/i);
+    assert.deepEqual(await footprint(), { orders: 0, batches: 0, plans: 0 });
     const [first, duplicate] = await Promise.all([prepare(), prepare()]);
     assert.equal(first, duplicate);
     assert.equal(await prepare(), first);
@@ -449,7 +463,7 @@ test("unified preparation rolls back both orders and safely deduplicates overlap
       `select b.amount_paise,o.status,p.status as plan_status from checkout_batches b
        join orders o on o.id=b.plan_order_id join delivery_plans p on p.id=o.delivery_plan_id where b.id=$1`, [first],
     )).rows[0];
-    assert.deepEqual(state, { amount_paise: 25300, status: "draft", plan_status: "pending_confirmation" });
+    assert.deepEqual(state, { amount_paise: 24800, status: "draft", plan_status: "pending_confirmation" });
     await db.query("select set_config('request.jwt.claim.role','service_role',false)");
     await db.query("select claim_checkout_batch($1,$2,$3)", [first, state.amount_paise, JSON.stringify(rules)]);
     const { once_order_id, plan_order_id } = (await db.query("select once_order_id,plan_order_id from checkout_batches where id=$1", [first])).rows[0];

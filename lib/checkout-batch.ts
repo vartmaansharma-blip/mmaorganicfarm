@@ -1,4 +1,6 @@
 import "server-only";
+import { waiveSharedDelivery } from "./delivery-pricing";
+import { priceInPaise } from "./product-prices";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { quoteStoredCheckout, type StoredCheckoutItem } from "./checkout-quote";
 import { quoteStoredMonthlyCheckout } from "./monthly-checkout";
@@ -14,6 +16,7 @@ type Batch = {
   is_test: boolean;
   status: string;
   provider_order_id: string | null;
+  shared_delivery_date?: string | null;
 };
 
 async function readOrder(client: SupabaseClient, id: string, userId: string) {
@@ -65,8 +68,11 @@ export async function quoteCheckoutBatch(client: SupabaseClient, batch: Batch) {
     monthly.scheduled_delivery_items.map((item) => ({ ...item, quantity: Number(item.quantity) })),
     firstStart ?? monthly.start_date, planPrices,
   );
-  const onceAmount = Math.round(onceQuote.total * 100);
-  const planAmount = Math.round(planQuote.total * 100);
+  const delivery = batch.shared_delivery_date ? waiveSharedDelivery(onceQuote, planQuote, once.start_date) : null;
+  if (batch.shared_delivery_date && batch.shared_delivery_date !== delivery?.sharedDate)
+    throw new Error("The shared delivery date changed. Review the basket before paying.");
+  const onceAmount = priceInPaise(delivery?.once.total ?? onceQuote.total);
+  const planAmount = priceInPaise(delivery?.scheduled.total ?? planQuote.total);
   if (onceAmount !== once.total_paise || planAmount !== plan.total_paise
     || onceAmount + planAmount !== batch.amount_paise)
     throw new Error("The selected total changed. Review it before paying.");

@@ -1,8 +1,9 @@
 export const PRODUCT_PRICE_KEYS = ["milk", "paneer", "ghee", "bottle"] as const;
 export type ProductPriceKey = (typeof PRODUCT_PRICE_KEYS)[number];
 export const ORDER_FEE_LABELS = {
-  delivery_once: "One-time delivery",
-  delivery_scheduled: "Scheduled delivery",
+  delivery_once: "One-time delivery fee",
+  delivery_scheduled: "Scheduled delivery fee per visit",
+  delivery_free_at: "Free delivery from",
   handling: "Handling per order",
   platform: "Platform per order",
 } as const;
@@ -10,7 +11,7 @@ export type OrderFeeKey = keyof typeof ORDER_FEE_LABELS;
 export const ORDER_FEE_KEYS = Object.keys(ORDER_FEE_LABELS) as OrderFeeKey[];
 export type ProductPrices = Record<ProductPriceKey, number> & Partial<Record<OrderFeeKey, number>>;
 export const DEFAULT_ORDER_FEES: Record<OrderFeeKey, number> = {
-  delivery_once: 5, delivery_scheduled: 2, handling: 0, platform: 0,
+  delivery_once: 5, delivery_scheduled: 2, delivery_free_at: 199.01, handling: 0, platform: 0,
 };
 export const DEFAULT_PRODUCT_PRICES: ProductPrices = {
   milk: 62,

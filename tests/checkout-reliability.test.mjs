@@ -375,6 +375,7 @@ test('known webhook duplicates and simultaneous event insert conflicts are ackno
 
 test("unified delivery details preserve all selected products and reconcile with the payment quote", () => {
   const { combinedSelection } = load('lib/delivery-details.ts');
+  const { waiveSharedDelivery } = load('lib/delivery-pricing.ts');
   const { quoteStoredCheckout } = load('lib/checkout-quote.ts');
   const { quoteStoredMonthlyCheckout } = load('lib/monthly-checkout.ts');
   const prices = { milk: 62, paneer: 200, ghee: 375, bottle: 10, delivery_once: 8, delivery_scheduled: 5, handling: 3, platform: 2 };
@@ -392,7 +393,8 @@ test("unified delivery details preserve all selected products and reconcile with
   }, basket.scheduled.days.flatMap(({ date, items }) => items.map(({ id, quantity }) => ({
     product_key: id, delivery_date: date, quantity,
   }))), '2026-09-01', prices);
-  assert.equal(basket.totalPaise, Math.round(oneTimeQuote.total * 100) + Math.round(planQuote.total * 100));
+  const paymentQuote = waiveSharedDelivery(oneTimeQuote, planQuote, start);
+  assert.equal(basket.totalPaise, Math.round(paymentQuote.once.total * 100) + Math.round(paymentQuote.scheduled.total * 100));
 
   for (const extras of ['paneer:once:7', 'ghee:weekly:1', 'invalid:once:1', 'paneer:once:2;paneer:once:1']) {
     assert.equal(combinedSelection({ ...once, extras }, String(nextPlan), prices, start, null), null);
@@ -415,4 +417,47 @@ test("single-basket delivery details validate milk-only, add-on-only and full on
     assert.deepEqual(oneTimeSelection({ ...single, milk, extras }, prices, start).lines.map(({ product_key }) => product_key), keys);
   }
   assert.equal(scheduledSelection({ purchase: 'plan', start, routine: 'ghee:1:custom:2026-11-07:' }, prices, start, null), null);
+});
+
+test("payment reprices shared-date batches while honoring legacy combined totals", async () => {
+  const prices = { milk: 62, paneer: 200, ghee: 375, bottle: 10, delivery_once: 7, delivery_scheduled: 3, delivery_free_at: 225 };
+  const { quoteCheckoutBatch } = load("lib/checkout-batch.ts", {
+    "./product-prices-server": { readOrderProductPrices: async () => prices },
+    "./first-scheduled-plan": { firstScheduledPlanStart: async () => "2026-09-01" },
+  });
+  const { combinedSelection } = load("lib/delivery-details.ts");
+  const start = "2026-11-07", date = "2026-11-09";
+  const nextPlan = new URLSearchParams({ purchase: "plan", start, routine: `milk:1:custom:${start}:1.3` });
+  const basket = combinedSelection({ purchase: "once", start: date, milk: "1", bottle: "new" }, String(nextPlan), prices, start, "2026-09-01");
+  const monthly = {
+    start_date: start, status: "pending_confirmation", billing_model: "calendar_month",
+    bottle_choice: "new", period_end_exclusive: "2026-12-07", schedule_rules: basket.scheduled.rules,
+    scheduled_delivery_items: [start, date].map((delivery_date) => ({ delivery_date, product_key: "milk", quantity: 1 })),
+  };
+  function fixture(sharedDate) {
+    const common = { bottle_choice: "new", is_test: false, status: "draft", user_id: "customer" };
+    const orders = {
+      once: { ...common, purchase_mode: "once", start_date: date, total_paise: 7200 + (sharedDate ? 0 : 700) },
+      plan: { ...common, purchase_mode: "plan", start_date: start, delivery_plan_id: "monthly", total_paise: 14700 + (sharedDate ? 0 : 300) },
+    };
+    const database = { from(table) {
+      let id;
+      return {
+        select() { return this; },
+        eq(key, value) { if (key === "id" || key === "order_id") id = value; return this; },
+        single() { return { data: table === "orders" ? orders[id] : monthly }; },
+        then(resolve) { return Promise.resolve(resolve({ data: id === "once" ? basket.once.lines : basket.scheduled.lines })); },
+      };
+    } };
+    const batch = {
+      user_id: "customer", once_order_id: "once", plan_order_id: "plan", is_test: false,
+      amount_paise: orders.once.total_paise + orders.plan.total_paise, shared_delivery_date: sharedDate,
+    };
+    return { database, batch };
+  }
+  const shared = fixture(date);
+  assert.equal((await quoteCheckoutBatch(shared.database, shared.batch)).amount, basket.totalPaise);
+  const legacy = fixture(null);
+  assert.equal((await quoteCheckoutBatch(legacy.database, legacy.batch)).amount, basket.totalPaise + 1000);
+  await assert.rejects(quoteCheckoutBatch(shared.database, { ...shared.batch, shared_delivery_date: "2026-11-08" }), /shared delivery date changed/);
 });
