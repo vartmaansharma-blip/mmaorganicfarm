@@ -729,27 +729,25 @@ try {
     await newPage.goto(`${base}/checkout/review?order=${oneTimeOrder}`, { waitUntil: "networkidle" });
     const bill = newPage.getByRole("region", { name: "Bill details" });
     await bill.getByText("1 L · ₹62 / L", { exact: true }).waitFor();
-    const bottleSwitch = bill.getByRole("switch", { name: "Keep bottle" });
-    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
+    assert.equal(await bill.getByRole("switch", { name: "Keep bottle" }).count(), 0);
+    await bill.getByText("Return bottles", { exact: true }).waitFor();
     await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
-    await bottleSwitch.click();
-    await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
-    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
-    assert.deepEqual(await bill.locator("dd").allTextContents(), ["₹62", "₹10", "₹7.50", "₹4", "₹2", "₹85.50"]);
+    assert.deepEqual(await bill.locator("dd").allTextContents(), ["₹62", "₹7.50", "₹4", "₹2", "₹75.50"]);
     await bill.getByText("Preparing and packing your order", { exact: true }).waitFor();
-    await newPage.getByRole("button", { name: "Pay ₹85.50", exact: true }).waitFor();
     await noOverflow(newPage);
     await bill.screenshot({ path: path.join(output, `${name}-checkout-bill-mobile.png`) });
     await newPage.setViewportSize({ width: 1440, height: 900 });
     await newPage.evaluate(() => localStorage.setItem("mma-theme", "dark"));
     await newPage.reload({ waitUntil: "networkidle" });
     assert.equal(await newPage.locator("html").getAttribute("data-theme"), "dark");
-    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
     await bill.screenshot({ path: path.join(output, `${name}-checkout-bill-dark.png`) });
-    await bottleSwitch.press("Space");
-    await newPage.getByRole("button", { name: "Pay ₹75.50", exact: true }).waitFor();
-    await newPage.reload({ waitUntil: "networkidle" });
+
+    await newPage.goto(`${base}/order?purchase=once&milk=1&start=${tomorrow}`, { waitUntil: "networkidle" });
+    const bottleSwitch = newPage.getByRole("switch", { name: "Keep bottle" });
     assert.equal(await bottleSwitch.getAttribute("aria-checked"), "false");
+    await bottleSwitch.press("Space");
+    assert.equal(await bottleSwitch.getAttribute("aria-checked"), "true");
+    await newPage.getByText("₹85.50", { exact: true }).waitFor();
     await newContext.close();
     assert.deepEqual(errors, []);
     results.push({

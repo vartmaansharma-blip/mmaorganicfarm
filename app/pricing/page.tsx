@@ -1,3 +1,4 @@
+import { deliveryThresholdCopy } from "@/lib/delivery-pricing";
 import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import { publicMetadata } from "@/lib/public-metadata";
 import { readProductCatalogue } from "@/lib/product-prices-server";
@@ -44,7 +45,7 @@ export default async function PricingPage() {
         <p>
           One-time delivery is ₹{prices.delivery_once ?? DEFAULT_ORDER_FEES.delivery_once}.
           Scheduled delivery is ₹{prices.delivery_scheduled ?? DEFAULT_ORDER_FEES.delivery_scheduled} per delivery after your first month.
-          Delivery is free when products on that delivery total above ₹199. The threshold excludes bottle purchases.
+          {deliveryThresholdCopy(prices)} The threshold excludes bottle purchases. Delivery is free on dates shared by one-time and scheduled orders checked out together.
         </p>
         <p>
           Handling is ₹{prices.handling ?? 0} per order and the platform fee is ₹{prices.platform ?? 0} per order.

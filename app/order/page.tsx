@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { CHECKOUT_ID, combinedSelection, oneTimeSelection, scheduledSelection } from "@/lib/delivery-details";
+import { CHECKOUT_ID, bottleMode, combinedSelection, oneTimeSelection, scheduledSelection } from "@/lib/delivery-details";
 import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { CheckoutCartLink } from "@/app/shop/shop-state";
+import { DeliveryBottleFields, DeliveryBottlePicker, DeliveryBottleProvider, LegacyBottleTotal } from "./bottle-choice";
+import { priceInPaise } from "@/lib/product-prices";
 import { DeliverySummary } from "./delivery-summary";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import { parseRoutines, quoteMonthlySchedule } from "@/lib/monthly-schedule";
@@ -98,15 +100,15 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
       : null;
   const minimum = nextDeliveryDateInIndia();
   const basket = params.nextPlan && !params.combineWith
-    ? combinedSelection(params, params.nextPlan, prices, minimum, firstPlanStart)
+    ? combinedSelection({ ...params, bottle: "return" }, params.nextPlan, prices, minimum, firstPlanStart)
     : null;
   if (basket && !CHECKOUT_ID.test(params.checkout ?? "")) {
     const url = new URL(orderReturnPath({ ...params, checkout: randomUUID() }), "https://mma.invalid");
     if (params.error) url.searchParams.set("error", params.error);
     redirect(`${url.pathname}${url.search}`);
   }
-  const once = basket?.once ?? (!params.nextPlan && params.start ? oneTimeSelection(params, prices, minimum) : null);
-  const scheduled = basket?.scheduled ?? (!params.nextPlan ? scheduledSelection(params, prices, minimum, firstPlanStart) : null);
+  const once = basket?.once ?? (!params.nextPlan && params.start ? oneTimeSelection({ ...params, bottle: "return" }, prices, minimum) : null);
+  const scheduled = basket?.scheduled ?? (!params.nextPlan ? scheduledSelection({ ...params, bottle: "return" }, prices, minimum, firstPlanStart) : null);
   const modern = Boolean(params.nextPlan || params.routine || (params.purchase === "once" && params.start));
   const invalid = modern && !once && !scheduled;
   const pricing = monthlyRules
@@ -132,6 +134,10 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
   const hasOrder =
     Boolean(monthlyRules) || milkLitres > 0 || selectedProducts.length > 0;
 
+  const bottleLitres = basket
+    ? basket.once.pricing.milkLitres + basket.scheduled.pricing.milkLitres
+    : (once ?? scheduled)?.pricing.milkLitres ?? pricing.milkLitres;
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -151,6 +157,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
         </div>
       </header>
 
+      <DeliveryBottleProvider key={params.bottle ?? "return"} initialMode={bottleMode(params.bottle)} unitPricePaise={priceInPaise(prices.bottle)}>
       <section className={`${styles.layout} ${basket ? styles.unifiedLayout : ""}`}>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>Step 2 of 4</p>
@@ -170,9 +177,10 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
               <p role="alert">Some selected items or delivery dates need review before you can continue.</p>
               <CheckoutCartLink>Review your saved cart →</CheckoutCartLink>
             </div>
-          ) : once || scheduled ? <DeliverySummary once={once} scheduled={scheduled} /> : hasOrder ? (
+          ) : once || scheduled ? <DeliverySummary once={once} scheduled={scheduled} sharedDate={basket?.sharedDate} /> : hasOrder ? (
             <div className={styles.orderSummary}>
               <strong>Your farm order</strong>
+              {bottleLitres > 0 && <DeliveryBottlePicker />}
               {monthlyRules ? (
                 <SharedCalendar start={params.start!} rules={monthlyRules} />
               ) : null}
@@ -253,7 +261,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
                         ? "30-delivery plan total"
                         : "Order total"}
                   </dt>
-                  <dd>₹{pricing.total}</dd>
+                  <dd><LegacyBottleTotal milkLitres={bottleLitres} totalPaise={priceInPaise(pricing.total)} /></dd>
                 </div>
               </dl>
             </div>
@@ -271,8 +279,8 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
             <input name="nextPlan" type="hidden" value={params.nextPlan} />
             <input name="checkout" type="hidden" value={params.checkout} />
             <input name="catalogueRevision" type="hidden" value={revision} />
-            <input name="quotedTotal" type="hidden" value={basket.totalPaise} />
           </>}
+          <DeliveryBottleFields milkLitres={bottleLitres} totalPaise={basket?.totalPaise} />
           {params.combineWith ? <input name="combineWith" type="hidden" value={params.combineWith} /> : null}
           {params.error ? (
             <p className={styles.error} role="alert">
@@ -332,6 +340,7 @@ export default async function OrderPage({ searchParams }: OrderPageProps) {
           </p>
         </form>}
       </section>
+      </DeliveryBottleProvider>
     </main>
   );
 }

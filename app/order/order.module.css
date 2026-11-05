@@ -429,3 +429,18 @@
   }
   .unifiedLayout .form { margin-top: 37px; }
 }
+
+.summaryHeading { display: flex; justify-content: space-between; align-items: start; gap: 10px 16px; flex-wrap: wrap; }
+.summaryHeading h2 { margin: 0; font-size: clamp(19px, 3vw, 24px); letter-spacing: -.025em; }
+.bottlePicker { width: fit-content; }
+.bottlePicker button {
+  display: inline-flex; align-items: center; gap: 9px;
+  background: var(--ui-surface); color: var(--ui-muted); border: 1px solid var(--ui-border);
+  border-radius: 99px; font: inherit; font-size: 12px; padding: 5px 10px; min-height: 40px; cursor: pointer;
+}
+.bottlePicker button:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
+.bottlePicker [data-active="true"] { color: var(--ui-text); font-weight: 650; }
+.bottlePicker p { margin: 5px 2px 0; color: var(--ui-muted); font-size: 11px; }
+.bottleTrack { width: 32px; height: 19px; border-radius: 20px; background: #f5c84b; border: 1px solid #29473c; position: relative; }
+.bottleTrack::after { content: ""; position: absolute; inset: 2px auto 2px 2px; width: 13px; border-radius: 50%; background: #141b17; }
+.bottlePicker button[aria-checked="true"] .bottleTrack::after { transform: translateX(13px); }

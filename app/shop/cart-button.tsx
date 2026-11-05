@@ -1,4 +1,5 @@
 "use client";
+import { deliveryThresholdCopy, waiveSharedDelivery } from "@/lib/delivery-pricing";
 import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,8 +39,12 @@ export function CartButton() {
   const selectedModes = (["once", "plan"] as const).filter((key) => cartCount(selectedCarts[key]) > 0);
   const bothSelected = selectedModes.length === 2;
   const checkoutMode = selectedModes[0] ?? mode;
-  const selectedQuote = cartQuote(selectedCarts[checkoutMode], checkoutMode, firstPlanStart, prices);
-  const scheduledQuote = bothSelected ? cartQuote(selectedCarts.plan, "plan", firstPlanStart, prices) : null;
+  const selectedBase = cartQuote(selectedCarts[checkoutMode], checkoutMode, firstPlanStart, prices);
+  const scheduledBase = bothSelected ? cartQuote(selectedCarts.plan, "plan", firstPlanStart, prices) : null;
+  const shared = scheduledBase && "deliveryByDate" in scheduledBase
+    ? waiveSharedDelivery(selectedBase, scheduledBase, selectedCarts.once.start) : null;
+  const selectedQuote = shared?.once ?? selectedBase;
+  const scheduledQuote = shared?.scheduled ?? scheduledBase;
   const checkoutReady = selectedModes.length > 0 && selectedModes.every((key) => cartReady(selectedCarts[key], key, minimum));
   const checkoutHref = bothSelected
     ? combinedCartOrderHref(selectedCarts.once, selectedCarts.plan)
@@ -103,8 +108,10 @@ export function CartButton() {
     : !checkoutReady
       ? "Check the delivery dates and schedule for your selected items."
       : bothSelected
-        ? "One payment for your one-time and scheduled items."
-        : `${deliveryPolicy} Delivery is free above ₹199 in products per delivery. Your total is confirmed before payment.`;
+        ? shared?.sharedDate
+          ? "One payment. Delivery is free on the date both orders share."
+          : "One payment for your one-time and scheduled items."
+        : `${deliveryPolicy} ${deliveryThresholdCopy(prices)} Your total is confirmed before payment.`;
   return (
     <>
       <button
