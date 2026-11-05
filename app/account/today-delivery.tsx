@@ -217,9 +217,12 @@ export function TodayDelivery({ initial, editablePlanId }: { initial: DeliverySn
         </ul>
         {!snapshot.upcoming.length ? <p className={styles.emptyCopy}>No upcoming deliveries found in the next 60 days.</p> : null}
       </section>
-      {snapshot.paymentPending ? <Link className={styles.summaryRow} href="/account?section=orders&order_view=pending">
-        <span><strong>Payment awaiting confirmation</strong><small>See payment status in Orders</small></span><span aria-hidden="true">→</span>
-      </Link> : null}
+      {snapshot.paymentPending ? <section className={styles.nextDeliveryPanel} aria-labelledby="needs-attention-heading">
+        <div className={styles.nextDeliveryHeading}><h2 id="needs-attention-heading">Needs your attention</h2></div>
+        <Link className={styles.summaryRow} href="/account?section=orders&order_view=pending">
+          <span><strong>Payment awaiting confirmation</strong><small>See payment status in Orders</small></span><span aria-hidden="true">→</span>
+        </Link>
+      </section> : null}
       {selectedDay ? <DeliveryDayDialog key={selectedDay.date} day={selectedDay} today={snapshot.date} stale={Boolean(error)} onClose={() => setSelectedDate(null)} /> : null}
     </> : null}
   </div>;

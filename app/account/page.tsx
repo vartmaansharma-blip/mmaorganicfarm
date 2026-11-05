@@ -1,3 +1,6 @@
+import { CustomerNotificationBell } from "./notifications/notification-bell";
+import { uuidPattern } from "@/lib/customer-notifications";
+import { farmWhatsApp } from "@/lib/farm-contact";
 import { DeliveryPin } from "./delivery-pin";
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { AccountNavigation, accountSections, type AccountSection } from "./account-navigation";
@@ -16,7 +19,6 @@ import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { completedMonthlyDates } from "@/lib/monthly-delivery-completion";
 import { createClient } from "@/lib/supabase/server";
 import {
-  markNotificationsRead,
   saveAccountDeliveryDetails,
   signOut,
 } from "./actions";
@@ -33,7 +35,7 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: string; section?: string; plan?: string; order_view?: string; order_page?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; section?: string; plan?: string; order_view?: string; order_page?: string; order?: string; delivery?: string }>;
 }) {
   const params = await searchParams;
   const requestedSection = params.section === "deliveries" ? "plans" : params.section;
@@ -43,6 +45,8 @@ export default async function AccountPage({
   const orderPage = Number.isSafeInteger(requestedPage) && requestedPage >= 1 ? Math.min(1000, requestedPage) : 1;
   const orderStatuses = orderView === "paid" ? ["paid"] : orderView === "pending" ? ["pending_payment", "payment_failed"] : ["cancelled"];
   const orderPageSize = 10;
+  const selectedOrderId = typeof params.order === "string" && uuidPattern.test(params.order) ? params.order : null;
+  const selectedDeliveryId = typeof params.delivery === "string" && uuidPattern.test(params.delivery) ? params.delivery : null;
   const supabase = await createClient();
   const {
     data: { user },
@@ -66,34 +70,31 @@ export default async function AccountPage({
     .eq("is_test", false)
     .in("status", ["pending_confirmation", "active", "paused"])
     .order("created_at", { ascending: false });
+  const orderQuery = supabase.from("orders")
+    .select("id, status, purchase_mode, total_paise, paid_total_paise, start_date, created_at, order_items(id, product_name, quantity, unit)", { count: "exact" })
+    .eq("user_id", user.id);
+  const deliveryNotice = section === "schedule" && selectedDeliveryId
+    ? supabase.from("daily_deliveries")
+        .select("delivery_date,daily_delivery_items(product_key,quantity,unit)")
+        .eq("user_id", user.id).eq("id", selectedDeliveryId).eq("is_test", false).maybeSingle()
+    : Promise.resolve({ data: null, error: null });
   const [
-    { data: notifications, error: notificationsError },
     { data: cancellationRequests, error: requestsError },
     { data: orders, error: ordersError, count: orderCount },
+    { data: noticeDelivery, error: noticeDeliveryError },
   ] = await Promise.all([
-    supabase
-      .from("customer_notifications")
-      .select("id, title, message, read_at, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(8),
     supabase
       .from("cancellation_requests")
       .select("id, plan_id, status, reason, resolution_note, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5),
-    section === "orders" ? supabase
-      .from("orders")
-      .select(
-        "id, status, purchase_mode, total_paise, paid_total_paise, start_date, created_at, order_items(id, product_name, quantity, unit)",
-        { count: "exact" },
-      )
-      .eq("user_id", user.id)
-      .in("status", orderStatuses)
-      .order("created_at", { ascending: false })
-      .range((orderPage - 1) * orderPageSize, orderPage * orderPageSize - 1)
+    section === "orders"
+      ? selectedOrderId ? orderQuery.eq("id", selectedOrderId)
+        : orderQuery.in("status", orderStatuses).order("created_at", { ascending: false })
+            .range((orderPage - 1) * orderPageSize, orderPage * orderPageSize - 1)
       : Promise.resolve({ data: [], error: null, count: 0 }),
+    deliveryNotice,
   ]);
 
   const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.find(plan => plan.status === "active" || plan.status === "paused") ?? deliveryPlans?.[0];
@@ -217,6 +218,7 @@ export default async function AccountPage({
           <span>M&apos;ma Organic Farm</span>
         </Link>
         <div className="customer-header-actions">
+          <CustomerNotificationBell />
           <Link className={styles.back} href="/milk">
             Back to shop
           </Link>
@@ -338,6 +340,10 @@ export default async function AccountPage({
         {profile?.address_line ? <DeliveryPin key={`${profile.address_line}:${profile.updated_at}`} address={profile.address_line} saved={pinResult.data} available={!pinResult.error} /> : null}
         <section className={styles.settingsGroup} aria-labelledby="appearance-heading"><div><h2 id="appearance-heading">Appearance</h2><p>Make yourself comfortable. Your theme stays with you across the shop.</p></div><ThemeToggle /></section>
         <section className={styles.settingsGroup} aria-labelledby="sign-in-heading"><div><h2 id="sign-in-heading">Sign-in & account</h2><p>{googleConnected ? "Connected through Google." : "Signed in with your email address."}</p></div><form action={signOut}><button className={styles.textAction} type="submit">Sign out</button></form></section>
+        <section className={styles.settingsGroup} aria-labelledby="notification-preferences">
+          <div><h2 id="notification-preferences">Notifications</h2><p>Delivery and payment notices are available in your account.</p></div>
+          <Link className={styles.textAction} href="/account/notifications">Notification Centre →</Link>
+        </section>
         <section className={styles.settingsGroup} aria-labelledby="support-heading"><div><h2 id="support-heading">Help with a delivery</h2><p>Contact the farm about missing, incorrect or damaged items, or for help with your account.</p></div><Link className={styles.textAction} href="/contact">Contact the farm →</Link></section>
         </> : null}
         {section === "plans" ? <>
@@ -473,6 +479,14 @@ export default async function AccountPage({
         {!deliveryPlan && !plansError ? <div className={styles.emptyPanel}><h2>Your next routine starts here.</h2><p>Confirmed plans and their calendars will appear here.</p><Link className={styles.startOrder} href="/milk">Choose your farm favourites</Link></div> : null}
         </> : null}
         {section === "schedule" ? <>
+          {selectedDeliveryId ? <section className={styles.settingsGroup} id="selected-delivery">
+            <div>
+              <h2>{noticeDelivery ? formatPlanStartDate(noticeDelivery.delivery_date) : "Delivery details"}</h2>
+              {noticeDelivery?.daily_delivery_items.map(item => <p key={item.product_key}>{productName(item.product_key)} · {formatDeliveryQuantity(item.quantity, item.unit)}</p>)}
+              {!noticeDelivery ? <p>{noticeDeliveryError ? "Delivery details couldn’t be loaded. Please try again." : "This delivery is unavailable."}</p> : null}
+            </div>
+            <a className={styles.textAction} href={farmWhatsApp()}>WhatsApp the farm →</a>
+          </section> : null}
           {plansError ? <p className={styles.noticeError}>We couldn’t load your schedule. Please refresh to try again.</p> : null}
           {(deliveryPlans?.length ?? 0) > 1 ? <nav className={styles.planPicker} aria-label="Choose a plan">{deliveryPlans?.map((plan, index) => <Link key={plan.id} aria-current={deliveryPlan?.id === plan.id ? "page" : undefined} href={`/account?section=schedule&plan=${plan.id}`}>{plan.billing_model === "calendar_month" ? "Monthly" : "Weekly"} plan {deliveryPlans.length - index}<small>{plan.status.replaceAll("_", " ")}</small></Link>)}</nav> : null}
           {deliveryPlan?.status === "pending_confirmation" ? <div className={styles.emptyPanel}><h2>Plan awaiting confirmation.</h2><p>We’ll show your confirmed delivery dates here once payment and the plan are verified.</p><Link className={styles.startOrder} href="/account?section=orders&order_view=pending">Check payments</Link></div> : deliveryPlan ? <section className={styles.scheduleSurface} aria-label="Upcoming delivery schedule">
@@ -536,19 +550,21 @@ export default async function AccountPage({
           <CustomerDeliveryHistory userId={user.id} />
         </> : null}
         {section === "orders" ? <>
-          <nav className={styles.orderTabs} aria-label="Order status">
+          {selectedOrderId ? <div className={styles.scheduleActions} id="selected-order"><Link href="/account?section=orders">← All orders</Link></div> : null}
+          {!selectedOrderId ? <nav className={styles.orderTabs} aria-label="Order status">
             {([{ id: "paid", label: "Paid orders" }, { id: "pending", label: "To pay" }, { id: "other", label: "Cancelled" }] as const).map(tab =>
               <Link key={tab.id} href={`/account?section=orders&order_view=${tab.id}`} aria-current={orderView === tab.id ? "page" : undefined}>{tab.label}</Link>)}
-          </nav>
+          </nav> : null}
           {ordersError ? <p className={styles.noticeError} role="alert">We couldn’t load your orders. Please refresh to try again.</p> : null}
-          {!orders?.length && !ordersError ? <div className={styles.emptyPanel}>
+          {selectedOrderId && !orders?.length && !ordersError ? <p role="status">This order is unavailable.</p> : null}
+          {!selectedOrderId && !orders?.length && !ordersError ? <div className={styles.emptyPanel}>
             <h2>{orderView === "paid" ? "No paid orders yet." : orderView === "pending" ? "Nothing to pay right now." : "No cancelled orders."}</h2>
             <p>{orderView === "paid" ? "Your paid purchases and their details will appear here." : orderView === "pending" ? "Only payments needing attention appear here. Drafts stay out of your order history." : "Cancelled purchases are kept here for reference."}</p>
             {orderView === "paid" ? <Link className={styles.startOrder} href="/milk">Shop fresh products</Link> : null}
           </div> : null}
           {(orders?.length ?? 0) > 0 ? <section className={styles.ordersSection} aria-labelledby="orders-heading">
             <div className={styles.sectionHeading}>
-              <h2 id="orders-heading">{orderView === "paid" ? "Paid purchases" : orderView === "pending" ? "Payments needing attention" : "Cancelled purchases"}</h2>
+              <h2 id="orders-heading">{selectedOrderId ? "Order details" : orderView === "paid" ? "Paid purchases" : orderView === "pending" ? "Payments needing attention" : "Cancelled purchases"}</h2>
               <p>{orderCount ?? 0} {orderCount === 1 ? "order" : "orders"} · Most recent first</p>
             </div>
             <div className={styles.orderHistory}>
@@ -572,56 +588,14 @@ export default async function AccountPage({
                 </div>
               </details>)}
             </div>
-            <nav className={styles.orderPagination} aria-label="Order pages">
+            {!selectedOrderId ? <nav className={styles.orderPagination} aria-label="Order pages">
               {orderPage > 1 ? <Link href={`/account?section=orders&order_view=${orderView}&order_page=${orderPage - 1}`}>← Previous</Link> : <span />}
               <span>Page {orderPage}</span>
               {(orderCount ?? 0) > orderPage * orderPageSize ? <Link href={`/account?section=orders&order_view=${orderView}&order_page=${orderPage + 1}`}>Next →</Link> : <span />}
-            </nav>
+            </nav> : null}
           </section> : null}
         </> : null}
 
-        {section === "today" ? <>
-        {notificationsError ? <p className={styles.noticeError}>Recent updates couldn’t be loaded. Refresh to try again.</p> : null}
-        {(notifications?.length ?? 0) > 0 ? (
-          <section
-            className={styles.activitySection}
-            aria-labelledby="activity-heading"
-          >
-            <div className={styles.activityHeading}>
-              <div>
-                <h2 id="activity-heading">Updates</h2>
-                <p>Payment and delivery activity from the farm.</p>
-              </div>
-              {notifications?.some((item) => !item.read_at) ? (
-                <form action={markNotificationsRead}>
-                  <button type="submit">Mark all read</button>
-                </form>
-              ) : null}
-            </div>
-            <div className={styles.activityList}>
-              {notifications?.slice(0, 3).map((item) => (
-                <article
-                  className={!item.read_at ? styles.unread : undefined}
-                  key={item.id}
-                >
-                  <div>
-                    <strong>{item.title}</strong>
-                    <span>{item.message}</span>
-                  </div>
-                  <time dateTime={item.created_at}>
-                    {new Date(item.created_at).toLocaleDateString("en-IN", {
-                      timeZone: "Asia/Kolkata",
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </time>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        </> : null}
         {section === "plans" ? <>
         {requestsError ? <p className={styles.noticeError}>Cancellation requests couldn’t be loaded. Please refresh.</p> : null}
         {(cancellationRequests?.length ?? 0) > 0 ? (

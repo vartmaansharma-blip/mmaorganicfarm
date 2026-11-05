@@ -1,3 +1,4 @@
+import { FARM_PHONE_DISPLAY, FARM_PHONE_LINK, farmWhatsApp } from "@/lib/farm-contact";
 import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
@@ -13,12 +14,12 @@ export default function ContactPage() {
     >
       <section>
         <h2>Call</h2>
-        <p><a href="tel:+919818804419">+91 98188 04419</a></p>
+        <p><a href={FARM_PHONE_LINK}>{FARM_PHONE_DISPLAY}</a></p>
       </section>
       <section>
         <h2>WhatsApp</h2>
         <p>
-          <a href="https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%20need%20help%20with%20an%20order.">
+          <a href={farmWhatsApp("Hello M'ma Organic Farm, I need help with an order.")}>
             Message M&apos;ma Organic Farm
           </a>
         </p>

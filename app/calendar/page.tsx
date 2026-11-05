@@ -1,3 +1,4 @@
+import { FARM_PHONE_LINK } from "@/lib/farm-contact";
 import { databaseErrorMessage } from "@/lib/database-errors";
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
@@ -262,7 +263,7 @@ export default async function CalendarPage({
             {plan.status === "pending_confirmation" ? (
               <Link href="/milk?edit=plan">Edit draft schedule</Link>
             ) : plan.status === "active" || plan.status === "paused" ? (
-              <a href="tel:+919818804419">Contact the farm to change your regular week</a>
+              <a href={FARM_PHONE_LINK}>Contact the farm to change your regular week</a>
             ) : null}
           </div>
 

@@ -1,3 +1,4 @@
+import { farmWhatsApp } from "@/lib/farm-contact";
 import { MonthlyPlan } from "@/app/components/monthly-plan/monthly-plan";
 import { serializeRoutines, validateRoutines } from "@/lib/monthly-schedule";
 import { CartCheckoutSync } from "@/app/shop/cart-checkout-sync";
@@ -75,9 +76,7 @@ export default async function ReviewPage({
   const rules = monthly
     ? validateRoutines(monthly.start_date, monthly.schedule_rules)
     : null;
-  const help = encodeURIComponent(
-    `Hello M'ma Organic Farm, I need help with order ${order.id.slice(0, 8).toUpperCase()}.`,
-  );
+  const help = `Hello M'ma Organic Farm, I need help with order ${order.id.slice(0, 8).toUpperCase()}.`;
   const adminReady = hasSupabaseAdminConfig();
   const modeError = paymentModeError(order.is_test);
   const bottleMode = order.purchase_mode !== "adjustment" && Number(order.milk_litres) > 0 &&
@@ -252,7 +251,7 @@ export default async function ReviewPage({
           </p>
           <p className={styles.note}>
             WhatsApp remains available as a secondary option.{" "}
-            <a href={`https://wa.me/919818804419?text=${help}`}>
+            <a href={farmWhatsApp(help)}>
               Contact the farm
             </a>
           </p>

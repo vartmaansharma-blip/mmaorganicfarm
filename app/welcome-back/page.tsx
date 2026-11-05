@@ -1,3 +1,4 @@
+import { farmWhatsApp } from "@/lib/farm-contact";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -84,7 +85,7 @@ export default async function WelcomeBackPage() {
           </p>
           <p className={styles.terms}>
             Need help changing your next delivery?{" "}
-            <a href="https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%27d%20like%20help%20rejoining%20or%20rescheduling%20my%20deliveries.">
+            <a href={farmWhatsApp("Hello M'ma Organic Farm, I'd like help rejoining or rescheduling my deliveries.")}>
               Talk to the farm on WhatsApp.
             </a>
           </p>

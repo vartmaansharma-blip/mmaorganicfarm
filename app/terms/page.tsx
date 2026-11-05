@@ -1,3 +1,4 @@
+import { FARM_PHONE_DISPLAY, FARM_PHONE_LINK } from "@/lib/farm-contact";
 import { publicMetadata } from "@/lib/public-metadata";
 import type { Metadata } from "next";
 import { PublicInformationLayout } from "@/app/components/public-information-layout";
@@ -56,7 +57,7 @@ export default function TermsPage() {
       <section>
         <h2>Questions</h2>
         <p>
-          Contact <a href="tel:+919818804419">+91 98188 04419</a> before
+          Contact <a href={FARM_PHONE_LINK}>{FARM_PHONE_DISPLAY}</a> before
           ordering if any term is unclear. These terms do not limit rights that
           cannot be excluded under applicable law.
         </p>

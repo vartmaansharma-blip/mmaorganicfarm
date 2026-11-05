@@ -10,20 +10,6 @@ export async function signOut() {
   redirect("/");
 }
 
-export async function markNotificationsRead() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
-
-  const { error } = await supabase
-    .from("customer_notifications")
-    .update({ read_at: new Date().toISOString() })
-    .eq("user_id", user.id)
-    .is("read_at", null);
-  if (error) throw error;
-  revalidatePath("/account");
-}
-
 export async function saveAccountDeliveryDetails(formData: FormData) {
   const settings = "/account?section=settings";
   const fail = (message: string): never => redirect(`${settings}&error=${encodeURIComponent(message)}`);

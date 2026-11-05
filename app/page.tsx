@@ -1,3 +1,4 @@
+import { FARM_PHONE, FARM_PHONE_LINK, farmWhatsApp } from "@/lib/farm-contact";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import Image from "next/image";
 import { LandingConversionTracking } from "@/app/components/landing-conversion-tracking";
@@ -6,8 +7,7 @@ import { RisingGlassHero } from "@/app/components/rising-glass-hero";
 import landingStyles from "./landing.module.css";
 
 const orderPath = "/shop";
-const whatsappContact =
-  "https://wa.me/919818804419?text=Hello%20M%27ma%20Organic%20Farm%2C%20I%20have%20a%20question%20about%20fresh%20milk%20delivery.";
+const whatsappContact = farmWhatsApp("Hello M'ma Organic Farm, I have a question about fresh milk delivery.");
 
 const trust = [
   {
@@ -74,7 +74,7 @@ const structuredData = (milkPrice: number) => ({
       "@id": `${siteUrl}/#business`,
       name: "M'ma Organic Farm",
       url: siteUrl,
-      telephone: "+919818804419",
+      telephone: FARM_PHONE,
       image: `${siteUrl}/hero-milk.png`,
       priceRange: `₹${milkPrice} per litre`,
       address: {
@@ -294,7 +294,7 @@ export default async function Home() {
             <a className="button button-dark" href={orderPath} data-conversion="plan_cta_click" data-location="landing">
               Start my milk plan <span>↗</span>
             </a>
-            <a className="button button-light" href="tel:+919818804419" data-conversion="call_click" data-location="closing">
+            <a className="button button-light" href={FARM_PHONE_LINK} data-conversion="call_click" data-location="closing">
               Call to order <span>↗</span>
             </a>
           </div>
