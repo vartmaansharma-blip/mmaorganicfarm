@@ -128,10 +128,10 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
             fn,
           ) &&
           !(manualOrders && manualOrderCommands.has(fn) && (service || fn === "refresh_customer_route")) &&
-          !(combinedCheckout && (service ? fn === "prepare_combined_checkout" : user && fn === "refresh_customer_route"))
+          !(combinedCheckout && (service ? ["prepare_combined_checkout", "prepare_unified_checkout"].includes(fn) : user && fn === "refresh_customer_route"))
         )
           throw Error("Fixture RPC not permitted");
-        if (combinedCheckout && fn === "prepare_combined_checkout") await client.query("set local role service_role");
+        if (combinedCheckout && ["prepare_combined_checkout", "prepare_unified_checkout"].includes(fn)) await client.query("set local role service_role");
         let raw = "";
         for await (const chunk of req) raw += chunk;
         const body = JSON.parse(raw || "{}");
@@ -151,7 +151,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
                 await client.query(
                   `select public.${name(fn)}(${args}) value`,
                   entries.map(([key, v]) =>
-                    (key === "p_order" || key === "p_payload" || key === "p_quantities" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
+                    (key === "p_once_items" || key === "p_plan_items" || key === "p_order" || key === "p_payload" || key === "p_quantities" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
                       ? JSON.stringify(v)
                       : v,
                   ),

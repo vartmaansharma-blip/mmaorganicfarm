@@ -372,3 +372,47 @@ test('known webhook duplicates and simultaneous event insert conflicts are ackno
   const concurrent=await receiveWebhook({insertError:{code:'23505'}});
   assert.equal(concurrent.result.status,200);assert.equal(concurrent.captured.length,1);
 });
+
+test("unified delivery details preserve all selected products and reconcile with the payment quote", () => {
+  const { combinedSelection } = load('lib/delivery-details.ts');
+  const { quoteStoredCheckout } = load('lib/checkout-quote.ts');
+  const { quoteStoredMonthlyCheckout } = load('lib/monthly-checkout.ts');
+  const prices = { milk: 62, paneer: 200, ghee: 375, bottle: 10, delivery_once: 8, delivery_scheduled: 5, handling: 3, platform: 2 };
+  const start = '2026-11-07';
+  const once = { purchase: 'once', milk: '1', start, extras: 'paneer:once:2' };
+  const nextPlan = new URLSearchParams({ purchase: 'plan', start, routine: 'milk:2:days:2026-11-07:2.0.0.0.0.5.0;ghee:1:custom:2026-11-07:1.4' });
+  const basket = combinedSelection(once, String(nextPlan), prices, start, '2026-09-01');
+  assert.ok(basket);
+  assert.deepEqual(basket.once.lines.map(({ product_key, quantity }) => [product_key, quantity]), [['milk', 1], ['paneer', 2]]);
+  assert.deepEqual(basket.scheduled.lines.map(({ product_key }) => product_key), ['milk', 'ghee']);
+  assert.deepEqual(basket.scheduled.days.filter(({ items }) => items.some(({ id }) => id === 'ghee')).map(({ date }) => date), ['2026-11-07', '2026-11-10']);
+  const oneTimeQuote = quoteStoredCheckout(basket.once.lines, basket.once.bottle, 'once', undefined, prices);
+  const planQuote = quoteStoredMonthlyCheckout(basket.scheduled.lines, basket.scheduled.bottle, {
+    start_date: start, period_end_exclusive: '2026-12-07', schedule_rules: basket.scheduled.rules,
+  }, basket.scheduled.days.flatMap(({ date, items }) => items.map(({ id, quantity }) => ({
+    product_key: id, delivery_date: date, quantity,
+  }))), '2026-09-01', prices);
+  assert.equal(basket.totalPaise, Math.round(oneTimeQuote.total * 100) + Math.round(planQuote.total * 100));
+
+  for (const extras of ['paneer:once:7', 'ghee:weekly:1', 'invalid:once:1', 'paneer:once:2;paneer:once:1']) {
+    assert.equal(combinedSelection({ ...once, extras }, String(nextPlan), prices, start, null), null);
+  }
+  for (const suffix of ['&routine=', '&extras=paneer%3Aonce%3A1']) {
+    assert.equal(combinedSelection(once, String(nextPlan) + suffix, prices, start, null), null);
+  }
+  assert.equal(combinedSelection(once, String(nextPlan), prices, '2026-11-08', null), null);
+});
+
+test("single-basket delivery details validate milk-only, add-on-only and full one-time selections", () => {
+  const { oneTimeSelection, scheduledSelection } = load('lib/delivery-details.ts');
+  const prices = { milk: 62, paneer: 200, ghee: 375, bottle: 10 };
+  const start = '2026-11-07';
+  const single = { purchase: 'once', start };
+  for (const [milk, extras, keys] of [
+    ['1', '', ['milk']], ['0', 'paneer:once:1', ['paneer']], ['0', 'ghee:once:1', ['ghee']],
+    ['1', 'paneer:once:1;ghee:once:1', ['milk', 'paneer', 'ghee']],
+  ]) {
+    assert.deepEqual(oneTimeSelection({ ...single, milk, extras }, prices, start).lines.map(({ product_key }) => product_key), keys);
+  }
+  assert.equal(scheduledSelection({ purchase: 'plan', start, routine: 'ghee:1:custom:2026-11-07:' }, prices, start, null), null);
+});

@@ -1,4 +1,5 @@
 "use server";
+import { CHECKOUT_ID, combinedSelection, deliveryOrderValues, oneTimeSelection, scheduledSelection } from "@/lib/delivery-details";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import { priceInPaise } from "@/lib/product-prices";
 
@@ -61,6 +62,9 @@ function normalizePhone(value: string) {
 }
 
 export async function saveDeliveryDetails(formData: FormData) {
+  const nextPlan = String(formData.get("nextPlan") ?? "");
+  const checkout = String(formData.get("checkout") ?? "");
+  if (nextPlan.length > 1200 || (checkout && !nextPlan)) redirect("/shop");
   const supabase = await createClient();
   const {
     data: { user },
@@ -78,6 +82,7 @@ export async function saveDeliveryDetails(formData: FormData) {
         "routine",
         "nextPlan",
         "combineWith",
+        "checkout",
       ].map((key) => [key, String(formData.get(key) ?? "")]),
     );
     redirect(
@@ -85,20 +90,21 @@ export async function saveDeliveryDetails(formData: FormData) {
     );
   }
 
-  const nextPlan = String(formData.get("nextPlan") ?? "").slice(0, 1200);
   const rawCombineWith = String(formData.get("combineWith") ?? "");
   const combineWith = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawCombineWith)
     ? rawCombineWith : "";
   const orderUrl = (...args: Parameters<typeof baseOrderUrl>) => {
     const url = new URL(baseOrderUrl(...args), "https://mma.invalid");
     if (nextPlan) url.searchParams.set("nextPlan", nextPlan);
+    if (CHECKOUT_ID.test(checkout)) url.searchParams.set("checkout", checkout);
     if (combineWith) url.searchParams.set("combineWith", combineWith);
     return `${url.pathname}${url.search}`;
   };
 
   const phone = normalizePhone(String(formData.get("phone") ?? ""));
   const address = String(formData.get("address") ?? "").trim();
-  const purchase = formData.get("purchase") === "plan" ? "plan" : "once";
+  const rawPurchase = String(formData.get("purchase") ?? "");
+  const purchase = rawPurchase === "plan" ? "plan" : "once";
   const parsedMilk = Number(formData.get("milk"));
   const maximumMilk = purchase === "plan" ? 35 : 5;
   const milkLitres =
@@ -118,7 +124,7 @@ export async function saveDeliveryDetails(formData: FormData) {
   )
     ? "none"
     : "return";
-  const { prices } = await readProductCatalogue();
+  const { prices, revision } = await readProductCatalogue();
   const selectedProducts = parseFarmProductSelections(
     String(formData.get("extras") ?? ""), prices,
   );
@@ -132,9 +138,40 @@ export async function saveDeliveryDetails(formData: FormData) {
       ? weeklySchedule.reduce((total, litres) => total + litres, 0)
       : milkLitres;
   const firstPlanStart =
-    purchase === "plan"
+    purchase === "plan" || nextPlan
       ? await firstScheduledPlanStart(supabase, user.id)
       : null;
+  const choices = {
+    purchase: rawPurchase,
+    start: String(formData.get("start") ?? ""),
+    milk: String(formData.get("milk") ?? "0"),
+    extras: String(formData.get("extras") ?? ""),
+    routine,
+    schedule,
+  };
+  const basket = nextPlan
+    ? combinedSelection(choices, nextPlan, prices, minimumStartDate, firstPlanStart)
+    : null;
+  if (nextPlan && (!basket || rawCombineWith || !CHECKOUT_ID.test(checkout)
+    || String(formData.get("catalogueRevision")) !== revision
+    || String(formData.get("quotedTotal")) !== String(basket.totalPaise))) {
+    const message = !basket || rawCombineWith
+      ? "Some selected products or delivery dates need review. Open your cart to check both selections."
+      : "Review the current basket and total before continuing.";
+    const url = new URL(orderReturnPath({ ...choices, nextPlan, checkout }), "https://mma.invalid");
+    url.searchParams.set("error", message);
+    redirect(`${url.pathname}${url.search}`);
+  }
+  if (!nextPlan && (routine || (rawPurchase === "once" && choices.start))) {
+    const selection = purchase === "plan"
+      ? scheduledSelection(choices, prices, minimumStartDate, firstPlanStart)
+      : oneTimeSelection(choices, prices, minimumStartDate);
+    if (!selection) {
+      const url = new URL(orderReturnPath({ ...choices, combineWith }), "https://mma.invalid");
+      url.searchParams.set("error", "Some selected items or delivery dates need review. Open your cart to check the selection.");
+      redirect(`${url.pathname}${url.search}`);
+    }
+  }
   const monthlyQuote = monthlyRules
     ? quoteMonthlySchedule({ prices,
         start,
@@ -223,7 +260,7 @@ export async function saveDeliveryDetails(formData: FormData) {
     );
   }
 
-  if (address.length < 8) {
+  if (address.length < 8 || address.length > 500) {
     redirect(
       orderUrl(
         "error",
@@ -243,7 +280,7 @@ export async function saveDeliveryDetails(formData: FormData) {
     user.user_metadata.full_name ?? user.user_metadata.name ?? "Customer";
   const { data: currentProfile, error: profileReadError } = await supabase
     .from("customer_profiles")
-    .select("address_line")
+    .select("address_line,full_name")
     .eq("user_id", user.id)
     .maybeSingle();
   if (profileReadError) {
@@ -267,7 +304,7 @@ export async function saveDeliveryDetails(formData: FormData) {
   const { error } = await supabase.from("customer_profiles").upsert(
     {
       user_id: user.id,
-      full_name: fullName,
+      full_name: currentProfile?.full_name ?? fullName,
       email: user.email ?? null,
       avatar_url:
         user.user_metadata.avatar_url ?? user.user_metadata.picture ?? null,
@@ -314,19 +351,36 @@ export async function saveDeliveryDetails(formData: FormData) {
     );
   }
 
-  const orderValues = {
-    address_snapshot: address,
-    bottle_charge_paise: priceInPaise(pricing.bottleCharge),
-    handling_fee_paise: priceInPaise(pricing.handlingCharge),
-    platform_fee_paise: priceInPaise(pricing.platformCharge),
-    bottle_choice: bottle,
-    milk_litres: pricing.milkLitres,
-    phone_snapshot: `+91${phone}`,
-    start_date: orderDeliveryDate,
-    subtotal_paise:
-      priceInPaise(pricing.total - pricing.bottleCharge - pricing.deliveryCharge - pricing.handlingCharge - pricing.platformCharge),
-    total_paise: priceInPaise(pricing.total),
-  };
+  if (basket) {
+    if (!hasSupabaseAdminConfig()) {
+      redirect(orderUrl("error", "Combined checkout is temporarily unavailable. Your selections are saved in your cart.", purchase, bottle, milk, extras, schedule, start, routine));
+    }
+    const once = basket.once;
+    const plan = basket.scheduled;
+    const contact = `+91${phone}`;
+    const { data: batchId, error: batchError } = await createAdminClient().rpc("prepare_unified_checkout", {
+      p_user_id: user.id, p_checkout_id: checkout, p_catalogue_revision: revision,
+      p_once: deliveryOrderValues(once.pricing, once.bottle, once.start, address, contact),
+      p_once_items: once.lines,
+      p_plan: deliveryOrderValues(plan.pricing, plan.bottle, plan.start, address, contact),
+      p_plan_items: plan.lines,
+      p_rules: plan.rules,
+    });
+    if (batchError || !batchId) {
+      const message = batchError?.message ?? "";
+      const reason = /current paid plan/.test(message)
+        ? "You already have a prepaid plan. Manage it from My M’ma before starting another."
+        : /payment checkout is already in progress/.test(message)
+          ? "You have a checkout in progress. Open My M’ma to review it before starting another."
+          : /updated basket|prices changed/.test(message)
+            ? "Your basket or prices changed. Open your cart and review both selections again."
+            : "Your combined order could not be prepared. Please try again or review your saved cart.";
+      redirect(orderUrl("error", databaseErrorMessage(batchError, reason), purchase, bottle, milk, extras, schedule, start, routine));
+    }
+    redirect(`/checkout/batch/review?batch=${batchId}`);
+  }
+
+  const orderValues = deliveryOrderValues(pricing, bottle, orderDeliveryDate, address, `+91${phone}`);
 
   const billedMilkLitres =
     purchase === "plan" ? pricing.milkLitres : effectiveMilkLitres;
@@ -553,13 +607,5 @@ export async function saveDeliveryDetails(formData: FormData) {
         routine,
       ),
     );
-  if (purchase === "once" && nextPlan) {
-    const params = new URLSearchParams(nextPlan);
-    if (params.get("purchase") !== "plan"
-      || !parseRoutines(params.get("start") ?? "", params.get("routine") ?? ""))
-      redirect(`/checkout/review?order=${order.id}`);
-    params.set("combineWith", order.id);
-    redirect(`/order?${params}`);
-  }
   redirect(`/checkout/review?order=${order.id}`);
 }
