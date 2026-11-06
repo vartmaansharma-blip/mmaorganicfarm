@@ -16,6 +16,7 @@ const recordId='00000000-0000-4000-8000-000000000003';
 const date=indiaDate();
 const plus=n=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
 let scenario='out', fail=false;
+let master={revision:0,versions:[],exceptions:[]};
 const fixtures = () => Array.from({ length: 22 }, (_, index) => ({
  id: `00000000-0000-4000-8000-${String(100 + index).padStart(12, '0')}`,
  title: ['Payment confirmed', 'Milk is on the way', 'Plan delivery scheduled', 'Delivery prepared', 'Delivery completed'][index] ?? `Delivery notice ${index}`,
@@ -70,6 +71,25 @@ const stub=createServer(async(req,res)=>{
   routeRefreshes.push(JSON.parse(raw));
   res.end('null');return;
  }
+ if(url.pathname.endsWith('/rpc/read_master_delivery_schedule')){
+  assert.equal(req.method,'POST');
+  res.end(JSON.stringify(master));return;
+ }
+ if(url.pathname.endsWith('/rpc/save_master_delivery_schedule')){
+  assert.equal(req.method,'POST');
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const {p_revision,p_date,p_quantities}=JSON.parse(raw);
+  assert.equal(p_revision,master.revision);
+  if(p_date){
+   master.exceptions=master.exceptions.filter(item=>item.delivery_date!==p_date);
+   master.exceptions.push(...Object.entries(p_quantities).flatMap(([product_key,quantity])=>
+    quantity===null?[]:[{delivery_date:p_date,product_key,quantity}]));
+  }else{
+   master.versions.push({effective_from:plus(1),quantities:p_quantities});
+  }
+  master.revision++;
+  res.end('null');return;
+ }
  if(!['GET','HEAD'].includes(req.method) && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
@@ -93,6 +113,8 @@ const stub=createServer(async(req,res)=>{
   const draft={...paid,id:'00000000-0000-4000-8000-000000000005',status:'draft',paid_total_paise:null,order_items:[{...product(),id:'item2',product_name:'Draft-only item'}]};
   const pending={...paid,id:'00000000-0000-4000-8000-000000000006',status:'pending_payment',paid_total_paise:null,order_items:[{...product(),id:'item3',product_name:'Pending checkout'}]};
   data=scenario==='none'?[]:extendedWeek()?[paid]:[paid,draft,pending];
+  const purchaseMode=url.searchParams.get('purchase_mode');
+  if(purchaseMode?.startsWith('eq.'))data=data.filter(order=>order.purchase_mode===purchaseMode.slice(3));
   const status=url.searchParams.get('status')||'';
   if(status.startsWith('in.(')&&status.endsWith(')')) {
     const allowed=status.slice(4,-1).split(',');
@@ -131,6 +153,7 @@ try{
  const deadline=Date.now()+30000;
  while(!serverLog.includes('Ready in')){if(child.exitCode!==null)throw new Error(serverLog);if(Date.now()>deadline)throw new Error(`Next server did not start: ${serverLog}`);await new Promise(r=>setTimeout(r,200));}
  for(const engine of (process.env.ACCOUNT_BROWSERS||'chromium,webkit').split(',')){
+  master={revision:0,versions:[],exceptions:[]};
   const browser=await ({chromium,webkit})[engine].launch();
   try{
    const anonymous=await browser.newContext();
@@ -341,12 +364,72 @@ try{
    scenario='out';await page.goto(`${base}/account`,{waitUntil:'networkidle'});fail=true;await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByText('Showing the last successful update',{exact:false}).waitFor();assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'out');await page.screenshot({path:path.join(output,`${engine}-390-stale.png`),fullPage:true});
    fail=false;scenario='delivered';await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();assert.equal(await page.getByText('Showing the last successful update',{exact:false}).count(),0);
    fail=true;await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'error');assert.equal(await page.getByRole('heading',{name:'A quiet day at your doorstep',exact:true}).count(),0);fail=false;await page.getByRole('button',{name:'Try again →'}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();
+   scenario='none';
+   await page.goto(`${base}/calendar?view=weekly`);
+   const saturday=page.getByRole('spinbutton',{name:'Fresh milk, Saturday, litres'});
+   const sunday=page.getByRole('spinbutton',{name:'Fresh milk, Sunday, litres'});
+   await page.getByRole('button',{name:'Edit all Saturday quantities'}).click();
+   const column=page.getByRole('spinbutton',{name:'Quantity for Saturday'});
+   await column.fill('4');
+   await column.press('Enter');
+   assert.equal(await saturday.inputValue(),'4');
+   const paneerSaturday=page.getByRole('spinbutton',{name:'Fresh paneer, Saturday, packs'});
+   assert.equal(await paneerSaturday.inputValue(),'4');
+   await paneerSaturday.fill('0');
+   await page.getByRole('spinbutton',{name:'Farm ghee, Saturday, packs'}).fill('0');
+   await sunday.fill('2');
+   await page.getByRole('region',{name:'Dates affected by this change'}).waitFor();
+   await page.getByRole('button',{name:'Save recurring schedule'}).click();
+   await page.getByRole('status').getByText('Weekly schedule saved.').waitFor();
+   const nextSaturday=Array.from({length:7},(_,index)=>plus(index+1))
+    .find(day=>new Date(day+'T00:00:00Z').getUTCDay()===6);
+   const monthlyPath=`${base}/calendar?view=monthly&month=${nextSaturday.slice(0,7)}&date=${nextSaturday}`;
+   await page.goto(monthlyPath);
+   const milk=page.getByRole('spinbutton',{name:/Fresh milk/});
+   await milk.fill('5');
+   await page.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 5.*date exception/}).waitFor();
+   await page.screenshot({path:path.join(output,`${engine}-master-monthly.png`),fullPage:true});
+   await page.getByRole('link',{name:'Weekly Schedule',exact:true}).click();
+   assert.equal(await saturday.inputValue(),'4');
+   assert.equal(await sunday.inputValue(),'2');
+   await page.getByRole('link',{name:'Continue to delivery details'}).click();
+   await page.waitForURL('**/order?**');
+   assert.match(new URL(page.url()).searchParams.get('routine'),/\d+-5/);
+   await page.getByText('Step 2 of 4',{exact:true}).waitFor();
+   await page.goto(`${base}/calendar?view=weekly`);
+   await saturday.fill('3');
+   await page.getByRole('button',{name:'Save recurring schedule'}).click();
+   await page.getByRole('status').getByText('Weekly schedule saved.').waitFor();
+   await page.setViewportSize({width:320,height:740});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   await page.screenshot({path:path.join(output,`${engine}-master-weekly.png`),fullPage:true});
+   await page.setViewportSize({width:390,height:844});
+   await page.goto(monthlyPath);
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 5.*date exception/}).waitFor();
+   await page.getByRole('button',{name:'Restore weekly quantities'}).click();
+   await page.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.reload();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 3/}).and(page.locator('[aria-current=date]')).waitFor();
+   const monthHeading=page.getByRole('region',{name:'Monthly Calendar'}).getByRole('heading',{level:2});
+   const oldMonth=await monthHeading.innerText();
+   const nextMonth=page.getByRole('link',{name:'Next month'});
+   const nextMonthPath=await nextMonth.getAttribute('href');
+   await nextMonth.click();
+   await page.waitForURL(`${base}${nextMonthPath}`);
+   await monthHeading.filter({hasNotText:oldMonth}).waitFor();
+   scenario='out';
+   await page.goto(monthlyPath);
+   await page.getByRole('link',{name:'Open paid delivery controls'}).waitFor();
+   assert.equal(await page.getByRole('heading',{name:'Change this date only'}).count(),0);
    scenario='out';await page.emulateMedia({reducedMotion:'reduce'});await page.goto(`${base}/account`,{waitUntil:'networkidle'});assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).isVisible(),false);assert.deepEqual(await page.locator('[data-scene-state]').evaluate(e=>e.getAnimations({subtree:true}).filter(a=>a.playState==='running').length),0);
    await context.close();
   }finally{await browser.close();}
  }
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
- const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')),'fixture permits no order or payment writes');
+ const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')||r.path.endsWith('/rpc/read_master_delivery_schedule')||r.path.endsWith('/rpc/save_master_delivery_schedule')),'fixture permits no order or payment writes');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
  console.log(JSON.stringify({layouts:results.length,sections:5,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}

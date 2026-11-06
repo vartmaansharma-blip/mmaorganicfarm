@@ -1,0 +1,80 @@
+.page { color: var(--ui-text); background: var(--ui-page); min-height: 100svh; padding: 0 16px 48px; --milk-marker: #315f4b; --paneer-marker: #885321; --ghee-marker: #646b3a; }
+.header, .content { width: min(100%, 900px); margin-inline: auto; }
+.header { display: flex; min-height: 74px; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ui-border); }
+.header img { object-fit: contain; }
+.content { padding-block: clamp(24px, 5vw, 56px); display: grid; gap: 16px; }
+.title h1 { font: 500 clamp(2.1rem, 7vw, 3.6rem)/1.1 var(--font-editorial), serif; margin: 6px 0 10px; }
+.title p, .editor p { margin: 0; color: var(--ui-muted); }
+.title p:first-child { letter-spacing: .12em; font-size: .72rem; font-weight: 700; }
+.views, .actions, .legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.views a, .secondary, .primary, .monthHeading a {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px;
+  color: var(--ui-text); background: transparent; border: 1px solid var(--ui-border); border-radius: 999px;
+  font: 650 .83rem var(--font-space-grotesk), sans-serif; cursor: pointer;
+}
+.views a[aria-current] { background: var(--color-nav-active-background); color: var(--color-nav-active); border-color: var(--color-nav-active); }
+.primary { color: var(--hero-on-yellow); background: var(--hero-yellow); border-color: transparent; }
+.primary:disabled, .secondary:disabled { opacity: .5; cursor: default; }
+.editor { display: grid; gap: 14px; justify-items: start; background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-panel, 16px); padding: clamp(12px, 3vw, 24px); min-width: 0; }
+.editor h2, .editor h3 { margin: 0; }
+.editor h2 { font-size: 1.16rem; }
+.tableScroll { overflow-x: auto; width: 100%; }
+.matrix { width: 100%; border-collapse: collapse; text-align: center; }
+.matrix :is(td, th) { padding: 4px; }
+.matrix th { font-size: .8rem; }
+.matrix th:first-child { text-align: start; min-width: 75px; }
+.editor abbr { text-decoration: none; }
+.editor :is(input:not([type=hidden]),select) { min-height: 44px; color: var(--ui-text); background: var(--ui-page); border: 1px solid var(--ui-border); border-radius: 8px; font: inherit; font-size: 1rem; }
+.matrix input { width: 50px; text-align: center; }
+.bulkTarget { border: 0; background: transparent; color: inherit; min-height: 36px; padding: 3px 1px; font: inherit; font-weight: 650; cursor: pointer; text-decoration: underline; text-decoration-color: var(--ui-border); text-underline-offset: 3px; }
+.bulkTarget:hover { text-decoration-color: currentColor; }
+.dateInputs label { display: grid; gap: 5px; font-size: .84rem; font-weight: 650; }
+.dateEditor { display: grid; gap: 12px; width: 100%; }
+.dateEditor p { font-size: .85rem; }
+.changes { width: 100%; border-block: 1px solid var(--ui-border); padding-block: 12px; }
+.changes p, .changes li { font-size: .82rem; }
+.changes ul { padding-inline-start: 20px; margin-bottom: 0; }
+.changes li { margin-block: 8px; }
+.changes li span { display: block; color: var(--ui-muted); }
+.monthHeading { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; width: 100%; text-align: center; gap: 8px; }
+.monthHeading a { font-size: 1.4rem; padding: 0; }
+.monthGrid { width: 100%; display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; text-align: center; }
+.monthGrid abbr { color: var(--ui-muted); font-size: clamp(.63rem, 2.5vw, .78rem); }
+.monthGrid a { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; min-height: 44px; border: 1px solid var(--ui-border); border-radius: 8px; font-size: .88rem; }
+.monthGrid a[data-state]:not([data-state=projected],[data-state=covered]) { background: var(--color-nav-active-background); }
+.monthGrid a[aria-current] { box-shadow: inset 0 0 0 2px var(--color-focus-ring); }
+.markers { min-height: 10px; display: flex; gap: 2px; align-items: center; }
+.markers i { width: 4px; height: 4px; border-radius: 50%; background: var(--ui-muted); }
+.markers i[data-product=milk], .legend span:nth-child(1) { color: var(--milk-marker); }
+.markers i[data-product=paneer], .legend span:nth-child(2) { color: var(--paneer-marker); }
+.markers i[data-product=ghee], .legend span:nth-child(3) { color: var(--ghee-marker); }
+.markers i { background: currentColor; }
+.markers b { font-size: .58rem; line-height: 1; }
+.legend { font-size: .72rem; }
+.daySummary { display: flex; flex-wrap: wrap; width: 100%; align-items: baseline; gap: 8px 14px; padding-top: 12px; border-top: 1px solid var(--ui-border); }
+.daySummary h3, .daySummary p { flex-basis: 100%; }
+.daySummary span { font-size: .84rem; }
+.dateInputs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); width: 100%; gap: 8px; }
+.dateInputs span, .note { font-size: .78rem; color: var(--ui-muted); }
+.dateInputs input { padding-inline: 8px; min-width: 0; width: 100%; }
+.notice { padding: 12px; background: var(--ui-surface-raised); border-radius: 8px; }
+
+:global(html[data-theme=dark]) .page {
+  --milk-marker: #acd5b9;
+  --paneer-marker: #f0b982;
+  --ghee-marker: #d4d690;
+}
+.views a.paidLink { border-color: transparent; gap: 5px; color: var(--ui-muted); }
+@media (max-width: 540px) {
+  .views { gap: 6px; }
+  .views a { padding-inline: 11px; }
+  .matrix, .matrix :is(thead,tbody) { display: block; }
+  .matrix tr { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; }
+  .matrix thead th:first-child { display: none; }
+  .matrix tbody th { grid-column: 1 / -1; margin-top: 6px; }
+  .matrix :is(td,th) { padding: 2px 0; }
+  .matrix input { width: 100%; padding: 0; appearance: textfield; }
+  .matrix input::-webkit-inner-spin-button { display: none; }
+}
+.purchase { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius-panel, 16px); background: var(--ui-surface); }
+.purchase p { margin: 0; color: var(--ui-muted); font-size: .85rem; }
