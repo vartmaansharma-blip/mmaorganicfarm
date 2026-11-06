@@ -41,7 +41,7 @@ export async function loadCustomerNotifications(mode: "count" | "preview" | "inb
   // for actionable payments and leave ordinary delivery notices in the inbox.
   const [unread, page, pending] = await Promise.all([
     supabase.from("customer_notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null),
-    mode === "count" || filter === "attention" ? Promise.resolve({ data: [], error: null }) : query.limit(mode === "preview" ? 5 : pageSize + 1),
+    filter === "attention" ? Promise.resolve({ data: [], error: null }) : query.limit(mode === "count" ? 1 : mode === "preview" ? 5 : pageSize + 1),
     mode === "inbox" && filter === "attention"
       ? supabase.from("orders").select("id").eq("user_id", user.id).eq("is_test", false)
           .eq("status", "pending_payment").gte("start_date", todayInIndia()).limit(1)

@@ -835,8 +835,11 @@
 .visitHeading { display:flex; justify-content:space-between; align-items:baseline; gap:12px; font-size:11px; margin-bottom:10px; }
 .visitHeading strong { font-weight:500; }
 .visitHeading span { color:var(--ui-muted); }
-.deliveryItem { display:grid; grid-template-columns:1fr auto; gap:5px 18px; font-size:13px; padding:5px 0; }
-.deliveryItem strong { font-weight:500; }
+.deliveryItem { display:grid; grid-template-columns:52px minmax(0,1fr); align-items:center; gap:5px 14px; font-size:13px; padding:9px 0; }
+.deliveryItem > img { width:52px; height:52px; border:1px solid var(--ui-border); border-radius:10px; object-fit:cover; }
+.deliveryItem > div { min-width:0; display:grid; gap:3px; }
+.deliveryItem > div > strong { font-weight:650; }
+.deliveryItem > div > span { color:var(--ui-muted); }
 .deliveryItem small { grid-column:1/-1; color:var(--ui-muted); font-size:11px; line-height:1.7; }
 .followUp { margin:10px 0 0; font-size:12px; line-height:1.7; color:var(--color-warning); }
 [data-delivery-state="attention"] .deliveryTop h2 { color:var(--color-warning); }
