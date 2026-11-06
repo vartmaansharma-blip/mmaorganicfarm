@@ -5,6 +5,7 @@ import { notificationFilters } from "@/lib/customer-notifications";
 import { AccountNavigation } from "../account-navigation";
 import accountStyles from "../account.module.css";
 import { loadCustomerNotifications } from "./actions";
+import { NavigationMenu } from "@/app/components/navigation-menu";
 import { CustomerNotificationBell } from "./notification-bell";
 import { NotificationInbox } from "./inbox";
 import { NotificationIcon } from "./notification-icon";
@@ -31,7 +32,7 @@ export default async function NotificationsPage({ searchParams }: {
   return <main className={accountStyles.page}>
     <header className={accountStyles.header}>
       <Link className={styles.backLink} href="/account"><span aria-hidden="true">←</span> Back to Today</Link>
-      <CustomerNotificationBell />
+      <div className="customer-header-actions"><CustomerNotificationBell /><NavigationMenu current="/account" /></div>
     </header>
     <div className={accountStyles.accountLayout}>
       <AccountNavigation />

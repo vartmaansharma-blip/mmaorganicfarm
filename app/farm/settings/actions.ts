@@ -43,3 +43,33 @@ export async function updateProductPrices(form: FormData) {
     : "Prices and fees are already up to date.";
   redirect(`/farm/settings?message=${encodeURIComponent(message)}`);
 }
+
+export async function updateReferralSettings(form: FormData) {
+  const { role, supabase } = await requireFarmManager("/farm/settings");
+  if (role !== "admin") redirect("/farm/settings?error=Owner+access+is+required.");
+  const amounts = ["referrer", "newcomer"].map((key) => {
+    const raw = String(form.get(key) ?? "").trim();
+    if (!/^\d+(?:\.\d{1,2})?$/.test(raw) || Number(raw) > 100000)
+      redirect("/farm/settings?error=Enter+valid+referral+amounts+with+up+to+two+decimal+places.");
+    return Math.round(Number(raw) * 100);
+  });
+  const enabled = form.get("enabled") === "on";
+  if (enabled && amounts.every((amount) => amount === 0))
+    redirect("/farm/settings?error=Set+at+least+one+reward+to+enable+referrals.");
+  const { error } = await supabase.rpc("save_referral_settings", {
+    p_enabled: enabled,
+    p_referrer: amounts[0],
+    p_newcomer: amounts[1],
+    p_revision: form.get("revision"),
+  });
+  if (error) {
+    const message = error.message.startsWith("Settings changed")
+      ? "Settings changed while you were editing. Review the current amounts."
+      : "Referral settings could not be saved.";
+    redirect(`/farm/settings?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath("/");
+  revalidatePath("/account/referrals");
+  revalidatePath("/farm/settings");
+  redirect("/farm/settings?message=Referral+settings+saved.");
+}

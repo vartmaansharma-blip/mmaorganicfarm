@@ -19,6 +19,7 @@ export function NavigationMenu({
     { label: "Farm", href: homePage ? "#farm" : "/#farm" },
     { label: "Our Story", href: homePage ? "#about" : "/#about" },
     { label: "My M’ma", href: "/account" },
+    ...(current.startsWith("/account") ? [{ label: "Refer & Earn", href: "/account/referrals" }] : []),
   ];
   const [menuOpen, setMenuOpen] = useState(false),
     menu = useRef<HTMLDialogElement>(null),

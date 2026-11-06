@@ -105,29 +105,11 @@
   font-size: 26px;
   flex-shrink: 0;
 }
-.modes {
-  display: flex;
-  margin: 26px 0 8px;
-  padding: 4px;
-  border: 1px solid var(--color-border);
-  border-radius: 30px;
-  gap: 4px;
-}
-.modes button {
-  flex: 1;
-  min-height: 44px;
-  border: 0;
-  border-radius: 24px;
-  background: transparent;
-  font-size: 13px;
-}
-.modes button[aria-pressed="true"] {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-}
-.modes span {
-  color: var(--color-text-secondary);
-}
+.group { margin-top: 18px; }
+.group + .group { border-top: 1px solid var(--color-border); padding-top: 16px; }
+.groupHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 12px; border-radius: 9px; background: var(--color-surface); }
+.groupHeading h3 { margin: 0; font-size: 14px; font-weight: 650; }
+.groupHeading span { color: var(--color-text-secondary); font-size: 11px; white-space: nowrap; }
 .items {
   list-style: none;
   padding: 0;
@@ -230,7 +212,7 @@
   display: grid;
   gap: 10px;
   font-size: 13px;
-  margin: 24px 0 10px;
+  margin: 12px 0 10px;
 }
 .date input {
   color-scheme: dark;

@@ -1,3 +1,4 @@
+import { NavigationMenu } from "@/app/components/navigation-menu";
 import { CustomerNotificationBell } from "./notifications/notification-bell";
 import { uuidPattern } from "@/lib/customer-notifications";
 import { farmWhatsApp } from "@/lib/farm-contact";
@@ -219,9 +220,7 @@ export default async function AccountPage({
         </Link>
         <div className="customer-header-actions">
           <CustomerNotificationBell />
-          <Link className={styles.back} href="/milk">
-            Back to shop
-          </Link>
+          <NavigationMenu current="/account" />
         </div>
       </header>
 
