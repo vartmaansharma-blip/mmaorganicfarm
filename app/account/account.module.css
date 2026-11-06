@@ -1252,3 +1252,5 @@
 .quantityComparison dd { margin:0; color:var(--color-text-primary); font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
 .todayRequestBadge { display:inline-flex; align-items:center; gap:4px; font-weight:550; }
 .todayRequestList li[data-status="applied"] .todayRequestBadge { color:var(--color-accent); }
+.todayFarmNote { color:var(--ui-muted); }
+.todayFarmNote summary { display:list-item; min-height:32px; padding-block:7px; cursor:pointer; }

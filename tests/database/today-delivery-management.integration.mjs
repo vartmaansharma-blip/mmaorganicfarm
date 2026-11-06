@@ -107,7 +107,8 @@ test("customer and manager browser journey with notification receipt and outcome
         await form.getByText("3 L", { exact: true }).waitFor();
         await form.getByText("2 L", { exact: true }).waitFor();
         assert.equal(await customerPage.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-        await form.screenshot({ path: path.join(output, `${name}-review-light.png`) });
+        await customerPage.waitForFunction(() => document.querySelector("#today-change-form img")?.naturalWidth > 0);
+        await form.screenshot({ path: path.join(output, `${name}-review-light.png`), animations: "disabled" });
         await form.getByRole("button", { name: "Send to the farm" }).click();
         await customerPage.getByRole("list", { name: "Your delivery requests" }).getByText("Awaiting farm review").waitFor();
         assert.equal(await milk(f), "3.00");

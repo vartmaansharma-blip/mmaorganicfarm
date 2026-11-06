@@ -40,7 +40,9 @@ export function TodayDeliveryEditor({ management, stale, onSaved }: {
           ? <QuantityComparison product={request.product_key} from={request.previous_quantity} to={request.requested_quantity}
               confirmed={request.status === "applied"} /> : null}
         {request.moved_to ? <small>{formatCalendarDate(request.moved_to)} · {Number(request.previous_quantity) - Number(request.requested_quantity)} {request.product_key === "milk" ? "L" : "pack(s)"} moved · Payment unchanged</small> : null}
-        {request.decision_note ? <small>{request.decision_note}</small> : null}
+        {request.decision_note ? request.status === "applied"
+          ? <details className={styles.todayFarmNote}><summary>Farm note</summary><small>{request.decision_note}</small></details>
+          : <small>{request.decision_note}</small> : null}
       </li>)}
     </ul> : null}
   </section>;
@@ -105,7 +107,7 @@ function DeliveryChangeForm({ management, stale, onSaved }: {
       {review ? <>
         {issue ? <p>{note.trim()}</p> : <>
           <div className={styles.reviewProduct}>
-            {selectedProduct ? <Image src={selectedProduct.image} width={38} height={38} alt="" /> : null}
+            {selectedProduct ? <Image src={selectedProduct.image} width={38} height={38} alt="" loading="eager" /> : null}
             <strong>{productName(product)}</strong>
           </div>
           <QuantityComparison product={product} from={expected} to={quantity} />
