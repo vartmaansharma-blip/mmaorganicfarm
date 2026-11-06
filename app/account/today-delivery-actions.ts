@@ -32,3 +32,23 @@ export async function requestTodayDelivery(
   revalidatePath("/farm/cancellations");
   return { ok: true, message: "Request sent. Your current delivery and payment stay as shown while the farm reviews it." };
 }
+
+
+export async function checkTodayRouteStock(deliveryId: string, product: ChangeProduct): Promise<{
+  available: number | null;
+  error?: string;
+}> {
+  if (!uuid.test(deliveryId) || !changeProducts.includes(product)) {
+    return { available: null, error: "Choose a delivery and product first." };
+  }
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { available: null, error: "Sign in again to check stock." };
+  const { data, error } = await supabase.rpc("get_today_route_spare", { p_delivery: deliveryId, p_product: product });
+  if (error) return { available: null, error: "We couldn’t check the driver’s stock. Try again." };
+  if (data === null) return { available: null };
+  const available = Number(data);
+  return Number.isFinite(available) && available >= 0
+    ? { available }
+    : { available: null, error: "We couldn’t check the driver’s stock. Try again." };
+}

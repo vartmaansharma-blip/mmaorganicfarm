@@ -98,6 +98,9 @@ begin
     v_before := coalesce(v_before, 0);
     if p_expected is distinct from v_before then raise exception 'The delivery changed. Refresh before sending your request.'; end if;
     if p_quantity = v_before then raise exception 'Choose a different quantity'; end if;
+    if p_quantity > v_before then
+      raise exception 'Check the driver’s spare stock for additions.';
+    end if;
   elsif p_product is not null or p_quantity is not null or p_expected is not null or length(v_note) < 3 then
     raise exception 'Describe the delivery issue in a few words';
   end if;
@@ -229,6 +232,42 @@ begin
   return jsonb_build_object('status', p_decision, 'moved_to', v_target);
 end;
 $$;
+
+-- Spare stock comes only from an acknowledged, active run. Committed items
+-- stay excluded even if another stop has already been delivered or cancelled.
+create function private.get_today_route_spare(p_delivery uuid, p_product text)
+returns numeric language sql stable security definer set search_path = '' as $$
+  select greatest(0, (r.load->>p_product)::numeric - greatest(
+    coalesce((private.run_totals(r.manifest)->>p_product)::numeric, 0),
+    coalesce((
+      select sum(i.quantity) from public.delivery_run_deliveries other
+      join public.daily_delivery_items i on i.delivery_id = other.delivery_id
+      where other.run_id = r.id and other.active and i.product_key = p_product
+    ), 0)
+  ))
+  from public.daily_deliveries d
+  join public.delivery_run_deliveries rd on rd.delivery_id = d.id and rd.active
+  join public.delivery_runs r on r.id = rd.run_id and r.driver_id = d.assigned_driver_id
+  join public.delivery_dispatches x on x.delivery_date = d.delivery_date and x.status = 'released'
+  where auth.uid() is not null and d.user_id = auth.uid()
+    and p_product in ('milk', 'paneer', 'ghee')
+    and d.id = p_delivery and d.delivery_date = private.operational_today() and not d.is_test
+    and d.status in ('ready', 'out_for_delivery') and not d.delivery_confirmed
+    and r.status = 'in_progress' and r.delivery_date = d.delivery_date
+    and r.acknowledged_by = r.driver_id and r.acknowledged_at is not null
+    and exists (select 1 from public.farm_staff s where s.user_id = r.driver_id and s.role = 'driver' and s.active)
+    and not exists (select 1 from public.delivery_visit_outcomes o where o.delivery_date = d.delivery_date and o.visit_key = d.visit_key)
+    and coalesce((select action from public.delivery_day_reviews where delivery_date = d.delivery_date order by version desc limit 1), '') <> 'closed';
+$$;
+
+create function public.get_today_route_spare(p_delivery uuid, p_product text)
+returns numeric language sql stable security invoker set search_path = '' as $$
+  select private.get_today_route_spare(p_delivery, p_product);
+$$;
+revoke all on function private.get_today_route_spare(uuid,text), public.get_today_route_spare(uuid,text)
+  from public, anon, authenticated;
+grant execute on function private.get_today_route_spare(uuid,text), public.get_today_route_spare(uuid,text)
+  to authenticated;
 
 -- Reuse the existing outcome command. Compare the quantities under its date lock
 -- so a reopened and released dispatch cannot accept a stale driver confirmation.

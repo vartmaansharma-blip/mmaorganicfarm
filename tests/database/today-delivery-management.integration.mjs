@@ -188,9 +188,8 @@ test("one-time edits, packed requests and additional quantities stay unconfirmed
   const onceRequest = await request(once);
   await assert.rejects(review(onceRequest), /before packing/);
   await review(onceRequest, "follow_up");
-  const addition = await request(f, { quantity: 4 });
-  await assert.rejects(review(addition), /partial prepaid reduction/);
-  await review(addition, "declined");
+  await assert.rejects(request(f, { quantity: 4 }), /Check the driver’s spare stock/);
+  assert.equal((await notices(f)).length, 0);
   await db.query("update daily_deliveries set status='ready' where id=$1", [f.delivery]);
   const packed = await request(f);
   await assert.rejects(review(packed), /before packing/);
@@ -228,6 +227,16 @@ test("released driver sees only assigned confirmed quantities and a stale outcom
   await db.query("insert into daily_route_assignments(delivery_date,route_id,driver_id,updated_by) values($1,$2,$3,$4)", [today, route, driver, manager]);
   await db.query("update daily_deliveries set phone_snapshot='0000000000' where delivery_date=$1", [today]);
   await callAs(db, manager, "select release_daily_dispatch($1)", [today]);
+  const vehicle = (await db.query("insert into farm_vehicles(name,registration,ownership,milk_capacity,paneer_capacity,ghee_capacity,stop_capacity) values('Fixture vehicle','FIXTURE-3','farm',1000,1000,1000,200) returning id")).rows[0].id;
+  const run = (await db.query(`with route_manifest as (select private.run_manifest($1,$2) manifest),
+    quantities as (select manifest, private.run_totals(manifest) totals from route_manifest)
+    insert into delivery_runs(delivery_date,route_id,driver_id,vehicle_id,status,manifest,load,acknowledged_by,acknowledged_at,created_by)
+    select $1,$2,$3,$4,'in_progress',manifest,totals || jsonb_build_object('milk',(totals->>'milk')::numeric+3),$3,now(),$5 from quantities
+    returning id`, [today, route, driver, vehicle, manager])).rows[0].id;
+  await db.query("insert into delivery_run_deliveries(run_id,delivery_id) select $1,id from daily_deliveries where delivery_date=$2 and delivery_route_id=$3", [run, today, route]);
+  assert.equal((await callAs(db, f.customer, "select get_today_route_spare($1,'milk') quantity", [f.delivery])).rows[0].quantity, "3.00");
+  assert.equal((await callAs(db, outsider, "select get_today_route_spare($1,'milk') quantity", [f.delivery])).rows[0].quantity, null);
+  assert.equal((await callAs(db, f.customer, "select get_today_route_spare($1,'paneer') quantity", [f.delivery])).rows[0].quantity, "0");
   const assigned = (await callAs(db, driver, "select * from get_driver_today_changes($1)", [today])).rows;
   assert.equal(assigned.find(row => row.delivery_id === f.delivery).requested_quantity, "2.00");
   assert.equal((await callAs(db, otherDriver, "select * from get_driver_today_changes($1)", [today])).rowCount, 0);
@@ -244,4 +253,5 @@ test("released driver sees only assigned confirmed quantities and a stale outcom
   await outcome(driver, 2, key);
   await outcome(driver, 2, key);
   assert.equal((await db.query("select status from daily_deliveries where id=$1", [f.delivery])).rows[0].status, "delivered");
+  assert.equal((await callAs(db, f.customer, "select get_today_route_spare($1,'milk') quantity", [f.delivery])).rows[0].quantity, null);
 });

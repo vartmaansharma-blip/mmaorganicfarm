@@ -265,6 +265,10 @@ function RunCard({
   const base = { id: run.id, version: run.version };
   const distance = journeyDistance(run),
     minutes = journeyMinutes(run);
+  const checkedSpare = Object.fromEntries(Object.entries(run.load).flatMap(([product, quantity]) => {
+    const spare = Math.round((Number(quantity) - Number(run.planned[product] ?? 0)) * 100) / 100;
+    return spare > 0 ? [[product, spare]] : [];
+  }));
   const routeHref = `/farm/delivery-sheet?${new URLSearchParams({ date, route: run.route_id })}`;
   return (
     <article
@@ -369,6 +373,11 @@ function RunCard({
             quantities={Object.keys(run.load).length ? run.load : run.planned}
             label="Product quantities"
           />
+          {driver && run.status === "in_progress" && run.acknowledged_at ? <>
+            <div className={styles.sectionHeading}><h3>Spare at loading</h3><span>Separate from assigned deliveries</span></div>
+            {Object.keys(checkedSpare).length ? <Totals quantities={checkedSpare} label="Checked spare stock" />
+              : <p>No spare stock was recorded at loading.</p>}
+          </> : null}
         </section>
         {run.return_note ? (
           <p className={styles.note}>

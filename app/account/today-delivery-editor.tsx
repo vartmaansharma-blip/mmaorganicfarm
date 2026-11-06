@@ -7,7 +7,7 @@ import { NotificationIcon } from "./notifications/notification-icon";
 import { useActionState, useRef, useState } from "react";
 import { formatCalendarDate, productName } from "@/lib/delivery-calendar";
 import { changeProducts, requestStatus, type ChangeProduct, type TodayManagement } from "@/lib/today-delivery-management";
-import { requestTodayDelivery, type TodayActionState } from "./today-delivery-actions";
+import { checkTodayRouteStock, requestTodayDelivery, type TodayActionState } from "./today-delivery-actions";
 import styles from "./account.module.css";
 
 export function TodayDeliveryEditor({ management, stale, onSaved }: {
@@ -70,17 +70,32 @@ function DeliveryChangeForm({ management, stale, onSaved }: {
   const selectedProduct = SHOP_PRODUCTS.find(item => item.id === product);
   const [note, setNote] = useState("");
   const [review, setReview] = useState(false);
+  const [stock, setStock] = useState<number | null>(null);
   const key = useRef<{ signature: string; id: string } | null>(null);
   const delivery = management.deliveries.find(row => row.id === deliveryId);
   const issue = mode === "issue" || !delivery?.editable;
   const expected = Number(delivery?.items.find(item => item.product_key === product)?.quantity ?? 0);
   const quantity = draft === null ? expected : Number(draft);
+  const addition = !issue && quantity > expected;
+  const extra = Math.round((quantity - expected) * 100) / 100;
+  const unit = product === "milk" ? "L" : "packs";
   const hasOpenRequest = management.requests.some(request => request.delivery_id === deliveryId
     && request.product_key === (issue ? null : product) && request.status === "requested");
-  const valid = Boolean(delivery && !stale && !hasOpenRequest && (issue ? note.trim().length >= 3
+  const valid = Boolean(delivery && !stale && (addition || !hasOpenRequest) && (issue ? note.trim().length >= 3
     : draft !== "" && Number.isFinite(quantity) && quantity >= 0 && quantity <= 5 && quantity !== expected));
   const [result, submit, pending] = useActionState(async (): Promise<TodayActionState> => {
     if (!valid || !delivery) return { ok: false, message: "Refresh today’s delivery and review your request." };
+    if (addition) {
+      try {
+        const quote = await checkTodayRouteStock(delivery.id, product);
+        if (quote.error) return { ok: false, message: quote.error };
+        setStock(quote.available);
+        setReview(true);
+        return { ok: true, message: "" };
+      } catch {
+        return { ok: false, message: "We couldn’t check the driver’s stock. Reconnect and try again." };
+      }
+    }
     const input = { delivery: delivery.id, product: issue ? null : product, expected: issue ? null : expected,
       quantity: issue ? null : quantity, note: issue ? note.trim() : "" };
     const signature = JSON.stringify(input);
@@ -101,18 +116,25 @@ function DeliveryChangeForm({ management, stale, onSaved }: {
   }, null);
 
   return <form id="today-change-form" className={styles.todayChangeForm} action={submit}
-    onSubmit={event => { if (!review) { event.preventDefault(); setReview(true); } }}>
+    onSubmit={event => { if (!review && !addition) { event.preventDefault(); setReview(true); } }}>
     <fieldset disabled={pending || stale}>
-      <legend>{review ? "Review your request" : "Change this delivery only"}</legend>
+      <legend>{review ? addition ? "Driver stock" : "Review your request" : "Change this delivery only"}</legend>
       {review ? <>
         {issue ? <p>{note.trim()}</p> : <>
           <div className={styles.reviewProduct}>
             {selectedProduct ? <Image src={selectedProduct.image} width={38} height={38} alt="" loading="eager" /> : null}
             <strong>{productName(product)}</strong>
           </div>
-          <QuantityComparison product={product} from={expected} to={quantity} />
+          {addition ? <dl className={styles.quantityComparison} aria-label="Requested and available stock">
+            <div><dt>You want to add</dt><dd>{extra} {unit}</dd></div>
+            <div><dt>Driver can offer</dt><dd>{stock === null ? "Unverified" : `${stock} ${unit}`}</dd></div>
+          </dl> : <QuantityComparison product={product} from={expected} to={quantity} />}
         </>}
-        <p>Farm confirmation required. Payment unchanged for now.</p>
+        {addition ? stock !== null && stock > 0 && stock < extra
+          ? <p><strong>Would you like to take {stock} {unit} instead?</strong></p>
+          : <p>{stock === null ? "We can only check spare stock once your driver is on the route."
+            : stock === 0 ? "The driver has no spare stock for this product." : "The checked stock covers this amount. Same-day payment is currently unavailable."}</p>
+          : <p>Farm confirmation required. Payment unchanged for now.</p>}
       </> : <>
         {management.deliveries.length > 1 ? <label>Delivery
           <select value={deliveryId} onChange={event => { setDeliveryId(event.target.value); setDraft(null); }}>
@@ -136,15 +158,19 @@ function DeliveryChangeForm({ management, stale, onSaved }: {
           </div>}
         {!issue ? <p>Use 0 to request removal. This request applies to today only.</p> : null}
       </>}
-      {hasOpenRequest ? <p>This item already has a request awaiting the farm.</p> : null}
+      {hasOpenRequest && !addition ? <p>This item already has a request awaiting the farm.</p> : null}
       <div className={styles.todayChangeButtons}>
         {review ? <button type="button" onClick={() => setReview(false)}>Back</button> : null}
-        <button className={styles.todayEditButton} type="submit" disabled={!valid || pending}>
-          {pending ? "Sending…" : review ? "Send to the farm" : "Review request"}
-        </button>
+        {review && addition ? stock !== null && stock > 0 && stock < extra ? <button
+          className={styles.todayEditButton} type="button"
+          onClick={() => setDraft(String(Math.round((expected + stock) * 100) / 100))}>
+          Choose {stock} {unit}
+        </button> : null : <button className={styles.todayEditButton} type="submit" disabled={!valid || pending}>
+          {pending ? addition ? "Checking stock…" : "Sending…" : addition ? "Check driver stock" : review ? "Send to the farm" : "Review request"}
+        </button>}
       </div>
     </fieldset>
     {stale ? <p role="status">Refresh delivery updates before sending a request.</p> : null}
-    {result ? <p role={result.ok ? "status" : "alert"}>{result.message}</p> : null}
+    {result?.message ? <p role={result.ok ? "status" : "alert"}>{result.message}</p> : null}
   </form>;
 }
