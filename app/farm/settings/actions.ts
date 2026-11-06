@@ -58,6 +58,7 @@ export async function updateReferralSettings(form: FormData) {
     redirect("/farm/settings?error=Set+at+least+one+reward+to+enable+referrals.");
   const { error } = await supabase.rpc("save_referral_settings", {
     p_enabled: enabled,
+    p_discount_enabled: form.get("discount_enabled") === "on",
     p_referrer: amounts[0],
     p_newcomer: amounts[1],
     p_revision: form.get("revision"),

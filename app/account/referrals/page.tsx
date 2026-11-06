@@ -38,16 +38,16 @@ export default async function ReferralsPage({ searchParams }: {
     <section className={account.content}>
       <p className={account.eyebrow}>My M’ma</p>
       <h1 className={styles.title}>Refer &amp; Earn</h1>
-      <p className={account.intro}>Invite someone to the monthly scheduled plan. Rewards unlock after their first paid delivery is completed.</p>
+      <p className={account.intro}>Invite someone to the monthly scheduled plan. Your referral discount unlocks after their first paid delivery is completed.</p>
       {params.error ? <p className={account.notice} role="alert">{params.error}</p> : null}
       {params.message ? <p className={account.notice} role="status">{params.message}</p> : null}
       {!enabled ? <section className={styles.panel}><h2>New invites are paused</h2><p>You can still see rewards from an existing invite below.</p></section> : null}
       {enabled && !user ? <Link className={styles.primary} href={`/sign-in?next=${encodeURIComponent(next)}`}>Sign in to refer a friend</Link> : null}
       {workspace && (enabled || workspace.code) ? <section className={styles.panel}>
         <h2>Your invite</h2>
-        {enabled && workspace.referrer_paise > 0 ? <p>{formatCheckoutAmount(workspace.referrer_paise)} for each qualifying invite.</p> : null}
-        {enabled && workspace.newcomer_paise > 0 ? <p>Your friend can unlock {formatCheckoutAmount(workspace.newcomer_paise)}.</p> : null}
-        {enabled ? workspace.code ? <ShareCode code={workspace.code} inviteUrl={inviteUrl} /> : <form action={createReferralCode}>
+        {enabled && workspace.discount_enabled && workspace.referrer_paise > 0 ? <p>{formatCheckoutAmount(workspace.referrer_paise)} off a scheduled order for each qualifying invite.</p> : null}
+        {enabled && workspace.discount_enabled && workspace.newcomer_paise > 0 ? <p>Your friend can get up to {formatCheckoutAmount(workspace.newcomer_paise)} off their first scheduled month.</p> : null}
+        {enabled ? workspace.code ? <ShareCode code={workspace.code} inviteUrl={inviteUrl} firstMonthDiscount={workspace.discount_enabled && workspace.newcomer_paise > 0 ? formatCheckoutAmount(workspace.newcomer_paise) : undefined} /> : <form action={createReferralCode}>
           <button className={styles.primary} type="submit">Create invite link</button>
         </form> : null}
         {workspace.code ? <dl className={styles.metrics}>
@@ -59,8 +59,9 @@ export default async function ReferralsPage({ searchParams }: {
       {workspace && (enabled || workspace.claim) ? <section className={styles.panel}>
         <h2>Invited by a friend?</h2>
         {workspace.claim ? <>
-          <p>{workspace.claim.unlocked ? "First paid delivery completed." : "Code linked. Complete your first paid delivery on the monthly scheduled plan."}</p>
-          {workspace.claim.reward_paise > 0 ? <strong>{formatCheckoutAmount(workspace.claim.reward_paise)} {workspace.claim.unlocked ? "unlocked" : "pending"}</strong> : null}
+          <p>{workspace.claim.unlocked ? "First paid delivery completed." : "Code linked. Choose your first monthly scheduled plan."}</p>
+          {workspace.discount_enabled && !workspace.claim.unlocked && workspace.claim.reward_paise > 0
+            ? <strong>Up to {formatCheckoutAmount(workspace.claim.reward_paise)} off your first scheduled month</strong> : null}
           {!workspace.claim.unlocked ? <Link className={styles.primary} href="/shop">Shop monthly deliveries</Link> : null}
         </> : <form className={styles.claim} action={claimReferralCode}>
           <label>Referral code<input name="code" autoCapitalize="characters" autoComplete="off" spellCheck={false} required maxLength={32} defaultValue={code} /></label>

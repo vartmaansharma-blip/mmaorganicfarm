@@ -80,7 +80,7 @@ const stub=createServer(async(req,res)=>{
   res.end('null');return;
  }
  if(url.pathname.endsWith('/rpc/referral_workspace')){
-  res.end(JSON.stringify({enabled:referralAvailable,referrer_paise:2500,newcomer_paise:1000,revision:recordId,code:referralCodeCreated?sampleReferralCode:null,claim:null,invites:0,unlocked_invites:0,earned_paise:0}));return;
+  res.end(JSON.stringify({enabled:referralAvailable,discount_enabled:true,referrer_paise:2500,newcomer_paise:10000,revision:recordId,code:referralCodeCreated?sampleReferralCode:null,claim:null,invites:0,unlocked_invites:0,earned_paise:0}));return;
  }
  if(!['GET','HEAD'].includes(req.method) && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
@@ -221,7 +221,7 @@ try{
       assert.equal(share.origin,'https://wa.me');
       const invitePath=`/account/referrals?code=${sampleReferralCode}`;
       assert.ok(share.searchParams.get('text').includes(invitePath));
-      assert.match(share.searchParams.get('text'),/first paid delivery/);
+      assert.match(share.searchParams.get('text'),/₹100 off.*first paid delivery/);
       const email=await page.getByRole('link',{name:'Email',exact:true}).getAttribute('href');
       assert.ok(email.startsWith('mailto:?') && decodeURIComponent(email).includes(invitePath));
       await page.getByRole('button',{name:'Link code'}).waitFor();

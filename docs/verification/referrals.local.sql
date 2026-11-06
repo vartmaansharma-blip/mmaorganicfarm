@@ -4,8 +4,9 @@ begin;
 create table private.referral_settings (
   singleton boolean primary key default true check (singleton),
   enabled boolean not null default false,
-  referrer_paise integer not null default 0 check (referrer_paise between 0 and 10000000),
-  newcomer_paise integer not null default 0 check (newcomer_paise between 0 and 10000000),
+  discount_enabled boolean not null default false,
+  referrer_paise integer not null default 10000 check (referrer_paise between 0 and 10000000),
+  newcomer_paise integer not null default 10000 check (newcomer_paise between 0 and 10000000),
   revision uuid not null default gen_random_uuid(),
   check (not enabled or referrer_paise > 0 or newcomer_paise > 0)
 );
@@ -46,6 +47,7 @@ begin
   select * into strict v_settings from private.referral_settings;
   return jsonb_build_object(
     'enabled', v_settings.enabled,
+    'discount_enabled', v_settings.discount_enabled,
     'referrer_paise', v_settings.referrer_paise,
     'newcomer_paise', v_settings.newcomer_paise,
     'revision', v_settings.revision,
@@ -60,7 +62,7 @@ begin
 end;
 $$;
 
-create function private.save_referral_settings(p_enabled boolean, p_referrer integer, p_newcomer integer, p_revision uuid)
+create function private.save_referral_settings(p_enabled boolean, p_referrer integer, p_newcomer integer, p_revision uuid, p_discount_enabled boolean default false)
 returns void language plpgsql security definer set search_path='' as $$
 declare
   v_before private.referral_settings%rowtype;
@@ -69,7 +71,7 @@ begin
   if auth.uid() is null or not exists (
     select 1 from public.farm_staff where user_id=auth.uid() and active and role='admin'
   ) then raise exception 'Owner access is required to change rewards' using errcode='42501'; end if;
-  if p_enabled is null or p_referrer is null or p_newcomer is null
+  if p_enabled is null or p_discount_enabled is null or p_referrer is null or p_newcomer is null
     or p_referrer not between 0 and 10000000 or p_newcomer not between 0 and 10000000
     or (p_enabled and p_referrer = 0 and p_newcomer = 0)
   then raise exception 'Enter valid reward amounts and set at least one reward to enable referrals'; end if;
@@ -77,11 +79,11 @@ begin
   if v_before.revision is distinct from p_revision then
     raise exception 'Settings changed while you were editing. Review the current amounts.';
   end if;
-  if (v_before.enabled, v_before.referrer_paise, v_before.newcomer_paise) = (p_enabled, p_referrer, p_newcomer) then
+  if (v_before.enabled, v_before.referrer_paise, v_before.newcomer_paise, v_before.discount_enabled) = (p_enabled, p_referrer, p_newcomer, p_discount_enabled) then
     return;
   end if;
   update private.referral_settings set enabled=p_enabled, referrer_paise=p_referrer,
-    newcomer_paise=p_newcomer, revision=gen_random_uuid() where singleton returning * into v_after;
+    newcomer_paise=p_newcomer, discount_enabled=p_discount_enabled, revision=gen_random_uuid() where singleton returning * into v_after;
   insert into public.farm_change_log(actor_id, record_type, record_id, action, reason, before_state, after_state)
   values(auth.uid(), 'referral_settings', 'farm', 'update', 'Updated referral rewards',
     to_jsonb(v_before), to_jsonb(v_after));
@@ -128,7 +130,7 @@ $$;
 create function private.qualify_referral_on_delivery()
 returns trigger language plpgsql security definer set search_path='' as $$
 begin
-  if new.outcome <> 'delivered' then return new; end if;
+  if new.outcome not in ('delivered','partial') then return new; end if;
 
   update private.referral_claims as claim
   set qualified_at=now(), qualifying_order_id=eligible.id
@@ -159,22 +161,22 @@ create trigger qualify_referral_on_delivery
 
 create function public.referral_workspace() returns jsonb language sql stable security invoker set search_path=''
   as $$ select private.referral_workspace(); $$;
-create function public.save_referral_settings(p_enabled boolean, p_referrer integer, p_newcomer integer, p_revision uuid)
+create function public.save_referral_settings(p_enabled boolean, p_referrer integer, p_newcomer integer, p_revision uuid, p_discount_enabled boolean default false)
   returns void language sql security invoker set search_path=''
-  as $$ select private.save_referral_settings(p_enabled,p_referrer,p_newcomer,p_revision); $$;
+  as $$ select private.save_referral_settings(p_enabled,p_referrer,p_newcomer,p_revision,p_discount_enabled); $$;
 create function public.create_referral_code() returns void language sql security invoker set search_path=''
   as $$ select private.create_referral_code(); $$;
 create function public.claim_referral_code(p_code text) returns void language sql security invoker set search_path=''
   as $$ select private.claim_referral_code(p_code); $$;
 
-revoke all on function private.referral_workspace(), private.save_referral_settings(boolean,integer,integer,uuid),
+revoke all on function private.referral_workspace(), private.save_referral_settings(boolean,integer,integer,uuid,boolean),
   private.create_referral_code(), private.claim_referral_code(text), private.qualify_referral_on_delivery(),
-  public.referral_workspace(), public.save_referral_settings(boolean,integer,integer,uuid),
+  public.referral_workspace(), public.save_referral_settings(boolean,integer,integer,uuid,boolean),
   public.create_referral_code(), public.claim_referral_code(text)
   from public, anon, authenticated, service_role;
-grant execute on function private.referral_workspace(), private.save_referral_settings(boolean,integer,integer,uuid),
+grant execute on function private.referral_workspace(), private.save_referral_settings(boolean,integer,integer,uuid,boolean),
   private.create_referral_code(), private.claim_referral_code(text),
-  public.referral_workspace(), public.save_referral_settings(boolean,integer,integer,uuid),
+  public.referral_workspace(), public.save_referral_settings(boolean,integer,integer,uuid,boolean),
   public.create_referral_code(), public.claim_referral_code(text) to authenticated;
 
 create function private.referrals_enabled() returns boolean language sql stable security definer set search_path=''

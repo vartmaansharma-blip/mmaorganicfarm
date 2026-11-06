@@ -3,9 +3,9 @@
 import { useState } from "react";
 import styles from "./referrals.module.css";
 
-export function ShareCode({ code, inviteUrl }: { code: string; inviteUrl: string }) {
+export function ShareCode({ code, inviteUrl, firstMonthDiscount }: { code: string; inviteUrl: string; firstMonthDiscount?: string }) {
   const [status, setStatus] = useState("");
-  const message = `Try the monthly scheduled plan from M’ma Organic Farm. Link my referral before your first checkout. Rewards unlock after your first paid delivery is completed.\n\n${inviteUrl}`;
+  const message = `Try the monthly scheduled plan from M’ma Organic Farm. Link my referral before your first checkout.${firstMonthDiscount ? ` Get up to ${firstMonthDiscount} off your first scheduled month while the offer is active.` : ""} My reward unlocks after your first paid delivery is completed.\n\n${inviteUrl}`;
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(message)}`;
   const email = `mailto:?subject=${encodeURIComponent("An invite to M’ma Organic Farm")}&body=${encodeURIComponent(message.replaceAll("\n", "\r\n"))}`;
 

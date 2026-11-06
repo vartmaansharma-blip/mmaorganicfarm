@@ -1,4 +1,5 @@
 import "server-only";
+import { storedReferralDiscount } from "./referral-discount";
 import { waiveSharedDelivery } from "./delivery-pricing";
 import { priceInPaise } from "./product-prices";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -46,9 +47,7 @@ export async function quoteCheckoutBatch(client: SupabaseClient, batch: Batch) {
   if (once.purchase_mode !== "once" || once.delivery_plan_id
     || plan.purchase_mode !== "plan" || !plan.delivery_plan_id
     || once.is_test !== batch.is_test || plan.is_test !== batch.is_test
-    || once.razorpay_order_id || plan.razorpay_order_id
-    || once.discount_paise || plan.discount_paise
-    || once.discount_code || plan.discount_code)
+    || once.razorpay_order_id || plan.razorpay_order_id)
     throw new Error("Selected orders cannot be combined safely.");
   const { data: monthly, error: planError } = await client.from("delivery_plans")
     .select("id,user_id,status,start_date,bottle_choice,billing_model,period_end_exclusive,schedule_rules,scheduled_delivery_items(product_key,delivery_date,quantity)")
@@ -71,8 +70,8 @@ export async function quoteCheckoutBatch(client: SupabaseClient, batch: Batch) {
   const delivery = batch.shared_delivery_date ? waiveSharedDelivery(onceQuote, planQuote, once.start_date) : null;
   if (batch.shared_delivery_date && batch.shared_delivery_date !== delivery?.sharedDate)
     throw new Error("The shared delivery date changed. Review the basket before paying.");
-  const onceAmount = priceInPaise(delivery?.once.total ?? onceQuote.total);
-  const planAmount = priceInPaise(delivery?.scheduled.total ?? planQuote.total);
+  const onceAmount = priceInPaise(delivery?.once.total ?? onceQuote.total) - storedReferralDiscount(once, false);
+  const planAmount = priceInPaise(delivery?.scheduled.total ?? planQuote.total) - storedReferralDiscount(plan, !batch.is_test);
   if (onceAmount !== once.total_paise || planAmount !== plan.total_paise
     || onceAmount + planAmount !== batch.amount_paise)
     throw new Error("The selected total changed. Review it before paying.");

@@ -31,7 +31,7 @@ export default async function BatchReview({ searchParams }: {
   const [{ data: once }, { data: plan }, { data: onceItems }, { data: planItems }] = await Promise.all([
     supabase.from("orders").select("id,purchase_mode,status,start_date,total_paise,address_snapshot,bottle_choice,bottle_charge_paise")
       .eq("id", batch.once_order_id).eq("user_id", user.id).maybeSingle(),
-    supabase.from("orders").select("id,purchase_mode,status,start_date,total_paise,address_snapshot,delivery_plan_id,bottle_choice,bottle_charge_paise")
+    supabase.from("orders").select("id,purchase_mode,status,start_date,total_paise,address_snapshot,delivery_plan_id,bottle_choice,bottle_charge_paise,discount_paise")
       .eq("id", batch.plan_order_id).eq("user_id", user.id).maybeSingle(),
     supabase.from("order_items").select("product_key,product_name,quantity,frequency,scheduled_days")
       .eq("order_id", batch.once_order_id).eq("user_id", user.id),
@@ -111,6 +111,7 @@ export default async function BatchReview({ searchParams }: {
             <span>{item.product_name} · {item.quantity} total units</span>
           </li>)}</ul>
           {plan.bottle_charge_paise > 0 && <p>New glass bottles · {formatCheckoutAmount(plan.bottle_charge_paise)}</p>}
+          {plan.discount_paise > 0 ? <p>Referral discount · −{formatCheckoutAmount(plan.discount_paise)}</p> : null}
           <strong>{formatCheckoutAmount(plan.total_paise)}</strong>
         </section>
       </div>

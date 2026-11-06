@@ -98,11 +98,12 @@ export default async function SettingsPage({searchParams}: {searchParams: Promis
       </section>
       {referrals ? <section className={styles.panel}>
         <h2>Refer &amp; Earn</h2>
-        <p className={styles.hint}>Rewards unlock after the new customer’s first completed paid delivery on the monthly scheduled plan. Amounts apply to newly linked codes.</p>
+        <p className={styles.hint}>The invited customer gets a discount on their first scheduled month. The sender earns a discount after the invited customer’s first completed paid delivery. Amounts apply to newly linked codes.</p>
         {role === "admin" ? <FarmForm key={referrals.revision} action={updateReferralSettings} className={styles.actionForm}>
           <input type="hidden" name="revision" value={referrals.revision} />
           <label><input name="enabled" type="checkbox" defaultChecked={referrals.enabled} /> Accept new referrals</label>
-          <fieldset><legend>Rewards · INR</legend><div className={styles.priceGrid}>
+          <label><input name="discount_enabled" type="checkbox" defaultChecked={referrals.discount_enabled} /> Apply referral discounts at checkout</label>
+          <fieldset><legend>Discounts · INR</legend><div className={styles.priceGrid}>
             <label>Referring customer<span className={styles.priceInput}><span aria-hidden="true">₹</span>
               <input name="referrer" type="number" min="0" max="100000" step="0.01" required defaultValue={referrals.referrer_paise / 100} />
             </span></label>
