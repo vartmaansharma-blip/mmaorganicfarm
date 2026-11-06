@@ -164,6 +164,11 @@ try{
    const badge=anonymousPage.getByRole('complementary',{name:'Referral program'});
    await badge.getByRole('link',{name:'Refer & Earn'}).waitFor();
    assert.equal(await badge.evaluate(element => getComputedStyle(element).position),'fixed');
+   const bezel=badge.locator('[data-referral-bezel]');
+   assert.notEqual(await bezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await anonymousPage.emulateMedia({reducedMotion:'reduce'});
+   assert.equal(await bezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await anonymousPage.emulateMedia({reducedMotion:'no-preference'});
    const badgeBox=await badge.boundingBox();
    const whatsappBox=await anonymousPage.locator('.whatsapp-float').boundingBox();
    assert.ok(badgeBox.x > 190 && badgeBox.y + badgeBox.height < whatsappBox.y);
