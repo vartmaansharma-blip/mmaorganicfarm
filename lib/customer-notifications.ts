@@ -7,7 +7,7 @@ export const notificationFilters = [
 export type NotificationFilter = typeof notificationFilters[number]["key"];
 
 export const deliveryNoticeKinds = [
-  "delivery_ready", "out_for_delivery", "delivery_completed", "delivery_failed", "delivery_cancelled", "cancellation_update",
+  "delivery_ready", "out_for_delivery", "delivery_completed", "delivery_failed", "delivery_cancelled", "cancellation_update", "delivery_change",
 ];
 export const paymentNoticeKinds = ["payment_confirmed"];
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,6 +30,7 @@ export function notificationCategory(kind: string) {
 }
 
 export function customerNotificationDestination(item: CustomerNotification) {
+  if (item.kind === "delivery_change") return { href: "/account?section=today#today-delivery-title", label: "View today’s delivery" };
   if (item.kind === "cancellation_update") return { href: "/account?section=plans", label: "View plans" };
   if (paymentNoticeKinds.includes(item.kind) && item.order_id && uuidPattern.test(item.order_id)) {
     return { href: `/account?section=orders&order=${item.order_id}#selected-order`, label: "View order" };

@@ -124,7 +124,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
       if (url.pathname.startsWith("/rest/v1/rpc/")) {
         const fn = url.pathname.split("/").at(-1);
         if (
-          !/^(get_gps_workspace|gps_run_command|store_gps_route_proposal|get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|set_checkout_bottle_mode|set_checkout_batch_bottle_mode|get_farm_notifications|dismiss_farm_notifications|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|record_and_apply_driver_milk_skip|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
+          !/^(get_gps_workspace|gps_run_command|store_gps_route_proposal|get_driver_run_workspace|driver_operations_command|save_my_delivery_pin|get_dispatch_routing_readiness|move_farm_prepaid_quantity|order_product_prices|update_farm_prices|set_checkout_bottle_mode|set_checkout_batch_bottle_mode|get_farm_notifications|dismiss_farm_notifications|correct_manual_payment_details|my_welcome_back_offer|apply_my_checkout_code|cancel_my_delivery_plan|record_driver_customer_request|record_and_apply_driver_milk_skip|review_driver_customer_request|run_nightly_dispatch_preparation|retry_dispatch_preparation|record_delivery_outcome|record_current_delivery_outcome|request_today_delivery_change|review_today_delivery_change|get_driver_today_changes|resolve_delivery_exception|get_delivery_reconciliation|close_delivery_day|get_delivery_exceptions|get_customer_delivery_outcomes|prepare_daily_dispatch|generate_daily_deliveries|release_daily_dispatch|assign_daily_route_driver|move_delivery_visit|reopen_daily_dispatch|product_capacity_snapshot)$/.test(
             fn,
           ) &&
           !(manualOrders && manualOrderCommands.has(fn) && (service || fn === "refresh_customer_route")) &&
@@ -140,7 +140,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
           .map(([key], i) => `${name(key)} => $${i + 1}`)
           .join(",");
         result =
-          fn === "product_capacity_snapshot"
+          ["product_capacity_snapshot", "get_driver_today_changes"].includes(fn)
             ? (
                 await client.query(
                   `select * from public.${name(fn)}(${args})`,
@@ -151,7 +151,7 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
                 await client.query(
                   `select public.${name(fn)}(${args}) value`,
                   entries.map(([key, v]) =>
-                    (key === "p_once_items" || key === "p_plan_items" || key === "p_order" || key === "p_payload" || key === "p_quantities" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
+                    (key === "p_once_items" || key === "p_plan_items" || key === "p_order" || key === "p_payload" || key === "p_quantities" || key === "p_expected" && fn === "record_current_delivery_outcome" || key === "p_prices" || key === "p_rules" || key === "p_items") && v !== null
                       ? JSON.stringify(v)
                       : v,
                   ),
@@ -171,6 +171,8 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
             where.push(
               `t.${name(key)} ${({eq:"=",neq:"<>",gte:">=",lte:"<="})[op]} $${values.length}`,
             );
+          } else if (op === "is" && value === "null") {
+            where.push(`t.${name(key)} is null`);
           } else if (op === "in") {
             values.push(value.slice(1, -1).split(","));
             where.push(`t.${name(key)}::text=any($${values.length}::text[])`);
@@ -254,6 +256,9 @@ export async function startFixtureServer(config, { port = 55479, manualOrders = 
           result = result.length === 1 ? result[0] : null;
       }
       await client.query("commit");
+      if (req.method === "HEAD" && req.headers.prefer?.includes("count=exact") && Array.isArray(result)) {
+        res.setHeader("content-range", result.length ? `0-${result.length - 1}/${result.length}` : "*/0");
+      }
       send(200, result);
     } catch (error) {
       await client.query("rollback");

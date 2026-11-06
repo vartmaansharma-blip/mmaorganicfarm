@@ -674,7 +674,7 @@ function RunCard({
     </article>
   );
 }
-export function RunBoard({ initial }: { initial: RunWorkspace }) {
+export function RunBoard({ initial, profile = false }: { initial: RunWorkspace; profile?: boolean }) {
   const [data, setData] = useState(initial);
   const [section, setSection] = useState("runs");
   const driver = data.role === "driver";
@@ -704,6 +704,7 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
       true,
     );
   };
+  const operatingProfile = driver ? data.drivers.find(person => person.id === data.actor) : null;
   return (
     <main
       className={styles.page}
@@ -713,7 +714,7 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
       <section className={styles.welcome}>
         <div>
           <p>Delivery operations</p>
-          <h1>{driver ? "My delivery runs" : "Delivery runs"}</h1>
+          <h1>{profile ? "Driver profile" : driver ? "My delivery runs" : "Delivery runs"}</h1>
           <span>
             {driver
               ? "Check your load, start your run and record deliveries."
@@ -730,6 +731,18 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
           </small>
         </div>
       </section>
+      {driver ? <nav className={styles.tabs} aria-label="Driver workspace">
+        <Link href={`/farm/delivery-sheet?date=${data.date}`}>Route</Link>
+        <Link aria-current={profile ? undefined : "page"} href={`/farm/runs?date=${data.date}`}>Inventory</Link>
+        <Link href={`/farm/delivery-sheet?date=${data.date}&view=updates`}>Updates</Link>
+        <Link aria-current={profile ? "page" : undefined} href={`/farm/runs?date=${data.date}&view=profile`}>Profile</Link>
+      </nav> : null}
+      {profile ? <section className={styles.empty}>
+        <h2>{operatingProfile?.name ?? "Delivery staff"}</h2>
+        {operatingProfile?.phone ? <p>Work contact · {operatingProfile.phone}</p> : null}
+        <p>{operatingProfile?.available === true ? "Available for this service day" : operatingProfile?.available === false ? "Unavailable for this service day" : "Availability has not been recorded for this day."}</p>
+        <p>Contact the farm manager to update your driver details.</p>
+      </section> : <>
       <div className={styles.toolbar}>
         <form method="get" className={styles.dateForm}>
           <label>
@@ -1162,6 +1175,7 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
           </section>
         </section>
       ) : null}
+      </>}
     </main>
   );
 }

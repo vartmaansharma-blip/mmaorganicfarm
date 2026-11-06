@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { DeliveryDay, DeliveryItem, DeliverySnapshot, DeliveryState } from "@/lib/customer-delivery";
 import { formatDeliveryQuantity, productName } from "@/lib/delivery-calendar";
 import { SHOP_PRODUCTS } from "@/lib/shop-products";
+import { TodayDeliveryEditor } from "./today-delivery-editor";
 import { DeliveryScene } from "./delivery-scene";
 import styles from "./account.module.css";
 
@@ -177,10 +178,19 @@ export function TodayDelivery({ initial, editablePlanId }: { initial: DeliverySn
         <DeliveryScene state={state} />
         {progress > 0 ? <ol className={styles.deliverySteps} aria-label="Delivery stages">{["Scheduled", "Preparing", "On the way", "Delivered"].map((label, i) => <li key={label} data-reached={i < progress} aria-current={i === progress - 1 ? "step" : undefined}>{label}</li>)}</ol> : null}
         {snapshot.visits.length ? <div className={styles.visitList}>{snapshot.visits.map((visit, index) => <div className={styles.visit} key={visit.key}>
-          <div className={styles.visitHeading}><strong>{snapshot.visits.length > 1 ? `Delivery ${index + 1}` : "Your items"}</strong><span>{visitLabels[visit.state]}</span></div>
-          {visit.items.map((item, i) => <div className={styles.deliveryItem} key={`${item.product_key}:${i}`}><span>{productName(item.product_key)}</span><strong>{item.quantity} {item.unit}</strong>{item.fulfilled_quantity != null && ["attention", "delivered"].includes(state) ? <small>{Number(item.fulfilled_quantity)} delivered · {Math.max(0, item.quantity - Number(item.fulfilled_quantity))} {item.unit} outstanding</small> : null}</div>)}
+          <div className={styles.visitHeading}><strong>{snapshot.visits.length > 1 ? `Delivery ${index + 1}` : "Your items"}</strong>{snapshot.visits.length > 1 || visit.state !== state ? <span>{visitLabels[visit.state]}</span> : null}</div>
+          {visit.items.map((item, i) => {
+            const product = SHOP_PRODUCTS.find(product => product.id === item.product_key);
+            return <div className={styles.deliveryItem} key={`${item.product_key}:${i}`}>
+              {product ? <Image src={product.image} width={52} height={52} alt="" /> : <span aria-hidden="true" />}
+              <div><strong>{productName(item.product_key)}</strong><span>{formatDeliveryQuantity(item.quantity, item.unit)}</span></div>
+              {item.fulfilled_quantity != null && ["attention", "delivered"].includes(state) ? <small>{Number(item.fulfilled_quantity)} delivered · {Math.max(0, item.quantity - Number(item.fulfilled_quantity))} {item.unit} outstanding</small> : null}
+            </div>;
+          })}
           {visit.followUpApproved && visit.followUp ? <p className={styles.followUp}>Farm-approved follow-up: {formatCalendarDate(visit.followUp)}. It remains outstanding until delivered.</p> : visit.state === "attention" || visit.state === "skipped" ? <p className={styles.followUp}>Check delivery history for any recorded follow-up, or contact the farm for an update.</p> : null}
         </div>)}</div> : null}
+        {snapshot.management ? <TodayDeliveryEditor key={snapshot.date} management={snapshot.management} stale={Boolean(error)}
+          onSaved={() => void refresh(true)} /> : null}
         <div className={styles.deliveryBottom}>
           <span>{snapshot.completedAt ? `Confirmed at ${time(snapshot.completedAt)} IST` : snapshot.updatedAt ? `Farm update · ${time(snapshot.updatedAt)} IST` : `Schedule checked · ${time(snapshot.checkedAt)} IST`}</span>
           {state === "setup" ? <Link href="/account?section=orders&order_view=pending">Orders & payment →</Link> :
