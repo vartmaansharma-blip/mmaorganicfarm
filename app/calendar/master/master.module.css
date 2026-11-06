@@ -58,6 +58,30 @@
 .dateInputs span, .note { font-size: .78rem; color: var(--ui-muted); }
 .dateInputs input { padding-inline: 8px; min-width: 0; width: 100%; }
 .notice { padding: 12px; background: var(--ui-surface-raised); border-radius: 8px; }
+.saved { display: flex; align-items: center; gap: 10px; }
+.done { flex: none; color: var(--milk-marker); }
+.doneBezel, .doneCheck { transform-box: view-box; transform-origin: center; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .doneBezel { animation: done-turn 650ms cubic-bezier(.2,.75,.3,1); }
+  .doneCheck { animation: done-mark 400ms cubic-bezier(.2,.75,.3,1) 100ms both; }
+  .monthGrid a[aria-current] .markers { animation: markers-settle 280ms cubic-bezier(.2,.75,.3,1); }
+  .monthHeading a, .monthGrid a { transition: transform 140ms ease-out, background-color 160ms ease-out; }
+  .monthHeading a:active, .monthGrid a:active { transform: scale(.95); }
+}
+
+@keyframes done-turn {
+  from { transform: rotate(-300deg); }
+  to { transform: rotate(0); }
+}
+@keyframes done-mark {
+  from { transform: rotate(-16deg) scale(.82); stroke-dasharray: 1; stroke-dashoffset: 1; }
+  to { transform: none; stroke-dasharray: 1; stroke-dashoffset: 0; }
+}
+@keyframes markers-settle {
+  from { transform: translateY(2px) scale(.8); opacity: .45; }
+  to { transform: none; opacity: 1; }
+}
 
 :global(html[data-theme=dark]) .page {
   --milk-marker: #acd5b9;

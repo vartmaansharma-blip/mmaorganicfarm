@@ -131,7 +131,18 @@ export async function MasterCalendarView({ client, userId, params }: {
         <Link className={styles.paidLink} href="/calendar">Paid deliveries <span aria-hidden="true">↗</span></Link>
       </nav>
       {params.error ? <p role="alert" className={styles.notice}>{params.error}</p> : null}
-      {params.message ? <p role="status" className={styles.notice}>{params.message}</p> : null}
+      {params.message ? (
+        <p role="status" className={`${styles.notice} ${styles.saved}`} key={`${data?.revision}:${params.message}`}>
+          <svg className={styles.done} viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false">
+            <circle cx="16" cy="16" r="12" fill="currentColor" fillOpacity=".13" />
+            <path className={styles.doneBezel} data-done-bezel
+              d="M16 2.5a13.5 13.5 0 1 1-12.7 8.9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path className={styles.doneCheck} d="m10.5 16 3.5 3.5 7.5-7.5" pathLength="1" fill="none"
+              stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {params.message}
+        </p>
+      ) : null}
       {unavailable || !data || !selected || !defaults ? <section className={styles.editor}>
         <h2>Schedule preferences are unavailable</h2><p>You can still open paid deliveries and see your existing orders.</p>
       </section> : view === "weekly" ? <WeeklySchedule

@@ -381,6 +381,11 @@ try{
    await page.getByRole('region',{name:'Dates affected by this change'}).waitFor();
    await page.getByRole('button',{name:'Save recurring schedule'}).click();
    await page.getByRole('status').getByText('Weekly schedule saved.').waitFor();
+   const doneBezel=page.getByRole('status').locator('[data-done-bezel]');
+   assert.notEqual(await doneBezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await page.emulateMedia({reducedMotion:'reduce'});
+   assert.equal(await doneBezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await page.emulateMedia({reducedMotion:'no-preference'});
    const nextSaturday=Array.from({length:7},(_,index)=>plus(index+1))
     .find(day=>new Date(day+'T00:00:00Z').getUTCDay()===6);
    const monthlyPath=`${base}/calendar?view=monthly&month=${nextSaturday.slice(0,7)}&date=${nextSaturday}`;
