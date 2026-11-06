@@ -70,7 +70,7 @@ const stub=createServer(async(req,res)=>{
   routeRefreshes.push(JSON.parse(raw));
   res.end('null');return;
  }
- if(!['GET','HEAD'].includes(req.method) && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
+ if(!['GET','HEAD'].includes(req.method) && !['/rest/v1/rpc/get_customer_delivery_outcomes','/rest/v1/rpc/get_today_route_spare'].includes(url.pathname)){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
  if(url.pathname.endsWith("/farm_catalog_prices"))data={revision:"00000000-0000-4000-8000-000000000099",prices:{milk:6200,paneer:20000,ghee:37500,bottle:1000}};
