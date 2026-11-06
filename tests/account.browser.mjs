@@ -268,6 +268,45 @@ try{
    await page.keyboard.press('Escape');
    await preview.waitFor({state:'hidden'});
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Notifications, 21 unread');
+   const readBell=page.getByRole('button',{name:'Notifications, 21 unread'});
+   await readBell.click();
+   await preview.getByRole('heading',{name:'Payment confirmed',exact:true}).waitFor();
+   const swipePreview = (x, y) => preview.getByRole('heading',{name:'Notifications',exact:true}).evaluate((heading, [dx,dy]) => {
+     const start = {clientX: 24, clientY: 40};
+     for (const [type, touches, changedTouches] of [
+       ['touchstart', [start], [start]],
+       ['touchend', [], [{clientX:start.clientX+dx,clientY:start.clientY+dy}]],
+     ]) {
+       const event = new Event(type, { bubbles:true, cancelable:true });
+       Object.defineProperties(event, { touches:{ value:touches }, changedTouches:{ value:changedTouches } });
+       heading.dispatchEvent(event);
+     }
+   }, [x,y]);
+   await swipePreview(105,25);
+   assert.ok(await preview.isVisible(),'horizontal movement keeps the notification panel open');
+   await swipePreview(4,110);
+   await preview.waitFor({state:'hidden'});
+   await readBell.click();
+   await preview.getByRole('heading',{name:'Payment confirmed',exact:true}).waitFor();
+   await page.mouse.click(5,5);
+   await preview.waitFor({state:'hidden'});
+   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Notifications, 21 unread');
+   assert.equal(await page.getByRole('button',{name:/Open notification:/}).count(),0,'existing unread items never pop up on page entry');
+   notices.unshift({ ...notices[0], id:'0ecfc66a-e2e0-439c-9bb3-95d5af93b602', kind:'delivery_ready',
+     title:'Delivery quantity updated', message:'Your prepaid milk was moved to the next delivery.', read_at:null,
+     delivery_id:null, order_id:null, created_at:new Date(Math.max(Date.now(),Date.parse(notices[0].created_at)+60_000)).toISOString() });
+   await page.evaluate(()=>window.dispatchEvent(new Event('mma:notifications-updated')));
+   const banner = page.getByRole('button',{name:'Open notification: Delivery quantity updated'});
+   await banner.waitFor();
+   assert.equal(await page.getByRole('button',{name:/Open notification:/}).count(),1);
+   await page.screenshot({path:path.join(output,`${engine}-390-notification-banner.png`),animations:"disabled"});
+   await banner.click();
+   await preview.getByRole('heading',{name:'Delivery quantity updated',exact:true}).waitFor();
+   await preview.getByRole('button',{name:'Close notifications'}).click();
+   await page.evaluate(()=>window.dispatchEvent(new Event('mma:notifications-updated')));
+   await preview.waitFor({state:'hidden'});
+   assert.equal(await banner.count(),0,'the same update does not reappear');
+   notices.shift();
    await page.goto(`${base}/account/notifications`);
    await page.getByRole('heading',{name:'Notification Centre',exact:true}).waitFor();
    await page.getByRole('heading',{name:'Payment confirmed',exact:true}).waitFor();
