@@ -1,14 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import { formatCalendarDate, productName } from "@/lib/delivery-calendar";
+import { addCalendarDays, formatCalendarDate, productName, weekdayFromYmd } from "@/lib/delivery-calendar";
 import {
   resolveMasterDelivery, scheduleProducts, scheduleWeekdays,
   type DateException, type PatternVersion, type WeeklyPattern, type ProductQuantities,
 } from "@/lib/master-delivery-schedule";
 import { saveMasterSchedule } from "./actions";
 import styles from "./master.module.css";
+
+export function CalendarDates({ children, weekly }: { children: ReactNode; weekly: boolean }) {
+  return <div className={`${styles.monthGrid} ${weekly ? styles.weekGrid : ""}`}
+    role="group" aria-label="Delivery dates"
+    onKeyDown={event => {
+      if (!(event.target instanceof HTMLAnchorElement) || !event.target.dataset.date) return;
+      const date = event.target.dataset.date;
+      const offsets: Record<string, number> = {
+        ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7,
+        Home: 1 - weekdayFromYmd(date), End: 7 - weekdayFromYmd(date),
+      };
+      const offset = offsets[event.key];
+      if (offset === undefined) return;
+      event.preventDefault();
+      event.currentTarget.querySelector<HTMLAnchorElement>(`a[data-date="${addCalendarDays(date, offset)}"]`)?.focus();
+    }}>{children}</div>;
+}
 
 function Submit({ children, disabled = false }: { children: string; disabled?: boolean }) {
   const { pending } = useFormStatus();
@@ -40,9 +57,9 @@ function BulkQuantity({ label, editing, edit, apply, children }: {
   /> : <button className={styles.bulkTarget} type="button" aria-label={`Edit all ${label} quantities`} onClick={edit}>{children}</button>;
 }
 
-export function WeeklySchedule({ pattern, from, dates, versions, exceptions, locked, revision, month }: {
+export function WeeklySchedule({ pattern, from, dates, versions, exceptions, locked, revision, month, active }: {
   pattern: WeeklyPattern; from: string; dates: string[]; versions: PatternVersion[];
-  exceptions: DateException[]; locked: string[]; revision: number; month: string;
+  exceptions: DateException[]; locked: string[]; revision: number; month: string; active: string;
 }) {
   const [week, setWeek] = useState(pattern);
   const [target, setTarget] = useState<string | null>(null);
@@ -69,22 +86,27 @@ export function WeeklySchedule({ pattern, from, dates, versions, exceptions, loc
   }
 
   return <form action={saveMasterSchedule} className={styles.editor}>
-    <h2>Change future recurring deliveries</h2>
-    <p>Starts {formatCalendarDate(from)}. Enter 1–5 litres of milk or packs per delivery. Use 0 to skip.</p>
+    <div className={styles.patternHeading}>
+      <h2>Weekly pattern</h2>
+      <p>Repeats from {formatCalendarDate(from)}. 1–5 litres or packs. 0 skips.</p>
+    </div>
     <input type="hidden" name="view" value="weekly" />
     <input type="hidden" name="month" value={month} />
+    <input type="hidden" name="date" value={active} />
     <input type="hidden" name="revision" value={revision} />
     <input type="hidden" name="quantities" value={JSON.stringify(week)} />
     <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="Weekly quantities">
       <table className={styles.matrix} role="table">
-        <thead><tr><th scope="col">Product</th>{scheduleWeekdays.map((day, index) =>
+        <thead><tr><th scope="col">Item</th>{scheduleWeekdays.map((day, index) =>
           <th key={day} scope="col"><BulkQuantity label={day} editing={target === day}
             edit={() => setTarget(day)} apply={amount => applyBulk(amount, undefined, index)}>
             <abbr title={day}>{day.slice(0, 3)}</abbr>
           </BulkQuantity></th>)}</tr></thead>
         <tbody>{scheduleProducts.map(id => <tr key={id}>
           <th scope="row"><BulkQuantity label={productName(id)} editing={target === id}
-            edit={() => setTarget(id)} apply={amount => applyBulk(amount, id)}>{productName(id)}</BulkQuantity></th>
+            edit={() => setTarget(id)} apply={amount => applyBulk(amount, id)}>
+              {id === "milk" ? "Milk" : id === "paneer" ? "Paneer" : "Ghee"}
+            </BulkQuantity></th>
           {scheduleWeekdays.map((day, index) => <td key={day}>
             <input type="number" inputMode="numeric" min={0} max={5} step={1} required
               aria-label={`${productName(id)}, ${day}, ${id === "milk" ? "litres" : "packs"}`}
@@ -109,24 +131,25 @@ export function WeeklySchedule({ pattern, from, dates, versions, exceptions, loc
   </form>;
 }
 
-export function DateSchedule({ date, defaults, overrides, revision, month }: {
+export function DateSchedule({ date, defaults, overrides, revision, month, view }: {
   date: string; defaults: ProductQuantities; overrides: Partial<ProductQuantities>;
-  revision: number; month: string;
+  revision: number; month: string; view: "weekly" | "monthly";
 }) {
   const initial = { milk: overrides.milk ?? null, paneer: overrides.paneer ?? null, ghee: overrides.ghee ?? null };
   const [draft, setDraft] = useState(initial);
   return <form action={saveMasterSchedule} className={styles.dateEditor}>
-    <h3>Change this date only</h3>
-    <p>Enter 1–5 litres or packs. Use 0 to skip or leave empty to use the weekly quantity.</p>
-    <input type="hidden" name="view" value="monthly" />
+    <input type="hidden" name="view" value={view} />
+    <input type="hidden" name="scope" value="date" />
     <input type="hidden" name="date" value={date} />
     <input type="hidden" name="month" value={month} />
     <input type="hidden" name="revision" value={revision} />
     <input type="hidden" name="quantities" value={JSON.stringify(draft)} />
     <div className={styles.dateInputs}>{scheduleProducts.map(id => <label key={id}>
-      {productName(id)}<span>Weekly {defaults[id]} {id === "milk" ? "L" : "packs"}</span>
+      {productName(id)}
+      <span>Weekly {defaults[id]} {id === "milk" ? "L" : "packs"}</span>
       <input type="number" inputMode="numeric" min={0} max={5} step={1} value={draft[id] ?? ""}
         placeholder={String(defaults[id])}
+        onFocus={event => event.currentTarget.select()}
         onChange={event => {
           const value = event.currentTarget.value === "" ? null : event.currentTarget.valueAsNumber;
           if (value === null || (Number.isInteger(value) && value >= 0 && value <= 5)) {
@@ -134,9 +157,10 @@ export function DateSchedule({ date, defaults, overrides, revision, month }: {
           }
         }} />
     </label>)}</div>
+    <p className={styles.dateHint}>1–5 litres or packs · 0 skips · blank uses weekly</p>
     <div className={styles.actions}>
       <button className={styles.secondary} type="button" onClick={() => setDraft({ milk: 0, paneer: 0, ghee: 0 })}>Skip this date</button>
-      <button className={styles.secondary} type="button" onClick={() => setDraft({ milk: null, paneer: null, ghee: null })}>Restore weekly quantities</button>
+      <button className={styles.secondary} type="button" aria-label="Restore weekly quantities" onClick={() => setDraft({ milk: null, paneer: null, ghee: null })}>Reset</button>
       <Submit disabled={JSON.stringify(draft) === JSON.stringify(initial)}>Save date</Submit>
     </div>
   </form>;

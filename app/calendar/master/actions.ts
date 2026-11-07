@@ -1,11 +1,13 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { validShopDate } from "@/lib/shop-draft";
 import { createClient } from "@/lib/supabase/server";
 
 export async function saveMasterSchedule(form: FormData) {
   const mode = form.get("view") === "weekly" ? "weekly" : "monthly";
+  const editDate = mode === "monthly" || form.get("scope") === "date";
   const month = String(form.get("month") ?? "");
   const date = String(form.get("date") ?? "");
   const query = new URLSearchParams({ view: mode });
@@ -25,11 +27,11 @@ export async function saveMasterSchedule(form: FormData) {
   } catch {
     redirect(`${url}&error=Check+your+quantities+and+try+again.`);
   }
-  if (!Number.isSafeInteger(revision) || revision < 0 || (mode === "monthly" && !validShopDate(date)))
+  if (!Number.isSafeInteger(revision) || revision < 0 || (editDate && !validShopDate(date)))
     redirect(`${url}&error=This+change+could+not+be+saved.`);
 
   const { error } = await client.rpc("save_master_delivery_schedule", {
-    p_revision: revision, p_date: mode === "weekly" ? null : date, p_quantities: quantities,
+    p_revision: revision, p_date: editDate ? date : null, p_quantities: quantities,
   });
   if (error) {
     const message = error.message.startsWith("Your schedule changed")
@@ -39,5 +41,6 @@ export async function saveMasterSchedule(form: FormData) {
         : "Your schedule could not be saved. Check the date and quantities.";
     redirect(`${url}&error=${encodeURIComponent(message)}`);
   }
-  redirect(`${url}&message=${mode === "weekly" ? "Weekly+schedule+saved." : "This+date+was+saved."}`);
+  revalidatePath("/calendar");
+  redirect(`${url}&message=${editDate ? "This+date+was+saved." : "Weekly+schedule+saved."}`);
 }

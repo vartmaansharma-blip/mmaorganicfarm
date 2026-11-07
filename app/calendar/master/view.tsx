@@ -10,7 +10,7 @@ import { firstMonthEnds } from "@/lib/delivery-pricing";
 import { masterMonthRoutines, serializeRoutines } from "@/lib/monthly-schedule";
 import { validShopDate } from "@/lib/shop-draft";
 import { PageNavigationControls } from "@/app/components/page-navigation-controls";
-import { DateSchedule, WeeklySchedule } from "./editor";
+import { CalendarDates, DateSchedule, WeeklySchedule } from "./editor";
 import styles from "./master.module.css";
 
 type MasterData = { revision: number; versions: PatternVersion[]; exceptions: DateException[] };
@@ -33,28 +33,10 @@ function totalItems(items: { product_key: string; quantity: number | string }[])
   return quantities;
 }
 
-export async function MasterCalendarView({ client, userId, params }: {
-  client: SupabaseClient;
-  userId: string;
-  params: { view?: string; month?: string; date?: string; message?: string; error?: string };
-}) {
-  const minimum = nextDeliveryDateInIndia();
-  const currentMonth = minimum.slice(0, 7);
-  const earliest = monthStep(currentMonth, -11);
-  const latest = monthStep(currentMonth, 11);
-  const month = typeof params.month === "string" && validShopDate(`${params.month}-01`)
-    && params.month >= earliest && params.month <= latest ? params.month : currentMonth;
-  const view = params.view === "weekly" ? "weekly" : "monthly";
-  const dates = view === "weekly"
-    ? Array.from({ length: 14 }, (_, index) => addCalendarDays(minimum, index))
-    : calendarMonthDays(month);
-  const from = dates[0];
-  const through = view === "weekly" ? addCalendarDays(firstMonthEnds(minimum), -1) : dates.at(-1)!;
-  const href = (mode: string, targetMonth: string, date?: string) =>
-    `/calendar?view=${mode}&month=${targetMonth}${date ? `&date=${date}` : ""}`;
-  const active = params.date && dates.includes(params.date) ? params.date : dates.includes(minimum) ? minimum : from;
-  const monthAnchor = active.slice(0, 7) === month ? active : `${month}-01`;
+const shortDate = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+const monthLabel = new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric", timeZone: "UTC" });
 
+async function readCalendarRange(client: SupabaseClient, userId: string, from: string, through: string) {
   const [prefs, plans, daily, oneTime] = await Promise.all([
     client.rpc("read_master_delivery_schedule", { p_from: from, p_through: through }),
     client.from("delivery_plans")
@@ -72,7 +54,7 @@ export async function MasterCalendarView({ client, userId, params }: {
   const unavailable = !data || plans.error || daily.error || oneTime.error;
   const snapshots = new Map<string, DeliverySnapshot>();
   const locked = new Set<string>();
-  if (!unavailable) for (const date of dates) {
+  if (!unavailable) for (let date = from; date <= through; date = addCalendarDays(date, 1)) {
     const paid = (plans.data ?? []).filter(plan => plan.billing_model === "calendar_month"
       && date >= plan.start_date && date < plan.period_end_exclusive);
     const legacy = (plans.data ?? []).some(plan => plan.billing_model === "milk_credits"
@@ -100,19 +82,85 @@ export async function MasterCalendarView({ client, userId, params }: {
     snapshots.set(date, { date, state, quantities: totalItems([...unprepared, ...unpreparedOnce, ...prepared]) });
   }
   const hasCurrentPlan = plans.data?.some(plan => plan.status === "active" || plan.status === "paused");
+  return { data, unavailable, hasCurrentPlan, snapshots, locked };
+}
+
+export async function MasterCalendarView({ client, userId, params }: {
+  client: SupabaseClient;
+  userId: string;
+  params: { view?: string; month?: string; date?: string; message?: string; error?: string };
+}) {
+  const minimum = nextDeliveryDateInIndia();
+  const currentMonth = minimum.slice(0, 7);
+  const earliest = monthStep(currentMonth, -11);
+  const latest = monthStep(currentMonth, 11);
+  const month = typeof params.month === "string" && validShopDate(`${params.month}-01`)
+    && params.month >= earliest && params.month <= latest ? params.month : currentMonth;
+  const view = params.view === "weekly" ? "weekly" : "monthly";
+  const dates = view === "weekly"
+    ? Array.from({ length: 14 }, (_, index) => addCalendarDays(minimum, index))
+    : calendarMonthDays(month);
+  const from = dates[0];
+  const through = view === "weekly" ? addCalendarDays(firstMonthEnds(minimum), -1) : dates.at(-1)!;
+  const href = (mode: string, targetMonth: string, date?: string) =>
+    `/calendar?view=${mode}&month=${targetMonth}${date ? `&date=${date}` : ""}`;
+  const active = typeof params.date === "string" && validShopDate(params.date) && params.date.slice(0, 7) === month
+    ? params.date : month === currentMonth ? minimum : `${month}-01`;
+  const weekStart = addCalendarDays(active, 1 - weekdayFromYmd(active));
+  const weekEnd = addCalendarDays(weekStart, 6);
+  const weekDates = Array.from({ length: 7 }, (_, index) => addCalendarDays(weekStart, index));
+
+  const [primary, weekRange] = await Promise.all([
+    readCalendarRange(client, userId, from, through),
+    view === "weekly" && (weekStart < from || weekEnd > through)
+      ? readCalendarRange(client, userId, weekStart, weekEnd)
+      : null,
+  ]);
+  const { data, unavailable, hasCurrentPlan, locked } = primary;
+  const displayed = weekRange ?? primary;
   const purchaseRules = view === "weekly" && !unavailable && data && !hasCurrentPlan
     ? masterMonthRoutines(minimum, data.versions, data.exceptions) : null;
   const purchaseUrl = purchaseRules ? `/order?${new URLSearchParams({
     purchase: "plan", start: minimum, bottle: purchaseRules.some(rule => rule.id === "milk") ? "return" : "none",
     routine: serializeRoutines(purchaseRules, minimum),
   })}` : null;
-  const selected = data ? resolveMasterDelivery(active, data.versions, data.exceptions, snapshots.get(active)) : null;
-  const defaultPattern = data && activeWeeklyPattern(data.versions, active);
+  const visibleData = displayed.data;
+  const selected = visibleData ? resolveMasterDelivery(active, visibleData.versions, visibleData.exceptions, displayed.snapshots.get(active)) : null;
+  const defaultPattern = visibleData && activeWeeklyPattern(visibleData.versions, active);
   const defaults = defaultPattern ? {
     milk: weeklyQuantityOnDate(defaultPattern.milk, active),
     paneer: weeklyQuantityOnDate(defaultPattern.paneer, active),
     ghee: weeklyQuantityOnDate(defaultPattern.ghee, active),
   } : null;
+  const dateLocked = displayed.locked.has(active);
+  const editable = active >= minimum && !dateLocked;
+  const dateEditor = selected && defaults && visibleData && !displayed.unavailable ? (
+    <div className={styles.daySummary}>
+      <div className={styles.dayHeading}>
+        <h3>{formatCalendarDate(active)}</h3>
+        <p>{editable ? "Edit this date only" : statuses[selected.state]}</p>
+      </div>
+      {editable ? <DateSchedule key={`${active}:${visibleData.revision}`}
+        date={active} defaults={defaults} overrides={selected.overrides} month={month} view={view} revision={visibleData.revision}
+      /> : scheduleProducts.filter(id => selected.quantities[id] > 0).map(id =>
+        <span key={id}>{productName(id)} <strong>{selected.quantities[id]} {id === "milk" ? "L" : "packs"}</strong></span>)}
+      {dateLocked ? <Link className={styles.paidLink} href={`/calendar?date=${active}`}>Open paid delivery controls ↗</Link> : null}
+    </div>
+  ) : null;
+  const dateLinks = (days: string[], showWeekday: boolean) => visibleData && days.map(date => {
+    const day = resolveMasterDelivery(date, visibleData.versions, visibleData.exceptions, displayed.snapshots.get(date));
+    const products = scheduleProducts.filter(id => day.quantities[id] > 0);
+    const exception = Object.keys(day.overrides).length > 0;
+    return <Link key={date} href={href(view, date.slice(0, 7), date)} scroll={false} prefetch={false} data-date={date}
+      aria-label={`${formatCalendarDate(date)}${products.length ? `, ${products.map(id => `${productName(id)} ${day.quantities[id]}`).join(", ")}` : ", no products"}${exception ? ", date exception" : ""}`}
+      aria-current={date === active ? "date" : undefined} data-state={day.state}>
+      {showWeekday ? <span className={styles.dayName}>{scheduleWeekdays[weekdayFromYmd(date) - 1].slice(0, 3)}</span> : null}
+      <strong>{Number(date.slice(-2))}</strong>
+      <span className={styles.markers} aria-hidden="true">{products.map(id => <i key={id} data-product={id} />)}{exception ? <b>✦</b> : null}</span>
+    </Link>;
+  });
+  const previousWeek = addCalendarDays(active, -7);
+  const nextWeek = addCalendarDays(active, 7);
 
   return <main className={styles.page}>
     <header className={styles.header}>
@@ -122,12 +170,13 @@ export async function MasterCalendarView({ client, userId, params }: {
     <div className={styles.content}>
       <div className={styles.title}>
         <p>MY M’MA · DELIVERIES</p>
-        <h1>Master Delivery Calendar</h1>
-        <p>Your regular week and your date changes, together.</p>
+        <h1>Delivery calendar</h1>
       </div>
       <nav className={styles.views} aria-label="Schedule views">
-        <Link href={href("weekly", currentMonth)} aria-current={view === "weekly" ? "page" : undefined}>Weekly Schedule</Link>
-        <Link href={href("monthly", month, monthAnchor)} aria-current={view === "monthly" ? "page" : undefined}>Monthly Calendar</Link>
+        <div className={styles.segmented}>
+          <Link href={href("weekly", month, active)} aria-label="Weekly Schedule" aria-current={view === "weekly" ? "page" : undefined} scroll={false}>Week</Link>
+          <Link href={href("monthly", month, active)} aria-label="Monthly Calendar" aria-current={view === "monthly" ? "page" : undefined} scroll={false}>Month</Link>
+        </div>
         <Link className={styles.paidLink} href="/calendar">Paid deliveries <span aria-hidden="true">↗</span></Link>
       </nav>
       {params.error ? <p role="alert" className={styles.notice}>{params.error}</p> : null}
@@ -143,45 +192,38 @@ export async function MasterCalendarView({ client, userId, params }: {
           {params.message}
         </p>
       ) : null}
-      {unavailable || !data || !selected || !defaults ? <section className={styles.editor}>
+      {unavailable || displayed.unavailable || !data || !selected || !defaults ? <section className={styles.editor}>
         <h2>Schedule preferences are unavailable</h2><p>You can still open paid deliveries and see your existing orders.</p>
-      </section> : view === "weekly" ? <WeeklySchedule
-        key={data.revision} pattern={activeWeeklyPattern(data.versions, minimum)} from={minimum} dates={dates}
-        versions={data.versions} exceptions={data.exceptions} locked={[...locked]} revision={data.revision} month={month}
-      /> : <>
-        <section className={styles.editor} aria-label="Monthly Calendar">
+      </section> : <>
+        <section className={styles.editor} aria-label={view === "weekly" ? "Delivery week" : "Monthly Calendar"}>
           <div className={styles.monthHeading}>
-            {month > earliest ? <Link aria-label="Previous month" href={href("monthly", monthStep(month, -1))}>‹</Link> : <span />}
-            <h2>{new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${from}T00:00:00Z`))}</h2>
-            {month < latest ? <Link aria-label="Next month" href={href("monthly", monthStep(month, 1))}>›</Link> : <span />}
+            {view === "weekly" ? (
+              previousWeek.slice(0, 7) >= earliest
+                ? <Link aria-label="Previous week" href={href("weekly", previousWeek.slice(0, 7), previousWeek)} scroll={false}>‹</Link> : <span />
+            ) : month > earliest
+              ? <Link aria-label="Previous month" href={href("monthly", monthStep(month, -1))} scroll={false}>‹</Link> : <span />}
+            <h2 aria-live="polite">{view === "weekly"
+              ? `${shortDate.format(new Date(`${weekStart}T00:00:00Z`))} – ${shortDate.format(new Date(`${weekEnd}T00:00:00Z`))}`
+              : monthLabel.format(new Date(`${from}T00:00:00Z`))}</h2>
+            {view === "weekly" ? (
+              nextWeek.slice(0, 7) <= latest
+                ? <Link aria-label="Next week" href={href("weekly", nextWeek.slice(0, 7), nextWeek)} scroll={false}>›</Link> : <span />
+            ) : month < latest
+              ? <Link aria-label="Next month" href={href("monthly", monthStep(month, 1))} scroll={false}>›</Link> : <span />}
           </div>
-          <div className={styles.monthGrid}>
-            {scheduleWeekdays.map(day => <abbr title={day} key={day}>{day.slice(0, 3)}</abbr>)}
-            {Array.from({ length: weekdayFromYmd(from) - 1 }, (_, index) => <span aria-hidden="true" key={`pad-${index}`} />)}
-            {dates.map(date => {
-              const day = resolveMasterDelivery(date, data.versions, data.exceptions, snapshots.get(date));
-              const products = scheduleProducts.filter(id => day.quantities[id] > 0);
-              const exception = Object.keys(day.overrides).length > 0;
-              return <Link key={date} href={href("monthly", month, date)}
-                aria-label={`${formatCalendarDate(date)}${products.length ? `, ${products.map(id => `${productName(id)} ${day.quantities[id]}`).join(", ")}` : ", no products"}${exception ? ", date exception" : ""}`}
-                aria-current={date === active ? "date" : undefined} data-state={day.state}>
-                <strong>{Number(date.slice(-2))}</strong>
-                <span className={styles.markers} aria-hidden="true">{products.map(id => <i key={id} data-product={id} />)}{exception ? <b>✦</b> : null}</span>
-              </Link>;
-            })}
-          </div>
-          <div className={styles.legend}><span>● Milk</span><span>● Paneer</span><span>● Ghee</span><span>✦ Date exception</span></div>
-          <div className={styles.daySummary}>
-            <h3>{formatCalendarDate(active)}</h3>
-            <p>{statuses[selected.state]}</p>
-            {active < minimum || locked.has(active) ? scheduleProducts.filter(id => selected.quantities[id] > 0).map(id =>
-              <span key={id}>{productName(id)} <strong>{selected.quantities[id]} {id === "milk" ? "L" : "packs"}</strong></span>) : null}
-          </div>
-          {active >= minimum && !locked.has(active) ? <DateSchedule key={`${active}:${data.revision}`}
-            date={active} defaults={defaults} overrides={selected.overrides} month={month} revision={data.revision}
-          /> : null}
+          <CalendarDates weekly={view === "weekly"}>
+            {view === "monthly" ? <>
+              {scheduleWeekdays.map(day => <abbr title={day} key={day}>{day.slice(0, 3)}</abbr>)}
+              {Array.from({ length: weekdayFromYmd(from) - 1 }, (_, index) => <span aria-hidden="true" key={`pad-${index}`} />)}
+            </> : null}
+            {dateLinks(view === "weekly" ? weekDates : dates, view === "weekly")}
+          </CalendarDates>
+          {dateEditor}
         </section>
-        {locked.has(active) ? <Link className={styles.secondary} href={`/calendar?date=${active}`}>Open paid delivery controls</Link> : null}
+        {view === "weekly" ? <WeeklySchedule
+          key={data.revision} pattern={activeWeeklyPattern(data.versions, minimum)} from={minimum} dates={dates}
+          versions={data.versions} exceptions={data.exceptions} locked={[...locked]} revision={data.revision} month={month} active={active}
+        /> : null}
       </>}
       {purchaseUrl ? <div className={styles.purchase}>
         <p>Review the dates and prices for one prepaid month.</p>
