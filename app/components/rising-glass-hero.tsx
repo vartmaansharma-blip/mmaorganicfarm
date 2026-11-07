@@ -6,6 +6,8 @@ import { useEffect, useId, useRef } from "react";
 import { advanceFilm, clamp01, FILM_CUES, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroCamera, macroPresentation, MACRO_VIDEO_DURATION_MS, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
 import { createMacroVideo } from "@/lib/hero-macro-video";
 import { condensationFrame, GLASS_BEADS } from "@/lib/hero-condensation";
+import { HERO_FILL_VIEWPORTS, LATTE_VIEWPORTS, latteFrame, latteProgress } from "@/lib/hero-latte";
+import { LatteArt } from "./latte-art";
 import styles from "./rising-glass-hero.module.css";
 
 export function RisingGlassHero() {
@@ -43,7 +45,9 @@ export function RisingGlassHero() {
       const rect = root.getBoundingClientRect();
       const header = parseFloat(getComputedStyle(panel).top) || 0;
       const y = hold ? hold.y : window.scrollY;
-      return { rect, header, y, trigger: y + rect.top - header + Math.max(1, rect.height - panel.offsetHeight) };
+      const fillDistance = Math.max(1, rect.height - panel.offsetHeight) * HERO_FILL_VIEWPORTS / (HERO_FILL_VIEWPORTS + LATTE_VIEWPORTS);
+      const revealDistance = Math.max(1, rect.height - panel.offsetHeight - fillDistance);
+      return { rect, header, y, fillDistance, revealDistance, trigger: y + rect.top - header + fillDistance };
     };
     const saveStyles = (element: HTMLElement, properties: string[]) => {
       const saved = properties.map(key => [key, element.style.getPropertyValue(key), element.style.getPropertyPriority(key)]);
@@ -99,7 +103,13 @@ export function RisingGlassHero() {
       frame = 0;
       if (disposed || document.hidden) return;
       let g = geometry();
-      const scroll = heroProgress(g.rect.top, g.rect.height, panel.offsetHeight, g.header);
+      // Once the finished composition is off screen, native scroll needs no
+      // mask, camera or condensation work. Re-entry schedules a fresh paint.
+      if (initialized && film.state === "COMPLETED" && root.dataset.latteProgress === "1.000" && g.rect.bottom < g.header && !motion.matches) {
+        clearChrome();
+        return;
+      }
+      const scroll = heroProgress(g.rect.top, panel.offsetHeight + g.fillDistance, panel.offsetHeight, g.header);
       if (!initialized) {
         // Restored/anchored content must never be dragged back into an introduction.
         if (location.hash && location.hash !== "#home") anchorNavigation = true;
@@ -153,13 +163,18 @@ export function RisingGlassHero() {
         }
       }
       g = geometry();
-      const fillScroll = heroProgress(g.rect.top, g.rect.height, panel.offsetHeight, g.header);
+      const fillScroll = heroProgress(g.rect.top, panel.offsetHeight + g.fillDistance, panel.offsetHeight, g.header);
       const fill = film.state === "FILLING" && !hold ? milkFill(fillScroll, fillPeak) : 1;
       fillPeak = fill;
       const values = filmFrame(film.time);
       // Failed imagery never reveals a blank camera layer.
-      if (assets !== "ready" || motion.matches || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, cameraProgress: 0, cameraX: 0, cameraY: 0, cameraPush: 0, top: 0, macro: 0, macroOpacity: 0, macroDrift: 0, overheadSettle: 1 });
-      const progress = film.state === "FILLING" ? fill * .5 : .5 + .5 * film.time / FILM_DURATION_MS;
+      if (assets !== "ready" || staticFallback) Object.assign(values, { coffee: assets === "ready" && !staticFallback ? 1 : 0, cameraProgress: 0, cameraX: 0, cameraY: 0, cameraPush: 0, top: 0, macro: 0, macroOpacity: 0, macroDrift: 0, overheadSettle: 1 });
+      if (motion.matches && assets === "ready") Object.assign(values, { top: 1, overheadSettle: 1, macro: 0, macroOpacity: 0 });
+      const latte = motion.matches ? 1 : film.state === "COMPLETED" && assets === "ready" && !staticFallback ? latteProgress(g.header - g.rect.top, g.fillDistance, g.revealDistance) : 0;
+      const strokes = latteFrame(latte);
+      for (const [part, amount] of Object.entries(strokes)) root.style.setProperty(`--latte-${part}`, String(amount));
+      root.dataset.latteProgress = latte.toFixed(3);
+      const progress = film.state === "FILLING" ? fill * .25 : playing(film) ? .25 + .25 * film.time / FILM_DURATION_MS : .5 + .5 * latte;
       const liquid = liquidGeometry(fill);
       if (!macroOrigin || (values.macro === 0 && values.top === 0)) macroOrigin = cameraPhoto.getBoundingClientRect();
       const framing = macroCamera(values.cameraPush, values.top, values.overheadSettle, window.innerWidth, window.innerHeight, macroOrigin, glassFrame.getBoundingClientRect());
@@ -219,7 +234,7 @@ export function RisingGlassHero() {
       const chromeOpacity = 1 - Math.min(1, values.cameraPush / .45) * (1 - textReturn * textReturn * (3 - 2 * textReturn));
       html.style.setProperty("--hero-chrome-opacity", String(chromeOpacity));
       if (immersiveExit.current) immersiveExit.current.tabIndex = curtain.opacity > .001 ? 0 : -1;
-      const description = motion.matches ? "Introduction complete. Scroll to explore the farm." : hold && !playing(film) ? "Milk full. Preparing the introduction." : film.state === "FILLING" ? `Milk ${Math.round(fill * 100)}% full. Scroll to fill; a short film follows.` : film.state === "COMPLETED" ? "Introduction complete. Scroll to explore the farm." : "Introduction playing automatically. Scroll to explore afterward, or skip at any time.";
+      const description = motion.matches ? "Introduction complete. Scroll to explore the farm." : hold && !playing(film) ? "Milk full. Preparing the introduction." : film.state === "FILLING" ? `Milk ${Math.round(fill * 100)}% full. Scroll to fill; a short film follows.` : film.state === "COMPLETED" ? `Latte art ${Math.round(latte * 100)}% formed. Scroll to form the heart; scroll up to reverse.` : "Introduction playing automatically. Scroll to explore afterward, or skip at any time.";
       storyProgress.current?.setAttribute("aria-valuenow", String(Math.round(clamp01(progress) * 100)));
       storyProgress.current?.setAttribute("aria-valuetext", description);
       if (playing(film) || hold || wetVisible) schedule();
@@ -337,7 +352,7 @@ export function RisingGlassHero() {
   }, []);
 
   return (
-    <section ref={section} className={styles.sequence} id="home" aria-labelledby="hero-heading">
+    <section ref={section} className={styles.sequence} style={{ "--fill-runway": `${HERO_FILL_VIEWPORTS * 100}svh`, "--latte-runway": `${LATTE_VIEWPORTS * 100}svh` } as React.CSSProperties} id="home" aria-labelledby="hero-heading">
       <div className={styles.panel}>
         <div className={styles.copy}>
           <p className={styles.label}>M&apos;MA ORGANIC FARM</p>
@@ -351,7 +366,7 @@ export function RisingGlassHero() {
         </div>
 
         <div className={styles.visual}>
-          <div className={styles.glass} data-glass-frame role="img" aria-label="Scroll to fill a traditional grooved glass with milk. A short automatic film then reveals coffee, a curved move at a fixed angle, a full-screen macro and an overhead finish of milk. The introduction only moves forward. Returning from the farm keeps the finished glass visible.">
+          <div className={styles.glass} data-glass-frame role="img" aria-label="Scroll to fill a traditional glass with milk. After the short introductory film, scroll to form the M’ma Farms heart in the milk. Scrolling upward reverses the latte art while the overhead glass stays still.">
             <div className={styles.camera} data-glass-camera>
               <Image className={styles.empty} src="/hero/glass-empty.webp" alt="" width={800} height={1200} priority sizes="(max-width: 720px) 240px, 38vw" />
               <svg className={styles.maskDefinitions} width="1" height="1" aria-hidden="true" focusable="false">
@@ -393,7 +408,7 @@ export function RisingGlassHero() {
                 </g>
               </svg>
             </div>
-            <Image data-overhead-photo className={styles.top} src="/hero/milk-top.avif" alt="" width={800} height={1200} loading="eager" sizes="(max-width: 720px) 260px, 38vw" />
+            <LatteArt id={`${maskId}-latte`} />
           </div>
         </div>
 
@@ -415,7 +430,7 @@ export function RisingGlassHero() {
 
         <a className={styles.scroll} href="#site-content">
           <span className={styles.mouse} aria-hidden="true"><i /></span>
-          <span>Scroll to fill<small>Then watch the story</small></span>
+          <span>Scroll to fill<small>Then scroll to form the heart</small></span>
           <span className={styles.down} aria-hidden="true">↓</span>
         </a>
         <a className={styles.skip} href="#site-content">Skip introduction <span aria-hidden="true">↘</span></a>

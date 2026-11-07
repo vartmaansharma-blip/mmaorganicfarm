@@ -42,7 +42,7 @@ async function scrollToFill(page, progress) {
     const panel = root.firstElementChild;
     const rect = root.getBoundingClientRect();
     const header = parseFloat(getComputedStyle(panel).top) || 0;
-    window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight), behavior: "instant" });
+    window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight) * .55 / 1.8, behavior: "instant" });
   }, progress);
   if (progress < .99) await page.waitForFunction(p => Number(document.getElementById("home").dataset.fill) >= p * p * (3 - 2 * p) - .01, progress);
 }
@@ -153,7 +153,7 @@ async function verifyHybrid(page, name, width) {
   assert.equal(await page.locator('#home').getAttribute('data-held'), 'false');
   assert.equal(await page.evaluate(() => document.body.style.position), '');
   assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top');
-   assert.match(await page.locator('[data-overhead-photo]').getAttribute('src'), /milk-top\.avif/, 'closing overhead uses milk, not coffee');
+   assert.match(await page.locator('[data-overhead-photo]').getAttribute('src'), /milk-overhead-fixed\.webp/, 'closing overhead uses milk, not coffee');
   assert.equal(await page.locator('body > header').isVisible(), true);
   await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
   const end = await page.locator('#home').getAttribute('data-film-time');
@@ -270,8 +270,8 @@ async function verifyLifecycle(browser, name) {
     page.setDefaultNavigationTimeout(60000);
     let releaseImage;
     const delayedImage = new Promise(resolve => { releaseImage = resolve; });
-    await page.route('**/_next/image?*', async route => {
-      if (decodeURIComponent(route.request().url()).includes('milk-top')) {
+    await page.route('**/*milk-overhead-fixed*', async route => {
+      if (decodeURIComponent(route.request().url()).includes('milk-overhead-fixed')) {
         if (fail) await route.abort();
         else { await delayedImage; await route.continue(); }
       } else await route.continue();
@@ -433,7 +433,7 @@ try {
         else assert.ok(Math.abs(cue.x - 24) < 1, "phone scroll cue keeps the production left alignment");
         const film = await verifyHybrid(page, name, width);
         await page.getByRole('button', { name: 'Switch to dark mode' }).click();
-        assert.equal(await page.getByRole("progressbar", { name: "Glass story progress", includeHidden: true }).getAttribute("aria-valuenow"), "100");
+        assert.equal(await page.getByRole("progressbar", { name: "Glass story progress", includeHidden: true }).getAttribute("aria-valuenow"), "50", "intro completes before the separate scroll-driven latte reveal");
 
 
         const headerShop = page.locator("header").getByRole("button", { name: /^Open cart,/ }).first();
@@ -467,7 +467,7 @@ try {
           await toggle.click();
           assert.equal(await dialog.getByRole("link", { name: /Farm/ }).getAttribute("aria-current"), "location");
           await dialog.getByRole("link", { name: /Home/ }).click();
-          await page.waitForFunction(() => document.getElementById("home").dataset.progress === "1.000");
+          await page.waitForFunction(() => scrollY < 2 && document.getElementById("home").dataset.state === "COMPLETED");
         } else {
           assert.equal(await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link").count(), 5);
         }
