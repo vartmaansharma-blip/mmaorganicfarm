@@ -109,7 +109,7 @@ async function verifyHybrid(page, name, width) {
   assert.equal(await page.locator('#home').getAttribute('data-held'), 'true');
   const heldY = await page.locator('#home > div').first().evaluate(e => e.getBoundingClientRect().top);
   assert.ok(Math.abs(heldY - tops[0]) < 2, `hold preserves original panel position: ${heldY} vs ${tops[0]}`);
-  assert.ok((await page.locator('header').boundingBox()).y >= -1, 'hold preserves header position');
+  assert.ok((await page.locator('body > header').boundingBox()).y >= -1, 'hold preserves header position');
   await page.mouse.wheel(0, -8000); // incidental reversal cannot reverse this film
   await page.mouse.wheel(0, 12000);
   assert.equal(await page.evaluate(() => {
@@ -127,7 +127,7 @@ async function verifyHybrid(page, name, width) {
   });
   await page.screenshot({ path: path.join(output, `${name}-${width}-fixed-angle-landing.png`) });
   await page.waitForFunction(() => document.getElementById('home').dataset.filmStage === 'macro-hold');
-  assert.equal(await page.locator('header').isVisible(), false);
+  assert.equal(await page.locator('body > header').isVisible(), false);
   assert.equal(await page.locator('#hero-heading').isVisible(), false);
   assert.equal(await page.locator('[data-condensation]').evaluate(e => Number(getComputedStyle(e).opacity)), 0, 'macro stays free of condensation overlays');
   await page.screenshot({ path: path.join(output, `${name}-${width}-full-screen-macro.png`) });
@@ -154,7 +154,7 @@ async function verifyHybrid(page, name, width) {
   assert.equal(await page.evaluate(() => document.body.style.position), '');
   assert.equal(await page.locator('#home').getAttribute('data-shot'), 'top');
    assert.match(await page.locator('[data-overhead-photo]').getAttribute('src'), /milk-top\.avif/, 'closing overhead uses milk, not coffee');
-  assert.equal(await page.locator('header').isVisible(), true);
+  assert.equal(await page.locator('body > header').isVisible(), true);
   await page.screenshot({ path: path.join(output, `${name}-${width}-closing-overhead.png`) });
   const end = await page.locator('#home').getAttribute('data-film-time');
   await page.waitForTimeout(100);
