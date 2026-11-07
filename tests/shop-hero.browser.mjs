@@ -77,9 +77,11 @@ try {
       await page.locator('[class*=heroPhoto]').focus();await page.mouse.move(1,1);await page.clock.fastForward(7000);await slide(page,'basket');
       await page.locator('body').click({position:{x:1,y:1}});await page.clock.fastForward(6600);await slide(page,'milk');
       await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
-      await page.waitForTimeout(50);await page.clock.fastForward(6000);await slide(page,'milk');
+      await page.waitForFunction(()=>document.querySelector('[data-shop-hero]')?.dataset.autoplay==='paused');
+      await page.clock.fastForward(6000);await slide(page,'milk');
       await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
-      await page.waitForTimeout(50);await page.clock.fastForward(5600);await slide(page,'paneer');
+      await page.waitForFunction(()=>document.querySelector('[data-shop-hero]')?.dataset.autoplay==='playing');
+      await page.clock.fastForward(5600);await slide(page,'paneer');
       await page.clock.fastForward(5600);await slide(page,'ghee');
       await context.close();
       const reduced=await browser.newContext({reducedMotion:'reduce'});const rp=await reduced.newPage();await rp.clock.install();await rp.goto(base+'/shop',{waitUntil:'networkidle'});await settled(rp);await rp.clock.fastForward(7000);await slide(rp,'basket');
