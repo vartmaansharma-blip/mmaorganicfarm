@@ -19,6 +19,7 @@ let scenario='out', fail=false;
 let referralAvailable = true;
 let referralCodeCreated = false;
 const sampleReferralCode = 'AB1234567890AB1234567890AB123456';
+let master={revision:0,versions:[],exceptions:[]};
 const fixtures = () => Array.from({ length: 22 }, (_, index) => ({
  id: `00000000-0000-4000-8000-${String(100 + index).padStart(12, '0')}`,
  title: ['Payment confirmed', 'Milk is on the way', 'Plan delivery scheduled', 'Delivery prepared', 'Delivery completed'][index] ?? `Delivery notice ${index}`,
@@ -82,6 +83,25 @@ const stub=createServer(async(req,res)=>{
  if(url.pathname.endsWith('/rpc/referral_workspace')){
   res.end(JSON.stringify({enabled:referralAvailable,discount_enabled:true,referrer_paise:2500,newcomer_paise:10000,revision:recordId,code:referralCodeCreated?sampleReferralCode:null,claim:null,invites:0,unlocked_invites:0,earned_paise:0}));return;
  }
+ if(url.pathname.endsWith('/rpc/read_master_delivery_schedule')){
+  assert.equal(req.method,'POST');
+  res.end(JSON.stringify(master));return;
+ }
+ if(url.pathname.endsWith('/rpc/save_master_delivery_schedule')){
+  assert.equal(req.method,'POST');
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const {p_revision,p_date,p_quantities}=JSON.parse(raw);
+  assert.equal(p_revision,master.revision);
+  if(p_date){
+   master.exceptions=master.exceptions.filter(item=>item.delivery_date!==p_date);
+   master.exceptions.push(...Object.entries(p_quantities).flatMap(([product_key,quantity])=>
+    quantity===null?[]:[{delivery_date:p_date,product_key,quantity}]));
+  }else{
+   master.versions.push({effective_from:plus(1),quantities:p_quantities});
+  }
+  master.revision++;
+  res.end('null');return;
+ }
  if(!['GET','HEAD'].includes(req.method) && !['/rest/v1/rpc/get_customer_delivery_outcomes','/rest/v1/rpc/get_today_route_spare'].includes(url.pathname)){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
@@ -105,6 +125,8 @@ const stub=createServer(async(req,res)=>{
   const draft={...paid,id:'00000000-0000-4000-8000-000000000005',status:'draft',paid_total_paise:null,order_items:[{...product(),id:'item2',product_name:'Draft-only item'}]};
   const pending={...paid,id:'00000000-0000-4000-8000-000000000006',status:'pending_payment',paid_total_paise:null,order_items:[{...product(),id:'item3',product_name:'Pending checkout'}]};
   data=scenario==='none'?[]:extendedWeek()?[paid]:[paid,draft,pending];
+  const purchaseMode=url.searchParams.get('purchase_mode');
+  if(purchaseMode?.startsWith('eq.'))data=data.filter(order=>order.purchase_mode===purchaseMode.slice(3));
   const status=url.searchParams.get('status')||'';
   if(status.startsWith('in.(')&&status.endsWith(')')) {
     const allowed=status.slice(4,-1).split(',');
@@ -145,6 +167,7 @@ try{
  while(!serverLog.includes('Ready in')){if(child.exitCode!==null)throw new Error(serverLog);if(Date.now()>deadline)throw new Error(`Next server did not start: ${serverLog}`);await new Promise(r=>setTimeout(r,200));}
  for(const engine of (process.env.ACCOUNT_BROWSERS||'chromium,webkit').split(',')){
   referralCodeCreated=false;
+  master={revision:0,versions:[],exceptions:[]};
   const browser=await ({chromium,webkit})[engine].launch();
   try{
    const anonymous=await browser.newContext({viewport:{width:390,height:844}});
@@ -416,6 +439,89 @@ try{
    scenario='out';await page.goto(`${base}/account`,{waitUntil:'networkidle'});fail=true;await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByText('Showing the last successful update',{exact:false}).waitFor();assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'out');await page.screenshot({path:path.join(output,`${engine}-390-stale.png`),fullPage:true});
    fail=false;scenario='delivered';await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();assert.equal(await page.getByText('Showing the last successful update',{exact:false}).count(),0);
    fail=true;await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'error');assert.equal(await page.getByRole('heading',{name:'A quiet day at your doorstep',exact:true}).count(),0);fail=false;await page.getByRole('button',{name:'Try again →'}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();
+   scenario='none';
+   await page.goto(`${base}/calendar?view=weekly`);
+   const saturday=page.getByRole('spinbutton',{name:'Fresh milk, Saturday, litres'});
+   const sunday=page.getByRole('spinbutton',{name:'Fresh milk, Sunday, litres'});
+   await page.getByRole('button',{name:'Edit all Saturday quantities'}).click();
+   const column=page.getByRole('spinbutton',{name:'Quantity for Saturday'});
+   await column.fill('4');
+   await column.press('Enter');
+   assert.equal(await saturday.inputValue(),'4');
+   const paneerSaturday=page.getByRole('spinbutton',{name:'Fresh paneer, Saturday, packs'});
+   assert.equal(await paneerSaturday.inputValue(),'4');
+   await paneerSaturday.fill('0');
+   await page.getByRole('spinbutton',{name:'Farm ghee, Saturday, packs'}).fill('0');
+   await sunday.fill('2');
+   await page.getByRole('region',{name:'Dates affected by this change'}).waitFor();
+   await page.getByRole('button',{name:'Save recurring schedule'}).click();
+   await page.getByRole('status').getByText('Weekly schedule saved.').waitFor();
+   const doneBezel=page.getByRole('status').locator('[data-done-bezel]');
+   assert.notEqual(await doneBezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await page.emulateMedia({reducedMotion:'reduce'});
+   assert.equal(await doneBezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await page.emulateMedia({reducedMotion:'no-preference'});
+   const nextSaturday=Array.from({length:7},(_,index)=>plus(index+1))
+    .find(day=>new Date(day+'T00:00:00Z').getUTCDay()===6);
+   const monthlyPath=`${base}/calendar?view=monthly&month=${nextSaturday.slice(0,7)}&date=${nextSaturday}`;
+   await page.goto(monthlyPath);
+   const milk=page.getByRole('spinbutton',{name:/Fresh milk/});
+   assert.equal(await milk.getAttribute('placeholder'),'4','the monthly view reflects the saved weekly quantity');
+   const selectedDate=page.locator('[data-date][aria-current=date]');
+   await selectedDate.focus();
+   const dayIndex=Math.round((new Date(nextSaturday)-new Date(date))/86400000);
+   const arrow=plus(dayIndex+1).slice(0,7)===nextSaturday.slice(0,7)?'ArrowRight':'ArrowLeft';
+   await selectedDate.press(arrow);
+   assert.equal(await page.evaluate(()=>document.activeElement.dataset.date),plus(dayIndex+(arrow==='ArrowRight'?1:-1)));
+   await milk.fill('5');
+   await page.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 5.*date exception/}).waitFor();
+   await page.screenshot({path:path.join(output,`${engine}-master-monthly.png`),fullPage:true});
+   await page.getByRole('link',{name:'Weekly Schedule',exact:true}).click();
+   const focusedWeek=page.getByRole('region',{name:'Delivery week'});
+   await focusedWeek.getByRole('link',{name:/Saturday.*Fresh milk 5.*date exception/}).and(page.locator('[aria-current=date]')).waitFor();
+   assert.equal(new URL(page.url()).searchParams.get('date'),nextSaturday);
+   assert.equal(await saturday.inputValue(),'4');
+   assert.equal(await sunday.inputValue(),'2');
+   const weeklyDateMilk=focusedWeek.getByRole('spinbutton',{name:/Fresh milk/});
+   assert.equal(await weeklyDateMilk.inputValue(),'5');
+   await weeklyDateMilk.fill('1');
+   await focusedWeek.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.getByRole('link',{name:'Monthly Calendar',exact:true}).click();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 1.*date exception/}).and(page.locator('[aria-current=date]')).waitFor();
+   await page.getByRole('link',{name:'Weekly Schedule',exact:true}).click();
+   await page.getByRole('link',{name:'Continue to delivery details'}).click();
+   await page.waitForURL('**/order?**');
+   assert.match(new URL(page.url()).searchParams.get('routine'),/\d+-1/);
+   await page.getByText('Step 2 of 4',{exact:true}).waitFor();
+   await page.goto(`${base}/calendar?view=weekly`);
+   await saturday.fill('3');
+   await page.getByRole('button',{name:'Save recurring schedule'}).click();
+   await page.getByRole('status').getByText('Weekly schedule saved.').waitFor();
+   await page.setViewportSize({width:320,height:740});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   await page.screenshot({path:path.join(output,`${engine}-master-weekly.png`),fullPage:true});
+   await page.setViewportSize({width:390,height:844});
+   await page.goto(monthlyPath);
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 1.*date exception/}).waitFor();
+   await page.getByRole('button',{name:'Restore weekly quantities'}).click();
+   await page.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.reload();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 3/}).and(page.locator('[aria-current=date]')).waitFor();
+   const monthHeading=page.getByRole('region',{name:'Monthly Calendar'}).getByRole('heading',{level:2});
+   const oldMonth=await monthHeading.innerText();
+   const nextMonth=page.getByRole('link',{name:'Next month'});
+   const nextMonthPath=await nextMonth.getAttribute('href');
+   await nextMonth.click();
+   await page.waitForURL(`${base}${nextMonthPath}`);
+   await monthHeading.filter({hasNotText:oldMonth}).waitFor();
+   scenario='out';
+   await page.goto(monthlyPath);
+   await page.getByRole('link',{name:'Open paid delivery controls'}).waitFor();
+   assert.equal(await page.getByRole('region',{name:'Monthly Calendar'}).getByRole('button',{name:'Save date'}).count(),0);
    scenario='out';await page.emulateMedia({reducedMotion:'reduce'});await page.goto(`${base}/account`,{waitUntil:'networkidle'});assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).isVisible(),false);assert.deepEqual(await page.locator('[data-scene-state]').evaluate(e=>e.getAnimations({subtree:true}).filter(a=>a.playState==='running').length),0);
    scenario='spare';
    await page.goto(`${base}/account`,{waitUntil:'networkidle'});
@@ -433,7 +539,7 @@ try{
   }finally{await browser.close();}
  }
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
- const allowedPosts=['get_customer_delivery_outcomes','refresh_customer_route','get_today_route_spare','referrals_enabled','referral_workspace','create_referral_code'];
+ const allowedPosts=['get_customer_delivery_outcomes','refresh_customer_route','get_today_route_spare','read_master_delivery_schedule','save_master_delivery_schedule','referrals_enabled','referral_workspace','create_referral_code'];
  const postReads=requests.filter(r=>r.method==='POST');
  assert.ok(postReads.every(r=>allowedPosts.some(name=>r.path.endsWith('/rpc/'+name))),'fixture permits no order or payment writes');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));

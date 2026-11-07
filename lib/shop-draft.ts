@@ -25,6 +25,7 @@ export type ShopState = {
   carts: Record<ShopMode, ShopCart>;
   drafts: Record<ShopMode, Record<ShopProductId, ShopDraft>>;
 };
+export const MAX_SHOP_ROUTINE_LENGTH = 620;
 export const SHOP_STORAGE_KEY = "mma-shop-draft-v1";
 export function isShopProduct(value: string): value is ShopProductId {
   return ["milk", "paneer", "ghee"].includes(value);
@@ -279,7 +280,7 @@ export function orderReturnPath(params: Record<string, string | undefined>) {
     "checkout",
   ] as const) {
     const value = params[key];
-    if (typeof value === "string" && value.length <= (key === "nextPlan" ? 1200 : 400)) query.set(key, value);
+    if (typeof value === "string" && value.length <= (key === "nextPlan" ? 1200 : key === "routine" ? MAX_SHOP_ROUTINE_LENGTH : 400)) query.set(key, value);
   }
   return `/order${query.size ? `?${query}` : ""}`;
 }

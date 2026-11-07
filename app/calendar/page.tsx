@@ -23,6 +23,7 @@ import {
   savePause,
 } from "./actions";
 import styles from "./calendar.module.css";
+import { MasterCalendarView } from "./master/view";
 
 export const metadata: Metadata = {
   title: "Your delivery calendar",
@@ -37,6 +38,8 @@ type CalendarPageProps = {
     error?: string;
     message?: string;
     plan?: string;
+    view?: string;
+    month?: string;
   }>;
 };
 
@@ -49,7 +52,9 @@ export default async function CalendarPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/sign-in?next=%2Fcalendar");
+  const masterView = params.view === "weekly" || params.view === "monthly";
+  if (!user) redirect(masterView ? `/sign-in?next=${encodeURIComponent(`/calendar?view=${params.view}`)}` : "/sign-in?next=%2Fcalendar");
+  if (masterView) return <MasterCalendarView client={supabase} userId={user.id} params={params} />;
 
   const { data: plans, error: plansError } = await supabase
     .from("delivery_plans")

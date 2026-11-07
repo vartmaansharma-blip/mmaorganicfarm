@@ -1,8 +1,12 @@
 import { DEFAULT_PRODUCT_PRICES, money, type ProductPrices } from "./product-prices";
 import { addCalendarDays } from "./delivery-calendar";
+import {
+  resolveMasterDelivery, scheduleProducts, weeklyQuantityOnDate,
+  type DateException, type PatternVersion,
+} from "./master-delivery-schedule";
 import { firstMonthEnds, deliveryChargeForSubtotal, flatOrderFees } from "./delivery-pricing";
 import type { BottleChoice } from "./order-pricing";
-import { validShopDate, type ShopProductId } from "./shop-draft";
+import { MAX_SHOP_ROUTINE_LENGTH, validShopDate, type ShopProductId } from "./shop-draft";
 export type RepeatPattern =
   | "daily"
   | "weekly"
@@ -18,6 +22,7 @@ export type ProductRoutine = {
   firstDate: string;
   week?: number[];
   dates?: string[];
+  dateQuantities?: Record<string, number>;
 };
 export type PlannedDay = {
   date: string;
@@ -45,8 +50,7 @@ export function monthSchedule(
     for (const rule of rules) {
       if (!validShopDate(rule.firstDate) || ymd < rule.firstDate) continue;
       const anchor = new Date(`${rule.firstDate}T12:00:00Z`),
-        diff = Math.round((date.valueOf() - anchor.valueOf()) / 86400000),
-        weekday = (date.getUTCDay() + 6) % 7;
+        diff = Math.round((date.valueOf() - anchor.valueOf()) / 86400000);
       let quantity = rule.quantity;
       const monthLast = new Date(
         Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
@@ -59,8 +63,9 @@ export function monthSchedule(
         (rule.repeat === "fortnightly" && diff % 14 === 0) ||
         (rule.repeat === "monthly" &&
           date.getUTCDate() === Math.min(anchor.getUTCDate(), monthLast)) ||
-        (rule.repeat === "days" && (rule.week?.[weekday] ?? 0) > 0);
-      if (rule.repeat === "days") quantity = rule.week?.[weekday] ?? 0;
+        (rule.repeat === "days" && weeklyQuantityOnDate(rule.week, ymd) > 0);
+      if (rule.repeat === "days") quantity = weeklyQuantityOnDate(rule.week, ymd);
+      if (rule.repeat === "custom") quantity = rule.dateQuantities?.[ymd] ?? quantity;
       if (matches && quantity > 0) items.push({ id: rule.id, quantity });
     }
     if (items.length) result.push({ date: ymd, items });
@@ -121,6 +126,11 @@ export function validateRoutines(
         [...x.dates].sort()[0] !== x.firstDate)
     )
       return null;
+    if (x.dateQuantities !== undefined && (
+      x.repeat !== "custom" || !x.dateQuantities || typeof x.dateQuantities !== "object" || Array.isArray(x.dateQuantities) ||
+      Object.keys(x.dateQuantities).length !== x.dates.length ||
+      !x.dates.every((date: string) => Number.isInteger(x.dateQuantities[date]) && x.dateQuantities[date] >= 1 && x.dateQuantities[date] <= 5)
+    )) return null;
     rules.push({
       id: x.id,
       quantity: x.quantity,
@@ -128,11 +138,34 @@ export function validateRoutines(
       firstDate: x.firstDate,
       ...(x.repeat === "days" ? { week: [...x.week] } : {}),
       ...(x.repeat === "custom" ? { dates: [...x.dates].sort() } : {}),
+      ...(x.dateQuantities ? { dateQuantities: Object.fromEntries([...x.dates].sort().map((date: string) => [date, x.dateQuantities[date]])) } : {}),
     });
   }
   if (rules.some((rule) => !monthSchedule(start, [rule]).length)) return null;
   return ids.flatMap((id) => rules.filter((r) => r.id === id));
 }
+// Freeze one prepaid month from the master preference. Later edits do not
+// affect the quantities already carried into the reviewed order.
+export function masterMonthRoutines(start: string, versions: PatternVersion[], exceptions: DateException[]) {
+  const end = firstMonthEnds(start);
+  const days: ReturnType<typeof resolveMasterDelivery>[] = [];
+  for (let date = start; date < end; date = addCalendarDays(date, 1)) {
+    days.push(resolveMasterDelivery(date, versions, exceptions));
+  }
+  return validateRoutines(start, scheduleProducts.flatMap(id => {
+    const deliveries = days.filter(day => day.quantities[id] > 0);
+    if (!deliveries.length) return [];
+    const quantity = deliveries[0].quantities[id];
+    return [{
+      id, repeat: "custom", firstDate: deliveries[0].date, quantity,
+      dates: deliveries.map(day => day.date),
+      ...(deliveries.some(day => day.quantities[id] !== quantity) ? {
+        dateQuantities: Object.fromEntries(deliveries.map(day => [day.date, day.quantities[id]])),
+      } : {}),
+    }];
+  }));
+}
+
 export function recommendedDates(id: ShopProductId, start: string) {
   const end = firstMonthEnds(start);
   if (!end) return [];
@@ -162,14 +195,10 @@ export function serializeRoutines(rules: ProductRoutine[], start?: string) {
           : r.repeat === "custom"
             ? [
                 r.dates
-                  ?.map(
-                    (date) =>
-                      Math.round(
-                        (new Date(`${date}T12:00:00Z`).valueOf() -
-                          new Date(`${base}T12:00:00Z`).valueOf()) /
-                          86400000,
-                      ) + 1,
-                  )
+                  ?.map((date) => {
+                    const day = Math.round((Date.parse(date) - Date.parse(base)) / 86400000) + 1;
+                    return r.dateQuantities ? `${day}-${r.dateQuantities[date]}` : day;
+                  })
                   .join("."),
               ]
             : []),
@@ -180,7 +209,7 @@ export function serializeRoutines(rules: ProductRoutine[], start?: string) {
 export function parseRoutines(start: string, serialized: string) {
   if (
     typeof serialized !== "string" ||
-    serialized.length > 400 ||
+    serialized.length > MAX_SHOP_ROUTINE_LENGTH ||
     !validShopDate(start)
   )
     return null;
@@ -193,12 +222,12 @@ export function parseRoutines(start: string, serialized: string) {
       !/^\d+$/.test(q)
     )
       return null;
-    if (
-      repeat === "custom" &&
-      (!extra ||
-        !extra.split(".").every((x) => /^(?:[1-9]|[12][0-9]|3[01])$/.test(x)))
-    )
-      return null;
+    const customEntries = repeat === "custom" ? extra?.split(".") : undefined;
+    const quantitiesByDate = customEntries?.[0]?.includes("-");
+    if (repeat === "custom" && (!customEntries?.length ||
+      !customEntries.every(value => (quantitiesByDate ? /^(?:[1-9]|[12][0-9]|3[01])-[1-5]$/ : /^(?:[1-9]|[12][0-9]|3[01])$/).test(value))
+    )) return null;
+    const customDates = customEntries?.map(entry => addCalendarDays(start, Number(entry.split("-")[0]) - 1));
     rules.push({
       id,
       quantity: Number(q),
@@ -208,9 +237,10 @@ export function parseRoutines(start: string, serialized: string) {
         ? { week: extra?.split(".").map(Number) }
         : repeat === "custom"
           ? {
-              dates: extra
-                .split(".")
-                .map((n) => addCalendarDays(start, Number(n) - 1)),
+              dates: customDates,
+              ...(quantitiesByDate ? {
+                dateQuantities: Object.fromEntries(customDates!.map((date, index) => [date, Number(customEntries![index].split("-")[1])])),
+              } : {}),
             }
           : {}),
     });

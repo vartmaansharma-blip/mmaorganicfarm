@@ -729,3 +729,60 @@ test("only the date shared by the one-time and scheduled orders gets free delive
   assert.equal(separate.once.pricing.deliveryCharge, 7);
   assert.equal(separate.scheduled.pricing.deliveryCharge, 6);
 });
+
+test("master weekly quantities repeat across month boundaries and date exceptions stay independent", () => {
+  const { calendarMonthDays, resolveMasterDelivery, emptyWeeklyPattern } = load("lib/master-delivery-schedule.ts");
+  const initial = emptyWeeklyPattern();
+  initial.milk = [0, 0, 0, 0, 0, 4, 2];
+  initial.paneer[5] = 1;
+  const versions = [{ effective_from: "2026-10-31", quantities: initial }];
+  const exceptions = [
+    { delivery_date: "2026-11-14", product_key: "milk", quantity: 5 },
+    { delivery_date: "2026-11-15", product_key: "milk", quantity: 0 },
+    { delivery_date: "2026-11-14", product_key: "ghee", quantity: 1 },
+  ];
+  const resolve = (date, overrides = exceptions, snapshot) => resolveMasterDelivery(date, versions, overrides, snapshot);
+  assert.equal(resolve("2026-10-31").quantities.milk, 4);
+  assert.equal(resolve("2026-11-07").quantities.milk, 4);
+  assert.deepEqual(resolve("2026-11-14").quantities, { milk: 5, paneer: 1, ghee: 1 });
+  assert.equal(resolve("2026-11-15").quantities.milk, 0);
+  assert.equal(resolve("2026-11-22").quantities.milk, 2);
+
+  versions.push({ effective_from: "2026-11-12", quantities: { ...initial, milk: [0, 0, 0, 0, 0, 3, 2] } });
+  assert.equal(resolve("2026-11-07").quantities.milk, 4);
+  assert.equal(resolve("2026-11-14").quantities.milk, 5);
+  assert.equal(resolve("2026-11-14", []).quantities.milk, 3);
+  assert.equal(resolve("2026-11-21").quantities.milk, 3);
+  assert.equal(resolve("2026-12-05").quantities.milk, 3);
+  const completed = { date: "2026-11-14", quantities: { milk: 2, paneer: 0, ghee: 0 }, state: "completed" };
+  assert.deepEqual(resolve(completed.date, exceptions, completed).quantities, completed.quantities);
+  assert.equal(resolve(completed.date, exceptions, completed).state, "completed");
+  assert.equal(resolve("2026-11-21").state, "projected");
+  assert.equal(calendarMonthDays("2028-02").at(-1), "2028-02-29");
+  assert.equal(calendarMonthDays("2026-11").length, 30);
+});
+
+test("the master calendar materializes exact dated quantities into the existing monthly quote", () => {
+  const { masterMonthRoutines, monthSchedule, parseRoutines, quoteMonthlySchedule, serializeRoutines } = load("lib/monthly-schedule.ts");
+  const quantities = { milk: [0, 0, 0, 0, 0, 4, 2], paneer: [0, 0, 0, 0, 0, 1, 0], ghee: [0, 0, 0, 0, 0, 0, 0] };
+  const start = "2026-11-01";
+  const rules = masterMonthRoutines(start, [{ effective_from: start, quantities }], [
+    { delivery_date: "2026-11-14", product_key: "milk", quantity: 5 },
+    { delivery_date: "2026-11-15", product_key: "milk", quantity: 0 },
+    { delivery_date: "2026-11-14", product_key: "ghee", quantity: 1 },
+  ]);
+  const serialized = serializeRoutines(rules, start);
+  const parsed = parseRoutines(start, serialized);
+  assert.deepEqual(parsed, rules);
+  assert.equal(parseRoutines(start, serialized.replace("14-5", "14-9")), null);
+  const days = monthSchedule(start, parsed);
+  assert.deepEqual(days.find(day => day.date === "2026-11-14").items, [
+    { id: "milk", quantity: 5 }, { id: "paneer", quantity: 1 }, { id: "ghee", quantity: 1 },
+  ]);
+  assert.equal(days.some(day => day.date === "2026-11-15"), false);
+  const quote = quoteMonthlySchedule({ start, rules: parsed });
+  assert.equal(quote.quantities.milk, 25);
+  assert.equal(quote.milkTotal, 25 * 62);
+  assert.equal(quote.productTotals.paneer, 4 * 200);
+  assert.equal(quote.productTotals.ghee, 375);
+});
