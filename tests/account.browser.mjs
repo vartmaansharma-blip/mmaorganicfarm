@@ -16,6 +16,9 @@ const recordId='00000000-0000-4000-8000-000000000003';
 const date=indiaDate();
 const plus=n=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
 let scenario='out', fail=false;
+let referralAvailable = true;
+let referralCodeCreated = false;
+const sampleReferralCode = 'AB1234567890AB1234567890AB123456';
 const fixtures = () => Array.from({ length: 22 }, (_, index) => ({
  id: `00000000-0000-4000-8000-${String(100 + index).padStart(12, '0')}`,
  title: ['Payment confirmed', 'Milk is on the way', 'Plan delivery scheduled', 'Delivery prepared', 'Delivery completed'][index] ?? `Delivery notice ${index}`,
@@ -69,6 +72,15 @@ const stub=createServer(async(req,res)=>{
   let raw='';for await(const chunk of req)raw+=chunk;
   routeRefreshes.push(JSON.parse(raw));
   res.end('null');return;
+ }
+ if(url.pathname.endsWith('/rpc/referrals_enabled')){res.end(JSON.stringify(referralAvailable));return;}
+ if(url.pathname.endsWith('/rpc/create_referral_code')){
+  assert.equal(req.method,'POST');
+  referralCodeCreated=true;
+  res.end('null');return;
+ }
+ if(url.pathname.endsWith('/rpc/referral_workspace')){
+  res.end(JSON.stringify({enabled:referralAvailable,discount_enabled:true,referrer_paise:2500,newcomer_paise:10000,revision:recordId,code:referralCodeCreated?sampleReferralCode:null,claim:null,invites:0,unlocked_invites:0,earned_paise:0}));return;
  }
  if(!['GET','HEAD'].includes(req.method) && !['/rest/v1/rpc/get_customer_delivery_outcomes','/rest/v1/rpc/get_today_route_spare'].includes(url.pathname)){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
@@ -132,9 +144,15 @@ try{
  const deadline=Date.now()+30000;
  while(!serverLog.includes('Ready in')){if(child.exitCode!==null)throw new Error(serverLog);if(Date.now()>deadline)throw new Error(`Next server did not start: ${serverLog}`);await new Promise(r=>setTimeout(r,200));}
  for(const engine of (process.env.ACCOUNT_BROWSERS||'chromium,webkit').split(',')){
+  referralCodeCreated=false;
   const browser=await ({chromium,webkit})[engine].launch();
   try{
-   const anonymous=await browser.newContext();
+   const anonymous=await browser.newContext({viewport:{width:390,height:844}});
+   await anonymous.addInitScript(() => {
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
+     getCurrentPosition: (_, error) => error({ code: 1 }),
+    } });
+   });
    const anonymousPage=await anonymous.newPage();
    await anonymousPage.goto(`${base}/account`);
    assert.match(anonymousPage.url(),/\/sign-in/);
@@ -143,7 +161,39 @@ try{
    assert.match(unauth.headers()['cache-control'],/no-store/);
    await anonymousPage.goto(`${base}/account/notifications`);
    assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/account/notifications');
+   await anonymousPage.goto(base);
+   const badge=anonymousPage.getByRole('complementary',{name:'Referral program'});
+   await badge.getByRole('link',{name:'Refer & Earn'}).waitFor();
+   assert.equal(await badge.evaluate(element => getComputedStyle(element).position),'fixed');
+   const bezel=badge.locator('[data-referral-bezel]');
+   assert.notEqual(await bezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await anonymousPage.emulateMedia({reducedMotion:'reduce'});
+   assert.equal(await bezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await anonymousPage.emulateMedia({reducedMotion:'no-preference'});
+   const badgeBox=await badge.boundingBox();
+   const whatsappBox=await anonymousPage.locator('.whatsapp-float').boundingBox();
+   assert.ok(badgeBox.x > 190 && badgeBox.y + badgeBox.height < whatsappBox.y);
+   await anonymousPage.screenshot({path:path.join(output,`${engine}-home-referral.png`)});
+   await anonymousPage.setViewportSize({width:1440,height:900});
+   const desktopBox=await badge.boundingBox();
+   assert.ok(desktopBox.x > 1100 && desktopBox.y + desktopBox.height > 780);
+   await anonymousPage.setViewportSize({width:390,height:844});
+   await anonymousPage.getByRole('button',{name:'Dismiss Refer and Earn'}).click();
+   await badge.waitFor({state:'detached'});
+   referralAvailable=false;
+   await anonymousPage.reload();
+   assert.equal(await badge.count(),0);
+   referralAvailable=true;
+   await anonymousPage.goto(`${base}/account/referrals?code=${sampleReferralCode}`);
+   assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),`/account/referrals?code=${sampleReferralCode}`);
    await anonymousPage.goto(`${base}/shop`);
+   await anonymousPage.getByRole('button',{name:'Set delivery location'}).click();
+   const location=anonymousPage.getByRole('dialog',{name:'Delivery location'});
+   await location.getByRole('button',{name:'Use my current location'}).click();
+   await location.getByRole('status').getByText(/couldn’t be detected/).waitFor();
+   await location.getByLabel('Town or locality').fill('Kadma');
+   await location.getByRole('button',{name:'Save location'}).click();
+   await anonymousPage.getByRole('button',{name:'Change delivery location, Kadma'}).waitFor();
    await anonymousPage.getByRole('button',{name:'Notifications',exact:true}).click();
    await anonymousPage.getByRole('dialog',{name:'Notifications'}).getByRole('link',{name:'Sign in to see your notifications'}).waitFor();
    await anonymousPage.goto(`${base}/contact`);
@@ -164,6 +214,28 @@ try{
       await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
      }
      await page.waitForFunction(()=>!document.getAnimations().some(a=>a instanceof CSSTransition && ['color','background-color','border-color'].includes(a.transitionProperty) && a.playState==='running'));
+     const menu=page.getByRole('button',{name:'Open navigation menu'});
+     await menu.click();
+     const siteNav=page.getByRole('navigation',{name:'Mobile navigation'});
+     assert.equal(await siteNav.getByRole('link',{name:'Shop',exact:true}).getAttribute('href'),'/shop');
+     if(width===390 && theme==='light'){
+      await siteNav.getByRole('link',{name:'Refer & Earn'}).click();
+      await page.getByRole('heading',{name:'Refer & Earn',exact:true}).waitFor();
+      await page.getByRole('button',{name:'Create invite link'}).click();
+      await page.getByRole('button',{name:'Copy link'}).waitFor();
+      const share=new URL(await page.getByRole('link',{name:'Share on WhatsApp'}).getAttribute('href'));
+      assert.equal(share.origin,'https://wa.me');
+      const invitePath=`/account/referrals?code=${sampleReferralCode}`;
+      assert.ok(share.searchParams.get('text').includes(invitePath));
+      assert.match(share.searchParams.get('text'),/₹100 off.*first paid delivery/);
+      const email=await page.getByRole('link',{name:'Email',exact:true}).getAttribute('href');
+      assert.ok(email.startsWith('mailto:?') && decodeURIComponent(email).includes(invitePath));
+      await page.getByRole('button',{name:'Link code'}).waitFor();
+      await page.goto(`${base}/account`,{waitUntil:'networkidle'});
+     }else{
+      await page.keyboard.press('Escape');
+      assert.equal(await menu.evaluate(element => element===document.activeElement),true);
+     }
      const navigationColour=await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).evaluate(e=>{const probe=document.createElement('i');probe.style.color='var(--color-nav-active)';document.body.append(probe);const expected=getComputedStyle(probe).color;probe.remove();return {actual:getComputedStyle(e).color,expected};});
      assert.equal(navigationColour.actual,navigationColour.expected,'account navigation follows the shared brand palette');
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${engine} ${width} ${theme} Today overflow`);
@@ -246,7 +318,9 @@ try{
    await page.getByText(/The farm has prepared this delivery/).waitFor();
    assert.equal(await page.getByRole('button',{name:'Save quantity'}).count(),0);
    scenario='out';notices=fixtures();
-   await page.goto(`${base}/shop`);
+   await page.goto(`${base}/shop`,{waitUntil:'networkidle'});
+   await page.bringToFront();
+   await page.evaluate(()=>window.dispatchEvent(new Event('mma:notifications-updated')));
    const bell=page.getByRole('button',{name:'Notifications, 22 unread'});
    await bell.focus();
    notificationOutage=true;
@@ -359,7 +433,9 @@ try{
   }finally{await browser.close();}
  }
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
- const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')||r.path.endsWith('/rpc/get_today_route_spare')),'fixture permits no order or payment writes');
+ const allowedPosts=['get_customer_delivery_outcomes','refresh_customer_route','get_today_route_spare','referrals_enabled','referral_workspace','create_referral_code'];
+ const postReads=requests.filter(r=>r.method==='POST');
+ assert.ok(postReads.every(r=>allowedPosts.some(name=>r.path.endsWith('/rpc/'+name))),'fixture permits no order or payment writes');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
  console.log(JSON.stringify({layouts:results.length,sections:5,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}

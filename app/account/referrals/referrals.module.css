@@ -1,0 +1,50 @@
+.title { font-size: clamp(2rem, 6vw, 3.25rem); margin: .25em 0; }
+.panel {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-block: 16px;
+  padding: clamp(16px, 4vw, 24px);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+}
+.panel h2 { font-size: 1.15rem; margin: 0; }
+.panel p { color: var(--ui-muted); margin: 0; }
+.claim { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.claim label { display: grid; gap: 6px; max-width: 100%; }
+.claim input {
+  min-width: 0;
+  width: min(230px, 100%);
+  min-height: 44px;
+  border-radius: var(--ui-radius-control);
+  border: 1px solid var(--ui-border);
+  padding-inline: 12px;
+  color: var(--ui-text);
+  background: var(--ui-page);
+}
+.share { display: grid; gap: 12px; min-width: 0; }
+.share code { overflow-wrap: anywhere; font-size: .8rem; color: var(--ui-muted); }
+.shareActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.primary, .whatsapp, .secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  color: var(--hero-on-yellow);
+  background: var(--hero-yellow);
+  font-size: .875rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.primary:hover { background: var(--hero-yellow-hover); }
+.whatsapp { gap: 8px; background: #29473c; color: #faf6ed; }
+.whatsapp:hover { background: #375b4d; }
+.secondary { border: 1px solid var(--ui-border); color: var(--ui-text); background: transparent; }
+.secondary:hover { background: var(--ui-surface-raised); }
+.metrics { display: flex; flex-wrap: wrap; gap: 12px 24px; padding-top: 8px; margin: 0; }
+.metrics dt { color: var(--ui-muted); font-size: .75rem; }
+.metrics dd { margin: 2px 0 0; font-weight: 650; }

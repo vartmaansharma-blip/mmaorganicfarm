@@ -1,6 +1,8 @@
 import { FARM_PHONE, FARM_PHONE_LINK, farmWhatsApp } from "@/lib/farm-contact";
 import { readProductCatalogue } from "@/lib/product-prices-server";
 import Image from "next/image";
+import { referralsEnabled } from "@/lib/referrals";
+import { ReferralBadge } from "@/app/components/referral-badge";
 import { LandingConversionTracking } from "@/app/components/landing-conversion-tracking";
 import { CapsuleNavigation } from "@/app/components/capsule-navigation";
 import { RisingGlassHero } from "@/app/components/rising-glass-hero";
@@ -116,7 +118,7 @@ const structuredData = (milkPrice: number) => ({
 });
 
 export default async function Home() {
-  const { prices } = await readProductCatalogue();
+  const [{ prices }, showReferrals] = await Promise.all([readProductCatalogue(), referralsEnabled()]);
   return (
     <>
       <script
@@ -323,6 +325,7 @@ export default async function Home() {
         </div>
       </main>
 
+      {showReferrals ? <ReferralBadge /> : null}
       <a
         className="whatsapp-float"
         href={whatsappContact} data-conversion="whatsapp_click" data-location="floating_contact"

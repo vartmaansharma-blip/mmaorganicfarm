@@ -12,13 +12,14 @@ import {
   cartOrderHref,
   cartQuote,
   cartReady,
+  type ShopCart,
   cartRoutines,
   selectedShopCart,
   shiftShopPlan,
 } from "@/lib/shop-cart";
 import { SharedCalendar } from "./shared-calendar";
 import { shopProduct } from "@/lib/shop-products";
-import { type ShopProductId } from "@/lib/shop-draft";
+import { type ShopMode, type ShopProductId } from "@/lib/shop-draft";
 import { useShop } from "./shop-state";
 import styles from "./cart.module.css";
 const money = (n: number) => `₹${n.toLocaleString("en-IN")}`;
@@ -26,19 +27,18 @@ export function CartButton() {
   const { state, update, cartOpen, setCartOpen, prices, firstPlanStart } = useShop();
   const trigger = useRef<HTMLButtonElement>(null),
     dialog = useRef<HTMLDialogElement>(null);
-  const mode = state.mode,
-    cart = state.carts[mode],
-    count = cartCount(cart),
-    quote = cartQuote(cart, mode, firstPlanStart, prices),
-    routines = cartRoutines(cart),
-    minimum = nextDeliveryDateInIndia();
+  const modes = (["once", "plan"] as const).filter((mode) => cartCount(state.carts[mode]) > 0);
+  const count = cartCount(state.carts.once) + cartCount(state.carts.plan);
+  const minimum = nextDeliveryDateInIndia();
+  const suggestionMode = modes.includes(state.mode) ? state.mode : modes[0];
+  const suggestionCart = suggestionMode ? state.carts[suggestionMode] : null;
   const selectedCarts = {
     once: selectedShopCart(state.carts.once),
     plan: selectedShopCart(state.carts.plan),
   };
   const selectedModes = (["once", "plan"] as const).filter((key) => cartCount(selectedCarts[key]) > 0);
   const bothSelected = selectedModes.length === 2;
-  const checkoutMode = selectedModes[0] ?? mode;
+  const checkoutMode = selectedModes[0] ?? state.mode;
   const selectedBase = cartQuote(selectedCarts[checkoutMode], checkoutMode, firstPlanStart, prices);
   const scheduledBase = bothSelected ? cartQuote(selectedCarts.plan, "plan", firstPlanStart, prices) : null;
   const shared = scheduledBase && "deliveryByDate" in scheduledBase
@@ -49,7 +49,6 @@ export function CartButton() {
   const checkoutHref = bothSelected
     ? combinedCartOrderHref(selectedCarts.once, selectedCarts.plan)
     : cartOrderHref(selectedCarts[checkoutMode], checkoutMode);
-  const hasItems = cartCount(state.carts.once) + cartCount(state.carts.plan) > 0;
   useEffect(() => {
     if (cartOpen && !dialog.current?.open) dialog.current?.showModal();
     if (!cartOpen && dialog.current?.open) dialog.current?.close();
@@ -60,7 +59,7 @@ export function CartButton() {
       document.body.style.overflow = previous;
     };
   }, [cartOpen]);
-  function changeCart(next: typeof cart) {
+  function changeCart(mode: ShopMode, next: ShopCart) {
     const drafts = { ...state.drafts[mode] };
     for (const id of ["milk", "paneer", "ghee"] as const) {
       const item = next[id];
@@ -84,9 +83,10 @@ export function CartButton() {
       drafts: { ...state.drafts, [mode]: drafts },
     });
   }
-  function quantity(id: ShopProductId, quantity: number) {
+  function quantity(mode: ShopMode, id: ShopProductId, quantity: number) {
+    const cart = state.carts[mode];
     if (id === "milk" && cart.milk)
-      changeCart({
+      changeCart(mode, {
         ...cart,
         milk: {
           ...cart.milk,
@@ -97,7 +97,11 @@ export function CartButton() {
         },
       });
     else if (id !== "milk" && cart[id])
-      changeCart({ ...cart, [id]: { ...cart[id], quantity } });
+      changeCart(mode, { ...cart, [id]: { ...cart[id], quantity } });
+  }
+  function browseMode(mode: ShopMode) {
+    if (state.mode !== mode) update({ ...state, mode });
+    setCartOpen(false);
   }
   const productSubtotal = selectedQuote.total - selectedQuote.deliveryCharge - selectedQuote.handlingCharge - selectedQuote.platformCharge;
   const deliveryPolicy = checkoutMode === "plan"
@@ -166,19 +170,6 @@ export function CartButton() {
             ×
           </button>
         </div>
-        <div className={styles.modes} role="group" aria-label="Cart order type">
-          {(["once", "plan"] as const).map((value) => (
-            <button
-              type="button"
-              key={value}
-              aria-pressed={mode === value}
-              onClick={() => update({ ...state, mode: value })}
-            >
-              {value === "plan" ? "Scheduled" : "One-time"}{" "}
-              <span>({cartCount(state.carts[value])})</span>
-            </button>
-          ))}
-        </div>
         {!count ? (
           <div className={styles.empty}>
             <OutlineIcon name="cart" size={40} />
@@ -190,109 +181,122 @@ export function CartButton() {
           </div>
         ) : (
           <>
-            <ul className={styles.items}>
-              {(["milk", "paneer", "ghee"] as const).map((id) => {
-                const item = cart[id];
-                if (!item) return null;
-                const p = shopProduct(id, prices);
-                const repeat = routines.find((r) => r.id === id)?.repeat;
-                const variable =
-                  id === "milk" &&
-                  mode === "plan" &&
-                  cart.milk &&
-                  repeat === "days" &&
-                  new Set(cart.milk.schedule.filter((q) => q > 0)).size > 1;
-                return (
-                  <li key={id}>
-                    <label className={styles.selectItem}>
-                      <input
-                        type="checkbox"
-                        aria-label={`Select ${p.name} for checkout`}
-                        checked={cart.selected[id]}
-                        onChange={(event) => changeCart({
-                          ...cart,
-                          selected: { ...cart.selected, [id]: event.target.checked },
-                        })}
-                      />
-                      <Image src={p.image} alt="" width={54} height={54} />
-                      <span className={styles.itemBody}>
-                        <strong>{p.name}</strong>
-                        <small>
-                          {mode === "plan"
-                            ? `${id === "milk" ? "Litres" : "500 g"} · ${repeat === "custom" ? "Your selected dates" : repeat === "days" ? "Selected weekdays" : (repeat ?? "Scheduled")}`
-                            : id === "milk"
-                              ? "Litres"
-                              : "500 g · One delivery"}
-                        </small>
-                      </span>
-                      <span className={styles.linePrice}>
-                        {money(
-                          id === "milk"
-                            ? quote.milkTotal
-                            : (quote.productTotals[id] ?? 0),
-                        )}
-                      </span>
-                    </label>
-                    <div className={styles.itemActions}>
-                      {variable ? (
-                        <span className={styles.variable}>
-                          Litres vary by day
-                        </span>
-                      ) : (
-                        <div className={styles.stepper}>
-                          <button
-                            type="button"
-                            disabled={item.quantity <= 1}
-                            aria-label={`Decrease cart ${id} quantity`}
-                            onClick={() => quantity(id, item.quantity - 1)}
-                          >
-                            −
-                          </button>
-                          <output>{item.quantity}</output>
-                          <button
-                            type="button"
-                            disabled={item.quantity >= 5}
-                            aria-label={`Increase cart ${id} quantity`}
-                            onClick={() => quantity(id, item.quantity + 1)}
-                          >
-                            +
-                          </button>
+            {modes.map((mode) => {
+              const cart = state.carts[mode];
+              const routines = cartRoutines(cart);
+              const quote = cartQuote(cart, mode, firstPlanStart, prices);
+              const title = mode === "plan" ? "Scheduled order" : "One-time order";
+              const groupCount = cartCount(cart);
+              return <section key={mode} className={styles.group} aria-label={title}>
+                <header className={styles.groupHeading}>
+                  <h3>{title}</h3>
+                  <span>{groupCount} {groupCount === 1 ? "product" : "products"}</span>
+                </header>
+                <ul className={styles.items}>
+                  {(["milk", "paneer", "ghee"] as const).map((id) => {
+                    const item = cart[id];
+                    if (!item) return null;
+                    const p = shopProduct(id, prices);
+                    const repeat = routines.find((r) => r.id === id)?.repeat;
+                    const variable =
+                      id === "milk" &&
+                      mode === "plan" &&
+                      cart.milk &&
+                      repeat === "days" &&
+                      new Set(cart.milk.schedule.filter((q) => q > 0)).size > 1;
+                    return (
+                      <li key={id}>
+                        <label className={styles.selectItem}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${p.name} for checkout`}
+                            checked={cart.selected[id]}
+                            onChange={(event) => changeCart(mode, {
+                              ...cart,
+                              selected: { ...cart.selected, [id]: event.target.checked },
+                            })}
+                          />
+                          <Image src={p.image} alt="" width={54} height={54} />
+                          <span className={styles.itemBody}>
+                            <strong>{p.name}</strong>
+                            <small>
+                              {mode === "plan"
+                                ? `${id === "milk" ? "Litres" : "500 g"} · ${repeat === "custom" ? "Your selected dates" : repeat === "days" ? "Selected weekdays" : (repeat ?? "Scheduled")}`
+                                : id === "milk"
+                                  ? "Litres"
+                                  : "500 g · One delivery"}
+                            </small>
+                          </span>
+                          <span className={styles.linePrice}>
+                            {money(
+                              id === "milk"
+                                ? quote.milkTotal
+                                : (quote.productTotals[id] ?? 0),
+                            )}
+                          </span>
+                        </label>
+                        <div className={styles.itemActions}>
+                          {variable ? (
+                            <span className={styles.variable}>
+                              Litres vary by day
+                            </span>
+                          ) : (
+                            <div className={styles.stepper}>
+                              <button
+                                type="button"
+                                disabled={item.quantity <= 1}
+                                aria-label={`Decrease cart ${id} quantity`}
+                                onClick={() => quantity(mode, id, item.quantity - 1)}
+                              >
+                                −
+                              </button>
+                              <output>{item.quantity}</output>
+                              <button
+                                type="button"
+                                disabled={item.quantity >= 5}
+                                aria-label={`Increase cart ${id} quantity`}
+                                onClick={() => quantity(mode, id, item.quantity + 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
+                          <div className={styles.itemLinks}>
+                            <Link className={styles.edit} href={`/shop/${id}`} aria-label={`Edit ${p.name}`} onClick={() => browseMode(mode)}>
+                              Edit
+                            </Link>
+                            <button type="button" className={styles.remove} aria-label={`Remove ${p.name}`}
+                              onClick={() => changeCart(mode, { ...cart, [id]: null, selected: { ...cart.selected, [id]: false } })}>
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                      )}
-                      <div className={styles.itemLinks}>
-                        <Link className={styles.edit} href={`/shop/${id}`} aria-label={`Edit ${p.name}`} onClick={() => setCartOpen(false)}>
-                          Edit
-                        </Link>
-                        <button type="button" className={styles.remove} aria-label={`Remove ${p.name}`}
-                          onClick={() => changeCart({ ...cart, [id]: null })}>
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            <label className={styles.date}>
-              {mode === "plan" ? "Plan starts" : "Delivery date"}
-              <input
-                type="date"
-                min={minimum}
-                value={cart.start}
-                onChange={(e) =>
-                  mode === "plan"
-                    ? update(shiftShopPlan(state, e.target.value))
-                    : changeCart({ ...cart, start: e.target.value })
-                }
-              />
-            </label>
-            {mode === "plan" ? (
-              <details className={styles.calendar}>
-                <summary>View your shared calendar</summary>
-                <SharedCalendar start={cart.start} rules={routines} />
-              </details>
-            ) : null}
-            {cart.milk && (!cart.paneer || !cart.ghee) ? (
+                      </li>
+                    );
+                  })}
+                </ul>
+                <label className={styles.date}>
+                  {mode === "plan" ? "Plan starts" : "Delivery date"}
+                  <input
+                    type="date"
+                    min={minimum}
+                    value={cart.start}
+                    onChange={(e) =>
+                      mode === "plan"
+                        ? update(shiftShopPlan(state, e.target.value))
+                        : changeCart(mode, { ...cart, start: e.target.value })
+                    }
+                  />
+                </label>
+                {mode === "plan" ? (
+                  <details className={styles.calendar}>
+                    <summary>View your shared calendar</summary>
+                    <SharedCalendar start={cart.start} rules={routines} />
+                  </details>
+                ) : null}
+              </section>;
+            })}
+            {suggestionMode && suggestionCart?.milk && (!suggestionCart.paneer || !suggestionCart.ghee) ? (
               <section
                 className={styles.suggestions}
                 aria-labelledby="cart-suggestions"
@@ -300,14 +304,14 @@ export function CartButton() {
                 <h3 id="cart-suggestions">Complete your basket.</h3>
                 <p>Something for the kitchen, too?</p>
                 {(["paneer", "ghee"] as const)
-                  .filter((id) => !cart[id])
+                  .filter((id) => !suggestionCart[id])
                   .map((id) => {
                     const p = shopProduct(id, prices);
                     return (
                       <Link
                         key={id}
                         href={`/shop/${id}`}
-                        onClick={() => setCartOpen(false)}
+                        onClick={() => browseMode(suggestionMode)}
                         aria-label={`Choose ${p.name}, ${p.unit}, ${money(p.price)}`}
                       >
                         <Image src={p.image} alt="" width={52} height={62} />
@@ -327,7 +331,7 @@ export function CartButton() {
             ) : null}
           </>
         )}
-        {hasItems && (
+        {count > 0 && (
           <section className={styles.bottom} aria-label="Selected order estimate">
             {checkoutReady && scheduledQuote ? (
               <>
@@ -348,6 +352,7 @@ export function CartButton() {
               <Link
                 className={styles.checkout}
                 href={checkoutHref}
+                prefetch={false}
                 onClick={() => setCartOpen(false)}
               >
                 Continue to delivery details <span aria-hidden="true">→</span>

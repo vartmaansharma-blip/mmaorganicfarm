@@ -32,6 +32,16 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
         hasTouch: width < 769,
       });
       await bootstrap(context);
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, "geolocation", {
+          configurable: true,
+          value: {
+            getCurrentPosition: (success) => success({
+              coords: { latitude: 22.82, longitude: 86.18, accuracy: 75 },
+            }),
+          },
+        });
+      });
       const page = await context.newPage(),
         errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
@@ -56,6 +66,17 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           await page.locator("[class*=heroPhoto] button").count(),
           0,
         );
+        const location = page.getByRole("button", { name: /Change delivery location/ });
+        if (theme === "dark") {
+          await location.getByText("Near Jamshedpur").waitFor();
+          await location.click();
+          const picker = page.getByRole("dialog", { name: "Delivery location" });
+          await picker.getByLabel("Town or locality").fill("Bistupur");
+          await picker.getByRole("button", { name: "Save location" }).click();
+          await location.getByText("Bistupur").waitFor();
+        } else {
+          await location.getByText("Bistupur").waitFor();
+        }
         const trigger = page.getByRole("button", { name: /Open cart,/ });
         await trigger.click();
         const dialog = page.getByRole("dialog", { name: "Your cart." });
@@ -155,16 +176,9 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           await checkout.getAttribute("href"),
           /routine=milk%3A2%3Acustom/,
         );
-        await dialog
-          .getByRole("button", { name: "One-time (0)", exact: true })
-          .click();
-        assert.equal(
-          await dialog.getByText("Good things belong here.").isVisible(),
-          true,
-        );
-        await dialog
-          .getByRole("button", { name: "Scheduled (1)", exact: true })
-          .click();
+        assert.equal(await dialog.getByRole("region", { name: "One-time order" }).count(), 0);
+        const scheduled = dialog.getByRole("region", { name: "Scheduled order" });
+        await scheduled.getByRole("checkbox", { name: "Select Farm milk for checkout" }).waitFor();
         assert.equal(
           await dialog
             .getByRole("link", { name: "Edit Farm milk", exact: true })
@@ -206,6 +220,10 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
         await page
           .getByRole("button", { name: "Add to cart", exact: true })
           .click();
+        await page.getByRole("button", { name: "Open cart, 2 products" }).waitFor({ state: "attached" });
+        const oneTime = dialog.getByRole("region", { name: "One-time order" });
+        await oneTime.getByRole("checkbox", { name: "Select Fresh paneer for checkout" }).waitFor();
+        await scheduled.getByRole("checkbox", { name: "Select Farm milk for checkout" }).waitFor();
         await dialog.getByRole("button", { name: "Close cart" }).click();
         await page.goto(`${base}/shop/ghee`, { waitUntil: "networkidle" });
         await page
@@ -213,7 +231,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
           .click();
         assert.equal(
           await page
-            .getByRole("button", { name: "Open cart, 2 products" })
+            .getByRole("button", { name: "Open cart, 3 products" })
             .count(),
           1,
         );
@@ -225,7 +243,7 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
         assert.match(new URLSearchParams(combined.searchParams.get("nextPlan")).get("routine"), /^milk:/);
         assert.equal(await checkout.count(), 1);
         const summary = dialog.getByRole("region", { name: "Selected order estimate" });
-        await summary.getByText("One payment for your one-time and scheduled items.").waitFor();
+        await summary.getByText(/^One payment(?: for your|\. Delivery is free)/).waitFor();
         const total = summary.getByText("Estimated total").locator("..").locator("strong");
         const fullTotal = await total.textContent();
         if (width === 390 && theme === "light") {
@@ -252,18 +270,16 @@ for (const [engine, driver] of Object.entries({ chromium, webkit })) {
         const scheduledOnly = new URL(await checkout.getAttribute("href"), base);
         assert.equal(scheduledOnly.searchParams.get("purchase"), "plan");
         assert.equal(scheduledOnly.searchParams.has("nextPlan"), false);
-        await dialog.getByRole("button", { name: "Scheduled (1)", exact: true }).click();
         const milkRow = dialog.getByRole("checkbox", { name: "Select Farm milk for checkout" }).locator("..");
         await milkRow.getByText("Farm milk", { exact: true }).click();
         assert.equal(await dialog.getByRole("button", { name: "Continue to delivery details" }).isDisabled(), true);
         await milkRow.getByText("Farm milk", { exact: true }).click();
-        await dialog.getByRole("button", { name: "One-time (1)", exact: true }).click();
         await dialog.getByText("Fresh paneer", { exact: true }).click();
         assert.match(await checkout.getAttribute("href"), /nextPlan=/);
         await dialog.getByRole("button", { name: "Close cart" }).click();
         await page.goto(base, { waitUntil: "networkidle" });
         await page
-          .getByRole("button", { name: "Open cart, 1 product" })
+          .getByRole("button", { name: "Open cart, 2 products" })
           .click();
         assert.equal(
           await dialog

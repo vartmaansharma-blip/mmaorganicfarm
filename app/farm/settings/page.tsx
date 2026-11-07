@@ -6,7 +6,8 @@ import { readProductCatalogue } from "@/lib/product-prices-server";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
 import { FarmForm } from "../farm-form";
 import { FormSubmitButton } from "../form-submit-button";
-import { updateProductPrices } from "./actions";
+import { updateProductPrices, updateReferralSettings } from "./actions";
+import { readReferralWorkspace } from "@/lib/referrals";
 import { WorkspaceHeader } from "../workspace-parts";
 import styles from "../operations-workbench.module.css";
 export const metadata = {
@@ -15,7 +16,7 @@ export const metadata = {
 };
 export default async function SettingsPage({searchParams}: {searchParams: Promise<{error?: string; message?: string}>}) {
   const { role, supabase } = await requireFarmManager("/farm/settings");
-  const catalogue = await readProductCatalogue();
+  const [catalogue, referrals] = await Promise.all([readProductCatalogue(), readReferralWorkspace(supabase)]);
   const messages = await searchParams;
   const {data: changes} = await supabase.from("farm_change_log").select("id,reason,before_state,after_state,created_at").eq("record_type","catalogue").order("created_at",{ascending:false}).limit(12);
   const products = [{id:"milk",name:"Fresh milk",unit:"1 litre"}, ...FARM_PRODUCTS, {id:"bottle",name:"New glass bottle",unit:"per litre"}] as const;
@@ -95,6 +96,24 @@ export default async function SettingsPage({searchParams}: {searchParams: Promis
           </details>
         ) : null}
       </section>
+      {referrals ? <section className={styles.panel}>
+        <h2>Refer &amp; Earn</h2>
+        <p className={styles.hint}>The invited customer gets a discount on their first scheduled month. The sender earns a discount after the invited customer’s first completed paid delivery. Amounts apply to newly linked codes.</p>
+        {role === "admin" ? <FarmForm key={referrals.revision} action={updateReferralSettings} className={styles.actionForm}>
+          <input type="hidden" name="revision" value={referrals.revision} />
+          <label><input name="enabled" type="checkbox" defaultChecked={referrals.enabled} /> Accept new referrals</label>
+          <label><input name="discount_enabled" type="checkbox" defaultChecked={referrals.discount_enabled} /> Apply referral discounts at checkout</label>
+          <fieldset><legend>Discounts · INR</legend><div className={styles.priceGrid}>
+            <label>Referring customer<span className={styles.priceInput}><span aria-hidden="true">₹</span>
+              <input name="referrer" type="number" min="0" max="100000" step="0.01" required defaultValue={referrals.referrer_paise / 100} />
+            </span></label>
+            <label>New customer<span className={styles.priceInput}><span aria-hidden="true">₹</span>
+              <input name="newcomer" type="number" min="0" max="100000" step="0.01" required defaultValue={referrals.newcomer_paise / 100} />
+            </span></label>
+          </div></fieldset>
+          <FormSubmitButton pendingLabel="Saving rewards…">Save referral settings</FormSubmitButton>
+        </FarmForm> : <p>{referrals.enabled ? "Accepting referrals" : "Paused"} · {formatCheckoutAmount(referrals.referrer_paise)} for the referrer · {formatCheckoutAmount(referrals.newcomer_paise)} for the new customer</p>}
+      </section> : null}
       <section className={styles.panel}>
         <h2>Service policy</h2>
         <p>

@@ -1,0 +1,24 @@
+.control { min-width:0; justify-self:end; }
+.trigger { display:flex; align-items:center; gap:6px; min-height:44px; min-width:0; max-width:100%; padding:0 10px; border:0; border-radius:10px; background:transparent; color:inherit; cursor:pointer; font:inherit; font-size:12px; font-weight:650; }
+.trigger > :is(svg,span:last-child) { flex:none; }
+.trigger span:nth-child(2) { min-width:0; max-width:145px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.trigger:hover { background:var(--hero-hover); }
+.dialog { box-sizing:border-box; width:min(400px,calc(100% - 24px)); max-height:calc(100dvh - 24px); padding:18px; border:1px solid var(--color-border); border-radius:17px; background:var(--color-surface-raised); color:var(--color-text-primary); }
+.dialog::backdrop { background:var(--color-scrim); }
+.heading { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.heading h2 { margin:0; font:500 24px var(--font-fraunces),serif; }
+.dialog p { margin:8px 0 14px; font-size:13px; line-height:1.5; color:var(--color-text-secondary); }
+.dialog button { min-height:44px; border-radius:999px; font:inherit; font-size:13px; font-weight:650; cursor:pointer; }
+.heading button { width:44px; padding:0; flex:none; border:1px solid var(--color-border); background:transparent; color:inherit; font-size:23px; }
+.detect, .save { width:100%; padding:8px 12px; border:1px solid var(--color-border); background:transparent; color:var(--color-accent); }
+.detect:disabled { opacity:.65; cursor:wait; }
+.dialog form { display:grid; gap:10px; margin-top:15px; }
+.dialog label { display:grid; gap:6px; font-size:13px; }
+.dialog input { box-sizing:border-box; min-width:0; min-height:44px; padding:9px 10px; border:1px solid var(--color-input-border); border-radius:8px; background:var(--color-input-background); color:var(--color-text-primary); font:inherit; font-size:16px; }
+.save { border-color:transparent; background:var(--color-action-primary); color:var(--color-action-primary-text); }
+:is(.trigger,.dialog :is(input,button)):focus-visible { outline:2px solid var(--color-focus-ring); outline-offset:2px; }
+@media (max-width:900px) {
+  .control { grid-column:1/-1; order:1; justify-self:start; }
+  .trigger { padding-inline:2px 8px; }
+  .trigger span:nth-child(2) { max-width:min(64vw,250px); }
+}
