@@ -1048,3 +1048,6 @@
     display: none;
   }
 }
+
+.tabs a { display:inline-grid; min-height:44px; place-items:center; padding:8px 10px; border:1px solid var(--farm-line); border-radius:10px; color:var(--farm-ink); text-decoration:none; font-size:clamp(11px,3vw,14px); }
+.tabs a[aria-current] { font-weight:700; background:var(--farm-surface); }

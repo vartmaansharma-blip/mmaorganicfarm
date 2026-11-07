@@ -65,12 +65,14 @@ export function DeliveryOutcomeForm({
   bottlesExpected,
   recorded,
   nextStopId,
+  verifyManifest = false,
 }: {
   deliveryIds: string[];
   items: OutcomeItem[];
   bottlesExpected: number;
   recorded: boolean;
   nextStopId?: string;
+  verifyManifest?: boolean;
 }) {
   const { state, submit, pending } = useSave(saveDeliveryOutcome);
   const [requestKey] = useState(() => crypto.randomUUID());
@@ -102,6 +104,9 @@ export function DeliveryOutcomeForm({
         <input key={id} name="deliveryId" type="hidden" value={id} />
       ))}
       <input name="requestKey" type="hidden" value={requestKey} />
+      {verifyManifest ? <input name="expectedManifest" type="hidden" value={JSON.stringify(items
+        .map(({ delivery_id, product_key, quantity }) => ({ delivery_id, product_key, quantity: Number(quantity) }))
+        .sort((a, b) => a.delivery_id.localeCompare(b.delivery_id) || a.product_key.localeCompare(b.product_key)))} /> : null}
       <fieldset disabled={pending || state?.ok}>
         <legend>At the doorstep</legend>
         <label>

@@ -41,7 +41,7 @@ const requests=[];
 const product=(key='milk',quantity=2,fulfilled_quantity=null)=>({product_key:key,product_name:key==='milk'?'Fresh milk':'Fresh paneer',quantity,unit:key==='milk'?'L':'kg',fulfilled_quantity});
 const extendedWeek=()=>['legacy-window','legacy-prepared'].includes(scenario);
 const plan=()=>({id:planId,user_id:userId,status:scenario==='pending'?'pending_confirmation':scenario==='paused'?'paused':'active',start_date:date,billing_model:scenario==='legacy'||extendedWeek()?'milk_credits':'calendar_month',period_end_exclusive:plus(30),purchased_deliveries:30,delivered_deliveries:0,bottle_choice:'return',weekly_delivery_items:[],scheduled_delivery_items:(extendedWeek()?[1,2,9]:[0,1,2,3]).map(n=>({...product(),delivery_date:plus(n)})),delivery_exceptions:extendedWeek()?[{delivery_date:plus(1),product_key:'milk',action:'skip',quantity:null,unit:null}]:[],delivery_pauses:extendedWeek()?[{id:'pause1',start_date:plus(2),end_date:plus(2)}]:[]});
-const rows=()=>['none','pending','paused','legacy-window'].includes(scenario)?[]:[{id:recordId,user_id:userId,plan_id:planId,order_id:null,delivery_date:scenario==='legacy-prepared'?plus(9):date,visit_key:'local-visit',status:({out:'out_for_delivery',preparing:'ready',delivered:'delivered',partial:'failed'})[scenario]??'planned',updated_at:new Date().toISOString(),delivery_confirmed:scenario==='delivered',delivered_confirmed_at:scenario==='delivered'?new Date().toISOString():null,replacement_of_delivery_id:null,fulfilment_root_id:null,daily_delivery_items:scenario==='partial'?[product('milk',2,2),product('paneer',.5,0)]:[product('milk',2,scenario==='delivered'?2:null)]}];
+const rows=()=>['none','pending','paused','legacy-window'].includes(scenario)?[]:[{id:recordId,user_id:userId,plan_id:planId,order_id:null,delivery_date:scenario==='legacy-prepared'?plus(9):date,visit_key:'local-visit',status:({out:'out_for_delivery',preparing:'ready',delivered:'delivered',partial:'failed'})[scenario]??'planned',updated_at:new Date().toISOString(),delivery_confirmed:scenario==='delivered',delivered_confirmed_at:scenario==='delivered'?new Date().toISOString():null,replacement_of_delivery_id:null,fulfilment_root_id:null,daily_delivery_items:scenario==='spare'?[product('paneer',1)]:scenario==='partial'?[product('milk',2,2),product('paneer',.5,0)]:[product('milk',2,scenario==='delivered'?2:null)]}];
 const user={id:userId,aud:'authenticated',role:'authenticated',email:'fixture@example.invalid',email_confirmed_at:new Date().toISOString(),created_at:new Date().toISOString(),app_metadata:{provider:'email',providers:['email']},user_metadata:{full_name:'Test Customer'},identities:[]};
 const stub=createServer(async(req,res)=>{
  const url=new URL(req.url,'http://127.0.0.1'); requests.push({path:url.pathname,query:Object.fromEntries(url.searchParams),method:req.method});
@@ -70,7 +70,7 @@ const stub=createServer(async(req,res)=>{
   routeRefreshes.push(JSON.parse(raw));
   res.end('null');return;
  }
- if(!['GET','HEAD'].includes(req.method) && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
+ if(!['GET','HEAD'].includes(req.method) && !['/rest/v1/rpc/get_customer_delivery_outcomes','/rest/v1/rpc/get_today_route_spare'].includes(url.pathname)){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
  if(url.pathname.endsWith("/farm_catalog_prices"))data={revision:"00000000-0000-4000-8000-000000000099",prices:{milk:6200,paneer:20000,ghee:37500,bottle:1000}};
@@ -113,6 +113,7 @@ const stub=createServer(async(req,res)=>{
   res.setHeader('content-range',data.length?`0-${data.length-1}/${data.length}`:'*/0');
   if(url.searchParams.has('limit'))data=data.slice(0,Number(url.searchParams.get('limit')));
  }
+ if(url.pathname.endsWith('/rpc/get_today_route_spare')) data=3;
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
 });
@@ -292,7 +293,7 @@ try{
    await preview.waitFor({state:'hidden'});
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Notifications, 21 unread');
    assert.equal(await page.getByRole('button',{name:/Open notification:/}).count(),0,'existing unread items never pop up on page entry');
-   notices.unshift({ ...notices[0], id:'0ecfc66a-e2e0-439c-9bb3-95d5af93b602', kind:'delivery_ready',
+   notices.unshift({ ...notices[0], id:'0ecfc66a-e2e0-439c-9bb3-95d5af93b602', kind:'delivery_change',
      title:'Delivery quantity updated', message:'Your prepaid milk was moved to the next delivery.', read_at:null,
      delivery_id:null, order_id:null, created_at:new Date(Math.max(Date.now(),Date.parse(notices[0].created_at)+60_000)).toISOString() });
    await page.evaluate(()=>window.dispatchEvent(new Event('mma:notifications-updated')));
@@ -342,11 +343,23 @@ try{
    fail=false;scenario='delivered';await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();assert.equal(await page.getByText('Showing the last successful update',{exact:false}).count(),0);
    fail=true;await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'error');assert.equal(await page.getByRole('heading',{name:'A quiet day at your doorstep',exact:true}).count(),0);fail=false;await page.getByRole('button',{name:'Try again →'}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();
    scenario='out';await page.emulateMedia({reducedMotion:'reduce'});await page.goto(`${base}/account`,{waitUntil:'networkidle'});assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).isVisible(),false);assert.deepEqual(await page.locator('[data-scene-state]').evaluate(e=>e.getAnimations({subtree:true}).filter(a=>a.playState==='running').length),0);
+   scenario='spare';
+   await page.goto(`${base}/account`,{waitUntil:'networkidle'});
+   await page.getByRole('button',{name:'Modify today’s delivery'}).click();
+   const editor=page.locator('#today-change-form');
+   await editor.getByRole('spinbutton',{name:'Requested litres'}).fill('5');
+   await editor.getByRole('button',{name:'Check driver stock'}).click();
+   await editor.getByText('Would you like to take 3 L instead?',{exact:true}).waitFor();
+   assert.equal(await editor.getByRole('button',{name:/Pay|Send to the farm/}).count(),0);
+   await editor.screenshot({path:path.join(output,`${engine}-390-driver-stock-offer.png`),animations:'disabled'});
+   await editor.getByRole('button',{name:'Choose 3 L',exact:true}).click();
+   await editor.getByText('The checked stock covers this amount. Same-day payment is currently unavailable.',{exact:true}).waitFor();
+   assert.equal(await editor.getByRole('button',{name:/Pay|Send to the farm/}).count(),0);
    await context.close();
   }finally{await browser.close();}
  }
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
- const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')),'fixture permits no order or payment writes');
+ const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')||r.path.endsWith('/rpc/get_today_route_spare')),'fixture permits no order or payment writes');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
  console.log(JSON.stringify({layouts:results.length,sections:5,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}

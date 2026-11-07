@@ -1,3 +1,4 @@
+import { type DriverTodayChange } from "@/lib/today-delivery-management";
 import { orderedPendingStops, type GpsWorkspace } from "@/lib/gps-routing";
 import {
   deliveryNavigationUrl,
@@ -39,6 +40,7 @@ type Stop = {
 export async function DriverDay({
   date,
   selected,
+  updatesOnly = false,
   route,
   routes,
   instructions,
@@ -47,6 +49,7 @@ export async function DriverDay({
 }: {
   date: string;
   selected?: string;
+  updatesOnly?: boolean;
   route?: string;
   routes: { name: string; stops: Stop[] }[];
   instructions: Map<string, string>;
@@ -103,6 +106,11 @@ export async function DriverDay({
         .limit(5)
     : { data: [], error: null };
   if (requests.error) throw requests.error;
+  const updatesResult = await supabase.rpc("get_driver_today_changes", { p_date: date });
+  const approved = updatesResult.error ? [] : (updatesResult.data ?? []) as DriverTodayChange[];
+  const currentUpdates = approved.filter(change => current?.deliveryIds.includes(change.delivery_id));
+  const updateError = updatesResult.error
+    && !["PGRST202", "42883"].includes(updatesResult.error.code);
   const href = (id: string) =>
     `/farm/delivery-sheet?${new URLSearchParams({ date, stop: id, ...(route ? { route } : {}) })}`;
   return (
@@ -126,7 +134,7 @@ export async function DriverDay({
       <header className={styles.header}>
         <div>
           <p>Delivery staff</p>
-          <h1>My route</h1>
+          <h1>{updatesOnly ? "Delivery updates" : "My route"}</h1>
           <span>{formatCalendarDate(date)}</span>
         </div>
         <span className={styles.count}>
@@ -140,7 +148,21 @@ export async function DriverDay({
         </label>
         <button>Apply</button>
       </FarmForm>
-      {current ? (
+      <nav className={styles.driverTabs} aria-label="Driver workspace">
+        <Link aria-current={updatesOnly ? undefined : "page"} href={`/farm/delivery-sheet?date=${date}`}>Route</Link>
+        <Link href={`/farm/runs?date=${date}`}>Inventory</Link>
+        <Link aria-current={updatesOnly ? "page" : undefined} href={`/farm/delivery-sheet?date=${date}&view=updates`}>Updates</Link>
+        <Link href={`/farm/runs?date=${date}&view=profile`}>Profile</Link>
+      </nav>
+      {updatesOnly ? <section className={styles.empty}>
+        <h2>Confirmed changes</h2>
+        {updateError ? <p role="status">Updates could not sync. Refresh the route before delivering.</p>
+          : approved.length ? <ul className={styles.changes}>{approved.map(change => {
+            const stop = stops.find(row => row.deliveryIds.includes(change.delivery_id));
+            return stop && change.product_key ? <li key={change.id}><Link href={href(stop.id)}>{stop.customer_name}</Link>
+              <span>{productName(change.product_key)} · {change.previous_quantity} → {change.requested_quantity}</span></li> : null;
+          })}</ul> : <p>No confirmed changes for your assigned route.</p>}
+      </section> : current ? (
         <>
           <section className={styles.context}>
             <span>{current.routeName}</span>
@@ -205,11 +227,19 @@ export async function DriverDay({
                   </div>
                 ))}
               </div>
+              {currentUpdates.length ? <aside className={styles.changeBanner} aria-label="Approved quantity changes">
+                <strong>Updated before packing</strong>
+                {currentUpdates.map(change => change.product_key ? <span key={change.id}>
+                  {productName(change.product_key)} · {change.previous_quantity} → {change.requested_quantity}
+                </span> : null)}
+              </aside> : null}
+              {updateError ? <p role="status">Change history could not sync. Refresh the route to check for updates.</p> : null}
               <DeliveryOutcomeForm
                 deliveryIds={current.deliveryIds}
                 items={current.outcomeItems}
                 bottlesExpected={current.bottlesExpected}
                 recorded={isRecorded(current)}
+                verifyManifest={!updatesResult.error || Boolean(updateError)}
               />
               {date === todayInIndia() ? (
                 <DriverCustomerRequestForm

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function RunsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; view?: string }>;
 }) {
   const { role, supabase } = await requireFarmStaff("/farm/runs");
   const params = await searchParams;
@@ -56,5 +56,5 @@ export default async function RunsPage({
       </main>
     );
   }
-  return <RunBoard initial={data as RunWorkspace} />;
+  return <RunBoard initial={data as RunWorkspace} profile={role === "driver" && params.view === "profile"} />;
 }

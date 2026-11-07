@@ -1,3 +1,5 @@
+import type { TodayManagement } from "./today-delivery-management";
+
 // Customer-facing interpretation only. Schedules are never delivery confirmations.
 export type DeliveryItem = { product_key: string; quantity: number; unit: string; fulfilled_quantity?: number | null };
 export type CustomerPlan = {
@@ -24,6 +26,7 @@ export type DeliveryDay = {
   editablePlans: { id: string; items: DeliveryItem[] }[];
 };
 export type DeliverySnapshot = {
+  management?: TodayManagement;
   date: string; checkedAt: string; updatedAt: string | null; completedAt: string | null;
   state: DeliveryState; visits: DeliveryVisit[];
   upcoming: DeliveryDay[];
