@@ -6,7 +6,7 @@ import { useEffect, useId, useRef } from "react";
 import { advanceFilm, clamp01, FILM_CUES, FILM_DURATION_MS, filmFrame, heroProgress, liquidGeometry, macroCamera, macroPresentation, MACRO_VIDEO_DURATION_MS, milkFill, playing, startFilm, type HeroFilm } from "@/lib/hero-motion";
 import { createMacroVideo } from "@/lib/hero-macro-video";
 import { condensationFrame, GLASS_BEADS } from "@/lib/hero-condensation";
-import { HERO_FILL_VIEWPORTS, LATTE_VIEWPORTS, latteFrame, latteProgress } from "@/lib/hero-latte";
+import { HERO_FILL_VIEWPORTS, LATTE_VIEWPORTS, HERO_RUNWAY_TAIL_PX, latteFrame, latteProgress } from "@/lib/hero-latte";
 import { LatteArt } from "./latte-art";
 import styles from "./rising-glass-hero.module.css";
 
@@ -45,8 +45,8 @@ export function RisingGlassHero() {
       const rect = root.getBoundingClientRect();
       const header = parseFloat(getComputedStyle(panel).top) || 0;
       const y = hold ? hold.y : window.scrollY;
-      const fillDistance = Math.max(1, rect.height - panel.offsetHeight) * HERO_FILL_VIEWPORTS / (HERO_FILL_VIEWPORTS + LATTE_VIEWPORTS);
-      const revealDistance = Math.max(1, rect.height - panel.offsetHeight - fillDistance);
+      const fillDistance = Math.max(1, rect.height - panel.offsetHeight - HERO_RUNWAY_TAIL_PX) * HERO_FILL_VIEWPORTS / (HERO_FILL_VIEWPORTS + LATTE_VIEWPORTS);
+      const revealDistance = Math.max(1, rect.height - panel.offsetHeight - HERO_RUNWAY_TAIL_PX - fillDistance);
       return { rect, header, y, fillDistance, revealDistance, trigger: y + rect.top - header + fillDistance };
     };
     const saveStyles = (element: HTMLElement, properties: string[]) => {
@@ -352,7 +352,7 @@ export function RisingGlassHero() {
   }, []);
 
   return (
-    <section ref={section} className={styles.sequence} style={{ "--fill-runway": `${HERO_FILL_VIEWPORTS * 100}svh`, "--latte-runway": `${LATTE_VIEWPORTS * 100}svh` } as React.CSSProperties} id="home" aria-labelledby="hero-heading">
+    <section ref={section} className={styles.sequence} style={{ "--end-hold": `${HERO_RUNWAY_TAIL_PX}px`, "--fill-runway": `${HERO_FILL_VIEWPORTS * 100}svh`, "--latte-runway": `${LATTE_VIEWPORTS * 100}svh` } as React.CSSProperties} id="home" aria-labelledby="hero-heading">
       <div className={styles.panel}>
         <div className={styles.copy}>
           <p className={styles.label}>M&apos;MA ORGANIC FARM</p>

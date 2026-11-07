@@ -22,7 +22,7 @@
   --liquid-depth: 1.2%;
   position: relative;
   overflow: clip;
-  height: calc(max(100svh - var(--home-header-height), 560px) + var(--fill-runway, 55svh) + var(--latte-runway, 125svh));
+  height: calc(max(100svh - var(--home-header-height), 560px) + var(--fill-runway, 55svh) + var(--latte-runway, 125svh) + var(--end-hold, 2px));
   background: var(--hero-paper);
   color: var(--hero-ink);
   scroll-margin-top: var(--home-header-height);
@@ -135,8 +135,8 @@
   .sequence { --coffee-progress: 1; }
 }
 
-@media (max-height: 740px) and (min-width: 721px) { .sequence { height: calc(max(100svh - var(--home-header-height), 480px) + var(--fill-runway, 55svh) + var(--latte-runway, 125svh)); } }
-@media (max-width: 720px) and (max-height: 700px) { .sequence { height: calc(100svh - var(--home-header-height) + var(--fill-runway, 55svh) + var(--latte-runway, 125svh)); } }
+@media (max-height: 740px) and (min-width: 721px) { .sequence { height: calc(max(100svh - var(--home-header-height), 480px) + var(--fill-runway, 55svh) + var(--latte-runway, 125svh) + var(--end-hold, 2px)); } }
+@media (max-width: 720px) and (max-height: 700px) { .sequence { height: calc(100svh - var(--home-header-height) + var(--fill-runway, 55svh) + var(--latte-runway, 125svh) + var(--end-hold, 2px)); } }
 @media (prefers-reduced-motion: reduce), (scripting: none) { .sequence { height: auto; } }
 
 /* Sparse condensation stays on the tapered glass surface, below the macro. */

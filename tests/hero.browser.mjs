@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium, webkit } from "playwright";
+import {HERO_RUNWAY_TAIL_PX} from "../lib/hero-latte.ts";
 import { startPublicCatalogueFixture } from "./helpers/public-catalogue-fixture.mjs";
 
 const port = process.env.HERO_TEST_PORT || "3101";
@@ -37,13 +38,13 @@ async function ready() {
 }
 
 async function scrollToFill(page, progress) {
-  await page.evaluate(p => {
+  await page.evaluate(({p,tail}) => {
     const root = document.getElementById("home");
     const panel = root.firstElementChild;
     const rect = root.getBoundingClientRect();
     const header = parseFloat(getComputedStyle(panel).top) || 0;
-    window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight) * .55 / 1.8, behavior: "instant" });
-  }, progress);
+    window.scrollTo({ top: scrollY + rect.top - header + p * (rect.height - panel.offsetHeight - tail) * .55 / 1.8, behavior: "instant" });
+  }, {p:progress,tail:HERO_RUNWAY_TAIL_PX});
   if (progress < .99) await page.waitForFunction(p => Number(document.getElementById("home").dataset.fill) >= p * p * (3 - 2 * p) - .01, progress);
 }
 const state = (page, value) => page.waitForFunction(s => document.getElementById('home')?.dataset.state === s, value);

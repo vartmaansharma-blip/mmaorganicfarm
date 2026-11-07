@@ -1,6 +1,8 @@
 /** Native scroll distances, independent of the introductory film's clock. */
 export const HERO_FILL_VIEWPORTS = .55;
 export const LATTE_VIEWPORTS = 1.25;
+/** Keep the final reveal before fractional native-scroll rounding unpins the panel. */
+export const HERO_RUNWAY_TAIL_PX = 2;
 const clamp = (n: number) => Math.min(1, Math.max(0, Number.isFinite(n) ? n : 0));
 const between = (n: number, from: number, to: number) => {
   const t = clamp((n - from) / (to - from));

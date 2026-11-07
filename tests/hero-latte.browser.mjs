@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import {HERO_RUNWAY_TAIL_PX} from '../lib/hero-latte.ts';
 import { chromium, webkit } from 'playwright';
 import { startPublicCatalogueFixture } from './helpers/public-catalogue-fixture.mjs';
 
@@ -15,7 +16,7 @@ const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','
 server.stdout.on('data',b=>log+=b);server.stderr.on('data',b=>log+=b);
 const results=[];
 async function progress(page,p){
- await page.evaluate(p=>{const root=document.getElementById('home'),panel=root.firstElementChild,r=root.getBoundingClientRect(),h=parseFloat(getComputedStyle(panel).top)||0,travel=r.height-panel.offsetHeight;window.scrollTo({top:scrollY+r.top-h+travel*(.55+1.25*p)/1.8,behavior:'instant'});},p);
+ await page.evaluate(({p,tail})=>{const root=document.getElementById('home'),panel=root.firstElementChild,r=root.getBoundingClientRect(),h=parseFloat(getComputedStyle(panel).top)||0,travel=r.height-panel.offsetHeight-tail;window.scrollTo({top:scrollY+r.top-h+travel*(.55+1.25*p)/1.8,behavior:'instant'});},{p,tail:HERO_RUNWAY_TAIL_PX});
  try{await page.waitForFunction(p=>Math.abs(Number(document.getElementById('home').dataset.latteProgress)-p)<.005,p);}catch(error){console.log('progress failure',p,await page.evaluate(()=>({y:scrollY,root:document.getElementById('home')?.dataset,rect:document.getElementById('home')?.getBoundingClientRect().toJSON(),state:history.state,body:document.body.style.cssText})));throw error;}
  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 }
