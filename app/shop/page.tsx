@@ -29,6 +29,7 @@ export default async function ShopPage() {
           {SHOP_PRODUCTS.map((p) => (
             <Link
               href={`/shop/${p.id}`}
+              prefetch={false}
               className={styles.productCard}
               key={p.id}
             >
