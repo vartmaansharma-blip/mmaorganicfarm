@@ -467,7 +467,10 @@ try {
           await toggle.click();
           assert.equal(await dialog.getByRole("link", { name: /Farm/ }).getAttribute("aria-current"), "location");
           await dialog.getByRole("link", { name: /Home/ }).click();
-          await page.waitForFunction(() => scrollY < 2 && document.getElementById("home").dataset.state === "COMPLETED");
+          await page.waitForFunction(() => {
+            const root=document.getElementById("home"),top=root.getBoundingClientRect().top;
+            return root.dataset.state === "COMPLETED" && top >= -2 && top < innerHeight * .25;
+          });
         } else {
           assert.equal(await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link").count(), 5);
         }
