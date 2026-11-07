@@ -51,13 +51,23 @@ export function ShopHero() {
   useEffect(() => {
     // Decode before revealing. The collection progresses once, basket to ghee.
     if (reduced || engaged || !visible || !inView || last || !loaded.includes(SLIDES[index + 1].id)) return;
-    const timer = setTimeout(() => setIndex(current => Math.min(current + 1, SLIDES.length - 1)), index === 0 ? 6500 : 5500);
+    const timer = setTimeout(() => {
+      // Native visibility/focus can change before React cleans up this timer.
+      // Recheck at the point of use so a hidden or engaged hero never advances.
+      const element = section.current;
+      if (!element || document.hidden || element.contains(document.activeElement)
+        || element.matches(":hover") || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const bounds = element.getBoundingClientRect();
+      if (bounds.bottom <= 0 || bounds.top >= innerHeight) return;
+      setIndex(current => Math.min(current + 1, SLIDES.length - 1));
+    }, index === 0 ? 6500 : 5500);
     return () => clearTimeout(timer);
   }, [index, reduced, engaged, visible, inView, last, loaded]);
 
   const slide = SLIDES[index];
   return (
     <section ref={section} className={styles.hero} aria-labelledby="shop-title" data-shop-hero data-slide={slide.id}
+      data-autoplay={reduced ? "static" : engaged || !visible || !inView || last ? "paused" : "playing"}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onFocusCapture={() => setFocused(true)}
       onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
