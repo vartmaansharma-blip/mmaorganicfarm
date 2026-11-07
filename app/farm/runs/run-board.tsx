@@ -265,6 +265,10 @@ function RunCard({
   const base = { id: run.id, version: run.version };
   const distance = journeyDistance(run),
     minutes = journeyMinutes(run);
+  const checkedSpare = Object.fromEntries(Object.entries(run.load).flatMap(([product, quantity]) => {
+    const spare = Math.round((Number(quantity) - Number(run.planned[product] ?? 0)) * 100) / 100;
+    return spare > 0 ? [[product, spare]] : [];
+  }));
   const routeHref = `/farm/delivery-sheet?${new URLSearchParams({ date, route: run.route_id })}`;
   return (
     <article
@@ -369,6 +373,11 @@ function RunCard({
             quantities={Object.keys(run.load).length ? run.load : run.planned}
             label="Product quantities"
           />
+          {driver && run.status === "in_progress" && run.acknowledged_at ? <>
+            <div className={styles.sectionHeading}><h3>Spare at loading</h3><span>Separate from assigned deliveries</span></div>
+            {Object.keys(checkedSpare).length ? <Totals quantities={checkedSpare} label="Checked spare stock" />
+              : <p>No spare stock was recorded at loading.</p>}
+          </> : null}
         </section>
         {run.return_note ? (
           <p className={styles.note}>
@@ -674,7 +683,7 @@ function RunCard({
     </article>
   );
 }
-export function RunBoard({ initial }: { initial: RunWorkspace }) {
+export function RunBoard({ initial, profile = false }: { initial: RunWorkspace; profile?: boolean }) {
   const [data, setData] = useState(initial);
   const [section, setSection] = useState("runs");
   const driver = data.role === "driver";
@@ -704,6 +713,7 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
       true,
     );
   };
+  const operatingProfile = driver ? data.drivers.find(person => person.id === data.actor) : null;
   return (
     <main
       className={styles.page}
@@ -713,7 +723,7 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
       <section className={styles.welcome}>
         <div>
           <p>Delivery operations</p>
-          <h1>{driver ? "My delivery runs" : "Delivery runs"}</h1>
+          <h1>{profile ? "Driver profile" : driver ? "My delivery runs" : "Delivery runs"}</h1>
           <span>
             {driver
               ? "Check your load, start your run and record deliveries."
@@ -730,6 +740,18 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
           </small>
         </div>
       </section>
+      {driver ? <nav className={styles.tabs} aria-label="Driver workspace">
+        <Link href={`/farm/delivery-sheet?date=${data.date}`}>Route</Link>
+        <Link aria-current={profile ? undefined : "page"} href={`/farm/runs?date=${data.date}`}>Inventory</Link>
+        <Link href={`/farm/delivery-sheet?date=${data.date}&view=updates`}>Updates</Link>
+        <Link aria-current={profile ? "page" : undefined} href={`/farm/runs?date=${data.date}&view=profile`}>Profile</Link>
+      </nav> : null}
+      {profile ? <section className={styles.empty}>
+        <h2>{operatingProfile?.name ?? "Delivery staff"}</h2>
+        {operatingProfile?.phone ? <p>Work contact · {operatingProfile.phone}</p> : null}
+        <p>{operatingProfile?.available === true ? "Available for this service day" : operatingProfile?.available === false ? "Unavailable for this service day" : "Availability has not been recorded for this day."}</p>
+        <p>Contact the farm manager to update your driver details.</p>
+      </section> : <>
       <div className={styles.toolbar}>
         <form method="get" className={styles.dateForm}>
           <label>
@@ -1162,6 +1184,7 @@ export function RunBoard({ initial }: { initial: RunWorkspace }) {
           </section>
         </section>
       ) : null}
+      </>}
     </main>
   );
 }

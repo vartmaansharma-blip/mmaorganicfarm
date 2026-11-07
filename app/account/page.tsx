@@ -1,3 +1,4 @@
+import { NavigationMenu } from "@/app/components/navigation-menu";
 import { CustomerNotificationBell } from "./notifications/notification-bell";
 import { uuidPattern } from "@/lib/customer-notifications";
 import { farmWhatsApp } from "@/lib/farm-contact";
@@ -13,7 +14,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatCheckoutAmount } from "@/lib/checkout-display";
-import { addCalendarDays, buildDeliveryCalendar, formatDeliveryQuantity, productName, todayInIndia } from "@/lib/delivery-calendar";
+import { addCalendarDays, buildDeliveryCalendar, formatDeliveryQuantity, nextDeliveryDateInIndia, productName, todayInIndia } from "@/lib/delivery-calendar";
 import { FARM_PRODUCTS, type FarmProductId } from "@/lib/farm-products";
 import { formatPlanStartDate, MILK_PLAN_DAYS } from "@/lib/milk-plan";
 import { completedMonthlyDates } from "@/lib/monthly-delivery-completion";
@@ -54,6 +55,10 @@ export default async function AccountPage({
 
   if (!user) redirect("/sign-in");
 
+  const nextDate = nextDeliveryDateInIndia();
+  const masterCalendar = section === "schedule"
+    ? supabase.rpc("read_master_delivery_schedule", { p_from: nextDate, p_through: nextDate })
+    : null;
   const todayResult = section === "today" ? loadCustomerDelivery(supabase, user.id).catch(() => null) : Promise.resolve(null);
   const { data: profile, error: profileError } = await supabase
     .from("customer_profiles")
@@ -99,6 +104,7 @@ export default async function AccountPage({
 
   const selectedPlan = deliveryPlans?.find(plan => plan.id === params.plan) ?? deliveryPlans?.find(plan => plan.status === "active" || plan.status === "paused") ?? deliveryPlans?.[0];
   const todaySnapshot = await todayResult;
+  const masterAvailable = (await masterCalendar)?.data != null;
   const { data: monthlyRecords, error: monthlyRecordsError } =
     section === "plans" && selectedPlan?.billing_model === "calendar_month"
       ? await supabase
@@ -219,9 +225,7 @@ export default async function AccountPage({
         </Link>
         <div className="customer-header-actions">
           <CustomerNotificationBell />
-          <Link className={styles.back} href="/milk">
-            Back to shop
-          </Link>
+          <NavigationMenu current="/account" />
         </div>
       </header>
 
@@ -479,6 +483,10 @@ export default async function AccountPage({
         {!deliveryPlan && !plansError ? <div className={styles.emptyPanel}><h2>Your next routine starts here.</h2><p>Confirmed plans and their calendars will appear here.</p><Link className={styles.startOrder} href="/milk">Choose your farm favourites</Link></div> : null}
         </> : null}
         {section === "schedule" ? <>
+        {masterAvailable ? <section className={styles.settingsGroup}>
+          <div><h2>Master Delivery Calendar</h2><p>Manage your regular week and exceptions for individual dates.</p></div>
+          <Link className={styles.editPlan} href="/calendar?view=monthly">Open calendar →</Link>
+        </section> : null}
           {selectedDeliveryId ? <section className={styles.settingsGroup} id="selected-delivery">
             <div>
               <h2>{noticeDelivery ? formatPlanStartDate(noticeDelivery.delivery_date) : "Delivery details"}</h2>

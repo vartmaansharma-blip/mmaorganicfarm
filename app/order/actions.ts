@@ -9,6 +9,8 @@ import {
   routinePrice,
 } from "@/lib/monthly-schedule";
 import { shopProduct } from "@/lib/shop-products";
+import { applyCheckoutReferral } from "@/lib/referrals";
+import { storedReferralDiscount } from "@/lib/referral-discount";
 import { orderReturnPath } from "@/lib/shop-draft";
 import { databaseErrorMessage } from "@/lib/database-errors";
 import { firstScheduledPlanStart } from "@/lib/first-scheduled-plan";
@@ -380,16 +382,28 @@ export async function saveDeliveryDetails(formData: FormData) {
             : "Your combined order could not be prepared. Please try again or review your saved cart.";
       redirect(orderUrl("error", databaseErrorMessage(batchError, reason), purchase, bottle, milk, extras, schedule, start, routine));
     }
+    let existingDiscount = 0;
     if (batch.status === "draft" && batch.amount_paise !== basket.totalPaise) {
+      const { data: children } = await supabase.from("checkout_batches").select("plan_order_id")
+        .eq("id", batch.id).eq("user_id", user.id).maybeSingle();
+      if (children) {
+        const { data: planOrder } = await supabase.from("orders").select("discount_code,discount_paise")
+          .eq("id", children.plan_order_id).eq("user_id", user.id).maybeSingle();
+        if (planOrder) existingDiscount = storedReferralDiscount(planOrder, true);
+      }
+    }
+    if (batch.status === "draft" && batch.amount_paise + existingDiscount !== basket.totalPaise) {
       const { error: bottleError } = await supabase.rpc("set_checkout_batch_bottle_mode", {
         p_batch_id: batch.id, p_mode: selectedBottle, p_expected_total: batch.amount_paise,
       });
       const { data: updated } = bottleError ? { data: null } : await supabase.from("checkout_batches")
         .select("amount_paise").eq("id", batch.id).eq("user_id", user.id).maybeSingle();
-      if (updated?.amount_paise !== basket.totalPaise) {
+      if (!updated || updated.amount_paise + existingDiscount !== basket.totalPaise) {
         redirect(orderUrl("error", "Your bill changed. Open the cart and review your selections again.", purchase, bottle, milk, extras, schedule, start, routine));
       }
     }
+    if (batch.status === "draft" && !await applyCheckoutReferral(supabase, null, batch.id))
+      redirect(orderUrl("error", "The referral discount could not be checked. Review your saved cart and try again.", purchase, bottle, milk, extras, schedule, start, routine));
     redirect(`/checkout/batch/review?batch=${batch.id}`);
   }
 
@@ -466,6 +480,8 @@ export async function saveDeliveryDetails(formData: FormData) {
         purchase, bottle, milk, extras, schedule, start, routine,
       ));
     }
+    if (!await applyCheckoutReferral(supabase, null, batchId))
+      redirect(orderUrl("error", "The referral discount could not be checked. Review your saved cart and try again.", purchase, bottle, milk, extras, schedule, start, routine));
     redirect(`/checkout/batch/review?batch=${batchId}`);
   }
 
@@ -620,5 +636,7 @@ export async function saveDeliveryDetails(formData: FormData) {
         routine,
       ),
     );
+  if (monthlyRules && !await applyCheckoutReferral(supabase, order.id, null))
+    redirect(orderUrl("error", "The referral discount could not be checked. Review your saved cart and try again.", purchase, bottle, milk, extras, schedule, start, routine));
   redirect(`/checkout/review?order=${order.id}`);
 }

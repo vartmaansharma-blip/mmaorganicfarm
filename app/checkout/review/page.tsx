@@ -42,7 +42,7 @@ export default async function ReviewPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_choice,bottle_charge_paise,handling_fee_paise,platform_fee_paise,subtotal_paise,total_paise,phone_snapshot,address_snapshot",
+      "id,status,is_test,purchase_mode,delivery_plan_id,milk_litres,start_date,bottle_choice,bottle_charge_paise,handling_fee_paise,platform_fee_paise,subtotal_paise,total_paise,discount_paise,phone_snapshot,address_snapshot",
     )
     .eq("id", orderId)
     .eq("user_id", user.id)
@@ -83,7 +83,7 @@ export default async function ReviewPage({
     (order.bottle_choice === "new" || order.bottle_choice === "return") ? order.bottle_choice : undefined;
   const deliveryPaise = Math.max(
     0,
-    order.total_paise - order.subtotal_paise - order.bottle_charge_paise -
+    order.total_paise + (order.discount_paise ?? 0) - order.subtotal_paise - order.bottle_charge_paise -
       order.handling_fee_paise - order.platform_fee_paise,
   );
   const charges = [
@@ -232,6 +232,9 @@ export default async function ReviewPage({
                   <dd>{formatCheckoutAmount(amount)}</dd>
                 </div>
               ))}
+              {order.discount_paise > 0 ? <div>
+                <dt>Referral discount</dt><dd>−{formatCheckoutAmount(order.discount_paise)}</dd>
+              </div> : null}
               <div className={styles.total}>
                 <dt>Amount to pay</dt>
                 <dd aria-live="polite">{formatCheckoutAmount(order.total_paise)}</dd>

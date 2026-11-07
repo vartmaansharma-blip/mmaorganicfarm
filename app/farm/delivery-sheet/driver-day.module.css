@@ -276,3 +276,17 @@
     transition: none !important;
   }
 }
+
+.driverTabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; padding:4px; border:1px solid var(--farm-line); border-radius:14px; margin-block:18px; }
+.driverTabs a { display:grid; min-height:44px; place-items:center; border-radius:10px; padding-inline:3px; font-size:clamp(11px,3vw,14px); font-weight:600; text-decoration:none; color:var(--farm-ink); }
+.driverTabs a[aria-current] { background:var(--farm-surface); box-shadow:inset 0 0 0 1px var(--farm-line); }
+.changeBanner { display:grid; gap:4px; border:1px solid var(--farm-line); border-radius:12px; background:var(--farm-surface); padding:12px; font-size:13px; }
+.changes { display:grid; gap:12px; padding:0; list-style:none; }
+.changes li { display:grid; gap:5px; border-top:1px solid var(--farm-line); padding-top:12px; }
+@media (prefers-reduced-motion:no-preference) {
+  .changeBanner { animation:routeUpdateReveal 210ms ease-out both; }
+}
+@keyframes routeUpdateReveal {
+  from { opacity:0; transform:translateY(4px); }
+  to { opacity:1; transform:translateY(0); }
+}

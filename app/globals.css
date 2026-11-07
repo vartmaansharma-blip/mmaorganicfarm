@@ -1614,7 +1614,7 @@ h1 {
 
 /* Shared destinations stay clear of the homepage's sticky capsule header. */
 #site-content, #milk, #about, #farm { scroll-margin-top: calc(var(--home-header-height) + 20px); }
-@media (max-width: 900px) { :root { --home-header-height: 80px; } }
+@media (max-width: 900px) { :root { --home-header-height: 116px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 /* Customer pages share the same theme, type, action and feedback palette. */

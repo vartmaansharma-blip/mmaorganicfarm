@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/server";
+import { nextDeliveryDateInIndia } from "@/lib/delivery-calendar";
 import { deliveryThresholdCopy } from "@/lib/delivery-pricing";
 import { DEFAULT_ORDER_FEES } from "@/lib/product-prices";
 import { publicMetadata } from "@/lib/public-metadata";
@@ -10,7 +12,10 @@ import { ShopHero } from "./shop-hero";
 import styles from "./shop.module.css";
 export const metadata: Metadata = publicMetadata("/shop", "Farm Shop", "Discover M’ma milk, paneer and ghee. Choose a single delivery or build your delivery routine.");
 export default async function ShopPage() {
-  const { prices } = await readProductCatalogue();
+  const client = await createClient();
+  const [{ prices }, { data: { user } }] = await Promise.all([readProductCatalogue(), client.auth.getUser()]);
+  const date = nextDeliveryDateInIndia();
+  const master = user ? await client.rpc("read_master_delivery_schedule", { p_from: date, p_through: date }) : null;
   return (
     <main>
       <ShopHero />
@@ -19,10 +24,12 @@ export default async function ShopPage() {
           <h2 id="counter-title">From our counter.</h2>
           <p>Three everyday favourites</p>
         </div>
+        {master?.data ? <Link className={styles.masterSchedule} href="/calendar?view=weekly" prefetch={false}>Use your weekly schedule →</Link> : null}
         <div className={styles.products}>
           {SHOP_PRODUCTS.map((p) => (
             <Link
               href={`/shop/${p.id}`}
+              prefetch={false}
               className={styles.productCard}
               key={p.id}
             >

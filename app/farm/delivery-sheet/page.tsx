@@ -225,6 +225,7 @@ export default async function DeliverySheetPage({
     route?: string;
     outcome?: string;
     stop?: string;
+    view?: string;
     date?: string;
     error?: string;
     message?: string;
@@ -543,6 +544,7 @@ export default async function DeliverySheetPage({
       <DriverDay
         date={deliveryDate}
         selected={params.stop}
+        updatesOnly={params.view === "updates"}
         route={selectedRoute}
         routes={routeGroups}
         instructions={instructions}

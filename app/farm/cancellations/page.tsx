@@ -5,6 +5,7 @@ import { requireFarmManager } from "@/lib/farm-dashboard";
 import { resolveCancellationRequest } from "./actions";
 import { FormSubmitButton } from "../form-submit-button";
 import { InboxTabs } from "../workspace-parts";
+import { TodayRequests } from "./today-requests";
 import { SpokenRequests } from "./spoken-requests";
 import styles from "../operations-list.module.css";
 
@@ -72,6 +73,7 @@ export default async function CancellationRequestsPage({
         <p className={`${styles.notice} ${styles.error}`}>{params.error}</p>
       ) : null}
       <InboxTabs active="requests" />
+      <TodayRequests history={showHistory} />
       <SpokenRequests history={showHistory} />
       <section className={styles.list}>
         <h2>Account cancellations</h2>

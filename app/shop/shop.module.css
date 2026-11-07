@@ -841,3 +841,6 @@
 
 .heroPhoto::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: var(--color-photo-tint); }
 .slide img { filter: saturate(1.03) sepia(.025); }
+
+.masterSchedule { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: 12px; padding-inline: 16px; border: 1px solid var(--hero-line); border-radius: 999px; color: var(--hero-ink); font-size: .84rem; font-weight: 650; }
+.masterSchedule:hover { background: var(--hero-hover); }

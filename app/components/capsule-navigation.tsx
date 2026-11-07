@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CustomerNotificationBell } from "@/app/account/notifications/notification-bell";
 import { CartButton } from "@/app/shop/cart-button";
+import { DeliveryLocation } from "./delivery-location";
 import { NavigationMenu } from "./navigation-menu";
 import { ThemeToggle } from "./theme-toggle";
 import styles from "./capsule-navigation.module.css";
@@ -72,6 +73,7 @@ export function CapsuleNavigation({
           </Link>
         ))}
       </nav>
+      <DeliveryLocation />
       <CartButton />
       <CustomerNotificationBell />
       <ThemeToggle />

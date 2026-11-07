@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { DeliveryDay, DeliveryItem, DeliverySnapshot, DeliveryState } from "@/lib/customer-delivery";
 import { formatDeliveryQuantity, productName } from "@/lib/delivery-calendar";
 import { SHOP_PRODUCTS } from "@/lib/shop-products";
+import { TodayDeliveryEditor } from "./today-delivery-editor";
 import { DeliveryScene } from "./delivery-scene";
 import styles from "./account.module.css";
 
@@ -188,6 +189,8 @@ export function TodayDelivery({ initial, editablePlanId }: { initial: DeliverySn
           })}
           {visit.followUpApproved && visit.followUp ? <p className={styles.followUp}>Farm-approved follow-up: {formatCalendarDate(visit.followUp)}. It remains outstanding until delivered.</p> : visit.state === "attention" || visit.state === "skipped" ? <p className={styles.followUp}>Check delivery history for any recorded follow-up, or contact the farm for an update.</p> : null}
         </div>)}</div> : null}
+        {snapshot.management ? <TodayDeliveryEditor key={snapshot.date} management={snapshot.management} stale={Boolean(error)}
+          onSaved={() => void refresh(true)} /> : null}
         <div className={styles.deliveryBottom}>
           <span>{snapshot.completedAt ? `Confirmed at ${time(snapshot.completedAt)} IST` : snapshot.updatedAt ? `Farm update · ${time(snapshot.updatedAt)} IST` : `Schedule checked · ${time(snapshot.checkedAt)} IST`}</span>
           {state === "setup" ? <Link href="/account?section=orders&order_view=pending">Orders & payment →</Link> :

@@ -142,9 +142,9 @@ test('test keys cannot record a live customer payment', async () => {
   await assert.rejects(() => recordCapturedPayment({ amount: 6200, currency: 'INR' }), /does not match/);
   assert.equal(events.some(e => e.op !== 'select'), false);
 });
-async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, expectedAmount = null, purchaseMode = 'plan' } = {}) {
+async function prepare({ failure, claimError = false, isTest = false, env, providerId = null, updateError = false, reboundProviderId = null, coupon = false, referralDiscount = 0, expectedAmount = null, purchaseMode = 'plan' } = {}) {
   const events = []; let providerAmount; let providerCalls = 0, released = 0, reserved = 0;
-  const order = { id: 'synthetic', user_id: 'user', status: 'draft', bottle_choice: 'return', purchase_mode: purchaseMode, delivery_plan_id: purchaseMode === 'plan' ? 'plan' : null, start_date: '2026-10-26', total_paise: coupon ? 5890 : 6200, subtotal_paise: 6200, discount_code: coupon ? 'MMA-ABCDEF1234567890' : null, discount_paise: coupon ? 310 : 0, is_test: isTest, razorpay_order_id: providerId };
+  const order = { id: 'synthetic', user_id: 'user', status: 'draft', bottle_choice: 'return', purchase_mode: purchaseMode, delivery_plan_id: purchaseMode === 'plan' ? 'plan' : null, start_date: '2026-10-26', total_paise: coupon ? 5890 : 6200 - referralDiscount, subtotal_paise: 6200, discount_code: coupon ? 'MMA-ABCDEF1234567890' : referralDiscount ? 'REFERRAL_MONTH' : null, discount_paise: coupon ? 310 : referralDiscount, is_test: isTest, razorpay_order_id: providerId };
   const userClient = client(order, events, q => {
     if (q.table === 'orders') return { data: order };
     if (q.table === 'order_items') return { data: [{ product_key: 'milk', quantity: 1, unit_price_paise: 6200, line_total_paise: 6200 }] };
@@ -302,6 +302,17 @@ test('retired discounts and stale browser totals cannot start a provider payment
   assert.equal(stale.providerCalls, 0);
   assert.equal(stale.reserved, 0);
 });
+test('a referral discount lowers only the eligible monthly gateway total', async () => {
+  const accepted = await prepare({ referralDiscount: 1000 });
+  assert.equal(accepted.result.status, 200);
+  assert.equal(accepted.providerAmount, 5200);
+  const rejected = await prepare({ referralDiscount: 1000, purchaseMode: 'once' });
+  assert.equal(rejected.result.status, 409);
+  assert.equal(rejected.providerCalls, 0);
+  const stale = await prepare({ referralDiscount: 1000, expectedAmount: 6200 });
+  assert.equal(stale.result.status, 409);
+  assert.equal(stale.providerCalls, 0);
+});
 test('checkout displays exact paise amounts', () => {
   const { formatCheckoutAmount } = load('lib/checkout-display.ts');
   assert.equal(formatCheckoutAmount(6890), '₹68.90');
@@ -434,11 +445,11 @@ test("payment reprices shared-date batches while honoring legacy combined totals
     bottle_choice: "new", period_end_exclusive: "2026-12-07", schedule_rules: basket.scheduled.rules,
     scheduled_delivery_items: [start, date].map((delivery_date) => ({ delivery_date, product_key: "milk", quantity: 1 })),
   };
-  function fixture(sharedDate) {
+  function fixture(sharedDate, discount = 0) {
     const common = { bottle_choice: "new", is_test: false, status: "draft", user_id: "customer" };
     const orders = {
       once: { ...common, purchase_mode: "once", start_date: date, total_paise: 7200 + (sharedDate ? 0 : 700) },
-      plan: { ...common, purchase_mode: "plan", start_date: start, delivery_plan_id: "monthly", total_paise: 14700 + (sharedDate ? 0 : 300) },
+      plan: { ...common, purchase_mode: "plan", start_date: start, delivery_plan_id: "monthly", total_paise: 14700 + (sharedDate ? 0 : 300) - discount, discount_paise: discount, discount_code: discount ? "REFERRAL_MONTH" : null },
     };
     const database = { from(table) {
       let id;
@@ -457,6 +468,10 @@ test("payment reprices shared-date batches while honoring legacy combined totals
   }
   const shared = fixture(date);
   assert.equal((await quoteCheckoutBatch(shared.database, shared.batch)).amount, basket.totalPaise);
+  const discounted = fixture(date, 10000);
+  const result = await quoteCheckoutBatch(discounted.database, discounted.batch);
+  assert.equal(result.amount, basket.totalPaise - 10000);
+  assert.equal(result.once.total_paise, 7200);
   const legacy = fixture(null);
   assert.equal((await quoteCheckoutBatch(legacy.database, legacy.batch)).amount, basket.totalPaise + 1000);
   await assert.rejects(quoteCheckoutBatch(shared.database, { ...shared.batch, shared_delivery_date: "2026-11-08" }), /shared delivery date changed/);

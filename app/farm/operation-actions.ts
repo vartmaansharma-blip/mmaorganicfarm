@@ -57,7 +57,7 @@ export async function saveDeliveryOutcome(
           })
       : null;
   try {
-    const { error } = await supabase.rpc("record_delivery_outcome", {
+    const args = {
       p_delivery_ids: ids,
       p_outcome: outcome,
       p_reason_code:
@@ -66,7 +66,11 @@ export async function saveDeliveryOutcome(
       p_bottles_returned: bottles,
       p_quantities: quantities,
       p_request_key: text(form, "requestKey"),
-    });
+    };
+    const expected = text(form, "expectedManifest");
+    const { error } = expected
+      ? await supabase.rpc("record_current_delivery_outcome", { ...args, p_expected: JSON.parse(expected) })
+      : await supabase.rpc("record_delivery_outcome", args);
     if (error) return { ok: false, error: error.message };
     invalidate();
     return {

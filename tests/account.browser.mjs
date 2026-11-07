@@ -16,6 +16,10 @@ const recordId='00000000-0000-4000-8000-000000000003';
 const date=indiaDate();
 const plus=n=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
 let scenario='out', fail=false;
+let referralAvailable = true;
+let referralCodeCreated = false;
+const sampleReferralCode = 'AB1234567890AB1234567890AB123456';
+let master={revision:0,versions:[],exceptions:[]};
 const fixtures = () => Array.from({ length: 22 }, (_, index) => ({
  id: `00000000-0000-4000-8000-${String(100 + index).padStart(12, '0')}`,
  title: ['Payment confirmed', 'Milk is on the way', 'Plan delivery scheduled', 'Delivery prepared', 'Delivery completed'][index] ?? `Delivery notice ${index}`,
@@ -41,7 +45,7 @@ const requests=[];
 const product=(key='milk',quantity=2,fulfilled_quantity=null)=>({product_key:key,product_name:key==='milk'?'Fresh milk':'Fresh paneer',quantity,unit:key==='milk'?'L':'kg',fulfilled_quantity});
 const extendedWeek=()=>['legacy-window','legacy-prepared'].includes(scenario);
 const plan=()=>({id:planId,user_id:userId,status:scenario==='pending'?'pending_confirmation':scenario==='paused'?'paused':'active',start_date:date,billing_model:scenario==='legacy'||extendedWeek()?'milk_credits':'calendar_month',period_end_exclusive:plus(30),purchased_deliveries:30,delivered_deliveries:0,bottle_choice:'return',weekly_delivery_items:[],scheduled_delivery_items:(extendedWeek()?[1,2,9]:[0,1,2,3]).map(n=>({...product(),delivery_date:plus(n)})),delivery_exceptions:extendedWeek()?[{delivery_date:plus(1),product_key:'milk',action:'skip',quantity:null,unit:null}]:[],delivery_pauses:extendedWeek()?[{id:'pause1',start_date:plus(2),end_date:plus(2)}]:[]});
-const rows=()=>['none','pending','paused','legacy-window'].includes(scenario)?[]:[{id:recordId,user_id:userId,plan_id:planId,order_id:null,delivery_date:scenario==='legacy-prepared'?plus(9):date,visit_key:'local-visit',status:({out:'out_for_delivery',preparing:'ready',delivered:'delivered',partial:'failed'})[scenario]??'planned',updated_at:new Date().toISOString(),delivery_confirmed:scenario==='delivered',delivered_confirmed_at:scenario==='delivered'?new Date().toISOString():null,replacement_of_delivery_id:null,fulfilment_root_id:null,daily_delivery_items:scenario==='partial'?[product('milk',2,2),product('paneer',.5,0)]:[product('milk',2,scenario==='delivered'?2:null)]}];
+const rows=()=>['none','pending','paused','legacy-window'].includes(scenario)?[]:[{id:recordId,user_id:userId,plan_id:planId,order_id:null,delivery_date:scenario==='legacy-prepared'?plus(9):date,visit_key:'local-visit',status:({out:'out_for_delivery',preparing:'ready',delivered:'delivered',partial:'failed'})[scenario]??'planned',updated_at:new Date().toISOString(),delivery_confirmed:scenario==='delivered',delivered_confirmed_at:scenario==='delivered'?new Date().toISOString():null,replacement_of_delivery_id:null,fulfilment_root_id:null,daily_delivery_items:scenario==='spare'?[product('paneer',1)]:scenario==='partial'?[product('milk',2,2),product('paneer',.5,0)]:[product('milk',2,scenario==='delivered'?2:null)]}];
 const user={id:userId,aud:'authenticated',role:'authenticated',email:'fixture@example.invalid',email_confirmed_at:new Date().toISOString(),created_at:new Date().toISOString(),app_metadata:{provider:'email',providers:['email']},user_metadata:{full_name:'Test Customer'},identities:[]};
 const stub=createServer(async(req,res)=>{
  const url=new URL(req.url,'http://127.0.0.1'); requests.push({path:url.pathname,query:Object.fromEntries(url.searchParams),method:req.method});
@@ -70,7 +74,35 @@ const stub=createServer(async(req,res)=>{
   routeRefreshes.push(JSON.parse(raw));
   res.end('null');return;
  }
- if(!['GET','HEAD'].includes(req.method) && url.pathname!=='/rest/v1/rpc/get_customer_delivery_outcomes'){res.writeHead(405);res.end('{}');return;}
+ if(url.pathname.endsWith('/rpc/referrals_enabled')){res.end(JSON.stringify(referralAvailable));return;}
+ if(url.pathname.endsWith('/rpc/create_referral_code')){
+  assert.equal(req.method,'POST');
+  referralCodeCreated=true;
+  res.end('null');return;
+ }
+ if(url.pathname.endsWith('/rpc/referral_workspace')){
+  res.end(JSON.stringify({enabled:referralAvailable,discount_enabled:true,referrer_paise:2500,newcomer_paise:10000,revision:recordId,code:referralCodeCreated?sampleReferralCode:null,claim:null,invites:0,unlocked_invites:0,earned_paise:0}));return;
+ }
+ if(url.pathname.endsWith('/rpc/read_master_delivery_schedule')){
+  assert.equal(req.method,'POST');
+  res.end(JSON.stringify(master));return;
+ }
+ if(url.pathname.endsWith('/rpc/save_master_delivery_schedule')){
+  assert.equal(req.method,'POST');
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const {p_revision,p_date,p_quantities}=JSON.parse(raw);
+  assert.equal(p_revision,master.revision);
+  if(p_date){
+   master.exceptions=master.exceptions.filter(item=>item.delivery_date!==p_date);
+   master.exceptions.push(...Object.entries(p_quantities).flatMap(([product_key,quantity])=>
+    quantity===null?[]:[{delivery_date:p_date,product_key,quantity}]));
+  }else{
+   master.versions.push({effective_from:plus(1),quantities:p_quantities});
+  }
+  master.revision++;
+  res.end('null');return;
+ }
+ if(!['GET','HEAD'].includes(req.method) && !['/rest/v1/rpc/get_customer_delivery_outcomes','/rest/v1/rpc/get_today_route_spare'].includes(url.pathname)){res.writeHead(405);res.end('{}');return;}
  if(url.pathname.startsWith('/rest/v1/') && !url.pathname.includes('/rpc/') && !url.pathname.endsWith('/farm_catalog_prices')) assert.equal(url.searchParams.get('user_id'),`eq.${userId}`,'every customer data query must be explicitly owned');
  let data=[];
  if(url.pathname.endsWith("/farm_catalog_prices"))data={revision:"00000000-0000-4000-8000-000000000099",prices:{milk:6200,paneer:20000,ghee:37500,bottle:1000}};
@@ -93,6 +125,8 @@ const stub=createServer(async(req,res)=>{
   const draft={...paid,id:'00000000-0000-4000-8000-000000000005',status:'draft',paid_total_paise:null,order_items:[{...product(),id:'item2',product_name:'Draft-only item'}]};
   const pending={...paid,id:'00000000-0000-4000-8000-000000000006',status:'pending_payment',paid_total_paise:null,order_items:[{...product(),id:'item3',product_name:'Pending checkout'}]};
   data=scenario==='none'?[]:extendedWeek()?[paid]:[paid,draft,pending];
+  const purchaseMode=url.searchParams.get('purchase_mode');
+  if(purchaseMode?.startsWith('eq.'))data=data.filter(order=>order.purchase_mode===purchaseMode.slice(3));
   const status=url.searchParams.get('status')||'';
   if(status.startsWith('in.(')&&status.endsWith(')')) {
     const allowed=status.slice(4,-1).split(',');
@@ -113,6 +147,7 @@ const stub=createServer(async(req,res)=>{
   res.setHeader('content-range',data.length?`0-${data.length-1}/${data.length}`:'*/0');
   if(url.searchParams.has('limit'))data=data.slice(0,Number(url.searchParams.get('limit')));
  }
+ if(url.pathname.endsWith('/rpc/get_today_route_spare')) data=3;
  if(url.pathname.endsWith('/rpc/get_customer_delivery_outcomes')) data=rows().map(r=>({delivery_date:date,visit_key:r.visit_key,outcome:scenario==='partial'?'partial':scenario==='delivered'?'delivered':'scheduled',resolution:scenario==='partial'?'rescheduled':null,follow_up_date:scenario==='partial'?plus(1):null,items:r.daily_delivery_items}));
  res.end(JSON.stringify(data));
 });
@@ -131,9 +166,16 @@ try{
  const deadline=Date.now()+30000;
  while(!serverLog.includes('Ready in')){if(child.exitCode!==null)throw new Error(serverLog);if(Date.now()>deadline)throw new Error(`Next server did not start: ${serverLog}`);await new Promise(r=>setTimeout(r,200));}
  for(const engine of (process.env.ACCOUNT_BROWSERS||'chromium,webkit').split(',')){
+  referralCodeCreated=false;
+  master={revision:0,versions:[],exceptions:[]};
   const browser=await ({chromium,webkit})[engine].launch();
   try{
-   const anonymous=await browser.newContext();
+   const anonymous=await browser.newContext({viewport:{width:390,height:844}});
+   await anonymous.addInitScript(() => {
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
+     getCurrentPosition: (_, error) => error({ code: 1 }),
+    } });
+   });
    const anonymousPage=await anonymous.newPage();
    await anonymousPage.goto(`${base}/account`);
    assert.match(anonymousPage.url(),/\/sign-in/);
@@ -142,7 +184,39 @@ try{
    assert.match(unauth.headers()['cache-control'],/no-store/);
    await anonymousPage.goto(`${base}/account/notifications`);
    assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),'/account/notifications');
+   await anonymousPage.goto(base);
+   const badge=anonymousPage.getByRole('complementary',{name:'Referral program'});
+   await badge.getByRole('link',{name:'Refer & Earn'}).waitFor();
+   assert.equal(await badge.evaluate(element => getComputedStyle(element).position),'fixed');
+   const bezel=badge.locator('[data-referral-bezel]');
+   assert.notEqual(await bezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await anonymousPage.emulateMedia({reducedMotion:'reduce'});
+   assert.equal(await bezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await anonymousPage.emulateMedia({reducedMotion:'no-preference'});
+   const badgeBox=await badge.boundingBox();
+   const whatsappBox=await anonymousPage.locator('.whatsapp-float').boundingBox();
+   assert.ok(badgeBox.x > 190 && badgeBox.y + badgeBox.height < whatsappBox.y);
+   await anonymousPage.screenshot({path:path.join(output,`${engine}-home-referral.png`)});
+   await anonymousPage.setViewportSize({width:1440,height:900});
+   const desktopBox=await badge.boundingBox();
+   assert.ok(desktopBox.x > 1100 && desktopBox.y + desktopBox.height > 780);
+   await anonymousPage.setViewportSize({width:390,height:844});
+   await anonymousPage.getByRole('button',{name:'Dismiss Refer and Earn'}).click();
+   await badge.waitFor({state:'detached'});
+   referralAvailable=false;
+   await anonymousPage.reload();
+   assert.equal(await badge.count(),0);
+   referralAvailable=true;
+   await anonymousPage.goto(`${base}/account/referrals?code=${sampleReferralCode}`);
+   assert.equal(new URL(anonymousPage.url()).searchParams.get('next'),`/account/referrals?code=${sampleReferralCode}`);
    await anonymousPage.goto(`${base}/shop`);
+   await anonymousPage.getByRole('button',{name:'Set delivery location'}).click();
+   const location=anonymousPage.getByRole('dialog',{name:'Delivery location'});
+   await location.getByRole('button',{name:'Use my current location'}).click();
+   await location.getByRole('status').getByText(/couldn’t be detected/).waitFor();
+   await location.getByLabel('Town or locality').fill('Kadma');
+   await location.getByRole('button',{name:'Save location'}).click();
+   await anonymousPage.getByRole('button',{name:'Change delivery location, Kadma'}).waitFor();
    await anonymousPage.getByRole('button',{name:'Notifications',exact:true}).click();
    await anonymousPage.getByRole('dialog',{name:'Notifications'}).getByRole('link',{name:'Sign in to see your notifications'}).waitFor();
    await anonymousPage.goto(`${base}/contact`);
@@ -163,6 +237,28 @@ try{
       await page.getByRole('heading',{name:'On the way to you',exact:true}).waitFor();
      }
      await page.waitForFunction(()=>!document.getAnimations().some(a=>a instanceof CSSTransition && ['color','background-color','border-color'].includes(a.transitionProperty) && a.playState==='running'));
+     const menu=page.getByRole('button',{name:'Open navigation menu'});
+     await menu.click();
+     const siteNav=page.getByRole('navigation',{name:'Mobile navigation'});
+     assert.equal(await siteNav.getByRole('link',{name:'Shop',exact:true}).getAttribute('href'),'/shop');
+     if(width===390 && theme==='light'){
+      await siteNav.getByRole('link',{name:'Refer & Earn'}).click();
+      await page.getByRole('heading',{name:'Refer & Earn',exact:true}).waitFor();
+      await page.getByRole('button',{name:'Create invite link'}).click();
+      await page.getByRole('button',{name:'Copy link'}).waitFor();
+      const share=new URL(await page.getByRole('link',{name:'Share on WhatsApp'}).getAttribute('href'));
+      assert.equal(share.origin,'https://wa.me');
+      const invitePath=`/account/referrals?code=${sampleReferralCode}`;
+      assert.ok(share.searchParams.get('text').includes(invitePath));
+      assert.match(share.searchParams.get('text'),/₹100 off.*first paid delivery/);
+      const email=await page.getByRole('link',{name:'Email',exact:true}).getAttribute('href');
+      assert.ok(email.startsWith('mailto:?') && decodeURIComponent(email).includes(invitePath));
+      await page.getByRole('button',{name:'Link code'}).waitFor();
+      await page.goto(`${base}/account`,{waitUntil:'networkidle'});
+     }else{
+      await page.keyboard.press('Escape');
+      assert.equal(await menu.evaluate(element => element===document.activeElement),true);
+     }
      const navigationColour=await page.getByRole('navigation',{name:'Your account'}).getByRole('link',{name:'Today',exact:true}).evaluate(e=>{const probe=document.createElement('i');probe.style.color='var(--color-nav-active)';document.body.append(probe);const expected=getComputedStyle(probe).color;probe.remove();return {actual:getComputedStyle(e).color,expected};});
      assert.equal(navigationColour.actual,navigationColour.expected,'account navigation follows the shared brand palette');
      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${engine} ${width} ${theme} Today overflow`);
@@ -245,7 +341,9 @@ try{
    await page.getByText(/The farm has prepared this delivery/).waitFor();
    assert.equal(await page.getByRole('button',{name:'Save quantity'}).count(),0);
    scenario='out';notices=fixtures();
-   await page.goto(`${base}/shop`);
+   await page.goto(`${base}/shop`,{waitUntil:'networkidle'});
+   await page.bringToFront();
+   await page.evaluate(()=>window.dispatchEvent(new Event('mma:notifications-updated')));
    const bell=page.getByRole('button',{name:'Notifications, 22 unread'});
    await bell.focus();
    notificationOutage=true;
@@ -292,7 +390,7 @@ try{
    await preview.waitFor({state:'hidden'});
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Notifications, 21 unread');
    assert.equal(await page.getByRole('button',{name:/Open notification:/}).count(),0,'existing unread items never pop up on page entry');
-   notices.unshift({ ...notices[0], id:'0ecfc66a-e2e0-439c-9bb3-95d5af93b602', kind:'delivery_ready',
+   notices.unshift({ ...notices[0], id:'0ecfc66a-e2e0-439c-9bb3-95d5af93b602', kind:'delivery_change',
      title:'Delivery quantity updated', message:'Your prepaid milk was moved to the next delivery.', read_at:null,
      delivery_id:null, order_id:null, created_at:new Date(Math.max(Date.now(),Date.parse(notices[0].created_at)+60_000)).toISOString() });
    await page.evaluate(()=>window.dispatchEvent(new Event('mma:notifications-updated')));
@@ -341,12 +439,109 @@ try{
    scenario='out';await page.goto(`${base}/account`,{waitUntil:'networkidle'});fail=true;await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByText('Showing the last successful update',{exact:false}).waitFor();assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'out');await page.screenshot({path:path.join(output,`${engine}-390-stale.png`),fullPage:true});
    fail=false;scenario='delivered';await page.getByRole('button',{name:'Refresh delivery updates',exact:true}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();assert.equal(await page.getByText('Showing the last successful update',{exact:false}).count(),0);
    fail=true;await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('[data-delivery-state]').getAttribute('data-delivery-state'),'error');assert.equal(await page.getByRole('heading',{name:'A quiet day at your doorstep',exact:true}).count(),0);fail=false;await page.getByRole('button',{name:'Try again →'}).click();await page.getByRole('heading',{name:'Delivered today',exact:true}).waitFor();
+   scenario='none';
+   await page.goto(`${base}/calendar?view=weekly`);
+   const saturday=page.getByRole('spinbutton',{name:'Fresh milk, Saturday, litres'});
+   const sunday=page.getByRole('spinbutton',{name:'Fresh milk, Sunday, litres'});
+   await page.getByRole('button',{name:'Edit all Saturday quantities'}).click();
+   const column=page.getByRole('spinbutton',{name:'Quantity for Saturday'});
+   await column.fill('4');
+   await column.press('Enter');
+   assert.equal(await saturday.inputValue(),'4');
+   const paneerSaturday=page.getByRole('spinbutton',{name:'Fresh paneer, Saturday, packs'});
+   assert.equal(await paneerSaturday.inputValue(),'4');
+   await paneerSaturday.fill('0');
+   await page.getByRole('spinbutton',{name:'Farm ghee, Saturday, packs'}).fill('0');
+   await sunday.fill('2');
+   await page.getByRole('region',{name:'Dates affected by this change'}).waitFor();
+   await page.getByRole('button',{name:'Save recurring schedule'}).click();
+   await page.getByRole('status').getByText('Weekly schedule saved.').waitFor();
+   const doneBezel=page.getByRole('status').locator('[data-done-bezel]');
+   assert.notEqual(await doneBezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await page.emulateMedia({reducedMotion:'reduce'});
+   assert.equal(await doneBezel.evaluate(element=>getComputedStyle(element).animationName),'none');
+   await page.emulateMedia({reducedMotion:'no-preference'});
+   const nextSaturday=Array.from({length:7},(_,index)=>plus(index+1))
+    .find(day=>new Date(day+'T00:00:00Z').getUTCDay()===6);
+   const monthlyPath=`${base}/calendar?view=monthly&month=${nextSaturday.slice(0,7)}&date=${nextSaturday}`;
+   await page.goto(monthlyPath);
+   const milk=page.getByRole('spinbutton',{name:/Fresh milk/});
+   assert.equal(await milk.getAttribute('placeholder'),'4','the monthly view reflects the saved weekly quantity');
+   const selectedDate=page.locator('[data-date][aria-current=date]');
+   await selectedDate.focus();
+   const dayIndex=Math.round((new Date(nextSaturday)-new Date(date))/86400000);
+   const arrow=plus(dayIndex+1).slice(0,7)===nextSaturday.slice(0,7)?'ArrowRight':'ArrowLeft';
+   await selectedDate.press(arrow);
+   assert.equal(await page.evaluate(()=>document.activeElement.dataset.date),plus(dayIndex+(arrow==='ArrowRight'?1:-1)));
+   await milk.fill('5');
+   await page.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 5.*date exception/}).waitFor();
+   await page.screenshot({path:path.join(output,`${engine}-master-monthly.png`),fullPage:true});
+   await page.getByRole('link',{name:'Weekly Schedule',exact:true}).click();
+   const focusedWeek=page.getByRole('region',{name:'Delivery week'});
+   await focusedWeek.getByRole('link',{name:/Saturday.*Fresh milk 5.*date exception/}).and(page.locator('[aria-current=date]')).waitFor();
+   assert.equal(new URL(page.url()).searchParams.get('date'),nextSaturday);
+   assert.equal(await saturday.inputValue(),'4');
+   assert.equal(await sunday.inputValue(),'2');
+   const weeklyDateMilk=focusedWeek.getByRole('spinbutton',{name:/Fresh milk/});
+   assert.equal(await weeklyDateMilk.inputValue(),'5');
+   await weeklyDateMilk.fill('1');
+   await focusedWeek.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.getByRole('link',{name:'Monthly Calendar',exact:true}).click();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 1.*date exception/}).and(page.locator('[aria-current=date]')).waitFor();
+   await page.getByRole('link',{name:'Weekly Schedule',exact:true}).click();
+   await page.getByRole('link',{name:'Continue to delivery details'}).click();
+   await page.waitForURL('**/order?**');
+   assert.match(new URL(page.url()).searchParams.get('routine'),/\d+-1/);
+   await page.getByText('Step 2 of 4',{exact:true}).waitFor();
+   await page.goto(`${base}/calendar?view=weekly`);
+   await saturday.fill('3');
+   await page.getByRole('button',{name:'Save recurring schedule'}).click();
+   await page.getByRole('status').getByText('Weekly schedule saved.').waitFor();
+   await page.setViewportSize({width:320,height:740});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   await page.screenshot({path:path.join(output,`${engine}-master-weekly.png`),fullPage:true});
+   await page.setViewportSize({width:390,height:844});
+   await page.goto(monthlyPath);
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 1.*date exception/}).waitFor();
+   await page.getByRole('button',{name:'Restore weekly quantities'}).click();
+   await page.getByRole('button',{name:'Save date'}).click();
+   await page.getByRole('status').getByText('This date was saved.').waitFor();
+   await page.reload();
+   await page.getByRole('link',{name:/Saturday.*Fresh milk 3/}).and(page.locator('[aria-current=date]')).waitFor();
+   const monthHeading=page.getByRole('region',{name:'Monthly Calendar'}).getByRole('heading',{level:2});
+   const oldMonth=await monthHeading.innerText();
+   const nextMonth=page.getByRole('link',{name:'Next month'});
+   const nextMonthPath=await nextMonth.getAttribute('href');
+   await nextMonth.click();
+   await page.waitForURL(`${base}${nextMonthPath}`);
+   await monthHeading.filter({hasNotText:oldMonth}).waitFor();
+   scenario='out';
+   await page.goto(monthlyPath);
+   await page.getByRole('link',{name:'Open paid delivery controls'}).waitFor();
+   assert.equal(await page.getByRole('region',{name:'Monthly Calendar'}).getByRole('button',{name:'Save date'}).count(),0);
    scenario='out';await page.emulateMedia({reducedMotion:'reduce'});await page.goto(`${base}/account`,{waitUntil:'networkidle'});assert.equal(await page.getByRole('button',{name:'Pause animation',exact:true}).isVisible(),false);assert.deepEqual(await page.locator('[data-scene-state]').evaluate(e=>e.getAnimations({subtree:true}).filter(a=>a.playState==='running').length),0);
+   scenario='spare';
+   await page.goto(`${base}/account`,{waitUntil:'networkidle'});
+   await page.getByRole('button',{name:'Modify today’s delivery'}).click();
+   const editor=page.locator('#today-change-form');
+   await editor.getByRole('spinbutton',{name:'Requested litres'}).fill('5');
+   await editor.getByRole('button',{name:'Check driver stock'}).click();
+   await editor.getByText('Would you like to take 3 L instead?',{exact:true}).waitFor();
+   assert.equal(await editor.getByRole('button',{name:/Pay|Send to the farm/}).count(),0);
+   await editor.screenshot({path:path.join(output,`${engine}-390-driver-stock-offer.png`),animations:'disabled'});
+   await editor.getByRole('button',{name:'Choose 3 L',exact:true}).click();
+   await editor.getByText('The checked stock covers this amount. Same-day payment is currently unavailable.',{exact:true}).waitFor();
+   assert.equal(await editor.getByRole('button',{name:/Pay|Send to the farm/}).count(),0);
    await context.close();
   }finally{await browser.close();}
  }
  assert.ok(requests.some(r=>r.path.endsWith('/daily_deliveries')&&r.query.delivery_date==='lte.'+plus(60)&&r.query.is_test==='eq.false'));
- const postReads=requests.filter(r=>r.method==='POST');assert.ok(postReads.every(r=>r.path.endsWith('/rpc/get_customer_delivery_outcomes')||r.path.endsWith('/rpc/refresh_customer_route')),'fixture permits no order or payment writes');
+ const allowedPosts=['get_customer_delivery_outcomes','refresh_customer_route','get_today_route_spare','read_master_delivery_schedule','save_master_delivery_schedule','referrals_enabled','referral_workspace','create_referral_code'];
+ const postReads=requests.filter(r=>r.method==='POST');
+ assert.ok(postReads.every(r=>allowedPosts.some(name=>r.path.endsWith('/rpc/'+name))),'fixture permits no order or payment writes');
  await writeFile(path.join(output,'results.json'),JSON.stringify({scope:'Actual built Next account page → authenticated API → local Supabase protocol fixture → real UI. Synthetic data only; live customer acceptance is separate.',results,states:6,errorRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,ownedQueryCount:requests.filter(r=>r.path.startsWith('/rest/v1/')).length},null,2));
  console.log(JSON.stringify({layouts:results.length,sections:5,states:6,staleRetention:true,retry:true,reducedMotion:true,anonymousGuard:true,runtimeErrors:0}));
 }finally{child.kill('SIGTERM');await new Promise(resolve=>stub.close(resolve));await writeFile(path.join(output,'server.log'),serverLog);}

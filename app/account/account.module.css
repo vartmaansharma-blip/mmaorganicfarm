@@ -1209,3 +1209,51 @@
 .deliveryDetailsEditor button {
   justify-self: start;
 }
+
+/* Today’s delivery management */
+.deliveryItem { grid-template-columns:52px minmax(0,1fr); align-items:center; padding:9px 0; }
+.deliveryItem > img { width:52px; height:52px; border:1px solid var(--ui-border); border-radius:10px; object-fit:cover; }
+.deliveryItem > div { min-width:0; display:grid; gap:3px; }
+.deliveryItem > div > strong { font-weight:650; }
+.deliveryItem > div > span { color:var(--ui-muted); }
+.todayEditor { display:grid; gap:12px; margin:0 26px 17px; }
+.todayEditButton { min-height:44px; border:1px solid transparent; border-radius:999px; padding:8px 16px; background:var(--color-accent); color:var(--color-surface-raised); font:600 13px var(--font-sans); cursor:pointer; }
+.todayEditButton:disabled { opacity:.58; cursor:default; }
+.todayChangeForm { display:grid; gap:10px; padding:15px; border:1px solid var(--ui-border); border-radius:13px; }
+.todayChangeForm fieldset { display:grid; min-width:0; gap:10px; border:0; padding:0; margin:0; }
+.todayChangeForm legend { padding:0 0 8px; font-weight:650; }
+.todayChangeForm label { display:grid; gap:5px; min-width:0; font-size:13px; }
+.todayChangeForm :is(input, select, textarea) { width:100%; min-width:0; min-height:44px; padding:8px; border:1px solid var(--ui-border); border-radius:8px; color:var(--color-text-primary); background:var(--color-surface-raised); font:inherit; }
+.todayChangeForm p { margin:0; color:var(--ui-muted); font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
+.todayChangeFields { display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.todayChangeButtons { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; }
+.todayChangeButtons button:not(.todayEditButton) { min-height:44px; border:0; padding:0 10px; background:transparent; color:var(--color-text-primary); cursor:pointer; }
+.todayRequestList { display:grid; gap:8px; list-style:none; padding:0; margin:0; }
+.todayRequestList li { display:grid; gap:4px; padding:10px 12px; border:1px solid var(--ui-border); border-radius:9px; font-size:12px; }
+.todayRequestList li > div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:3px 12px; }
+.todayRequestList :is(span,small) { color:var(--ui-muted); overflow-wrap:anywhere; }
+@media (max-width:540px) { .todayEditor { margin-inline:20px; } }
+.todayUpcomingButton { display:grid; place-items:center; min-height:44px; padding:8px 16px; border:1px solid var(--ui-border); border-radius:999px; color:var(--color-text-primary); text-decoration:none; font-size:13px; font-weight:550; }
+.todayEditButton:focus-visible, .todayUpcomingButton:focus-visible { outline:2px solid var(--color-accent); outline-offset:3px; }
+.todayRequestList li[data-status="applied"] { border-color:var(--color-accent); }
+@media (prefers-reduced-motion:no-preference) {
+  .todayChangeForm, .todayRequestList li[data-status="applied"] { animation:todayPanelReveal 220ms cubic-bezier(.2,.7,.3,1) both; }
+  .todayEditButton, .todayUpcomingButton { transition:filter 160ms ease; }
+  .todayEditButton:active:not(:disabled), .todayUpcomingButton:active { filter:brightness(.88); }
+}
+@keyframes todayPanelReveal {
+  from { opacity:0; transform:translateY(5px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.reviewProduct { display:flex; align-items:center; gap:9px; font-size:14px; }
+.reviewProduct img { width:38px; height:38px; border:1px solid var(--ui-border); border-radius:8px; object-fit:cover; }
+.quantityComparison { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:center; gap:25px; margin:0; }
+.quantityComparison > div { min-width:0; display:grid; gap:3px; padding:7px 10px; border-radius:8px; background:var(--color-surface); }
+.quantityComparison > div:last-child { position:relative; background:var(--color-success-surface); }
+.quantityArrow { position:absolute; inset-inline-start:-19px; top:50%; transform:translateY(-50%); font-size:15px; color:var(--ui-muted); }
+.quantityComparison dt { color:var(--ui-muted); font-size:10px; line-height:1.2; }
+.quantityComparison dd { margin:0; color:var(--color-text-primary); font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+.todayRequestBadge { display:inline-flex; align-items:center; gap:4px; font-weight:550; }
+.todayRequestList li[data-status="applied"] .todayRequestBadge { color:var(--color-accent); }
+.todayFarmNote { color:var(--ui-muted); }
+.todayFarmNote summary { display:list-item; min-height:32px; padding-block:7px; cursor:pointer; }

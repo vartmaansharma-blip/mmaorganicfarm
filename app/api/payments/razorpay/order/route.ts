@@ -1,3 +1,4 @@
+import { storedReferralDiscount } from "@/lib/referral-discount";
 import { readOrderProductPrices } from "@/lib/product-prices-server";
 import { liveCheckoutError, paymentModeError, razorpayMode } from "@/lib/payment-mode";
 import { NextResponse } from "next/server";
@@ -75,8 +76,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payment preparation is temporarily unavailable." }, { status: 503 });
   if (combined)
     return NextResponse.json({ error: "This order is part of a combined checkout. Review both selected carts together." }, { status: 409 });
-  if (order.discount_paise > 0 || order.discount_code)
+  try {
+    storedReferralDiscount(order, order.purchase_mode === "plan" && !order.is_test);
+  } catch {
     return NextResponse.json({ error: "Review a new order at the regular product price." }, { status: 409 });
+  }
   const modeError = paymentModeError(order.is_test);
   if (modeError) return NextResponse.json({ error: modeError }, { status: 409 });
   const activationError = liveCheckoutError();
@@ -163,7 +167,7 @@ export async function POST(request: Request) {
           plan,
           prices,
         );
-    amount = Math.round(quote.total * 100);
+    amount = Math.round(quote.total * 100) - storedReferralDiscount(order, Boolean(monthly) && !order.is_test);
   } catch {
     return NextResponse.json(
       {

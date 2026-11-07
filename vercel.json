@@ -4,5 +4,10 @@
       "path": "/api/cron/prepare-dispatch",
       "schedule": "35 15 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  }
 }
