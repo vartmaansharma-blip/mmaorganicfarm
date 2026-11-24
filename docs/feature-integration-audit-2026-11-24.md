@@ -25,6 +25,7 @@ the remaining work.
 | One customer Notification Centre from the site header and My M’ma | Implemented | PRs #52 and #53 added the shared bell, preview, inbox, filters, cursor paging, read state, owned-record links, error/retry handling, and a compact Today summary. |
 | Customer and farm-staff notifications stay separate | Implemented | Customer reads use `customer_notifications` with customer RLS; farm notification work remains isolated in draft PR #21. No staff source is exposed through the customer bell. |
 | Date-specific delivery details | Implemented | PR #49 added date-specific Today and calendar links with server-side eligibility rechecks. |
+| Edit a future day’s milk quantity directly in the calendar | Implemented for eligible legacy paid plans; master-calendar preference editing remains activation-blocked | The legacy calendar accepts a 1–5 litre date override only before preparation, rechecks plan ownership and date eligibility on the server, takes an additional-payment path for an increase, and carries a reduction to the following date instead of claiming a refund. The Week/Month master editor also supports per-product date quantities (milk, paneer and ghee), but it depends on the uninstalled master-calendar RPC/schema described below. |
 | Unified Week/Month delivery calendar and repeatable date exceptions | Code merged; activation remains blocked | PRs #57/#59 contain the interface and exact-dated hand-off. The corresponding persistence SQL is verification-only (`docs/verification/master-delivery-calendar.local.sql`), not a deployable migration or approved production install. |
 | Correct net payment/refund adjustment for customer calendar edits | Not production-ready | The merged calendar UI intentionally does not establish an automatic paid-plan amendment or refund authority. Existing paid-amendment paths remain authoritative. Do not claim automatic settlement or refunds until a reviewed migration, provider workflow, and reconciliation test are approved. |
 | Brand kit and transparent milk hero | Implemented and preserved | Brand/palette work, the transparent-milk final frame, and the approved latte reveal are on `main`. This audit makes no brand or unrelated storefront redesign. |
@@ -58,6 +59,21 @@ purchase clarity, or repeat customer value. They must also retain fast loading,
 keyboard and reduced-motion support, clear mobile hierarchy, and truthful
 commercial content. A visual effect that delays shopping, obscures price or
 delivery terms, or invents proof is not a conversion improvement.
+
+### Calendar terminology and scope
+
+In the finalized calendar work, a daily **milk quantity** is the number of
+litres delivered on that date. It may be described in customer language as the
+number of milk bottles only when that is the farm's actual fulfilment unit. It
+is not the same as the customer's glass-bottle choice (`return` or `new`),
+which is held at order/plan level. The current schema does **not** track a
+per-date physical container inventory or return count.
+
+This PR records the safe, existing daily quantity editing behaviour; it does
+not relabel it as a physical-bottle feature or introduce a new charge/refund
+rule. A real per-day bottle-count feature needs a separate approved model for
+container inventory, deposits/charges, driver reconciliation, conflict-safe
+edits, and financial adjustments.
 
 ## Open pull requests and disposition
 
