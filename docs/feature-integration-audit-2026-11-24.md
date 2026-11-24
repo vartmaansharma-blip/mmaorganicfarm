@@ -62,18 +62,25 @@ delivery terms, or invents proof is not a conversion improvement.
 
 ### Calendar terminology and scope
 
-In the finalized calendar work, a daily **milk quantity** is the number of
-litres delivered on that date. It may be described in customer language as the
-number of milk bottles only when that is the farm's actual fulfilment unit. It
-is not the same as the customer's glass-bottle choice (`return` or `new`),
-which is held at order/plan level. The current schema does **not** track a
-per-date physical container inventory or return count.
+Decision confirmed: the calendar feature is a daily **milk quantity** edit,
+not physical-container tracking. The customer interface will use the stable,
+unambiguous unit **litres** (1–5 L) rather than calling these quantities
+“bottles.” This avoids confusing a milk amount with the separate glass-bottle
+choice (`return` or `new`), which remains held at order/plan level. The current
+schema does **not** track a per-date physical container inventory or return
+count.
 
 This PR records the safe, existing daily quantity editing behaviour; it does
 not relabel it as a physical-bottle feature or introduce a new charge/refund
 rule. A real per-day bottle-count feature needs a separate approved model for
 container inventory, deposits/charges, driver reconciliation, conflict-safe
 edits, and financial adjustments.
+
+The daily edit must stay visually focused: show the scheduled amount, one
+clear 1–5 L choice, the resulting payment/carry-forward consequence before
+save, and a disabled state once the cut-off or preparation boundary is crossed.
+This keeps a high-quality calendar interaction simple on mobile while making
+the commercial outcome impossible to miss.
 
 ## Open pull requests and disposition
 
